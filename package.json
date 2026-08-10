@@ -1,0 +1,67 @@
+{
+  "name": "wkf-online",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Web application for Wroclawski Klub Fantastyki",
+  "type": "module",
+  "scripts": {
+    "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build --webpack",
+    "check": "pnpm lint && pnpm typecheck && pnpm test:unit",
+    "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
+    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+    "lint": "cross-env NODE_OPTIONS=--no-deprecation eslint .",
+    "migrate": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
+    "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
+    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "seed": "cross-env NODE_OPTIONS=--no-deprecation payload run ./scripts/seed.ts",
+    "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
+    "test": "pnpm test:unit",
+    "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
+    "test:integration": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts tests/integration",
+    "test:unit": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts tests/unit",
+    "typecheck": "tsc --noEmit",
+    "verify:compose": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/verify-compose.ts"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "3.87.1",
+    "@payloadcms/email-nodemailer": "3.87.1",
+    "@payloadcms/next": "3.87.1",
+    "@payloadcms/richtext-lexical": "3.87.1",
+    "@payloadcms/storage-azure": "3.87.1",
+    "@payloadcms/ui": "3.87.1",
+    "cross-env": "^7.0.3",
+    "dotenv": "16.4.7",
+    "graphql": "^16.8.1",
+    "next": "16.2.6",
+    "payload": "3.87.1",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "sharp": "0.34.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "@types/node": "22.19.9",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "4.5.2",
+    "eslint": "^9.16.0",
+    "eslint-config-next": "16.2.6",
+    "jsdom": "28.0.0",
+    "prettier": "^3.4.2",
+    "tsx": "4.22.4",
+    "typescript": "5.7.3",
+    "vite-tsconfig-paths": "6.0.5",
+    "vitest": "4.0.18"
+  },
+  "engines": {
+    "node": "^22.17.0 || >=24.0.0",
+    "pnpm": "^11"
+  },
+  "packageManager": "pnpm@11.16.0",
+  "volta": {
+    "node": "22.17.0"
+  }
+}

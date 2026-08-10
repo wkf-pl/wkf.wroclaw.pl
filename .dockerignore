@@ -1,0 +1,16 @@
+.git
+.github
+.idea
+.next
+coverage
+logs
+media
+node_modules
+playwright-report
+test-results
+test.env
+.env
+.env.*
+!.env.example
+npm-debug.log*
+pnpm-debug.log*

@@ -1,2 +1,35 @@
-logs/
-.idea
+# dependencies
+/node_modules/
+
+# editors
+/.idea/
+
+# local runtime data
+/logs/
+/media/
+
+# environment files and secrets
+.env
+.env.*
+!.env.example
+!test.env
+
+# Next.js and TypeScript
+/.next/
+/out/
+*.tsbuildinfo
+next-env.d.ts
+
+# tests
+/coverage/
+/playwright-report/
+/test-results/
+
+# package manager and debug logs
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
