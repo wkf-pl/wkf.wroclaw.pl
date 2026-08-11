@@ -1,15 +1,33 @@
 import type { CollectionConfig } from 'payload'
 
-import { editorOrAdmin } from '@/access/editorOrAdmin'
 import { populateSlugFromName } from '@/modules/content/slug'
+import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+
+const createCategories = createRolePermissionAccess({
+  operation: 'create',
+  resource: 'categories',
+})
+const deleteCategories = createRolePermissionAccess({
+  operation: 'delete',
+  resource: 'categories',
+})
+const readCategories = createRolePermissionAccess({
+  anonymousAccess: true,
+  operation: 'read',
+  resource: 'categories',
+})
+const updateCategories = createRolePermissionAccess({
+  operation: 'update',
+  resource: 'categories',
+})
 
 export const Categories: CollectionConfig = {
   slug: 'categories',
   access: {
-    create: editorOrAdmin,
-    delete: editorOrAdmin,
-    read: () => true,
-    update: editorOrAdmin,
+    create: createCategories,
+    delete: deleteCategories,
+    read: readCategories,
+    update: updateCategories,
   },
   admin: {
     defaultColumns: ['name', 'slug', 'updatedAt'],

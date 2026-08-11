@@ -1,14 +1,15 @@
 import type { Access } from 'payload'
 
-import { userHasAnyRole } from '@/modules/membership/user-roles'
+import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+
+const createUserWithRolePermission = createRolePermissionAccess({
+  operation: 'create',
+  resource: 'users',
+})
 
 export const administratorOrFirstUser: Access = async ({ req }) => {
-  if (userHasAnyRole(req.user, ['administrator'])) {
-    return true
-  }
-
   if (req.user) {
-    return false
+    return createUserWithRolePermission({ req })
   }
 
   const { totalDocs } = await req.payload.count({ collection: 'users' })

@@ -6,7 +6,7 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
-import { Categories, Media, Pages, Posts, Tags, Users } from './collections'
+import { Categories, Media, Pages, Posts, Roles, Tags, Users } from './collections'
 import { createEmailAdapter } from './email/create-email-adapter'
 import { Footer, Navigation, SiteSettings } from './globals'
 import { getOptionalEnvironmentVariable, getRequiredEnvironmentVariable } from './lib/env'
@@ -61,7 +61,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Pages, Posts, Categories, Tags],
+  collections: [Users, Roles, Media, Pages, Posts, Categories, Tags],
   globals: [SiteSettings, Navigation, Footer],
   cors: [...trustedOrigins],
   csrf: [...trustedOrigins],

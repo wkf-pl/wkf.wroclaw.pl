@@ -1,5 +1,5 @@
 import type { Access } from 'payload'
 
-import { userHasAnyRole } from '@/modules/membership/user-roles'
+import { isAdministrator } from '@/modules/membership/role-permissions'
 
-export const adminOnly: Access = ({ req }) => userHasAnyRole(req.user, ['administrator'])
+export const adminOnly: Access = ({ req }) => isAdministrator(req)

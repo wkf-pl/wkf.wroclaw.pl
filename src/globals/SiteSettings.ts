@@ -1,12 +1,22 @@
 import type { GlobalConfig } from 'payload'
 
-import { editorOrAdmin } from '@/access/editorOrAdmin'
+import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+
+const readSiteSettings = createRolePermissionAccess({
+  anonymousAccess: true,
+  operation: 'read',
+  resource: 'site-settings',
+})
+const updateSiteSettings = createRolePermissionAccess({
+  operation: 'update',
+  resource: 'site-settings',
+})
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
   access: {
-    read: () => true,
-    update: editorOrAdmin,
+    read: readSiteSettings,
+    update: updateSiteSettings,
   },
   admin: {
     group: 'Ustawienia',

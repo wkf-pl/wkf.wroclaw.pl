@@ -1,24 +1,43 @@
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionConfig } from 'payload'
 
-import { adminOnly } from '@/access/adminOnly'
 import { administratorOrFirstUser } from '@/access/administratorOrFirstUser'
-import { ownerOrAdmin } from '@/access/ownerOrAdmin'
-import { userHasAnyRole, userRoleLabels, userRoles } from '@/modules/membership/user-roles'
+import {
+  administratorRoleKey,
+  clientUserHasResourcePermission,
+  createRolePermissionAccess,
+  defaultUserRoleKey,
+  isAdministrator,
+} from '@/modules/membership/role-permissions'
+
+const readUsers = createRolePermissionAccess({
+  operation: 'read',
+  resource: 'users',
+  selfAccess: true,
+})
+const updateUsers = createRolePermissionAccess({
+  operation: 'update',
+  resource: 'users',
+  selfAccess: true,
+})
+const deleteUsers = createRolePermissionAccess({ operation: 'delete', resource: 'users' })
 
 export const Users: CollectionConfig = {
   slug: 'users',
   access: {
     admin: ({ req }) => Boolean(req.user),
     create: administratorOrFirstUser,
-    delete: adminOnly,
-    read: ownerOrAdmin,
-    update: ownerOrAdmin,
+    delete: deleteUsers,
+    read: readUsers,
+    update: updateUsers,
   },
   admin: {
     group: 'Administracja',
+    hidden: ({ user }) => !clientUserHasResourcePermission(user, 'users', 'read'),
     useAsTitle: 'email',
   },
-  auth: true,
+  auth: {
+    depth: 1,
+  },
   fields: [
     {
       name: 'displayName',
@@ -27,18 +46,50 @@ export const Users: CollectionConfig = {
     },
     {
       name: 'roles',
-      type: 'select',
+      type: 'relationship',
       access: {
-        update: ({ req }) => userHasAnyRole(req.user, ['administrator']),
+        create: ({ req }) => isAdministrator(req),
+        update: ({ req }) => isAdministrator(req),
       },
-      defaultValue: ({ req }) => (req.user ? ['user'] : ['administrator']),
       hasMany: true,
       label: 'Role',
-      options: userRoles.map((role) => ({ label: userRoleLabels[role], value: role })),
+      relationTo: 'roles',
       required: true,
-      saveToJWT: true,
     },
   ],
+  hooks: {
+    beforeValidate: [
+      async ({ data, operation, req }) => {
+        if (operation !== 'create' || (Array.isArray(data?.roles) && data.roles.length > 0)) {
+          return data
+        }
+
+        const roleKey = req.user ? defaultUserRoleKey : administratorRoleKey
+        const roles = await req.payload.find({
+          collection: 'roles',
+          depth: 0,
+          limit: 1,
+          overrideAccess: true,
+          pagination: false,
+          where: {
+            key: {
+              equals: roleKey,
+            },
+          },
+        })
+        const role = roles.docs[0]
+
+        if (!role) {
+          throw new APIError(`Brakuje wymaganej roli systemowej: ${roleKey}.`, 500)
+        }
+
+        return {
+          ...data,
+          roles: [role.id],
+        }
+      },
+    ],
+  },
   labels: {
     plural: 'Użytkownicy',
     singular: 'Użytkownik',

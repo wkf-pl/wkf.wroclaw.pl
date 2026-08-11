@@ -68,6 +68,7 @@ export interface Config {
   blocks: {};
   collections: {
     users: User;
+    roles: Role;
     media: Media;
     pages: Page;
     posts: Post;
@@ -81,6 +82,7 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
+    roles: RolesSelect<false> | RolesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
@@ -140,7 +142,7 @@ export interface UserAuthOperations {
 export interface User {
   id: number;
   displayName?: string | null;
-  roles: ('user' | 'member' | 'game_master' | 'author' | 'editor' | 'moderator' | 'administrator')[];
+  roles: (number | Role)[];
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -162,6 +164,57 @@ export interface User {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "roles".
+ */
+export interface Role {
+  id: number;
+  name: string;
+  description?: string | null;
+  key: string;
+  isSystem?: boolean | null;
+  /**
+   * Uprawnienia wielu ról sumują się. Dwa ograniczenia zaznaczone dla jednej operacji obowiązują jednocześnie.
+   */
+  permissions?:
+    | {
+        resource:
+          'users' | 'media' | 'pages' | 'posts' | 'categories' | 'tags' | 'navigation' | 'footer' | 'site-settings';
+        canCreate?: boolean | null;
+        readAllowed?: boolean | null;
+        /**
+         * Ogranicz operację do dokumentów należących do użytkownika.
+         */
+        readOwn?: boolean | null;
+        /**
+         * Ogranicz operację do dokumentów już opublikowanych.
+         */
+        readPublished?: boolean | null;
+        updateAllowed?: boolean | null;
+        /**
+         * Ogranicz operację do dokumentów należących do użytkownika.
+         */
+        updateOwn?: boolean | null;
+        /**
+         * Ogranicz operację do dokumentów już opublikowanych.
+         */
+        updatePublished?: boolean | null;
+        deleteAllowed?: boolean | null;
+        /**
+         * Ogranicz operację do dokumentów należących do użytkownika.
+         */
+        deleteOwn?: boolean | null;
+        /**
+         * Ogranicz operację do dokumentów już opublikowanych.
+         */
+        deletePublished?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
@@ -170,6 +223,7 @@ export interface Media {
    * Krótki opis obrazu dla czytników ekranu i sytuacji, gdy plik nie może się wyświetlić.
    */
   alt: string;
+  uploadedBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -343,6 +397,10 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'roles';
+        value: number | Role;
+      } | null)
+    | ({
         relationTo: 'media';
         value: number | Media;
       } | null)
@@ -430,10 +488,39 @@ export interface UsersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "roles_select".
+ */
+export interface RolesSelect<T extends boolean = true> {
+  name?: T;
+  description?: T;
+  key?: T;
+  isSystem?: T;
+  permissions?:
+    | T
+    | {
+        resource?: T;
+        canCreate?: T;
+        readAllowed?: T;
+        readOwn?: T;
+        readPublished?: T;
+        updateAllowed?: T;
+        updateOwn?: T;
+        updatePublished?: T;
+        deleteAllowed?: T;
+        deleteOwn?: T;
+        deletePublished?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  uploadedBy?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
