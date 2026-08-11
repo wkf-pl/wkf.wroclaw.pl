@@ -1,6 +1,7 @@
 .next
 media
 node_modules
+.pnpm-store
 playwright-report
 pnpm-lock.yaml
 public

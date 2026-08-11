@@ -6,6 +6,7 @@ coverage
 logs
 media
 node_modules
+.pnpm-store
 playwright-report
 test-results
 test.env

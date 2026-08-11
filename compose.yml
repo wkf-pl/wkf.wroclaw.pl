@@ -17,14 +17,14 @@ services:
       - .env
     environment:
       AZURE_STORAGE_ALLOW_CONTAINER_CREATE: 'true'
-      AZURE_STORAGE_ACCOUNT_BASE_URL: http://localhost:10000/devstoreaccount1
+      AZURE_STORAGE_ACCOUNT_BASE_URL: http://127.0.0.1:10000/devstoreaccount1
       AZURE_STORAGE_CONNECTION_STRING: >-
         DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
       AZURE_STORAGE_CONTAINER_NAME: media
       COMPOSE_APP_URL: http://127.0.0.1:3000
       COMPOSE_MAILPIT_URL: http://mailpit:8025
       DATABASE_URL: postgresql://${POSTGRES_USER:-wkf}:${POSTGRES_PASSWORD:-wkf}@postgres:5432/${POSTGRES_DB:-wkf}
-      NEXT_PUBLIC_SERVER_URL: http://localhost:3000
+      NEXT_PUBLIC_SERVER_URL: http://127.0.0.1:3000
       SMTP_HOST: mailpit
       SMTP_PORT: '1025'
       SMTP_SECURE: 'false'

@@ -19,10 +19,185 @@ a {
   color: inherit;
 }
 
+.siteHeader {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid #30333b;
+}
+
+.siteHeader a {
+  color: #f4f1ea;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.siteBrand {
+  display: inline-flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.siteBrand img {
+  width: 3rem;
+  height: 3rem;
+}
+
 .pageShell {
   width: min(70rem, calc(100% - 2rem));
   margin: 0 auto;
   padding: clamp(3rem, 9vw, 8rem) 0;
+}
+
+.contentShell {
+  width: min(70rem, calc(100% - 2rem));
+  margin: 0 auto;
+  padding-bottom: clamp(4rem, 10vw, 8rem);
+}
+
+.listingHeader,
+.cmsDocument {
+  width: min(48rem, 100%);
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.listingHeader,
+.cmsDocumentHeader {
+  padding-top: clamp(3rem, 9vw, 7rem);
+  padding-bottom: clamp(2rem, 5vw, 4rem);
+}
+
+.listingHeader h1,
+.cmsDocument h1 {
+  max-width: 16ch;
+}
+
+.listingHeader > p:last-child,
+.contentLead {
+  max-width: 42rem;
+  color: #c8c3bb;
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  line-height: 1.65;
+}
+
+.contentMeta,
+.postCard time {
+  color: #9d9992;
+  font-size: 0.9rem;
+}
+
+.heroImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 34rem;
+  margin-bottom: 2.5rem;
+  border-radius: 0.75rem;
+  object-fit: cover;
+}
+
+.richText {
+  color: #dedad2;
+  font-size: 1.08rem;
+  line-height: 1.75;
+}
+
+.richText h2,
+.richText h3 {
+  margin-top: 2.25em;
+  color: #f4f1ea;
+}
+
+.richText a,
+.attachments a {
+  color: #daaf65;
+}
+
+.richText img {
+  max-width: 100%;
+  height: auto;
+}
+
+.taxonomyLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.taxonomyLinks a {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid #464a55;
+  border-radius: 999px;
+  color: #daaf65;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.attachments {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid #30333b;
+}
+
+.postList {
+  display: grid;
+  gap: 1.5rem;
+  width: min(58rem, 100%);
+  margin: 0 auto;
+}
+
+.postCard {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.7fr) minmax(0, 1.3fr);
+  overflow: hidden;
+  border: 1px solid #30333b;
+  border-radius: 0.75rem;
+  background: rgb(255 255 255 / 3%);
+}
+
+.postCardImage {
+  min-height: 14rem;
+  background: #171a21;
+}
+
+.postCardImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.postCardContent {
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+}
+
+.postCard h2 {
+  margin: 0.5rem 0 0.75rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+  font-weight: 500;
+}
+
+.postCard h2 a {
+  text-decoration: none;
+}
+
+.postCard p {
+  color: #c8c3bb;
+  line-height: 1.6;
+}
+
+.emptyState {
+  width: min(48rem, 100%);
+  margin: 0 auto;
+  padding: 2rem;
+  border: 1px dashed #464a55;
+  border-radius: 0.75rem;
+  color: #c8c3bb;
+  text-align: center;
 }
 
 .hero {
@@ -121,9 +296,22 @@ h1 {
   .moduleSection ul {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .postCard {
+    grid-template-columns: 1fr;
+  }
+
+  .postCardImage {
+    min-height: 12rem;
+    max-height: 20rem;
+  }
 }
 
 @media (width <= 30rem) {
+  .siteBrand span {
+    display: none;
+  }
+
   .moduleSection ul {
     grid-template-columns: 1fr;
   }

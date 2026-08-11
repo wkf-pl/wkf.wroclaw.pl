@@ -7,7 +7,21 @@ const fileName = fileURLToPath(import.meta.url)
 const directoryName = path.dirname(fileName)
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ['localhost', '127.0.0.1', '[::1]'],
+  poweredByHeader: false,
   output: 'standalone',
+  headers: () => [
+    {
+      headers: [
+        {
+          key: 'Access-Control-Allow-Headers',
+          value:
+            'Origin, X-Requested-With, Content-Type, Accept, Authorization, Content-Encoding, x-apollo-tracing, X-HTTP-Method-Override',
+        },
+      ],
+      source: '/api/:path*',
+    },
+  ],
   images: {
     localPatterns: [
       {

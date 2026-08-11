@@ -25,11 +25,10 @@ export default function HomePage() {
           <p className="eyebrow">WKF Online</p>
           <h1>Nowa aplikacja klubowa jest w budowie</h1>
           <p className="lead">
-            Fundament Next.js, Payload i PostgreSQL jest gotowy do implementowania kolejnych
-            modułów.
+            Zaplecze aplikacji jest gotowe do wdrażania kolejnych modułów klubowych.
           </p>
           <Link className="adminLink" href="/admin">
-            Otwórz panel Payload
+            Otwórz panel administracyjny
           </Link>
         </div>
       </section>

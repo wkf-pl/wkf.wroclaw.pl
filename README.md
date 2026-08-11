@@ -22,7 +22,7 @@ Projekt przypina Node.js 22.17.0 przez sekcję `volta` w `package.json`. Po zain
 3. Uruchom `docker compose up --build`.
 4. W osobnym terminalu uruchom `docker compose exec -T app pnpm verify:compose`, aby sprawdzić HTTP, bootstrap pierwszego administratora, upload do Azurite i wysyłkę do Mailpit. Test wymaga pustej kolekcji użytkowników i usuwa utworzone przez siebie rekordy oraz wiadomość.
 
-Aplikacja będzie dostępna pod `http://localhost:3000`, panel Payload pod `http://localhost:3000/admin`, a Mailpit pod `http://localhost:8025`.
+Aplikacja będzie dostępna pod `http://127.0.0.1:3000` (również `http://localhost:3000`), panel Payload pod `http://127.0.0.1:3000/admin`, a Mailpit pod `http://127.0.0.1:8025`.
 
 Compose nadpisuje `STORAGE_ADAPTER` na `azure`, dzięki czemu uploady przechodzą przez ten sam oficjalny adapter Azure co docelowo, ale trafiają do lokalnego Azurite.
 

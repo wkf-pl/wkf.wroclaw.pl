@@ -1,10 +1,12 @@
 # Kolekcje
 
-Na tym etapie aktywne są tylko `Users` i `Media`, potrzebne do działania panelu Payload.
+Aktywne kolekcje fundamentu i treści:
 
-Planowane kolekcje MVP:
+- infrastruktura: `Users`, `Media`,
+- treści: `Pages`, `Posts`, `Categories`, `Tags`.
 
-- treści: `Articles`, `BlogPosts`, `Categories`, `Tags`, `Series`,
+Planowane kolekcje kolejnych modułów:
+
 - wydarzenia: `Events`, `Venues`,
 - RPG: `GameSystems`, `GameSessions`, `SessionRegistrations`,
 - osoby: `Members`.

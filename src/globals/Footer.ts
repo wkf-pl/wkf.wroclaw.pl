@@ -8,26 +8,34 @@ export const Footer: GlobalConfig = {
     read: () => true,
     update: editorOrAdmin,
   },
+  admin: {
+    group: 'Ustawienia',
+  },
   fields: [
     {
       name: 'copyrightText',
       type: 'text',
+      label: 'Tekst praw autorskich',
     },
     {
       name: 'links',
       type: 'array',
+      label: 'Odnośniki',
       fields: [
         {
           name: 'label',
           type: 'text',
+          label: 'Etykieta',
           required: true,
         },
         {
           name: 'href',
           type: 'text',
+          label: 'Adres URL',
           required: true,
         },
       ],
     },
   ],
+  label: 'Stopka',
 }

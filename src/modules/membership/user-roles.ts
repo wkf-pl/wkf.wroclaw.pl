@@ -10,6 +10,16 @@ export const userRoles = [
 
 export type UserRole = (typeof userRoles)[number]
 
+export const userRoleLabels: Record<UserRole, string> = {
+  administrator: 'Administrator',
+  author: 'Autor',
+  editor: 'Redaktor',
+  game_master: 'Mistrz gry',
+  member: 'Klubowicz',
+  moderator: 'Moderator',
+  user: 'Użytkownik',
+}
+
 type UserWithRoles = {
   id: number | string
   roles?: UserRole[] | null
