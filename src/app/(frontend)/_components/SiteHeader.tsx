@@ -5,11 +5,16 @@ export function SiteHeader() {
   return (
     <header className="siteHeader">
       <Link aria-label="Wrocławski Klub Fantastyki — strona główna" className="siteBrand" href="/">
-        <Image alt="" height={48} src="/assets/logo-color.webp" width={48} />
-        <span>Wrocławski Klub Fantastyki</span>
+        <Image alt="" height={76} priority src="/assets/logo-color.webp" width={76} />
+        <span>
+          Wrocławski
+          <br />
+          Klub Fantastyki
+        </span>
       </Link>
       <nav aria-label="Główna nawigacja">
-        <Link href="/blog">Blog</Link>
+        <Link href="/blog">Aktualności</Link>
+        <Link href="/o-nas">O nas</Link>
       </nav>
     </header>
   )
