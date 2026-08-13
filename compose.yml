@@ -24,11 +24,10 @@ services:
       COMPOSE_APP_URL: http://127.0.0.1:3000
       COMPOSE_MAILPIT_URL: http://mailpit:8025
       DATABASE_URL: postgresql://${POSTGRES_USER:-wkf}:${POSTGRES_PASSWORD:-wkf}@postgres:5432/${POSTGRES_DB:-wkf}
-      NEXT_PUBLIC_SERVER_URL: http://127.0.0.1:3000
+      SERVER_URL: http://127.0.0.1:3000
       SMTP_HOST: mailpit
       SMTP_PORT: '1025'
       SMTP_SECURE: 'false'
-      STORAGE_ADAPTER: azure
     healthcheck:
       test:
         - CMD

@@ -21,7 +21,7 @@ export const Footer: GlobalConfig = {
   fields: [
     {
       name: 'copyrightText',
-      type: 'text',
+      type: 'richText',
       label: 'Tekst praw autorskich',
     },
   ],

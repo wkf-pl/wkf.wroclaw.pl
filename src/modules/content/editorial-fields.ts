@@ -96,13 +96,17 @@ export function createEditorialFields({
     {
       name: 'author',
       type: 'relationship',
-      admin: {
-        position: 'sidebar',
-      },
       defaultValue: ({ user }) => user?.id,
       label: 'Autor',
       relationTo: 'users',
       required: true,
+      admin: {
+        components: {
+          Cell: '/components/admin/UserIdentity#UserRelationshipCell',
+          Field: '/components/admin/UserIdentity#UserRelationshipField',
+        },
+        position: 'sidebar',
+      },
     },
     {
       name: 'publishedAt',

@@ -1,3 +1,4 @@
+import { RichText } from '@payloadcms/richtext-lexical/react'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 
@@ -31,7 +32,9 @@ export function SiteFooter({ footer, navigation }: { footer: Footer; navigation:
             <br />
             Klub Fantastyki
           </strong>
-          {footer.copyrightText ? <small>{footer.copyrightText}</small> : null}
+          {footer.copyrightText ? (
+            <RichText className="footerCopyright" data={footer.copyrightText} />
+          ) : null}
         </div>
         {socialItems?.length ? (
           <nav aria-label="Media społecznościowe" className="socialLinks">

@@ -1,0 +1,86 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_digest:
+        description: Digest verified on staging, including the sha256 prefix
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AZURE_LOCATION: westeurope
+  AZURE_RESOURCE_PREFIX: wkf
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+      CUSTOM_DOMAIN_CERTIFICATE_ID: ${{ vars.CUSTOM_DOMAIN_CERTIFICATE_ID }}
+      PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+      POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+      SMTP_HOST: ${{ vars.SMTP_HOST }}
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate image digest
+        env:
+          IMAGE_DIGEST: ${{ inputs.image_digest }}
+        run: |
+          if [[ ! "$IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "image_digest must be a sha256 digest." >&2
+            exit 1
+          fi
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+
+      - name: Install Container Apps CLI extension
+        run: az extension add --name containerapp --upgrade
+
+      - name: Reconcile shared Azure resources
+        id: shared
+        run: |
+          registry_name="$(az deployment sub create \
+            --name wkf-shared \
+            --location "$AZURE_LOCATION" \
+            --template-file infra/azure/shared.bicep \
+            --parameters location="$AZURE_LOCATION" resourcePrefix="$AZURE_RESOURCE_PREFIX" \
+            --query properties.outputs.registryName.value \
+            --output tsv)"
+          echo "registry_name=$registry_name" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve promoted image
+        id: image
+        env:
+          IMAGE_DIGEST: ${{ inputs.image_digest }}
+          REGISTRY_NAME: ${{ steps.shared.outputs.registry_name }}
+        run: |
+          repository="wkf-online"
+          az acr repository show \
+            --name "$REGISTRY_NAME" \
+            --image "${repository}@${IMAGE_DIGEST}" \
+            --output none
+          login_server="$(az acr show --name "$REGISTRY_NAME" --query loginServer --output tsv)"
+          echo "image_reference=${login_server}/${repository}@${IMAGE_DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Migrate and deploy production
+        env:
+          IMAGE_REFERENCE: ${{ steps.image.outputs.image_reference }}
+        run: bash scripts/deploy-azure.sh prod "$IMAGE_REFERENCE"

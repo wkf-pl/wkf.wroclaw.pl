@@ -4,7 +4,6 @@ import {
   getEnvironmentBoolean,
   getEnvironmentInteger,
   getRequiredEnvironmentVariable,
-  getStorageAdapter,
 } from '@/lib/env'
 
 afterEach(() => {
@@ -50,11 +49,5 @@ describe('environment configuration', () => {
     expect(() => getEnvironmentInteger('TEST_INTEGER_VALUE', 25)).toThrow(
       'Environment variable TEST_INTEGER_VALUE must be an integer',
     )
-  })
-
-  it('defaults storage to the local adapter', () => {
-    vi.stubEnv('STORAGE_ADAPTER', '')
-
-    expect(getStorageAdapter()).toBe('local')
   })
 })

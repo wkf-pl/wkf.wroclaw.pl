@@ -1,4 +1,7 @@
+import { UserDisplayNameCell as UserDisplayNameCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
 import { PermissionRowLabel as PermissionRowLabel_2aad346eb5e12c6ee690c795b76ce94c } from '../../../components/admin/PermissionRowLabel'
+import { UserRelationshipCell as UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
+import { UserRelationshipField as UserRelationshipField_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
 import { RscEntryLexicalCell as RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { RscEntryLexicalField as RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { LexicalDiffComponent as LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
@@ -29,7 +32,10 @@ import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } f
 
 /** @type import('payload').ImportMap */
 export const importMap = {
+  "/components/admin/UserIdentity#UserDisplayNameCell": UserDisplayNameCell_0af2ec3c6a63521c7b2eedb66024da53,
   "/components/admin/PermissionRowLabel#PermissionRowLabel": PermissionRowLabel_2aad346eb5e12c6ee690c795b76ce94c,
+  "/components/admin/UserIdentity#UserRelationshipCell": UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53,
+  "/components/admin/UserIdentity#UserRelationshipField": UserRelationshipField_0af2ec3c6a63521c7b2eedb66024da53,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalCell": RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalField": RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#LexicalDiffComponent": LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e,

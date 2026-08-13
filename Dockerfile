@@ -30,8 +30,10 @@ FROM development AS builder
 ENV NODE_ENV=production
 
 RUN DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build" \
+    AZURE_STORAGE_ACCOUNT_BASE_URL="http://127.0.0.1:10000/devstoreaccount1" \
+    AZURE_STORAGE_CONNECTION_STRING="UseDevelopmentStorage=true" \
+    AZURE_STORAGE_CONTAINER_NAME="media" \
     PAYLOAD_SECRET="build-time-only" \
-    STORAGE_ADAPTER="local" \
     pnpm build
 
 FROM base AS runner
@@ -45,6 +47,11 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=dependencies --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/migrations ./migrations
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/src ./src
+COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
 
 USER nextjs
 

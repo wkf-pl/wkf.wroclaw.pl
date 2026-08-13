@@ -7,6 +7,7 @@ import {
   usesCustomIcon,
   usesIconAppearance,
   usesSystemIcon,
+  systemIconOptions,
   validateCustomURL,
 } from '@/modules/navigation/fields'
 import { getCustomIconURL, hasRenderableIcon, resolveLink } from '@/modules/navigation/links'
@@ -38,6 +39,26 @@ function createPage(overrides: Partial<Page> = {}): Page {
 }
 
 describe('navigation links', () => {
+  it('lists system icons alphabetically by their admin labels', () => {
+    expect(systemIconOptions.map(({ label }) => label)).toEqual([
+      'Czas',
+      'Discord',
+      'E-mail',
+      'Facebook',
+      'Gwiazda',
+      'Instagram',
+      'Kalendarz',
+      'Kolekcja',
+      'Kość',
+      'Książka',
+      'Lokalizacja',
+      'Pionek',
+      'Recenzja',
+      'Slack',
+      'Użytkownicy',
+    ])
+  })
+
   it('shows conditional target and icon fields only for the selected variants', () => {
     expect(isPageTarget(null, { targetType: 'page' })).toBe(true)
     expect(isCustomTarget(null, { targetType: 'page' })).toBe(false)

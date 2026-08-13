@@ -10,6 +10,7 @@ export const systemIconNames = [
   'mail',
   'pawn',
   'review',
+  'slack',
   'star',
   'time',
   'users',

@@ -31,6 +31,19 @@ test('shows administration resources but no CMS to an administrator', async ({ p
   await expect(page.locator(globalNavigationLink('site-settings'))).toHaveCount(0)
 })
 
+test('shows display names with email tooltips in the users list', async ({ page }) => {
+  await login({ page, user: administratorTestUser })
+  await page.goto('/admin/collections/users')
+
+  const userName = page
+    .locator('.table .wkf-user-identity')
+    .filter({ hasText: administratorTestUser.displayName })
+  await expect(userName).toBeVisible()
+  await userName.hover()
+
+  await expect(page.locator('.tooltip--show')).toContainText(administratorTestUser.email)
+})
+
 test('shows CMS resources but no administration collections to an editor', async ({ page }) => {
   await login({ page, user: editorTestUser })
 
@@ -42,6 +55,34 @@ test('shows CMS resources but no administration collections to an editor', async
   await expect(page.locator(globalNavigationLink('site-settings'))).toBeVisible()
   await expect(page.locator(collectionNavigationLink('roles'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('users'))).toHaveCount(0)
+})
+
+test('shows the author display name with an email tooltip in a relationship field', async ({
+  page,
+}) => {
+  await login({ page, user: editorTestUser })
+  await page.goto('/admin/collections/posts/create')
+
+  const authorField = page.locator('#field-author')
+  const userName = authorField.getByText(editorTestUser.displayName, { exact: true })
+  await expect(userName).toBeVisible()
+  await authorField.locator('.rs__control').hover()
+
+  await expect(page.locator('.wkf-user-relationship > .tooltip--show')).toContainText(
+    editorTestUser.email,
+  )
+})
+
+test('rejects an occupied display name when editing the account profile', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto('/admin/account')
+
+  const displayNameField = page.locator('#field-displayName')
+  await displayNameField.fill(administratorTestUser.displayName)
+  await page.getByRole('button', { exact: true, name: 'Zapisz' }).click()
+
+  await expect(page.locator('.field-error')).toContainText('Wartość musi być unikalna')
+  await expect(displayNameField).toHaveValue(administratorTestUser.displayName)
 })
 
 test('shows a readable collection without its create action', async ({ page }) => {

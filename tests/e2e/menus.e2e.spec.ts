@@ -74,10 +74,10 @@ test.beforeAll(async () => {
       socialItems: [
         {
           iconSource: 'system',
-          label: 'Discord',
-          systemIcon: 'discord',
+          label: 'Slack',
+          systemIcon: 'slack',
           targetType: 'custom',
-          url: 'https://discord.example.invalid',
+          url: 'https://slack.example.invalid',
         },
       ],
     },
@@ -121,6 +121,10 @@ test('renders editable menus and only published club sections on the home page',
   await expect(page.getByRole('heading', { name: 'E2E RPG' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'E2E LARP' })).toHaveCount(0)
   await expect(page.getByRole('navigation', { name: 'Media społecznościowe' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Slack' })).toHaveAttribute(
+    'href',
+    'https://slack.example.invalid',
+  )
   await expect(page.getByRole('navigation', { name: 'Nawigacja w stopce' })).toContainText(
     'Aktualności',
   )

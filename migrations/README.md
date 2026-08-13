@@ -6,4 +6,4 @@ Pliki migracji PostgreSQL generuje polecenie:
 pnpm migrate:create
 ```
 
-Migracje muszą być częścią commita zmieniającego schemat. W środowiskach Azure powinien je wykonywać osobny Container Apps Job przed wdrożeniem nowej rewizji aplikacji.
+Migracje muszą być częścią commita zmieniającego schemat. Na stagingu i produkcji wykonuje je osobny Container Apps Job przed przełączeniem aplikacji na nowy digest obrazu.

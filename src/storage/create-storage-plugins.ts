@@ -1,13 +1,9 @@
 import { azureStorage } from '@payloadcms/storage-azure'
 import type { Plugin } from 'payload'
 
-import { getEnvironmentBoolean, getRequiredEnvironmentVariable, getStorageAdapter } from '@/lib/env'
+import { getEnvironmentBoolean, getRequiredEnvironmentVariable } from '@/lib/env'
 
 export function createStoragePlugins(): Plugin[] {
-  if (getStorageAdapter() === 'local') {
-    return []
-  }
-
   return [
     azureStorage({
       allowContainerCreate: getEnvironmentBoolean('AZURE_STORAGE_ALLOW_CONTAINER_CREATE'),

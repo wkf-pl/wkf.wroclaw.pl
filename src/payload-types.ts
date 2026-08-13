@@ -143,7 +143,7 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: number;
-  displayName?: string | null;
+  displayName: string;
   roles: (number | Role)[];
   updatedAt: string;
   createdAt: string;
@@ -405,19 +405,20 @@ export interface ClubSection {
         iconSource?: ('system' | 'media') | null;
         systemIcon?:
           | (
-              | 'book'
+              | 'time'
+              | 'discord'
+              | 'mail'
+              | 'facebook'
+              | 'star'
+              | 'instagram'
               | 'calendar'
               | 'collection'
               | 'dice'
-              | 'discord'
-              | 'facebook'
-              | 'instagram'
+              | 'book'
               | 'location'
-              | 'mail'
               | 'pawn'
               | 'review'
-              | 'star'
-              | 'time'
+              | 'slack'
               | 'users'
             )
           | null;
@@ -774,19 +775,20 @@ export interface Navigation {
         iconSource?: ('system' | 'media') | null;
         systemIcon?:
           | (
-              | 'book'
+              | 'time'
+              | 'discord'
+              | 'mail'
+              | 'facebook'
+              | 'star'
+              | 'instagram'
               | 'calendar'
               | 'collection'
               | 'dice'
-              | 'discord'
-              | 'facebook'
-              | 'instagram'
+              | 'book'
               | 'location'
-              | 'mail'
               | 'pawn'
               | 'review'
-              | 'star'
-              | 'time'
+              | 'slack'
               | 'users'
             )
           | null;
@@ -820,19 +822,20 @@ export interface Navigation {
         iconSource?: ('system' | 'media') | null;
         systemIcon?:
           | (
-              | 'book'
+              | 'time'
+              | 'discord'
+              | 'mail'
+              | 'facebook'
+              | 'star'
+              | 'instagram'
               | 'calendar'
               | 'collection'
               | 'dice'
-              | 'discord'
-              | 'facebook'
-              | 'instagram'
+              | 'book'
               | 'location'
-              | 'mail'
               | 'pawn'
               | 'review'
-              | 'star'
-              | 'time'
+              | 'slack'
               | 'users'
             )
           | null;
@@ -868,7 +871,21 @@ export interface Navigation {
  */
 export interface Footer {
   id: number;
-  copyrightText?: string | null;
+  copyrightText?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }

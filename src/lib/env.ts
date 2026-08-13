@@ -1,5 +1,3 @@
-export type StorageAdapter = 'azure' | 'local'
-
 export function getRequiredEnvironmentVariable(name: string): string {
   const value = process.env[name]?.trim()
 
@@ -48,14 +46,4 @@ export function getEnvironmentInteger(name: string, fallback: number): number {
   }
 
   return parsedValue
-}
-
-export function getStorageAdapter(): StorageAdapter {
-  const value = getOptionalEnvironmentVariable('STORAGE_ADAPTER') ?? 'local'
-
-  if (value === 'azure' || value === 'local') {
-    return value
-  }
-
-  throw new Error('Environment variable STORAGE_ADAPTER must be either "azure" or "local"')
 }

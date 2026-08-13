@@ -29,19 +29,20 @@ export function usesIconAppearance(_data: unknown, siblingData: NavigationSiblin
 }
 
 export const systemIconOptions: { label: string; value: SystemIconName }[] = [
-  { label: 'Książka', value: 'book' },
+  { label: 'Czas', value: 'time' },
+  { label: 'Discord', value: 'discord' },
+  { label: 'E-mail', value: 'mail' },
+  { label: 'Facebook', value: 'facebook' },
+  { label: 'Gwiazda', value: 'star' },
+  { label: 'Instagram', value: 'instagram' },
   { label: 'Kalendarz', value: 'calendar' },
   { label: 'Kolekcja', value: 'collection' },
   { label: 'Kość', value: 'dice' },
-  { label: 'Discord', value: 'discord' },
-  { label: 'Facebook', value: 'facebook' },
-  { label: 'Instagram', value: 'instagram' },
+  { label: 'Książka', value: 'book' },
   { label: 'Lokalizacja', value: 'location' },
-  { label: 'E-mail', value: 'mail' },
   { label: 'Pionek', value: 'pawn' },
   { label: 'Recenzja', value: 'review' },
-  { label: 'Gwiazda', value: 'star' },
-  { label: 'Czas', value: 'time' },
+  { label: 'Slack', value: 'slack' },
   { label: 'Użytkownicy', value: 'users' },
 ]
 

@@ -3,16 +3,19 @@ import { getPayload } from 'payload'
 import config from '../../src/payload.config.js'
 
 export const administratorTestUser = {
+  displayName: 'Codex Admin E2E',
   email: 'codex-admin-e2e@example.invalid',
   password: 'test',
 }
 
 export const editorTestUser = {
+  displayName: 'Codex Editor E2E',
   email: 'codex-editor-e2e@example.invalid',
   password: 'test',
 }
 
 export const readOnlyTestUser = {
+  displayName: 'Codex Read Only E2E',
   email: 'codex-read-only-e2e@example.invalid',
   password: 'test',
 }

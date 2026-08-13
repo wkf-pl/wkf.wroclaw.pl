@@ -40,6 +40,10 @@ export const Media: CollectionConfig = {
         update: () => false,
       },
       admin: {
+        components: {
+          Cell: '/components/admin/UserIdentity#UserRelationshipCell',
+          Field: '/components/admin/UserIdentity#UserRelationshipField',
+        },
         position: 'sidebar',
         readOnly: true,
       },

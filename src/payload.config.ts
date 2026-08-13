@@ -14,7 +14,7 @@ import { createStoragePlugins } from './storage/create-storage-plugins'
 
 const fileName = fileURLToPath(import.meta.url)
 const directoryName = path.dirname(fileName)
-const serverURL = getOptionalEnvironmentVariable('NEXT_PUBLIC_SERVER_URL')
+const serverURL = getOptionalEnvironmentVariable('SERVER_URL')
 const trustedOrigins = getTrustedOrigins(serverURL)
 const adminDescription = 'Panel administracyjny Wrocławskiego Klubu Fantastyki'
 const polishAdminLanguage = {

@@ -71,6 +71,17 @@
   min-width: 180px;
 }
 
+.wkf-user-identity {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.wkf-user-relationship {
+  position: relative;
+  min-width: 0;
+}
+
 @media (max-width: 520px) {
   .wkf-admin-brand__logo {
     width: 108px;

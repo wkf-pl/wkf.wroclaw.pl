@@ -7,7 +7,7 @@ Jedna aplikacja Node.js łącząca publiczny frontend Next.js, panel i API Paylo
 - Next.js 16 i React 19,
 - Payload 3,
 - PostgreSQL,
-- Azure Blob Storage lub lokalny filesystem,
+- Azure Blob Storage (Azurite lokalnie),
 - SMTP przez oficjalny adapter Nodemailer,
 - Docker Compose z PostgreSQL, Azurite i Mailpit.
 
@@ -24,7 +24,7 @@ Projekt przypina Node.js 22.17.0 przez sekcję `volta` w `package.json`. Po zain
 
 Aplikacja będzie dostępna pod `http://127.0.0.1:3000` (również `http://localhost:3000`), panel Payload pod `http://127.0.0.1:3000/admin`, a Mailpit pod `http://127.0.0.1:8025`.
 
-Compose nadpisuje `STORAGE_ADAPTER` na `azure`, dzięki czemu uploady przechodzą przez ten sam oficjalny adapter Azure co docelowo, ale trafiają do lokalnego Azurite.
+Uploady przechodzą przez ten sam oficjalny adapter Azure na każdym środowisku. Lokalnie trafiają do Azurite, a na stagingu i produkcji do osobnych kontenerów Azure Blob Storage.
 
 ## Uruchomienie aplikacji poza Dockerem
 
@@ -36,7 +36,7 @@ pnpm install
 pnpm dev
 ```
 
-Domyślne `.env.example` używa adresów usług dostępnych z hosta. Ustaw `STORAGE_ADAPTER=local`, aby zapisywać media w katalogu `media/`, albo pozostaw `azure`, aby korzystać z Azurite.
+Domyślne `.env.example` używa adresów usług dostępnych z hosta, w tym lokalnego endpointu Azurite.
 
 ## Najważniejsze polecenia
 
@@ -61,7 +61,7 @@ src/
 ├── access/       współdzielone reguły dostępu Payload
 ├── jobs/         zadania domenowe Payload Jobs
 ├── email/        konfiguracja SMTP i szablony
-├── storage/      wybór lokalnego lub Azure Blob Storage
+├── storage/      konfiguracja Azure Blob Storage i Azurite
 └── lib/          małe narzędzia infrastrukturalne
 ```
 
@@ -69,6 +69,14 @@ src/
 
 ## Infrastruktura
 
-Katalog `infra/azure/` jest przygotowany pod Bicep, ale definicje zasobów nie są jeszcze wdrożone. Zanim powstaną moduły Container Apps, PostgreSQL, Storage, Key Vault, Registry i monitoringu, trzeba ustalić nazwy zasobów, subskrypcję, region oraz politykę sieciową.
+Projekt ma trzy środowiska:
 
-Migracje produkcyjne powinny być uruchamiane jako osobny Azure Container Apps Job przed przełączeniem rewizji aplikacji. Nie są wykonywane automatycznie podczas startu serwera.
+- `local` działa w Docker Compose z PostgreSQL, Azurite i Mailpit,
+- `staging` działa w osobnej grupie zasobów i osobnym Azure Container Apps Environment,
+- `prod` działa w osobnej grupie zasobów pod docelowym adresem `https://wkf.wroclaw.pl`.
+
+Definicje Bicep znajdują się w `infra/azure/`. Staging i produkcja mają osobne bazy PostgreSQL, konta Storage, środowiska Container Apps oraz Log Analytics. Współdzielą jedynie Azure Container Registry.
+
+Workflow stagingu buduje obraz tylko raz i publikuje jego digest. Produkcja wymaga ręcznego podania digestu sprawdzonego na stagingu. Na obu środowiskach migracje wykonuje osobny Azure Container Apps Job przed przełączeniem obrazu aplikacji.
+
+Szczegółowa konfiguracja Azure i wymagane ustawienia GitHub są opisane w `infra/azure/README.md`.

@@ -33,7 +33,7 @@ export const Users: CollectionConfig = {
   admin: {
     group: 'Administracja',
     hidden: ({ user }) => !clientUserHasResourcePermission(user, 'users', 'read'),
-    useAsTitle: 'email',
+    useAsTitle: 'displayName',
   },
   auth: {
     depth: 1,
@@ -42,7 +42,14 @@ export const Users: CollectionConfig = {
     {
       name: 'displayName',
       type: 'text',
+      admin: {
+        components: {
+          Cell: '/components/admin/UserIdentity#UserDisplayNameCell',
+        },
+      },
       label: 'Nazwa wyświetlana',
+      required: true,
+      unique: true,
     },
     {
       name: 'roles',

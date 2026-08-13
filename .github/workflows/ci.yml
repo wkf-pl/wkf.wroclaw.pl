@@ -14,9 +14,11 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     env:
+      AZURE_STORAGE_ACCOUNT_BASE_URL: http://127.0.0.1:10000/devstoreaccount1
+      AZURE_STORAGE_CONNECTION_STRING: UseDevelopmentStorage=true
+      AZURE_STORAGE_CONTAINER_NAME: media
       DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
       PAYLOAD_SECRET: build-time-only
-      STORAGE_ADAPTER: local
     steps:
       - name: Check out repository
         uses: actions/checkout@v4

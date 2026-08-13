@@ -13,6 +13,7 @@ function createAuthenticatedUser(id: number, role: Role): User {
   return {
     collection: 'users',
     createdAt: new Date(0).toISOString(),
+    displayName: `Access Test ${id}`,
     email: `access-test-${id}@example.invalid`,
     id,
     roles: [role.id],
