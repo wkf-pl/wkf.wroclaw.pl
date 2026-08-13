@@ -1,11 +1,16 @@
 import Link from 'next/link'
 
-import type { Post } from '@/payload-types'
-import { findPublishedPosts } from '@/modules/content/public-content'
+import type { ClubSection, Post } from '@/payload-types'
+import {
+  findPublishedClubSections,
+  findPublishedPosts,
+  getPublicNavigation,
+} from '@/modules/content/public-content'
+import { hasRenderableIcon, resolveLink, resolvePageLink } from '@/modules/navigation/links'
 
 import { CmsImage } from './_components/CmsImage'
-import { Icon, type IconName } from './_components/Icon'
-import { SiteHeader } from './_components/SiteHeader'
+import { Icon } from './_components/Icon'
+import { MenuIcon } from './_components/MenuIcon'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,40 +18,6 @@ const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric',
   month: 'long',
 })
-
-const clubSections: {
-  className: string
-  items: { icon: IconName; label: string }[]
-  title: string
-}[] = [
-  {
-    className: 'sectionCardRpg',
-    items: [
-      { icon: 'dice', label: 'Sesje' },
-      { icon: 'star', label: 'Systemy' },
-      { icon: 'users', label: 'Dołącz do gry' },
-    ],
-    title: 'RPG',
-  },
-  {
-    className: 'sectionCardLiterature',
-    items: [
-      { icon: 'book', label: 'Biblioteka' },
-      { icon: 'users', label: 'Spotkania' },
-      { icon: 'review', label: 'Recenzje' },
-    ],
-    title: 'Literatura',
-  },
-  {
-    className: 'sectionCardBoardGames',
-    items: [
-      { icon: 'pawn', label: 'Klubowe granie' },
-      { icon: 'collection', label: 'Kolekcja' },
-      { icon: 'calendar', label: 'Terminy' },
-    ],
-    title: 'Planszówki',
-  },
-]
 
 function SectionHeading({ children, id }: { children: string; id: string }) {
   return (
@@ -149,113 +120,103 @@ function NewsSection({ posts }: { posts: Post[] }) {
   )
 }
 
-function Sections() {
+function SectionCard({ section }: { section: ClubSection }) {
+  const titleLink = resolvePageLink(section.destinationPage)
+  const menuItems = section.menuItems?.flatMap((item) => {
+    const link = resolveLink(item)
+    return link && hasRenderableIcon(item) ? [{ item, link }] : []
+  })
+
+  return (
+    <article className="sectionCard">
+      {section.backgroundImage && typeof section.backgroundImage === 'object' ? (
+        <CmsImage className="sectionCardImage" media={section.backgroundImage} />
+      ) : (
+        <span aria-hidden="true" className="sectionCardImage sectionCardImageFallback" />
+      )}
+      <span aria-hidden="true" className="sectionCardShade" />
+      <div className="sectionCardContent">
+        <h3>{titleLink ? <Link {...titleLink}>{section.name}</Link> : section.name}</h3>
+        {menuItems?.length ? (
+          <ul>
+            {menuItems.map(({ item, link }) => (
+              <li key={item.id}>
+                <Link {...link}>
+                  <span aria-hidden="true" className="menuIcon">
+                    <MenuIcon
+                      customIcon={item.customIcon}
+                      iconSource={item.iconSource}
+                      systemIcon={item.systemIcon}
+                    />
+                  </span>
+                  <span>{item.label}</span>
+                  <span aria-hidden="true" className="menuArrow">
+                    <Icon name="arrow" />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </article>
+  )
+}
+
+function Sections({ sections }: { sections: ClubSection[] }) {
+  if (sections.length === 0) {
+    return null
+  }
+
   return (
     <section aria-labelledby="sections-heading" className="homeSection clubSections">
       <SectionHeading id="sections-heading">Sekcje</SectionHeading>
       <div className="sectionCards">
-        {clubSections.map((section) => (
-          <article className={`sectionCard ${section.className}`} key={section.title}>
-            <span aria-hidden="true" className="sectionCardShade" />
-            <div className="sectionCardContent">
-              <h3>{section.title}</h3>
-              <ul>
-                {section.items.map((item) => (
-                  <li key={item.label}>
-                    <a href="#">
-                      <span aria-hidden="true" className="menuIcon">
-                        <Icon name={item.icon} />
-                      </span>
-                      <span>{item.label}</span>
-                      <span aria-hidden="true" className="menuArrow">
-                        <Icon name="arrow" />
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </article>
+        {sections.map((section) => (
+          <SectionCard key={section.id} section={section} />
         ))}
       </div>
     </section>
   )
 }
 
-function SiteFooter() {
-  return (
-    <footer className="siteFooter">
-      <div className="footerBrand">
-        {/* eslint-disable-next-line @next/next/no-img-element -- Static brand asset needs no image optimization. */}
-        <img alt="" height="90" src="/assets/logo-color.webp" width="90" />
-        <strong>
-          Wrocławski
-          <br />
-          Klub Fantastyki
-        </strong>
-      </div>
-      <nav aria-label="Media społecznościowe" className="socialLinks">
-        <a aria-label="Discord" href="#">
-          <Icon name="discord" />
-        </a>
-        <a aria-label="Facebook" href="#">
-          <Icon name="facebook" />
-        </a>
-        <a aria-label="Instagram" href="#">
-          <Icon name="instagram" />
-        </a>
-        <a aria-label="E-mail" href="#">
-          <Icon name="mail" />
-        </a>
-      </nav>
-      <div className="footerMenus">
-        <nav aria-label="Nawigacja w stopce">
-          <strong>Nawigacja</strong>
-          <a href="#">Aktualności</a>
-          <a href="#">Wydarzenia</a>
-          <a href="#">Sesje RPG</a>
-        </nav>
-        <nav aria-label="Klub w stopce">
-          <strong>Klub</strong>
-          <a href="#">O klubie</a>
-          <a href="#">Dołącz</a>
-          <a href="#">Kontakt</a>
-        </nav>
-      </div>
-    </footer>
-  )
-}
-
 export default async function HomePage() {
-  const posts = (await findPublishedPosts()).slice(0, 3)
+  const [posts, sections, navigation] = await Promise.all([
+    findPublishedPosts(),
+    findPublishedClubSections(),
+    getPublicNavigation(),
+  ])
+  const heroItems = navigation.heroItems?.flatMap((item) => {
+    const link = resolveLink(item)
+    return link ? [{ item, link }] : []
+  })
 
   return (
     <main className="homePage">
       <section className="homeHero">
         <div className="homeShell">
-          <SiteHeader />
           <div className="heroContent">
             <h1>
               Witaj w klubie
               <br />
               ludzi z <span>wyobraźnią</span>
             </h1>
-            <nav aria-label="Obszary klubu" className="heroTabs">
-              <a className="active" href="#">
-                Gry RPG
-              </a>
-              <a href="#">Literatura</a>
-              <a href="#">Planszówki</a>
-              <a href="#">Spotkania</a>
-            </nav>
+            {heroItems?.length ? (
+              <nav aria-label="Obszary klubu" className="heroTabs">
+                {heroItems.map(({ item, link }) => (
+                  <Link key={item.id} {...link}>
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
           </div>
         </div>
       </section>
 
       <div className="homeShell">
-        <NewsSection posts={posts} />
-        <Sections />
-        <SiteFooter />
+        <NewsSection posts={posts.slice(0, 3)} />
+        <Sections sections={sections} />
       </div>
     </main>
   )

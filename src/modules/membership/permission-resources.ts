@@ -21,6 +21,11 @@ export const permissionResources = {
     ownershipField: 'author',
     publishedField: '_status',
   },
+  'club-sections': {
+    kind: 'collection',
+    label: 'Sekcje klubowe',
+    publishedField: '_status',
+  },
   categories: {
     kind: 'collection',
     label: 'Kategorie',
@@ -31,7 +36,7 @@ export const permissionResources = {
   },
   navigation: {
     kind: 'global',
-    label: 'Nawigacja',
+    label: 'Menu strony',
   },
   footer: {
     kind: 'global',

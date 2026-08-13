@@ -6,10 +6,13 @@ import { defineConfig, devices } from '@playwright/test'
  */
 import 'dotenv/config'
 
+const frontendURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000'
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
+  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR || 'test-results',
   testDir: './tests/e2e',
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
@@ -21,7 +24,7 @@ export default defineConfig({
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL: frontendURL,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -35,6 +38,6 @@ export default defineConfig({
   webServer: {
     command: 'pnpm dev',
     reuseExistingServer: true,
-    url: 'http://127.0.0.1:3000',
+    url: frontendURL,
   },
 })

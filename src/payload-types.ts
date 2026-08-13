@@ -72,6 +72,7 @@ export interface Config {
     media: Media;
     pages: Page;
     posts: Post;
+    'club-sections': ClubSection;
     categories: Category;
     tags: Tag;
     'payload-kv': PayloadKv;
@@ -86,6 +87,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
+    'club-sections': ClubSectionsSelect<false> | ClubSectionsSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -178,7 +180,16 @@ export interface Role {
   permissions?:
     | {
         resource:
-          'users' | 'media' | 'pages' | 'posts' | 'categories' | 'tags' | 'navigation' | 'footer' | 'site-settings';
+          | 'users'
+          | 'media'
+          | 'pages'
+          | 'posts'
+          | 'club-sections'
+          | 'categories'
+          | 'tags'
+          | 'navigation'
+          | 'footer'
+          | 'site-settings';
         canCreate?: boolean | null;
         readAllowed?: boolean | null;
         /**
@@ -370,6 +381,61 @@ export interface Tag {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "club-sections".
+ */
+export interface ClubSection {
+  id: number;
+  name: string;
+  backgroundImage?: (number | null) | Media;
+  /**
+   * Niższa liczba oznacza wcześniejszą pozycję.
+   */
+  displayOrder: number;
+  destinationPage?: (number | null) | Page;
+  menuItems?:
+    | {
+        label: string;
+        targetType: 'page' | 'custom';
+        page?: (number | null) | Page;
+        /**
+         * Ścieżka, kotwica, mailto:, tel: albo pełny adres HTTP(S).
+         */
+        url?: string | null;
+        openInNewTab?: boolean | null;
+        iconSource?: ('system' | 'media') | null;
+        systemIcon?:
+          | (
+              | 'book'
+              | 'calendar'
+              | 'collection'
+              | 'dice'
+              | 'discord'
+              | 'facebook'
+              | 'instagram'
+              | 'location'
+              | 'mail'
+              | 'pawn'
+              | 'review'
+              | 'star'
+              | 'time'
+              | 'users'
+            )
+          | null;
+        customIcon?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Identyfikator techniczny tworzony automatycznie z nazwy.
+   */
+  slug: string;
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -411,6 +477,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'posts';
         value: number | Post;
+      } | null)
+    | ({
+        relationTo: 'club-sections';
+        value: number | ClubSection;
       } | null)
     | ({
         relationTo: 'categories';
@@ -584,6 +654,34 @@ export interface PostsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "club-sections_select".
+ */
+export interface ClubSectionsSelect<T extends boolean = true> {
+  name?: T;
+  backgroundImage?: T;
+  displayOrder?: T;
+  destinationPage?: T;
+  menuItems?:
+    | T
+    | {
+        label?: T;
+        targetType?: T;
+        page?: T;
+        url?: T;
+        openInNewTab?: T;
+        iconSource?: T;
+        systemIcon?: T;
+        customIcon?: T;
+        id?: T;
+      };
+  slug?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "categories_select".
  */
 export interface CategoriesSelect<T extends boolean = true> {
@@ -662,11 +760,102 @@ export interface SiteSetting {
  */
 export interface Navigation {
   id: number;
-  items?:
+  headerItems?:
+    | {
+        appearance: 'link' | 'icon' | 'button';
+        label: string;
+        targetType: 'page' | 'custom';
+        page?: (number | null) | Page;
+        /**
+         * Ścieżka, kotwica, mailto:, tel: albo pełny adres HTTP(S).
+         */
+        url?: string | null;
+        openInNewTab?: boolean | null;
+        iconSource?: ('system' | 'media') | null;
+        systemIcon?:
+          | (
+              | 'book'
+              | 'calendar'
+              | 'collection'
+              | 'dice'
+              | 'discord'
+              | 'facebook'
+              | 'instagram'
+              | 'location'
+              | 'mail'
+              | 'pawn'
+              | 'review'
+              | 'star'
+              | 'time'
+              | 'users'
+            )
+          | null;
+        customIcon?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  heroItems?:
     | {
         label: string;
-        href: string;
+        targetType: 'page' | 'custom';
+        page?: (number | null) | Page;
+        /**
+         * Ścieżka, kotwica, mailto:, tel: albo pełny adres HTTP(S).
+         */
+        url?: string | null;
         openInNewTab?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  socialItems?:
+    | {
+        label: string;
+        targetType: 'page' | 'custom';
+        page?: (number | null) | Page;
+        /**
+         * Ścieżka, kotwica, mailto:, tel: albo pełny adres HTTP(S).
+         */
+        url?: string | null;
+        openInNewTab?: boolean | null;
+        iconSource?: ('system' | 'media') | null;
+        systemIcon?:
+          | (
+              | 'book'
+              | 'calendar'
+              | 'collection'
+              | 'dice'
+              | 'discord'
+              | 'facebook'
+              | 'instagram'
+              | 'location'
+              | 'mail'
+              | 'pawn'
+              | 'review'
+              | 'star'
+              | 'time'
+              | 'users'
+            )
+          | null;
+        customIcon?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  footerColumns?:
+    | {
+        title: string;
+        items?:
+          | {
+              label: string;
+              targetType: 'page' | 'custom';
+              page?: (number | null) | Page;
+              /**
+               * Ścieżka, kotwica, mailto:, tel: albo pełny adres HTTP(S).
+               */
+              url?: string | null;
+              openInNewTab?: boolean | null;
+              id?: string | null;
+            }[]
+          | null;
         id?: string | null;
       }[]
     | null;
@@ -680,13 +869,6 @@ export interface Navigation {
 export interface Footer {
   id: number;
   copyrightText?: string | null;
-  links?:
-    | {
-        label: string;
-        href: string;
-        id?: string | null;
-      }[]
-    | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -707,12 +889,57 @@ export interface SiteSettingsSelect<T extends boolean = true> {
  * via the `definition` "navigation_select".
  */
 export interface NavigationSelect<T extends boolean = true> {
-  items?:
+  headerItems?:
+    | T
+    | {
+        appearance?: T;
+        label?: T;
+        targetType?: T;
+        page?: T;
+        url?: T;
+        openInNewTab?: T;
+        iconSource?: T;
+        systemIcon?: T;
+        customIcon?: T;
+        id?: T;
+      };
+  heroItems?:
     | T
     | {
         label?: T;
-        href?: T;
+        targetType?: T;
+        page?: T;
+        url?: T;
         openInNewTab?: T;
+        id?: T;
+      };
+  socialItems?:
+    | T
+    | {
+        label?: T;
+        targetType?: T;
+        page?: T;
+        url?: T;
+        openInNewTab?: T;
+        iconSource?: T;
+        systemIcon?: T;
+        customIcon?: T;
+        id?: T;
+      };
+  footerColumns?:
+    | T
+    | {
+        title?: T;
+        items?:
+          | T
+          | {
+              label?: T;
+              targetType?: T;
+              page?: T;
+              url?: T;
+              openInNewTab?: T;
+              id?: T;
+            };
         id?: T;
       };
   updatedAt?: T;
@@ -725,13 +952,6 @@ export interface NavigationSelect<T extends boolean = true> {
  */
 export interface FooterSelect<T extends boolean = true> {
   copyrightText?: T;
-  links?:
-    | T
-    | {
-        label?: T;
-        href?: T;
-        id?: T;
-      };
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

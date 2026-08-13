@@ -4,7 +4,7 @@ import path from 'node:path'
 import { getPayload } from 'payload'
 
 import config from '../src/payload.config'
-import type { Media, Page, Post, User } from '../src/payload-types'
+import type { ClubSection, Media, Navigation, Page, Post, User } from '../src/payload-types'
 
 const payload = await getPayload({ config })
 
@@ -197,7 +197,7 @@ async function ensurePost(seedPost: SeedPost, author: User, media: Media): Promi
   })
 }
 
-async function ensureAboutPage(author: User): Promise<void> {
+async function ensureAboutPage(author: User): Promise<Page> {
   const existingPages = await payload.find({
     collection: 'pages',
     depth: 0,
@@ -208,10 +208,10 @@ async function ensureAboutPage(author: User): Promise<void> {
   })
 
   if (existingPages.docs[0]) {
-    return
+    return existingPages.docs[0]
   }
 
-  await payload.create({
+  return payload.create({
     collection: 'pages',
     data: {
       _status: 'published',
@@ -228,14 +228,103 @@ async function ensureAboutPage(author: User): Promise<void> {
   })
 }
 
+async function ensureClubSection({
+  backgroundImage,
+  displayOrder,
+  name,
+  status,
+}: {
+  backgroundImage?: Media
+  displayOrder: number
+  name: string
+  status: NonNullable<ClubSection['_status']>
+}): Promise<void> {
+  const slug = name.toLocaleLowerCase('pl')
+  const existingSections = await payload.find({
+    collection: 'club-sections',
+    depth: 0,
+    limit: 1,
+    overrideAccess: true,
+    pagination: false,
+    where: { slug: { equals: slug } },
+  })
+
+  if (existingSections.docs[0]) {
+    return
+  }
+
+  await payload.create({
+    collection: 'club-sections',
+    data: {
+      _status: status,
+      backgroundImage: backgroundImage?.id,
+      displayOrder,
+      name,
+      slug,
+    },
+    draft: status === 'draft',
+    overrideAccess: true,
+  })
+}
+
+async function ensureNavigation(aboutPage: Page): Promise<void> {
+  const navigation = await payload.findGlobal({
+    slug: 'navigation',
+    depth: 0,
+    overrideAccess: true,
+  })
+
+  if (navigation.headerItems?.length) {
+    return
+  }
+
+  const headerItems: NonNullable<Navigation['headerItems']> = [
+    {
+      appearance: 'link',
+      label: 'Aktualności',
+      targetType: 'custom',
+      url: '/blog',
+    },
+    {
+      appearance: 'link',
+      label: 'O nas',
+      page: aboutPage.id,
+      targetType: 'page',
+    },
+  ]
+
+  await payload.updateGlobal({
+    slug: 'navigation',
+    data: { headerItems },
+    overrideAccess: true,
+  })
+}
+
 const author = await findOrCreateAuthor()
+let rpgBackgroundImage: Media | undefined
 
 for (const seedPost of seedPosts) {
   const media = await findOrCreateMedia(seedPost, author)
   await ensurePost(seedPost, author, media)
+
+  if (seedPost.slug === 'wiesci-z-klubu') {
+    rpgBackgroundImage = media
+  }
 }
 
-await ensureAboutPage(author)
+const aboutPage = await ensureAboutPage(author)
+await ensureNavigation(aboutPage)
+await ensureClubSection({
+  backgroundImage: rpgBackgroundImage,
+  displayOrder: 10,
+  name: 'RPG',
+  status: 'published',
+})
+await ensureClubSection({
+  displayOrder: 20,
+  name: 'LARP',
+  status: 'draft',
+})
 
 await payload.updateGlobal({
   slug: 'site-settings',
@@ -245,4 +334,6 @@ await payload.updateGlobal({
   },
 })
 
-payload.logger.info('Seed completed: site settings, about page and three published posts')
+payload.logger.info(
+  'Seed completed: site settings, navigation, about page, posts and club sections',
+)

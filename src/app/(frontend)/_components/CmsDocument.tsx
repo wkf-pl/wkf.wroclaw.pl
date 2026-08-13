@@ -3,7 +3,6 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 import type { Media, Page, Post, User } from '@/payload-types'
 
 import { CmsImage } from './CmsImage'
-import { SiteHeader } from './SiteHeader'
 import { TaxonomyLinks } from './TaxonomyLinks'
 
 type CmsDocumentProperties = {
@@ -33,7 +32,6 @@ export function CmsDocument({ document }: CmsDocumentProperties) {
 
   return (
     <main className="contentShell">
-      <SiteHeader />
       <article className="cmsDocument">
         <header className="cmsDocumentHeader">
           {isPost ? <p className="eyebrow">Blog</p> : null}

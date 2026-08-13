@@ -24,25 +24,6 @@ export const Footer: GlobalConfig = {
       type: 'text',
       label: 'Tekst praw autorskich',
     },
-    {
-      name: 'links',
-      type: 'array',
-      label: 'Odnośniki',
-      fields: [
-        {
-          name: 'label',
-          type: 'text',
-          label: 'Etykieta',
-          required: true,
-        },
-        {
-          name: 'href',
-          type: 'text',
-          label: 'Adres URL',
-          required: true,
-        },
-      ],
-    },
   ],
   label: 'Stopka',
 }

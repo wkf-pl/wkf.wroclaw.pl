@@ -1,4 +1,5 @@
 export { Categories } from './Categories'
+export { ClubSections } from './ClubSections'
 export { Media } from './Media'
 export { Pages } from './Pages'
 export { Posts } from './Posts'

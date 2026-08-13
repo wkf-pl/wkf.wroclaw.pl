@@ -49,9 +49,18 @@ h3,
 }
 
 .homeShell,
-.contentShell {
+.contentShell,
+.siteFooterShell,
+.siteHeaderShell {
   width: min(76rem, calc(100% - 3rem));
   margin-inline: auto;
+}
+
+body:has(> .homePage) > .siteHeaderShell {
+  position: absolute;
+  z-index: 10;
+  right: 0;
+  left: 0;
 }
 
 .siteHeader {
@@ -65,7 +74,7 @@ h3,
   border-bottom: 1px solid rgb(243 163 19 / 25%);
 }
 
-.homeHero .siteHeader {
+body:has(> .homePage) .siteHeader {
   border-bottom: 0;
 }
 
@@ -105,6 +114,27 @@ h3,
   padding: 0.65rem 0;
 }
 
+.siteHeader nav .headerMenuItem-button {
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--gold);
+  border-radius: 0.45rem;
+}
+
+.siteHeader nav .headerMenuItem-icon {
+  display: grid;
+  width: 2.7rem;
+  height: 2.7rem;
+  padding: 0;
+  place-items: center;
+}
+
+.headerMenuItem-icon img,
+.headerMenuItem-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
+}
+
 .siteHeader nav a:hover,
 .siteHeader nav a:focus-visible {
   color: var(--gold-light);
@@ -134,7 +164,7 @@ h3,
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  padding: 4rem 0 2.5rem;
+  padding: 11.75rem 0 2.5rem;
 }
 
 .heroContent h1 {
@@ -169,8 +199,7 @@ h3,
 }
 
 .heroTabs a:hover,
-.heroTabs a:focus-visible,
-.heroTabs .active {
+.heroTabs a:focus-visible {
   background: linear-gradient(135deg, var(--gold-light), var(--gold));
   color: #081522;
 }
@@ -472,21 +501,21 @@ h3,
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 0.7rem;
-  background-position: center;
-  background-size: cover;
+  background: linear-gradient(135deg, var(--panel-soft), var(--background-deep));
 }
 
-.sectionCardRpg {
-  background-image: url('/assets/home/wiesci-z-klubu.webp');
+.sectionCardImage {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.sectionCardLiterature {
-  background-image: url('/assets/home/nowosci-w-bibliotece.webp');
-}
-
-.sectionCardBoardGames {
-  background-image: url('/assets/home/hero-wroclaw-fantasy.webp');
-  background-position: 74% center;
+.sectionCardImageFallback {
+  inset: 0;
+  background:
+    radial-gradient(circle at 70% 25%, rgb(243 163 19 / 18%), transparent 40%),
+    linear-gradient(135deg, var(--panel-soft), var(--background-deep));
 }
 
 .sectionCardShade {
@@ -506,6 +535,10 @@ h3,
 .sectionCardContent h3 {
   margin-bottom: 0.9rem;
   font-size: 2.3rem;
+}
+
+.sectionCardContent h3 a {
+  text-decoration: none;
 }
 
 .sectionCardContent ul {
@@ -547,6 +580,12 @@ h3,
   height: 1.2rem;
 }
 
+.menuIcon img {
+  width: 1.2rem;
+  height: 1.2rem;
+  object-fit: contain;
+}
+
 .menuArrow {
   display: grid;
   place-items: center;
@@ -562,8 +601,14 @@ h3,
 
 .footerBrand {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   align-items: center;
+}
+
+.footerBrand small {
+  width: 100%;
+  color: var(--muted);
 }
 
 .footerBrand img {
@@ -598,9 +643,15 @@ h3,
   height: 1.55rem;
 }
 
+.socialLinks img {
+  width: 1.55rem;
+  height: 1.55rem;
+  object-fit: contain;
+}
+
 .footerMenus {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(var(--footer-column-count, 2), minmax(8rem, 1fr));
   gap: 2.5rem;
 }
 
@@ -811,7 +862,9 @@ h3,
 
 @media (width <= 48rem) {
   .homeShell,
-  .contentShell {
+  .contentShell,
+  .siteFooterShell,
+  .siteHeaderShell {
     width: min(100% - 2rem, 40rem);
   }
 
@@ -840,7 +893,7 @@ h3,
 
   .heroContent {
     min-height: 35rem;
-    padding-top: 4rem;
+    padding-top: 10.2rem;
   }
 
   .heroContent h1 {
@@ -943,5 +996,6 @@ h3,
 
   .footerMenus {
     grid-column: auto;
+    grid-template-columns: 1fr;
   }
 }

@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
@@ -45,6 +45,14 @@ beforeAll(async () => {
     findRole('editor'),
     findRole('user'),
   ])
+})
+
+afterAll(async () => {
+  await payload.delete({
+    collection: 'club-sections',
+    overrideAccess: true,
+    where: { slug: { in: ['integration-published', 'integration-draft'] } },
+  })
 })
 
 describe('role access integration', () => {
@@ -103,5 +111,63 @@ describe('role access integration', () => {
         user: createAuthenticatedUser(-5, administratorRole),
       }),
     ).rejects.toMatchObject({ status: 400 })
+  })
+
+  it('shows only published club sections to anonymous readers', async () => {
+    for (const slug of ['integration-published', 'integration-draft']) {
+      await payload.delete({
+        collection: 'club-sections',
+        overrideAccess: true,
+        where: { slug: { equals: slug } },
+      })
+    }
+
+    await payload.create({
+      collection: 'club-sections',
+      data: {
+        _status: 'published',
+        displayOrder: 1,
+        name: 'Integration Published',
+        slug: 'integration-published',
+      },
+      overrideAccess: false,
+      user: createAuthenticatedUser(-6, editorRole),
+    })
+    await payload.create({
+      collection: 'club-sections',
+      data: {
+        _status: 'draft',
+        displayOrder: 2,
+        name: 'Integration Draft',
+        slug: 'integration-draft',
+      },
+      draft: true,
+      overrideAccess: false,
+      user: createAuthenticatedUser(-6, editorRole),
+    })
+
+    const result = await payload.find({
+      collection: 'club-sections',
+      overrideAccess: false,
+      user: null,
+      where: { slug: { in: ['integration-published', 'integration-draft'] } },
+    })
+
+    expect(result.docs.map(({ slug }) => slug)).toEqual(['integration-published'])
+  })
+
+  it('denies club section creation to a role without permission', async () => {
+    await expect(
+      payload.create({
+        collection: 'club-sections',
+        data: {
+          displayOrder: 3,
+          name: 'Denied Section',
+          slug: 'integration-denied',
+        },
+        overrideAccess: false,
+        user: createAuthenticatedUser(-7, userRole),
+      }),
+    ).rejects.toMatchObject({ status: 403 })
   })
 })

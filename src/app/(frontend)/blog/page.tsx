@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import { findPublishedPosts } from '@/modules/content/public-content'
 
 import { PostList } from '../_components/PostList'
-import { SiteHeader } from '../_components/SiteHeader'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +16,6 @@ export default async function BlogPage() {
 
   return (
     <main className="contentShell">
-      <SiteHeader />
       <header className="listingHeader">
         <p className="eyebrow">WKF</p>
         <h1>Blog</h1>

@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import { findPublishedPosts, findTagBySlug } from '@/modules/content/public-content'
 
 import { PostList } from '../../_components/PostList'
-import { SiteHeader } from '../../_components/SiteHeader'
 
 type TagPageProperties = {
   params: Promise<{ tag: string }>
@@ -36,7 +35,6 @@ export default async function TagPage({ params }: TagPageProperties) {
 
   return (
     <main className="contentShell">
-      <SiteHeader />
       <header className="listingHeader">
         <p className="eyebrow">Tag</p>
         <h1>#{tag.name}</h1>

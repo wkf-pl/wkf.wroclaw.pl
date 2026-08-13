@@ -1,21 +1,8 @@
 import type { SVGProps } from 'react'
 
-export type IconName =
-  | 'arrow'
-  | 'book'
-  | 'calendar'
-  | 'collection'
-  | 'dice'
-  | 'discord'
-  | 'facebook'
-  | 'instagram'
-  | 'location'
-  | 'mail'
-  | 'pawn'
-  | 'review'
-  | 'star'
-  | 'time'
-  | 'users'
+import type { SystemIconName } from '@/modules/navigation/icon-names'
+
+export type IconName = 'arrow' | SystemIconName
 
 type IconProperties = {
   name: IconName

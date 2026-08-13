@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import { findCategoryBySlug, findPublishedPosts } from '@/modules/content/public-content'
 
 import { PostList } from '../../_components/PostList'
-import { SiteHeader } from '../../_components/SiteHeader'
 
 type CategoryPageProperties = {
   params: Promise<{ category: string }>
@@ -36,7 +35,6 @@ export default async function CategoryPage({ params }: CategoryPageProperties) {
 
   return (
     <main className="contentShell">
-      <SiteHeader />
       <header className="listingHeader">
         <p className="eyebrow">Kategoria</p>
         <h1>{category.name}</h1>
