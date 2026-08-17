@@ -1,9 +1,13 @@
-import type { Media, Navigation, Page } from '@/payload-types'
+import type { Category, Media, Navigation, Page, Tag } from '@/payload-types'
+import { buildCustomTarget, isCustomScheme } from './custom-target'
 import { isSystemIconName } from './icon-names'
 
 export type NavigationItem = NonNullable<Navigation['headerItems']>[number]
 
-type LinkTarget = Pick<NavigationItem, 'openInNewTab' | 'page' | 'targetType' | 'url'>
+type LinkTarget = Pick<
+  NavigationItem,
+  'category' | 'customAddress' | 'customScheme' | 'openInNewTab' | 'page' | 'tag' | 'targetType'
+>
 
 export type ResolvedLink = {
   href: string
@@ -17,8 +21,16 @@ export function resolveLink(item: LinkTarget): ResolvedLink | null {
   if (item.targetType === 'page') {
     const page = getPublishedPage(item.page)
     href = page ? `/${page.slug}` : undefined
+  } else if (item.targetType === 'category') {
+    const category = getTaxonomyDocument(item.category)
+    href = category ? `/category/${category.slug}` : undefined
+  } else if (item.targetType === 'tag') {
+    const tag = getTaxonomyDocument(item.tag)
+    href = tag ? `/tag/${tag.slug}` : undefined
   } else {
-    href = item.url?.trim() || undefined
+    href = isCustomScheme(item.customScheme)
+      ? (buildCustomTarget(item.customScheme, item.customAddress) ?? undefined)
+      : undefined
   }
 
   if (!href) {
@@ -26,6 +38,12 @@ export function resolveLink(item: LinkTarget): ResolvedLink | null {
   }
 
   return item.openInNewTab ? { href, rel: 'noopener noreferrer', target: '_blank' } : { href }
+}
+
+function getTaxonomyDocument(
+  value: Category | null | number | Tag | undefined,
+): Category | Tag | null {
+  return value && typeof value === 'object' && value.slug ? value : null
 }
 
 export function resolvePageLink(page: null | number | Page | undefined): ResolvedLink | null {

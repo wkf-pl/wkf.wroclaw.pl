@@ -1,4 +1,4 @@
-targetScope = 'subscription'
+targetScope = 'resourceGroup'
 
 @allowed([
   'staging'
@@ -8,7 +8,7 @@ targetScope = 'subscription'
 param environmentName string
 
 @description('Azure region used by environment resources.')
-param location string = 'westeurope'
+param location string = 'polandcentral'
 
 @description('Short prefix used in Azure resource names.')
 param resourcePrefix string = 'wkf'
@@ -57,22 +57,11 @@ param entraAllowedGroupId string = ''
 @secure()
 param entraClientSecret string = ''
 
-var environmentResourceGroupName = '${resourcePrefix}-${environmentName}'
-var sharedResourceGroupName = '${resourcePrefix}-shared'
+var sharedResourceGroupName = 'rg-${resourcePrefix}-shared'
 var registryName = '${resourcePrefix}${uniqueString(subscription().id)}'
-
-resource environmentResourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
-  name: environmentResourceGroupName
-  location: location
-  tags: {
-    application: 'wkf-online'
-    environment: environmentName
-  }
-}
 
 module environment './modules/environment.bicep' = {
   name: 'environment-${environmentName}'
-  scope: environmentResourceGroup
   params: {
     customDomainCertificateId: customDomainCertificateId
     customDomainName: customDomainName
@@ -106,11 +95,14 @@ module environment './modules/environment.bicep' = {
     smtpSecure: smtpSecure
     smtpSkipVerify: smtpSkipVerify
     smtpUser: smtpUser
-    tags: environmentResourceGroup.tags
+    tags: {
+      application: 'wkf-online'
+      environment: environmentName
+    }
   }
 }
 
 output applicationName string = environment.outputs.applicationName
 output applicationUrl string = environment.outputs.applicationUrl
 output migrationJobName string = environment.outputs.migrationJobName
-output resourceGroupName string = environmentResourceGroupName
+output resourceGroupName string = resourceGroup().name

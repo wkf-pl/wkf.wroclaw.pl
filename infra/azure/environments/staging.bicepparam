@@ -10,9 +10,9 @@ param postgresBackupRetentionDays = 7
 param minimumReplicas = 0
 param maximumReplicas = 2
 
-param smtpHost = readEnvironmentVariable('SMTP_HOST')
-param smtpUser = readEnvironmentVariable('SMTP_USER')
-param smtpPassword = readEnvironmentVariable('SMTP_PASSWORD')
+param smtpHost = '127.0.0.1'
+param smtpUser = ''
+param smtpPassword = ''
 
 param enableEntraAuthentication = true
 param entraTenantId = readEnvironmentVariable('STAGING_ENTRA_TENANT_ID')

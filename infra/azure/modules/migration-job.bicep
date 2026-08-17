@@ -30,6 +30,90 @@ param storageConnectionString string
 
 param tags object
 
+var migrationSecrets = concat([
+  {
+    name: 'database-url'
+    value: databaseUrl
+  }
+  {
+    name: 'payload-secret'
+    value: payloadSecret
+  }
+  {
+    name: 'storage-connection-string'
+    value: storageConnectionString
+  }
+], smtpPassword != '' ? [
+  {
+    name: 'smtp-password'
+    value: smtpPassword
+  }
+] : [])
+
+var migrationEnvironmentVariables = concat([
+  {
+    name: 'AZURE_STORAGE_ACCOUNT_BASE_URL'
+    value: accountBaseUrl
+  }
+  {
+    name: 'AZURE_STORAGE_ALLOW_CONTAINER_CREATE'
+    value: 'false'
+  }
+  {
+    name: 'AZURE_STORAGE_CONNECTION_STRING'
+    secretRef: 'storage-connection-string'
+  }
+  {
+    name: 'AZURE_STORAGE_CONTAINER_NAME'
+    value: containerName
+  }
+  {
+    name: 'DATABASE_URL'
+    secretRef: 'database-url'
+  }
+  {
+    name: 'PAYLOAD_SECRET'
+    secretRef: 'payload-secret'
+  }
+  {
+    name: 'SERVER_URL'
+    value: serverUrl
+  }
+  {
+    name: 'SMTP_FROM_ADDRESS'
+    value: smtpFromAddress
+  }
+  {
+    name: 'SMTP_FROM_NAME'
+    value: smtpFromName
+  }
+  {
+    name: 'SMTP_HOST'
+    value: smtpHost
+  }
+  {
+    name: 'SMTP_PORT'
+    value: string(smtpPort)
+  }
+  {
+    name: 'SMTP_SECURE'
+    value: smtpSecure ? 'true' : 'false'
+  }
+  {
+    name: 'SMTP_SKIP_VERIFY'
+    value: smtpSkipVerify ? 'true' : 'false'
+  }
+  {
+    name: 'SMTP_USER'
+    value: smtpUser
+  }
+], smtpPassword != '' ? [
+  {
+    name: 'SMTP_PASSWORD'
+    secretRef: 'smtp-password'
+  }
+] : [])
+
 resource migrationJob 'Microsoft.App/jobs@2024-03-01' = {
   name: jobName
   location: location
@@ -55,24 +139,7 @@ resource migrationJob 'Microsoft.App/jobs@2024-03-01' = {
       ]
       replicaRetryLimit: 1
       replicaTimeout: 1800
-      secrets: [
-        {
-          name: 'database-url'
-          value: databaseUrl
-        }
-        {
-          name: 'payload-secret'
-          value: payloadSecret
-        }
-        {
-          name: 'storage-connection-string'
-          value: storageConnectionString
-        }
-        {
-          name: 'smtp-password'
-          value: smtpPassword
-        }
-      ]
+      secrets: migrationSecrets
       triggerType: 'Manual'
     }
     template: {
@@ -86,68 +153,7 @@ resource migrationJob 'Microsoft.App/jobs@2024-03-01' = {
           args: [
             'migrate'
           ]
-          env: [
-            {
-              name: 'AZURE_STORAGE_ACCOUNT_BASE_URL'
-              value: accountBaseUrl
-            }
-            {
-              name: 'AZURE_STORAGE_ALLOW_CONTAINER_CREATE'
-              value: 'false'
-            }
-            {
-              name: 'AZURE_STORAGE_CONNECTION_STRING'
-              secretRef: 'storage-connection-string'
-            }
-            {
-              name: 'AZURE_STORAGE_CONTAINER_NAME'
-              value: containerName
-            }
-            {
-              name: 'DATABASE_URL'
-              secretRef: 'database-url'
-            }
-            {
-              name: 'PAYLOAD_SECRET'
-              secretRef: 'payload-secret'
-            }
-            {
-              name: 'SERVER_URL'
-              value: serverUrl
-            }
-            {
-              name: 'SMTP_FROM_ADDRESS'
-              value: smtpFromAddress
-            }
-            {
-              name: 'SMTP_FROM_NAME'
-              value: smtpFromName
-            }
-            {
-              name: 'SMTP_HOST'
-              value: smtpHost
-            }
-            {
-              name: 'SMTP_PASSWORD'
-              secretRef: 'smtp-password'
-            }
-            {
-              name: 'SMTP_PORT'
-              value: string(smtpPort)
-            }
-            {
-              name: 'SMTP_SECURE'
-              value: string(smtpSecure)
-            }
-            {
-              name: 'SMTP_SKIP_VERIFY'
-              value: string(smtpSkipVerify)
-            }
-            {
-              name: 'SMTP_USER'
-              value: smtpUser
-            }
-          ]
+          env: migrationEnvironmentVariables
           resources: {
             cpu: json('0.5')
             memory: '1Gi'

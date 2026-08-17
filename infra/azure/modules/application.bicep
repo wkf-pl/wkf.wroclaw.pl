@@ -55,14 +55,79 @@ var applicationSecrets = concat([
     name: 'storage-connection-string'
     value: storageConnectionString
   }
+], smtpPassword != '' ? [
   {
     name: 'smtp-password'
     value: smtpPassword
   }
-], enableEntraAuthentication ? [
+] : [], enableEntraAuthentication ? [
   {
     name: 'entra-client-secret'
     value: entraClientSecret
+  }
+] : [])
+
+var applicationEnvironmentVariables = concat([
+  {
+    name: 'AZURE_STORAGE_ACCOUNT_BASE_URL'
+    value: accountBaseUrl
+  }
+  {
+    name: 'AZURE_STORAGE_ALLOW_CONTAINER_CREATE'
+    value: 'false'
+  }
+  {
+    name: 'AZURE_STORAGE_CONNECTION_STRING'
+    secretRef: 'storage-connection-string'
+  }
+  {
+    name: 'AZURE_STORAGE_CONTAINER_NAME'
+    value: containerName
+  }
+  {
+    name: 'DATABASE_URL'
+    secretRef: 'database-url'
+  }
+  {
+    name: 'PAYLOAD_SECRET'
+    secretRef: 'payload-secret'
+  }
+  {
+    name: 'SERVER_URL'
+    value: serverUrl
+  }
+  {
+    name: 'SMTP_FROM_ADDRESS'
+    value: smtpFromAddress
+  }
+  {
+    name: 'SMTP_FROM_NAME'
+    value: smtpFromName
+  }
+  {
+    name: 'SMTP_HOST'
+    value: smtpHost
+  }
+  {
+    name: 'SMTP_PORT'
+    value: string(smtpPort)
+  }
+  {
+    name: 'SMTP_SECURE'
+    value: smtpSecure ? 'true' : 'false'
+  }
+  {
+    name: 'SMTP_SKIP_VERIFY'
+    value: smtpSkipVerify ? 'true' : 'false'
+  }
+  {
+    name: 'SMTP_USER'
+    value: smtpUser
+  }
+], smtpPassword != '' ? [
+  {
+    name: 'SMTP_PASSWORD'
+    secretRef: 'smtp-password'
   }
 ] : [])
 
@@ -106,68 +171,7 @@ resource application 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: 'application'
           image: imageReference
-          env: [
-            {
-              name: 'AZURE_STORAGE_ACCOUNT_BASE_URL'
-              value: accountBaseUrl
-            }
-            {
-              name: 'AZURE_STORAGE_ALLOW_CONTAINER_CREATE'
-              value: 'false'
-            }
-            {
-              name: 'AZURE_STORAGE_CONNECTION_STRING'
-              secretRef: 'storage-connection-string'
-            }
-            {
-              name: 'AZURE_STORAGE_CONTAINER_NAME'
-              value: containerName
-            }
-            {
-              name: 'DATABASE_URL'
-              secretRef: 'database-url'
-            }
-            {
-              name: 'PAYLOAD_SECRET'
-              secretRef: 'payload-secret'
-            }
-            {
-              name: 'SERVER_URL'
-              value: serverUrl
-            }
-            {
-              name: 'SMTP_FROM_ADDRESS'
-              value: smtpFromAddress
-            }
-            {
-              name: 'SMTP_FROM_NAME'
-              value: smtpFromName
-            }
-            {
-              name: 'SMTP_HOST'
-              value: smtpHost
-            }
-            {
-              name: 'SMTP_PASSWORD'
-              secretRef: 'smtp-password'
-            }
-            {
-              name: 'SMTP_PORT'
-              value: string(smtpPort)
-            }
-            {
-              name: 'SMTP_SECURE'
-              value: string(smtpSecure)
-            }
-            {
-              name: 'SMTP_SKIP_VERIFY'
-              value: string(smtpSkipVerify)
-            }
-            {
-              name: 'SMTP_USER'
-              value: smtpUser
-            }
-          ]
+          env: applicationEnvironmentVariables
           probes: [
             {
               type: 'Liveness'

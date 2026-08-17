@@ -23,6 +23,10 @@ export function UserMenu() {
   const userName = user?.displayName?.trim() || user?.email || 'Konto'
   const accountURL = formatAdminURL({ adminRoute, path: accountRoute })
   const loginURL = formatAdminURL({ adminRoute, path: loginRoute })
+  const profileURL = formatAdminURL({ adminRoute, path: '/profile' })
+  const hasMemberRole = Boolean(
+    user?.roles?.some((role) => typeof role === 'object' && role !== null && role.key === 'member'),
+  )
 
   async function handleLogOut() {
     if (isLoggingOut) {
@@ -47,6 +51,7 @@ export function UserMenu() {
     >
       <PopupList.ButtonGroup>
         <PopupList.Button href={accountURL}>Konto</PopupList.Button>
+        {hasMemberRole ? <PopupList.Button href={profileURL}>Wizytówka</PopupList.Button> : null}
         <PopupList.Divider />
         <PopupList.Button disabled={isLoggingOut} onClick={() => void handleLogOut()}>
           {isLoggingOut ? 'Wylogowywanie…' : 'Wyloguj'}

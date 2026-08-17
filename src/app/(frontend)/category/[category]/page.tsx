@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { findCategoryBySlug, findPublishedPosts } from '@/modules/content/public-content'
+import { findCategoryBySlug } from '@/modules/content/public-content'
 
-import { PostList } from '../../_components/PostList'
+import { TaxonomyContentPage } from '../../_components/TaxonomyContentPage'
 
 type CategoryPageProperties = {
   params: Promise<{ category: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 export const dynamic = 'force-dynamic'
@@ -17,30 +18,24 @@ export async function generateMetadata({ params }: CategoryPageProperties): Prom
 
   return category
     ? {
-        description: category.description || `Wpisy w kategorii ${category.name}.`,
+        description: category.description || `Treści w kategorii ${category.name}.`,
         title: category.name,
       }
     : {}
 }
 
-export default async function CategoryPage({ params }: CategoryPageProperties) {
+export default async function CategoryPage({ params, searchParams }: CategoryPageProperties) {
   const { category: slug } = await params
-  const category = await findCategoryBySlug(slug)
+  const [category, resolvedSearchParams] = await Promise.all([
+    findCategoryBySlug(slug),
+    searchParams,
+  ])
 
   if (!category) {
     notFound()
   }
 
-  const posts = await findPublishedPosts({ field: 'categories', id: category.id })
-
   return (
-    <main className="contentShell">
-      <header className="listingHeader">
-        <p className="eyebrow">Kategoria</p>
-        <h1>{category.name}</h1>
-        {category.description ? <p>{category.description}</p> : null}
-      </header>
-      <PostList posts={posts} />
-    </main>
+    <TaxonomyContentPage kind="category" searchParams={resolvedSearchParams} taxonomy={category} />
   )
 }

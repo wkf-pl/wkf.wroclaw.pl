@@ -4,7 +4,14 @@ import path from 'node:path'
 import { getPayload } from 'payload'
 
 import config from '../src/payload.config'
-import type { ClubSection, Media, Navigation, Page, Post, User } from '../src/payload-types'
+import type {
+  ClubSection,
+  Media,
+  Navigation,
+  Page,
+  RichTextBlock,
+  User,
+} from '../src/payload-types'
 
 const payload = await getPayload({ config })
 
@@ -57,7 +64,7 @@ const seedPosts: SeedPost[] = [
   },
 ]
 
-function createLexicalDocument(paragraphs: string[]): Post['content'] {
+function createLexicalDocument(paragraphs: string[]): RichTextBlock['content'] {
   return {
     root: {
       children: paragraphs.map((text) => ({
@@ -186,7 +193,7 @@ async function ensurePost(seedPost: SeedPost, author: User, media: Media): Promi
     data: {
       _status: 'published',
       author: author.id,
-      content: createLexicalDocument(seedPost.paragraphs),
+      layout: [{ blockType: 'richText', content: createLexicalDocument(seedPost.paragraphs) }],
       excerpt: seedPost.excerpt,
       heroImage: media.id,
       publishedAt: seedPost.publishedAt,
@@ -216,13 +223,77 @@ async function ensureAboutPage(author: User): Promise<Page> {
     data: {
       _status: 'published',
       author: author.id,
-      content: createLexicalDocument([
-        'Wrocławski Klub Fantastyki to społeczność osób, które łączy wyobraźnia oraz zamiłowanie do gier fabularnych, literatury i planszówek.',
-        'Spotykamy się, żeby grać, rozmawiać o fantastyce, dzielić się wiedzą i wspólnie tworzyć nowe przygody.',
-      ]) as Page['content'],
+      layout: [
+        {
+          blockType: 'richText',
+          content: createLexicalDocument([
+            'Wrocławski Klub Fantastyki to społeczność osób, które łączy wyobraźnia oraz zamiłowanie do gier fabularnych, literatury i planszówek.',
+            'Spotykamy się, żeby grać, rozmawiać o fantastyce, dzielić się wiedzą i wspólnie tworzyć nowe przygody.',
+          ]),
+        },
+      ],
       publishedAt: '2026-05-01T10:00:00.000Z',
       slug: 'o-nas',
       title: 'O nas',
+    },
+    overrideAccess: true,
+  })
+}
+
+async function ensureBlogPage(author: User): Promise<Page> {
+  const existingPages = await payload.find({
+    collection: 'pages',
+    depth: 0,
+    limit: 1,
+    overrideAccess: true,
+    pagination: false,
+    where: {
+      or: [{ systemKey: { equals: 'blog' } }, { slug: { equals: 'blog' } }],
+    },
+  })
+  const existingPage = existingPages.docs[0]
+
+  if (existingPage) {
+    if (existingPage.systemKey === 'blog') {
+      return existingPage
+    }
+
+    return payload.update({
+      collection: 'pages',
+      context: { allowSystemPageMutation: true },
+      id: existingPage.id,
+      data: { systemKey: 'blog' },
+      overrideAccess: true,
+    })
+  }
+
+  return payload.create({
+    collection: 'pages',
+    context: { allowSystemPageMutation: true },
+    data: {
+      _status: 'published',
+      author: author.id,
+      layout: [
+        {
+          blockType: 'richText',
+          content: createLexicalDocument([
+            'Artykuły, aktualności i relacje z życia Wrocławskiego Klubu Fantastyki.',
+          ]),
+        },
+        {
+          blockType: 'listing',
+          pageSize: 12,
+          pagination: true,
+          parentFilter: 'none',
+          sort: 'newest',
+          sources: ['posts'],
+          view: 'cards',
+        },
+      ],
+      publishedAt: new Date().toISOString(),
+      slug: 'blog',
+      systemKey: 'blog',
+      title: 'Blog',
     },
     overrideAccess: true,
   })
@@ -267,7 +338,7 @@ async function ensureClubSection({
   })
 }
 
-async function ensureNavigation(aboutPage: Page): Promise<void> {
+async function ensureNavigation(aboutPage: Page, blogPage: Page): Promise<void> {
   const navigation = await payload.findGlobal({
     slug: 'navigation',
     depth: 0,
@@ -282,8 +353,8 @@ async function ensureNavigation(aboutPage: Page): Promise<void> {
     {
       appearance: 'link',
       label: 'Aktualności',
-      targetType: 'custom',
-      url: '/blog',
+      page: blogPage.id,
+      targetType: 'page',
     },
     {
       appearance: 'link',
@@ -313,7 +384,8 @@ for (const seedPost of seedPosts) {
 }
 
 const aboutPage = await ensureAboutPage(author)
-await ensureNavigation(aboutPage)
+const blogPage = await ensureBlogPage(author)
+await ensureNavigation(aboutPage, blogPage)
 await ensureClubSection({
   backgroundImage: rpgBackgroundImage,
   displayOrder: 10,
@@ -334,6 +406,4 @@ await payload.updateGlobal({
   },
 })
 
-payload.logger.info(
-  'Seed completed: site settings, navigation, about page, posts and club sections',
-)
+payload.logger.info('Seed completed: site settings, navigation, pages, posts and club sections')

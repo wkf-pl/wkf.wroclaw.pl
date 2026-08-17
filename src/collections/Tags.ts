@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { populateSlugFromName } from '@/modules/content/slug'
+import { createRelatedContentJoinFields } from '@/modules/content/taxonomy-fields'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 
 const createTags = createRolePermissionAccess({ operation: 'create', resource: 'tags' })
@@ -38,6 +39,7 @@ export const Tags: CollectionConfig = {
       type: 'text',
       admin: {
         description: 'Adres jest tworzony automatycznie z nazwy.',
+        position: 'sidebar',
       },
       hooks: {
         beforeValidate: [populateSlugFromName],
@@ -52,6 +54,7 @@ export const Tags: CollectionConfig = {
       type: 'textarea',
       label: 'Opis',
     },
+    ...createRelatedContentJoinFields('tags'),
   ],
   labels: {
     plural: 'Tagi',

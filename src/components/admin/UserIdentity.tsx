@@ -98,9 +98,14 @@ export function UserRelationshipField(properties: RelationshipFieldClientProps) 
     id?: number | string
   } | null>(null)
   const { user: authenticatedUser } = useAuth()
-  const { value: selectedUserID } = useField<null | number | string>({
+  const { setValue, value: selectedUserID } = useField<null | number | string>({
     potentiallyStalePath: properties.path,
   })
+  useEffect(() => {
+    if (selectedUserID === null && authenticatedUser?.id !== undefined) {
+      setValue(authenticatedUser.id)
+    }
+  }, [authenticatedUser?.id, selectedUserID, setValue])
   const {
     config: {
       routes: { api: apiRoute },

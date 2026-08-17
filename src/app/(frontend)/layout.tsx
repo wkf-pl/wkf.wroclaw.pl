@@ -2,11 +2,14 @@ import type { Metadata } from 'next'
 import { Roboto_Slab } from 'next/font/google'
 import type { ReactNode } from 'react'
 
-import { getPublicFooter, getPublicNavigation } from '@/modules/content/public-content'
+import { getPublicNavigation, getPublicSiteSettings } from '@/modules/content/public-content'
+import { getCurrentUser } from '@/modules/auth/current-user'
 
 import { SiteFooter } from './_components/SiteFooter'
 import { SiteHeader } from './_components/SiteHeader'
 
+import 'yet-another-react-lightbox/styles.css'
+import 'yet-another-react-lightbox/plugins/captions.css'
 import './styles.css'
 
 const robotoSlab = Roboto_Slab({
@@ -17,6 +20,13 @@ const robotoSlab = Roboto_Slab({
 
 export const metadata: Metadata = {
   description: 'Serwis Wrocławskiego Klubu Fantastyki',
+  icons: {
+    apple: '/assets/apple-touch-icon.png',
+    icon: [
+      { sizes: '16x16', type: 'image/png', url: '/assets/favicon-16.png' },
+      { sizes: '32x32', type: 'image/png', url: '/assets/favicon-32.png' },
+    ],
+  },
   title: {
     default: 'Wrocławski Klub Fantastyki',
     template: '%s | Wrocławski Klub Fantastyki',
@@ -28,14 +38,18 @@ type FrontendLayoutProperties = {
 }
 
 export default async function FrontendLayout({ children }: FrontendLayoutProperties) {
-  const [navigation, footer] = await Promise.all([getPublicNavigation(), getPublicFooter()])
+  const [navigation, siteSettings, user] = await Promise.all([
+    getPublicNavigation(),
+    getPublicSiteSettings(),
+    getCurrentUser(),
+  ])
 
   return (
     <html lang="pl">
       <body className={robotoSlab.variable}>
-        <SiteHeader navigation={navigation} />
+        <SiteHeader displayName={user?.displayName} navigation={navigation} />
         {children}
-        <SiteFooter footer={footer} navigation={navigation} />
+        <SiteFooter navigation={navigation} siteSettings={siteSettings} />
       </body>
     </html>
   )

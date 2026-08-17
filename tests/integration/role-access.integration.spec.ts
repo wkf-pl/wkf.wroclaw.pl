@@ -3,6 +3,7 @@ import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
 import type { Role, User } from '@/payload-types'
+import { websiteRequestContext } from '@/modules/membership/role-permissions'
 
 let payload: Payload
 let administratorRole: Role
@@ -57,7 +58,7 @@ afterAll(async () => {
 })
 
 describe('role access integration', () => {
-  it('allows only the system administrator to read roles', async () => {
+  it('allows administrators to read all roles and other users to read assigned roles', async () => {
     await expect(
       payload.find({
         collection: 'roles',
@@ -66,19 +67,21 @@ describe('role access integration', () => {
       }),
     ).resolves.toMatchObject({ totalDocs: 7 })
 
-    await expect(
-      payload.find({
-        collection: 'roles',
-        overrideAccess: false,
-        user: createAuthenticatedUser(-2, editorRole),
-      }),
-    ).rejects.toMatchObject({ status: 403 })
+    const editorRoles = await payload.find({
+      collection: 'roles',
+      overrideAccess: false,
+      user: createAuthenticatedUser(-2, editorRole),
+    })
+
+    expect(editorRoles.docs).toHaveLength(1)
+    expect(editorRoles.docs[0]).toMatchObject({ id: editorRole.id, name: editorRole.name })
   })
 
-  it('keeps public posts readable while hiding them from a signed-in role without read', async () => {
+  it('keeps anonymous website access after signing in without CMS read', async () => {
     await expect(
       payload.find({
         collection: 'posts',
+        context: websiteRequestContext,
         overrideAccess: false,
         user: null,
       }),
@@ -87,10 +90,11 @@ describe('role access integration', () => {
     await expect(
       payload.find({
         collection: 'posts',
+        context: websiteRequestContext,
         overrideAccess: false,
         user: createAuthenticatedUser(-3, userRole),
       }),
-    ).rejects.toMatchObject({ status: 403 })
+    ).resolves.toHaveProperty('docs')
   })
 
   it('gives the migrated editor unrestricted read access to CMS content', async () => {
@@ -149,6 +153,7 @@ describe('role access integration', () => {
 
     const result = await payload.find({
       collection: 'club-sections',
+      context: websiteRequestContext,
       overrideAccess: false,
       user: null,
       where: { slug: { in: ['integration-published', 'integration-draft'] } },

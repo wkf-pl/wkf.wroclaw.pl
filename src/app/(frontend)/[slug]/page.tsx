@@ -4,10 +4,11 @@ import { notFound } from 'next/navigation'
 import { createContentMetadata } from '@/modules/content/content-metadata'
 import { findPublishedPageBySlug } from '@/modules/content/public-content'
 
-import { CmsDocument } from '../_components/CmsDocument'
+import { CmsPageDocument } from '../_components/CmsPageDocument'
 
 type PageProperties = {
   params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 export const dynamic = 'force-dynamic'
@@ -19,13 +20,14 @@ export async function generateMetadata({ params }: PageProperties): Promise<Meta
   return page ? createContentMetadata(page) : {}
 }
 
-export default async function StaticPage({ params }: PageProperties) {
+export default async function StaticPage({ params, searchParams }: PageProperties) {
   const { slug } = await params
+  const resolvedSearchParams = await searchParams
   const page = await findPublishedPageBySlug(slug)
 
   if (!page) {
     notFound()
   }
 
-  return <CmsDocument document={page} />
+  return <CmsPageDocument document={page} pathname={`/${slug}`} searchParams={resolvedSearchParams} />
 }

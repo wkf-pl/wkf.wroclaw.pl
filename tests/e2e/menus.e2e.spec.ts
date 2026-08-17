@@ -30,7 +30,8 @@ test.beforeAll(async () => {
           label: 'Sesje',
           systemIcon: 'dice',
           targetType: 'custom',
-          url: '/blog',
+          customAddress: 'blog',
+          customScheme: 'path',
         },
       ],
       name: 'E2E RPG',
@@ -54,30 +55,58 @@ test.beforeAll(async () => {
     data: {
       footerColumns: [
         {
-          items: [{ label: 'Aktualności', targetType: 'custom', url: '/blog' }],
+          items: [
+            {
+              customAddress: 'blog',
+              customScheme: 'path',
+              label: 'Aktualności',
+              targetType: 'custom',
+            },
+          ],
           title: 'Nawigacja',
         },
       ],
       headerItems: [
-        { appearance: 'link', label: 'Aktualności', targetType: 'custom', url: '/blog' },
+        {
+          appearance: 'link',
+          customAddress: 'blog',
+          customScheme: 'path',
+          label: 'Aktualności',
+          targetType: 'custom',
+        },
         {
           appearance: 'icon',
           iconSource: 'system',
           label: 'E-mail',
           systemIcon: 'mail',
           targetType: 'custom',
-          url: 'mailto:kontakt@example.invalid',
+          customAddress: 'kontakt@example.invalid',
+          customScheme: 'mailto',
         },
-        { appearance: 'button', label: 'O nas', targetType: 'custom', url: '/o-nas' },
+        {
+          appearance: 'button',
+          customAddress: 'o-nas',
+          customScheme: 'path',
+          label: 'O nas',
+          targetType: 'custom',
+        },
       ],
-      heroItems: [{ label: 'Gry RPG', targetType: 'custom', url: '/blog' }],
+      heroItems: [
+        {
+          customAddress: 'blog',
+          customScheme: 'path',
+          label: 'Gry RPG',
+          targetType: 'custom',
+        },
+      ],
       socialItems: [
         {
           iconSource: 'system',
           label: 'Slack',
-          systemIcon: 'slack',
+          systemIcon: 'facebook',
           targetType: 'custom',
-          url: 'https://slack.example.invalid',
+          customAddress: 'slack.example.invalid',
+          customScheme: 'https',
         },
       ],
     },

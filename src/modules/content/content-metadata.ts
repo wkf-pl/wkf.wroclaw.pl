@@ -9,7 +9,8 @@ function getMedia(value: Media | number | null | undefined): Media | null {
 export function createContentMetadata(document: Page | Post): Metadata {
   const title = document.seo?.title || document.title
   const description =
-    document.seo?.description || ('excerpt' in document ? document.excerpt : undefined)
+    document.seo?.description ||
+    ('excerpt' in document ? document.excerpt : document.listingExcerpt || undefined)
   const socialImage = getMedia(document.seo?.image) ?? getMedia(document.heroImage)
 
   return {

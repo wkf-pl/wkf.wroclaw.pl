@@ -14,7 +14,6 @@ const deleteClubSections = createRolePermissionAccess({
   resource: 'club-sections',
 })
 const readClubSections = createRolePermissionAccess({
-  anonymousAccess: { _status: { equals: 'published' } },
   operation: 'read',
   resource: 'club-sections',
 })
@@ -33,7 +32,7 @@ export const ClubSections: CollectionConfig = {
   },
   admin: {
     defaultColumns: ['name', 'displayOrder', '_status', 'updatedAt'],
-    group: 'Treści',
+    group: 'Klubowe',
     listSearchableFields: ['name', 'slug'],
     useAsTitle: 'name',
   },
@@ -83,6 +82,11 @@ export const ClubSections: CollectionConfig = {
             {
               name: 'menuItems',
               type: 'array',
+              admin: {
+                components: {
+                  RowLabel: '/components/admin/DynamicRowLabel#FooterColumnItemRowLabel',
+                },
+              },
               fields: [...createLinkFields(), ...createIconFields({ required: true })],
               label: 'Elementy menu',
             },
@@ -119,8 +123,8 @@ export const ClubSections: CollectionConfig = {
     beforeChange: [setPublishedAt],
   },
   labels: {
-    plural: 'Sekcje klubowe',
-    singular: 'Sekcja klubowa',
+    plural: 'Sekcje',
+    singular: 'Sekcja',
   },
   versions: {
     drafts: true,

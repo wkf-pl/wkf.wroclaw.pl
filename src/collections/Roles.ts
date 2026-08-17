@@ -1,4 +1,4 @@
-import { APIError, type CollectionConfig } from 'payload'
+import { APIError, type Access, type CollectionConfig } from 'payload'
 
 import { adminOnly } from '@/access/adminOnly'
 import {
@@ -9,8 +9,28 @@ import {
 } from '@/modules/membership/permission-resources'
 import {
   administratorRoleKey,
+  clientUserHasRole,
+  isAdministrator,
   validateRolePermissions,
 } from '@/modules/membership/role-permissions'
+
+const readAssignedRoles: Access = async ({ req }) => {
+  if (await isAdministrator(req)) {
+    return true
+  }
+
+  const assignedRoleIDs = Array.isArray(req.user?.roles)
+    ? req.user.roles.flatMap((role) => {
+        if (typeof role === 'number' || typeof role === 'string') {
+          return [role]
+        }
+
+        return role && typeof role === 'object' && 'id' in role ? [role.id] : []
+      })
+    : []
+
+  return assignedRoleIDs.length > 0 ? { id: { in: assignedRoleIDs } } : false
+}
 
 function createPermissionScopeFields(prefix: 'read' | 'update' | 'delete') {
   const capitalizedLabel = {
@@ -27,6 +47,9 @@ function createPermissionScopeFields(prefix: 'read' | 'update' | 'delete') {
         name: `${prefix}Allowed`,
         type: 'checkbox' as const,
         admin: {
+          condition: (_data: unknown, siblingData: Record<string, unknown>) =>
+            Boolean(siblingData.resource) &&
+            (prefix === 'read' || Boolean(siblingData.readAllowed)),
           width: '34%',
         },
         defaultValue: false,
@@ -37,9 +60,9 @@ function createPermissionScopeFields(prefix: 'read' | 'update' | 'delete') {
         type: 'checkbox' as const,
         admin: {
           condition: (_data: unknown, siblingData: Record<string, unknown>) =>
+            Boolean(siblingData.readAllowed) &&
             Boolean(siblingData[`${prefix}Allowed`]) &&
             resourceSupportsOwnership(siblingData.resource),
-          description: 'Ogranicz operację do dokumentów należących do użytkownika.',
           width: '33%',
         },
         defaultValue: false,
@@ -50,9 +73,9 @@ function createPermissionScopeFields(prefix: 'read' | 'update' | 'delete') {
         type: 'checkbox' as const,
         admin: {
           condition: (_data: unknown, siblingData: Record<string, unknown>) =>
+            Boolean(siblingData.readAllowed) &&
             Boolean(siblingData[`${prefix}Allowed`]) &&
             resourceSupportsPublishedStatus(siblingData.resource),
-          description: 'Ogranicz operację do dokumentów już opublikowanych.',
           width: '33%',
         },
         defaultValue: false,
@@ -80,12 +103,13 @@ export const Roles: CollectionConfig = {
   access: {
     create: adminOnly,
     delete: adminOnly,
-    read: adminOnly,
+    read: readAssignedRoles,
     update: adminOnly,
   },
   admin: {
     defaultColumns: ['name', 'description', 'updatedAt'],
     group: 'Administracja',
+    hidden: ({ user }) => !clientUserHasRole(user, administratorRoleKey),
     useAsTitle: 'name',
   },
   fields: [
@@ -144,30 +168,43 @@ export const Roles: CollectionConfig = {
           'Uprawnienia wielu ról sumują się. Dwa ograniczenia zaznaczone dla jednej operacji obowiązują jednocześnie.',
         initCollapsed: true,
       },
+      labels: {
+        plural: 'Uprawnienia',
+        singular: 'uprawnienie',
+      },
+      maxRows: permissionResourceOptions.length,
       fields: [
         {
           name: 'resource',
           type: 'select',
+          admin: {
+            components: {
+              Field: '/components/admin/PermissionResourceField#PermissionResourceField',
+            },
+            isClearable: false,
+          },
           label: 'Zasób',
           options: permissionResourceOptions,
           required: true,
         },
+        createPermissionScopeFields('read'),
         {
           name: 'canCreate',
           type: 'checkbox',
           admin: {
             condition: (_data, siblingData) =>
+              Boolean(siblingData.readAllowed) &&
               resourceSupportsCreateAndDelete(siblingData.resource),
           },
           defaultValue: false,
           label: 'Tworzenie',
         },
-        createPermissionScopeFields('read'),
         createPermissionScopeFields('update'),
         {
           type: 'row',
           admin: {
             condition: (_data: unknown, siblingData: Record<string, unknown>) =>
+              Boolean(siblingData.readAllowed) &&
               resourceSupportsCreateAndDelete(siblingData.resource),
           },
           fields: createPermissionScopeFields('delete').fields,
@@ -186,6 +223,16 @@ export const Roles: CollectionConfig = {
         }
 
         for (const permission of data.permissions ?? []) {
+          if (!permission.readAllowed) {
+            permission.canCreate = false
+            permission.updateAllowed = false
+            permission.updateOwn = false
+            permission.updatePublished = false
+            permission.deleteAllowed = false
+            permission.deleteOwn = false
+            permission.deletePublished = false
+          }
+
           if (!resourceSupportsOwnership(permission.resource)) {
             permission.readOwn = false
             permission.updateOwn = false

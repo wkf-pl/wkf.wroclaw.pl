@@ -67,29 +67,46 @@ export interface Config {
   };
   blocks: {};
   collections: {
-    users: User;
-    roles: Role;
-    media: Media;
     pages: Page;
     posts: Post;
-    'club-sections': ClubSection;
     categories: Category;
     tags: Tag;
+    media: Media;
+    'member-profile-images': MemberProfileImage;
+    'member-profiles': MemberProfile;
+    'document-files': DocumentFile;
+    documents: Document;
+    'club-sections': ClubSection;
+    users: User;
+    roles: Role;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    categories: {
+      relatedPages: 'pages';
+      relatedPosts: 'posts';
+    };
+    tags: {
+      relatedPages: 'pages';
+      relatedPosts: 'posts';
+    };
+  };
   collectionsSelect: {
-    users: UsersSelect<false> | UsersSelect<true>;
-    roles: RolesSelect<false> | RolesSelect<true>;
-    media: MediaSelect<false> | MediaSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
-    'club-sections': ClubSectionsSelect<false> | ClubSectionsSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
+    'member-profile-images': MemberProfileImagesSelect<false> | MemberProfileImagesSelect<true>;
+    'member-profiles': MemberProfilesSelect<false> | MemberProfilesSelect<true>;
+    'document-files': DocumentFilesSelect<false> | DocumentFilesSelect<true>;
+    documents: DocumentsSelect<false> | DocumentsSelect<true>;
+    'club-sections': ClubSectionsSelect<false> | ClubSectionsSelect<true>;
+    users: UsersSelect<false> | UsersSelect<true>;
+    roles: RolesSelect<false> | RolesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -102,12 +119,12 @@ export interface Config {
   globals: {
     'site-settings': SiteSetting;
     navigation: Navigation;
-    footer: Footer;
+    'website-permissions': WebsitePermission;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     navigation: NavigationSelect<false> | NavigationSelect<true>;
-    footer: FooterSelect<false> | FooterSelect<true>;
+    'website-permissions': WebsitePermissionsSelect<false> | WebsitePermissionsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -136,6 +153,162 @@ export interface UserAuthOperations {
     email: string;
     password: string;
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages".
+ */
+export interface Page {
+  id: number;
+  title: string;
+  parent?: (number | null) | Page;
+  categories?: (number | Category)[] | null;
+  tags?: (number | Tag)[] | null;
+  heroImage?: (number | null) | Media;
+  /**
+   * Opcjonalny opis karty. Bez niego użyty zostanie początek pierwszego bloku treści.
+   */
+  listingExcerpt?: string | null;
+  layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
+  seo?: {
+    /**
+     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
+     */
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
+     */
+    image?: (number | null) | Media;
+  };
+  /**
+   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
+   */
+  slug: string;
+  author: number | User;
+  /**
+   * Ustawiana automatycznie przy pierwszej publikacji.
+   */
+  publishedAt?: string | null;
+  systemKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: number;
+  name: string;
+  /**
+   * Adres jest tworzony automatycznie z nazwy.
+   */
+  slug: string;
+  description?: string | null;
+  relatedPages?: {
+    docs?: (number | Page)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  relatedPosts?: {
+    docs?: (number | Post)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts".
+ */
+export interface Post {
+  id: number;
+  title: string;
+  /**
+   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
+   */
+  slug: string;
+  categories?: (number | Category)[] | null;
+  tags?: (number | Tag)[] | null;
+  heroImage?: (number | null) | Media;
+  /**
+   * Krótkie wprowadzenie wyświetlane na listach wpisów.
+   */
+  excerpt: string;
+  layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
+  author: number | User;
+  /**
+   * Ustawiana automatycznie przy pierwszej publikacji.
+   */
+  publishedAt?: string | null;
+  seo?: {
+    /**
+     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
+     */
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
+     */
+    image?: (number | null) | Media;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags".
+ */
+export interface Tag {
+  id: number;
+  name: string;
+  /**
+   * Adres jest tworzony automatycznie z nazwy.
+   */
+  slug: string;
+  description?: string | null;
+  relatedPages?: {
+    docs?: (number | Page)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  relatedPosts?: {
+    docs?: (number | Post)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  /**
+   * Krótki opis obrazu dla czytników ekranu i sytuacji, gdy plik nie może się wyświetlić.
+   */
+  alt: string;
+  description?: string | null;
+  categories?: (number | Category)[] | null;
+  tags?: (number | Tag)[] | null;
+  uploadedBy?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -182,41 +355,33 @@ export interface Role {
         resource:
           | 'users'
           | 'media'
+          | 'member-profiles'
+          | 'member-profile-images'
           | 'pages'
           | 'posts'
+          | 'documents-resolution'
+          | 'documents-statute'
+          | 'documents-regulations'
+          | 'documents-minutes'
+          | 'documents-report'
+          | 'documents-agreement'
+          | 'documents-license'
+          | 'documents-other'
+          | 'document-files'
           | 'club-sections'
           | 'categories'
           | 'tags'
           | 'navigation'
-          | 'footer'
           | 'site-settings';
-        canCreate?: boolean | null;
         readAllowed?: boolean | null;
-        /**
-         * Ogranicz operację do dokumentów należących do użytkownika.
-         */
         readOwn?: boolean | null;
-        /**
-         * Ogranicz operację do dokumentów już opublikowanych.
-         */
         readPublished?: boolean | null;
+        canCreate?: boolean | null;
         updateAllowed?: boolean | null;
-        /**
-         * Ogranicz operację do dokumentów należących do użytkownika.
-         */
         updateOwn?: boolean | null;
-        /**
-         * Ogranicz operację do dokumentów już opublikowanych.
-         */
         updatePublished?: boolean | null;
         deleteAllowed?: boolean | null;
-        /**
-         * Ogranicz operację do dokumentów należących do użytkownika.
-         */
         deleteOwn?: boolean | null;
-        /**
-         * Ogranicz operację do dokumentów już opublikowanych.
-         */
         deletePublished?: boolean | null;
         id?: string | null;
       }[]
@@ -226,15 +391,257 @@ export interface Role {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
+ * via the `definition` "RichTextBlock".
  */
-export interface Media {
+export interface RichTextBlock {
+  content: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'richText';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ListingBlock".
+ */
+export interface ListingBlock {
+  heading?: string | null;
+  sources: ('pages' | 'posts')[];
+  parentPage?: (number | null) | Page;
+  category?: (number | null) | Category;
+  tag?: (number | null) | Tag;
+  sort: 'newest' | 'oldest' | 'titleAscending' | 'titleDescending';
+  view: 'cards' | 'compact' | 'grid';
+  pageSize: number;
+  pagination?: boolean | null;
+  parentFilter: 'none' | 'current' | 'specific';
+  emptyMessage?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'listing';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MediaGalleryBlock".
+ */
+export interface MediaGalleryBlock {
+  heading?: string | null;
+  selectionMode: 'manual' | 'filters';
+  items?:
+    | {
+        media: number | Media;
+        id?: string | null;
+      }[]
+    | null;
+  category?: (number | null) | Category;
+  tag?: (number | null) | Tag;
+  sort?: ('newest' | 'oldest' | 'nameAscending' | 'nameDescending') | null;
+  view: 'cards' | 'list' | 'grid';
+  pageSize: number;
+  pagination?: boolean | null;
+  emptyMessage?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'mediaGallery';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "AttachmentsBlock".
+ */
+export interface AttachmentsBlock {
+  heading?: string | null;
+  selectionMode: 'manual' | 'filters';
+  items?:
+    | {
+        media: number | Media;
+        id?: string | null;
+      }[]
+    | null;
+  category?: (number | null) | Category;
+  tag?: (number | null) | Tag;
+  sort?: ('newest' | 'oldest' | 'nameAscending' | 'nameDescending') | null;
+  view: 'cards' | 'list' | 'grid';
+  pageSize: number;
+  pagination?: boolean | null;
+  emptyMessage?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'attachments';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MemberProfilesBlock".
+ */
+export interface MemberProfilesBlock {
+  heading?: string | null;
+  entries: {
+    profile: number | MemberProfile;
+    /**
+     * Opcjonalna funkcja w kontekście tej strony, np. „Prezes Zarządu”.
+     */
+    contextLabel?: string | null;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'memberProfiles';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "member-profiles".
+ */
+export interface MemberProfile {
+  id: number;
+  owner: number | User;
+  /**
+   * Imię i nazwisko, ksywa albo obie formy — dokładnie tak, jak mają być widoczne publicznie.
+   */
+  publicName: string;
+  about?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * JPEG, PNG, WebP lub AVIF, maksymalnie 5 MiB. Nowy plik zastępuje poprzedni.
+   */
+  photo?: (number | null) | MemberProfileImage;
+  interests?: string | null;
+  /**
+   * Pole opcjonalne — wizytówka nie musi dotyczyć grania.
+   */
+  games?:
+    | {
+        title: string;
+        plays?: boolean | null;
+        runs?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  clubFunction?: string | null;
+  clubActivities?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  contactTopics?: string | null;
+  /**
+   * Podane adresy będą dostępne publicznie bez logowania.
+   */
+  contactChannels?:
+    | {
+        type:
+          | 'email'
+          | 'facebook'
+          | 'messenger'
+          | 'discord'
+          | 'instagram'
+          | 'bluesky'
+          | 'mastodon'
+          | 'linkedin'
+          | 'youtube'
+          | 'twitch'
+          | 'website'
+          | 'other';
+        /**
+         * Dla e-maila podaj adres. Dla pozostałych kanałów podaj pełny link HTTPS.
+         */
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  slug: string;
+  moderatorHidden?: boolean | null;
+  moderationReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "member-profile-images".
+ */
+export interface MemberProfileImage {
+  id: number;
+  owner: number | User;
+  isPubliclyUsed?: boolean | null;
+  prefix?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    profile?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "document-files".
+ */
+export interface DocumentFile {
   id: number;
   /**
-   * Krótki opis obrazu dla czytników ekranu i sytuacji, gdy plik nie może się wyświetlić.
+   * Czytelna nazwa wyświetlana przy odnośniku do pliku.
    */
-  alt: string;
+  label: string;
+  document?: (number | null) | Document;
   uploadedBy?: (number | null) | User;
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -249,17 +656,23 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "pages".
+ * via the `definition` "documents".
  */
-export interface Page {
+export interface Document {
   id: number;
   title: string;
   /**
    * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
    */
   slug: string;
-  heroImage?: (number | null) | Media;
-  content: {
+  documentType: 'resolution' | 'statute' | 'regulations' | 'minutes' | 'report' | 'agreement' | 'license' | 'other';
+  /**
+   * Na przykład 3/2026. Pole jest wymagane dla uchwał.
+   */
+  documentNumber?: string | null;
+  documentDate: string;
+  summary: string;
+  content?: {
     root: {
       type: string;
       children: {
@@ -273,111 +686,14 @@ export interface Page {
       version: number;
     };
     [k: string]: unknown;
-  };
-  attachments?: (number | Media)[] | null;
+  } | null;
+  primaryFile: number | DocumentFile;
+  attachments?: (number | DocumentFile)[] | null;
   author: number | User;
-  /**
-   * Ustawiana automatycznie przy pierwszej publikacji.
-   */
   publishedAt?: string | null;
-  seo?: {
-    /**
-     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
-     */
-    title?: string | null;
-    description?: string | null;
-    /**
-     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
-     */
-    image?: (number | null) | Media;
-  };
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "posts".
- */
-export interface Post {
-  id: number;
-  title: string;
-  /**
-   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
-   */
-  slug: string;
-  /**
-   * Krótkie wprowadzenie wyświetlane na listach wpisów.
-   */
-  excerpt: string;
-  heroImage?: (number | null) | Media;
-  content: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  attachments?: (number | Media)[] | null;
-  categories?: (number | Category)[] | null;
-  tags?: (number | Tag)[] | null;
-  author: number | User;
-  /**
-   * Ustawiana automatycznie przy pierwszej publikacji.
-   */
-  publishedAt?: string | null;
-  seo?: {
-    /**
-     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
-     */
-    title?: string | null;
-    description?: string | null;
-    /**
-     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
-     */
-    image?: (number | null) | Media;
-  };
-  updatedAt: string;
-  createdAt: string;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "categories".
- */
-export interface Category {
-  id: number;
-  name: string;
-  /**
-   * Adres jest tworzony automatycznie z nazwy.
-   */
-  slug: string;
-  description?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "tags".
- */
-export interface Tag {
-  id: number;
-  name: string;
-  /**
-   * Adres jest tworzony automatycznie z nazwy.
-   */
-  slug: string;
-  description?: string | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -395,12 +711,15 @@ export interface ClubSection {
   menuItems?:
     | {
         label: string;
-        targetType: 'page' | 'custom';
+        targetType: 'page' | 'category' | 'tag' | 'custom';
         page?: (number | null) | Page;
+        category?: (number | null) | Category;
+        tag?: (number | null) | Tag;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
         /**
-         * Ścieżka, kotwica, mailto:, tel: albo pełny adres HTTP(S).
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
          */
-        url?: string | null;
+        customAddress?: string | null;
         openInNewTab?: boolean | null;
         iconSource?: ('system' | 'media') | null;
         systemIcon?:
@@ -460,18 +779,6 @@ export interface PayloadLockedDocument {
   id: number;
   document?:
     | ({
-        relationTo: 'users';
-        value: number | User;
-      } | null)
-    | ({
-        relationTo: 'roles';
-        value: number | Role;
-      } | null)
-    | ({
-        relationTo: 'media';
-        value: number | Media;
-      } | null)
-    | ({
         relationTo: 'pages';
         value: number | Page;
       } | null)
@@ -480,16 +787,44 @@ export interface PayloadLockedDocument {
         value: number | Post;
       } | null)
     | ({
-        relationTo: 'club-sections';
-        value: number | ClubSection;
-      } | null)
-    | ({
         relationTo: 'categories';
         value: number | Category;
       } | null)
     | ({
         relationTo: 'tags';
         value: number | Tag;
+      } | null)
+    | ({
+        relationTo: 'media';
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'member-profile-images';
+        value: number | MemberProfileImage;
+      } | null)
+    | ({
+        relationTo: 'member-profiles';
+        value: number | MemberProfile;
+      } | null)
+    | ({
+        relationTo: 'document-files';
+        value: number | DocumentFile;
+      } | null)
+    | ({
+        relationTo: 'documents';
+        value: number | Document;
+      } | null)
+    | ({
+        relationTo: 'club-sections';
+        value: number | ClubSection;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null)
+    | ({
+        relationTo: 'roles';
+        value: number | Role;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -535,6 +870,363 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages_select".
+ */
+export interface PagesSelect<T extends boolean = true> {
+  title?: T;
+  parent?: T;
+  categories?: T;
+  tags?: T;
+  heroImage?: T;
+  listingExcerpt?: T;
+  layout?:
+    | T
+    | {
+        richText?: T | RichTextBlockSelect<T>;
+        listing?: T | ListingBlockSelect<T>;
+        mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        attachments?: T | AttachmentsBlockSelect<T>;
+        memberProfiles?: T | MemberProfilesBlockSelect<T>;
+      };
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
+  slug?: T;
+  author?: T;
+  publishedAt?: T;
+  systemKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RichTextBlock_select".
+ */
+export interface RichTextBlockSelect<T extends boolean = true> {
+  content?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ListingBlock_select".
+ */
+export interface ListingBlockSelect<T extends boolean = true> {
+  heading?: T;
+  sources?: T;
+  parentPage?: T;
+  category?: T;
+  tag?: T;
+  sort?: T;
+  view?: T;
+  pageSize?: T;
+  pagination?: T;
+  parentFilter?: T;
+  emptyMessage?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MediaGalleryBlock_select".
+ */
+export interface MediaGalleryBlockSelect<T extends boolean = true> {
+  heading?: T;
+  selectionMode?: T;
+  items?:
+    | T
+    | {
+        media?: T;
+        id?: T;
+      };
+  category?: T;
+  tag?: T;
+  sort?: T;
+  view?: T;
+  pageSize?: T;
+  pagination?: T;
+  emptyMessage?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "AttachmentsBlock_select".
+ */
+export interface AttachmentsBlockSelect<T extends boolean = true> {
+  heading?: T;
+  selectionMode?: T;
+  items?:
+    | T
+    | {
+        media?: T;
+        id?: T;
+      };
+  category?: T;
+  tag?: T;
+  sort?: T;
+  view?: T;
+  pageSize?: T;
+  pagination?: T;
+  emptyMessage?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MemberProfilesBlock_select".
+ */
+export interface MemberProfilesBlockSelect<T extends boolean = true> {
+  heading?: T;
+  entries?:
+    | T
+    | {
+        profile?: T;
+        contextLabel?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts_select".
+ */
+export interface PostsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  categories?: T;
+  tags?: T;
+  heroImage?: T;
+  excerpt?: T;
+  layout?:
+    | T
+    | {
+        richText?: T | RichTextBlockSelect<T>;
+        listing?: T | ListingBlockSelect<T>;
+        mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        attachments?: T | AttachmentsBlockSelect<T>;
+        memberProfiles?: T | MemberProfilesBlockSelect<T>;
+      };
+  author?: T;
+  publishedAt?: T;
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories_select".
+ */
+export interface CategoriesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  description?: T;
+  relatedPages?: T;
+  relatedPosts?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags_select".
+ */
+export interface TagsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  description?: T;
+  relatedPages?: T;
+  relatedPosts?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media_select".
+ */
+export interface MediaSelect<T extends boolean = true> {
+  alt?: T;
+  description?: T;
+  categories?: T;
+  tags?: T;
+  uploadedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "member-profile-images_select".
+ */
+export interface MemberProfileImagesSelect<T extends boolean = true> {
+  owner?: T;
+  isPubliclyUsed?: T;
+  prefix?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        profile?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "member-profiles_select".
+ */
+export interface MemberProfilesSelect<T extends boolean = true> {
+  owner?: T;
+  publicName?: T;
+  about?: T;
+  photo?: T;
+  interests?: T;
+  games?:
+    | T
+    | {
+        title?: T;
+        plays?: T;
+        runs?: T;
+        id?: T;
+      };
+  clubFunction?: T;
+  clubActivities?: T;
+  contactTopics?: T;
+  contactChannels?:
+    | T
+    | {
+        type?: T;
+        url?: T;
+        id?: T;
+      };
+  slug?: T;
+  moderatorHidden?: T;
+  moderationReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "document-files_select".
+ */
+export interface DocumentFilesSelect<T extends boolean = true> {
+  label?: T;
+  document?: T;
+  uploadedBy?: T;
+  prefix?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "documents_select".
+ */
+export interface DocumentsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  documentType?: T;
+  documentNumber?: T;
+  documentDate?: T;
+  summary?: T;
+  content?: T;
+  primaryFile?: T;
+  attachments?: T;
+  author?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "club-sections_select".
+ */
+export interface ClubSectionsSelect<T extends boolean = true> {
+  name?: T;
+  backgroundImage?: T;
+  displayOrder?: T;
+  destinationPage?: T;
+  menuItems?:
+    | T
+    | {
+        label?: T;
+        targetType?: T;
+        page?: T;
+        category?: T;
+        tag?: T;
+        customScheme?: T;
+        customAddress?: T;
+        openInNewTab?: T;
+        iconSource?: T;
+        systemIcon?: T;
+        customIcon?: T;
+        id?: T;
+      };
+  slug?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
@@ -570,10 +1262,10 @@ export interface RolesSelect<T extends boolean = true> {
     | T
     | {
         resource?: T;
-        canCreate?: T;
         readAllowed?: T;
         readOwn?: T;
         readPublished?: T;
+        canCreate?: T;
         updateAllowed?: T;
         updateOwn?: T;
         updatePublished?: T;
@@ -582,124 +1274,6 @@ export interface RolesSelect<T extends boolean = true> {
         deletePublished?: T;
         id?: T;
       };
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media_select".
- */
-export interface MediaSelect<T extends boolean = true> {
-  alt?: T;
-  uploadedBy?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "pages_select".
- */
-export interface PagesSelect<T extends boolean = true> {
-  title?: T;
-  slug?: T;
-  heroImage?: T;
-  content?: T;
-  attachments?: T;
-  author?: T;
-  publishedAt?: T;
-  seo?:
-    | T
-    | {
-        title?: T;
-        description?: T;
-        image?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-  _status?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "posts_select".
- */
-export interface PostsSelect<T extends boolean = true> {
-  title?: T;
-  slug?: T;
-  excerpt?: T;
-  heroImage?: T;
-  content?: T;
-  attachments?: T;
-  categories?: T;
-  tags?: T;
-  author?: T;
-  publishedAt?: T;
-  seo?:
-    | T
-    | {
-        title?: T;
-        description?: T;
-        image?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-  _status?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "club-sections_select".
- */
-export interface ClubSectionsSelect<T extends boolean = true> {
-  name?: T;
-  backgroundImage?: T;
-  displayOrder?: T;
-  destinationPage?: T;
-  menuItems?:
-    | T
-    | {
-        label?: T;
-        targetType?: T;
-        page?: T;
-        url?: T;
-        openInNewTab?: T;
-        iconSource?: T;
-        systemIcon?: T;
-        customIcon?: T;
-        id?: T;
-      };
-  slug?: T;
-  publishedAt?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  _status?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "categories_select".
- */
-export interface CategoriesSelect<T extends boolean = true> {
-  name?: T;
-  slug?: T;
-  description?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "tags_select".
- */
-export interface TagsSelect<T extends boolean = true> {
-  name?: T;
-  slug?: T;
-  description?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -752,6 +1326,22 @@ export interface SiteSetting {
   siteName: string;
   siteDescription?: string | null;
   contactEmail?: string | null;
+  heroImage?: (number | null) | Media;
+  copyrightText?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -765,12 +1355,15 @@ export interface Navigation {
     | {
         appearance: 'link' | 'icon' | 'button';
         label: string;
-        targetType: 'page' | 'custom';
+        targetType: 'page' | 'category' | 'tag' | 'custom';
         page?: (number | null) | Page;
+        category?: (number | null) | Category;
+        tag?: (number | null) | Tag;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
         /**
-         * Ścieżka, kotwica, mailto:, tel: albo pełny adres HTTP(S).
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
          */
-        url?: string | null;
+        customAddress?: string | null;
         openInNewTab?: boolean | null;
         iconSource?: ('system' | 'media') | null;
         systemIcon?:
@@ -799,12 +1392,15 @@ export interface Navigation {
   heroItems?:
     | {
         label: string;
-        targetType: 'page' | 'custom';
+        targetType: 'page' | 'category' | 'tag' | 'custom';
         page?: (number | null) | Page;
+        category?: (number | null) | Category;
+        tag?: (number | null) | Tag;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
         /**
-         * Ścieżka, kotwica, mailto:, tel: albo pełny adres HTTP(S).
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
          */
-        url?: string | null;
+        customAddress?: string | null;
         openInNewTab?: boolean | null;
         id?: string | null;
       }[]
@@ -812,12 +1408,15 @@ export interface Navigation {
   socialItems?:
     | {
         label: string;
-        targetType: 'page' | 'custom';
+        targetType: 'page' | 'category' | 'tag' | 'custom';
         page?: (number | null) | Page;
+        category?: (number | null) | Category;
+        tag?: (number | null) | Tag;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
         /**
-         * Ścieżka, kotwica, mailto:, tel: albo pełny adres HTTP(S).
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
          */
-        url?: string | null;
+        customAddress?: string | null;
         openInNewTab?: boolean | null;
         iconSource?: ('system' | 'media') | null;
         systemIcon?:
@@ -849,12 +1448,15 @@ export interface Navigation {
         items?:
           | {
               label: string;
-              targetType: 'page' | 'custom';
+              targetType: 'page' | 'category' | 'tag' | 'custom';
               page?: (number | null) | Page;
+              category?: (number | null) | Category;
+              tag?: (number | null) | Tag;
+              customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
               /**
-               * Ścieżka, kotwica, mailto:, tel: albo pełny adres HTTP(S).
+               * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
                */
-              url?: string | null;
+              customAddress?: string | null;
               openInNewTab?: boolean | null;
               id?: string | null;
             }[]
@@ -867,25 +1469,33 @@ export interface Navigation {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "footer".
+ * via the `definition` "website-permissions".
  */
-export interface Footer {
+export interface WebsitePermission {
   id: number;
-  copyrightText?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
+  /**
+   * Dostęp anonimowy obowiązuje również po zalogowaniu. Role z prawem Odczytu w CMS automatycznie widzą opublikowane treści na WWW.
+   */
+  permissions?:
+    | {
+        resource:
+          | 'media'
+          | 'pages'
+          | 'posts'
+          | 'documents-resolution'
+          | 'documents-statute'
+          | 'documents-regulations'
+          | 'documents-minutes'
+          | 'documents-report'
+          | 'documents-agreement'
+          | 'documents-license'
+          | 'documents-other'
+          | 'club-sections';
+        anonymousAllowed?: boolean | null;
+        roles?: (number | Role)[] | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -897,6 +1507,8 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   siteName?: T;
   siteDescription?: T;
   contactEmail?: T;
+  heroImage?: T;
+  copyrightText?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -913,7 +1525,10 @@ export interface NavigationSelect<T extends boolean = true> {
         label?: T;
         targetType?: T;
         page?: T;
-        url?: T;
+        category?: T;
+        tag?: T;
+        customScheme?: T;
+        customAddress?: T;
         openInNewTab?: T;
         iconSource?: T;
         systemIcon?: T;
@@ -926,7 +1541,10 @@ export interface NavigationSelect<T extends boolean = true> {
         label?: T;
         targetType?: T;
         page?: T;
-        url?: T;
+        category?: T;
+        tag?: T;
+        customScheme?: T;
+        customAddress?: T;
         openInNewTab?: T;
         id?: T;
       };
@@ -936,7 +1554,10 @@ export interface NavigationSelect<T extends boolean = true> {
         label?: T;
         targetType?: T;
         page?: T;
-        url?: T;
+        category?: T;
+        tag?: T;
+        customScheme?: T;
+        customAddress?: T;
         openInNewTab?: T;
         iconSource?: T;
         systemIcon?: T;
@@ -953,7 +1574,10 @@ export interface NavigationSelect<T extends boolean = true> {
               label?: T;
               targetType?: T;
               page?: T;
-              url?: T;
+              category?: T;
+              tag?: T;
+              customScheme?: T;
+              customAddress?: T;
               openInNewTab?: T;
               id?: T;
             };
@@ -965,10 +1589,17 @@ export interface NavigationSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "footer_select".
+ * via the `definition` "website-permissions_select".
  */
-export interface FooterSelect<T extends boolean = true> {
-  copyrightText?: T;
+export interface WebsitePermissionsSelect<T extends boolean = true> {
+  permissions?:
+    | T
+    | {
+        resource?: T;
+        anonymousAllowed?: T;
+        roles?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

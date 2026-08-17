@@ -8,6 +8,7 @@ import { CmsDocument } from '../../_components/CmsDocument'
 
 type BlogPostPageProperties = {
   params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 export const dynamic = 'force-dynamic'
@@ -19,13 +20,14 @@ export async function generateMetadata({ params }: BlogPostPageProperties): Prom
   return post ? createContentMetadata(post) : {}
 }
 
-export default async function BlogPostPage({ params }: BlogPostPageProperties) {
+export default async function BlogPostPage({ params, searchParams }: BlogPostPageProperties) {
   const { slug } = await params
+  const resolvedSearchParams = await searchParams
   const post = await findPublishedPostBySlug(slug)
 
   if (!post) {
     notFound()
   }
 
-  return <CmsDocument document={post} />
+  return <CmsDocument document={post} searchParams={resolvedSearchParams} />
 }

@@ -2,12 +2,18 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 
-import type { Footer, Navigation } from '@/payload-types'
+import type { Navigation, SiteSetting } from '@/payload-types'
 import { hasRenderableIcon, resolveLink } from '@/modules/navigation/links'
 
 import { MenuIcon } from './MenuIcon'
 
-export function SiteFooter({ footer, navigation }: { footer: Footer; navigation: Navigation }) {
+export function SiteFooter({
+  navigation,
+  siteSettings,
+}: {
+  navigation: Navigation
+  siteSettings: SiteSetting
+}) {
   const socialItems = navigation.socialItems?.flatMap((item) => {
     const link = resolveLink(item)
     return link && hasRenderableIcon(item) ? [{ item, link }] : []
@@ -32,8 +38,8 @@ export function SiteFooter({ footer, navigation }: { footer: Footer; navigation:
             <br />
             Klub Fantastyki
           </strong>
-          {footer.copyrightText ? (
-            <RichText className="footerCopyright" data={footer.copyrightText} />
+          {siteSettings.copyrightText ? (
+            <RichText className="footerCopyright" data={siteSettings.copyrightText} />
           ) : null}
         </div>
         {socialItems?.length ? (

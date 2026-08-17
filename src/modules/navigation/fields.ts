@@ -1,5 +1,6 @@
 import type { Field, Validate } from 'payload'
 
+import { normalizeCustomAddress, validateCustomAddress } from './custom-target'
 import type { SystemIconName } from './icon-names'
 
 type NavigationSiblingData = {
@@ -14,6 +15,14 @@ export function isCustomTarget(_data: unknown, siblingData: NavigationSiblingDat
 
 export function isPageTarget(_data: unknown, siblingData: NavigationSiblingData): boolean {
   return siblingData.targetType === 'page'
+}
+
+export function isCategoryTarget(_data: unknown, siblingData: NavigationSiblingData): boolean {
+  return siblingData.targetType === 'category'
+}
+
+export function isTagTarget(_data: unknown, siblingData: NavigationSiblingData): boolean {
+  return siblingData.targetType === 'tag'
 }
 
 export function usesCustomIcon(_data: unknown, siblingData: NavigationSiblingData): boolean {
@@ -46,46 +55,20 @@ export const systemIconOptions: { label: string; value: SystemIconName }[] = [
   { label: 'Użytkownicy', value: 'users' },
 ]
 
-export const validateCustomURL: Validate<string | null | undefined> = (value) => {
-  if (!value) {
-    return true
-  }
-
-  const trimmedValue = value.trim()
-  if (
-    trimmedValue.startsWith('/') ||
-    trimmedValue.startsWith('#') ||
-    trimmedValue.startsWith('mailto:') ||
-    trimmedValue.startsWith('tel:')
-  ) {
-    return true
-  }
-
-  try {
-    const url = new URL(trimmedValue)
-    return ['http:', 'https:'].includes(url.protocol)
-      ? true
-      : 'Adres musi używać protokołu HTTP lub HTTPS.'
-  } catch {
-    return 'Podaj ścieżkę, kotwicę, adres e-mail, telefon albo pełny adres HTTP(S).'
-  }
-}
-
 export const validatePageTarget: Validate<unknown, unknown, NavigationSiblingData> = (
   value,
   { siblingData },
 ) => (siblingData.targetType !== 'page' || value ? true : 'Wybierz stronę docelową.')
 
-export const validateCustomTarget: Validate<string, unknown, NavigationSiblingData> = (
+export const validateCategoryTarget: Validate<unknown, unknown, NavigationSiblingData> = (
   value,
-  context,
-) => {
-  if (context.siblingData.targetType !== 'custom') {
-    return true
-  }
+  { siblingData },
+) => (siblingData.targetType !== 'category' || value ? true : 'Wybierz kategorię docelową.')
 
-  return value ? validateCustomURL(value, context) : 'Podaj adres docelowy.'
-}
+export const validateTagTarget: Validate<unknown, unknown, NavigationSiblingData> = (
+  value,
+  { siblingData },
+) => (siblingData.targetType !== 'tag' || value ? true : 'Wybierz tag docelowy.')
 
 export function createLinkFields(): Field[] {
   return [
@@ -101,7 +84,9 @@ export function createLinkFields(): Field[] {
       defaultValue: 'custom',
       label: 'Cel odnośnika',
       options: [
-        { label: 'Strona w serwisie', value: 'page' },
+        { label: 'Strona', value: 'page' },
+        { label: 'Kategoria', value: 'category' },
+        { label: 'Tag', value: 'tag' },
         { label: 'Własny adres', value: 'custom' },
       ],
       required: true,
@@ -120,14 +105,66 @@ export function createLinkFields(): Field[] {
       validate: validatePageTarget,
     },
     {
-      name: 'url',
-      type: 'text',
+      name: 'category',
+      type: 'relationship',
       admin: {
-        condition: isCustomTarget,
-        description: 'Ścieżka, kotwica, mailto:, tel: albo pełny adres HTTP(S).',
+        condition: isCategoryTarget,
+        placeholder: '<brak>',
       },
-      label: 'Adres',
-      validate: validateCustomTarget,
+      label: 'Kategoria',
+      relationTo: 'categories',
+      validate: validateCategoryTarget,
+    },
+    {
+      name: 'tag',
+      type: 'relationship',
+      admin: {
+        condition: isTagTarget,
+        placeholder: '<brak>',
+      },
+      label: 'Tag',
+      relationTo: 'tags',
+      validate: validateTagTarget,
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'customScheme',
+          type: 'select',
+          admin: {
+            condition: isCustomTarget,
+            width: '25%',
+          },
+          defaultValue: 'https',
+          label: 'Schemat',
+          options: [
+            { label: 'https://', value: 'https' },
+            { label: 'http://', value: 'http' },
+            { label: 'mailto:', value: 'mailto' },
+            { label: 'tel:', value: 'tel' },
+            { label: '/', value: 'path' },
+            { label: '#', value: 'anchor' },
+          ],
+        },
+        {
+          name: 'customAddress',
+          type: 'text',
+          admin: {
+            components: {
+              Field: '/components/admin/CustomAddressField#CustomAddressField',
+            },
+            condition: isCustomTarget,
+            description: 'Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.',
+            width: '75%',
+          },
+          hooks: {
+            beforeValidate: [normalizeCustomAddress],
+          },
+          label: 'Adres',
+          validate: validateCustomAddress,
+        },
+      ],
     },
     {
       name: 'openInNewTab',

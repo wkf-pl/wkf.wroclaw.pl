@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { populateSlugFromName } from '@/modules/content/slug'
+import { createRelatedContentJoinFields } from '@/modules/content/taxonomy-fields'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 
 const createCategories = createRolePermissionAccess({
@@ -47,6 +48,7 @@ export const Categories: CollectionConfig = {
       type: 'text',
       admin: {
         description: 'Adres jest tworzony automatycznie z nazwy.',
+        position: 'sidebar',
       },
       hooks: {
         beforeValidate: [populateSlugFromName],
@@ -61,6 +63,7 @@ export const Categories: CollectionConfig = {
       type: 'textarea',
       label: 'Opis',
     },
+    ...createRelatedContentJoinFields('categories'),
   ],
   labels: {
     plural: 'Kategorie',

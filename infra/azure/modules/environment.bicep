@@ -106,24 +106,12 @@ resource registryIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023
   tags: tags
 }
 
-module registryPullAssignment './registry-pull-role.bicep' = {
-  name: 'registry-pull-role'
-  scope: resourceGroup(registryResourceGroupName)
-  params: {
-    principalId: registryIdentity.properties.principalId
-    registryName: registryName
-  }
-}
-
 var databaseUrl = 'postgresql://${postgresAdministratorLogin}:${uriComponent(postgresAdministratorPassword)}@${postgres.outputs.fullyQualifiedDomainName}:5432/${postgres.outputs.databaseName}?sslmode=require'
 var technicalApplicationUrl = 'https://${applicationName}.${containerAppEnvironment.outputs.defaultDomain}'
 var serverUrl = customDomainName == '' ? technicalApplicationUrl : 'https://${customDomainName}'
 
 module application './application.bicep' = if (deployApplication) {
   name: 'application'
-  dependsOn: [
-    registryPullAssignment
-  ]
   params: {
     accountBaseUrl: storage.outputs.accountBaseUrl
     applicationName: applicationName
@@ -160,9 +148,6 @@ module application './application.bicep' = if (deployApplication) {
 
 module migrationJob './migration-job.bicep' = {
   name: 'migration-job'
-  dependsOn: [
-    registryPullAssignment
-  ]
   params: {
     accountBaseUrl: storage.outputs.accountBaseUrl
     containerAppEnvironmentId: containerAppEnvironment.outputs.id

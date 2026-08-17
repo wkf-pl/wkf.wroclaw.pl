@@ -19,7 +19,7 @@ export const SiteSettings: GlobalConfig = {
     update: updateSiteSettings,
   },
   admin: {
-    group: 'Ustawienia',
+    group: 'Ustawienia strony',
   },
   fields: [
     {
@@ -39,6 +39,17 @@ export const SiteSettings: GlobalConfig = {
       type: 'email',
       label: 'E-mail kontaktowy',
     },
+    {
+      name: 'heroImage',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'Obrazek Hero',
+    },
+    {
+      name: 'copyrightText',
+      type: 'richText',
+      label: 'Tekst praw autorskich',
+    },
   ],
-  label: 'Ustawienia strony',
+  label: 'Podstawowe',
 }

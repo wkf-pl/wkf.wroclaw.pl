@@ -1,14 +1,17 @@
 import type { Field } from 'payload'
 
 import { populateSlug, validatePageSlug } from './slug'
+import { createTaxonomyFields } from './taxonomy-fields'
 
 type EditorialFieldsOptions = {
+  includeContent?: boolean
   includeExcerpt?: boolean
   includeTaxonomy?: boolean
   reserveApplicationSlugs?: boolean
 }
 
 export function createEditorialFields({
+  includeContent = true,
   includeExcerpt = false,
   includeTaxonomy = false,
   reserveApplicationSlugs = false,
@@ -51,45 +54,24 @@ export function createEditorialFields({
     })
   }
 
-  fields.push(
-    {
-      name: 'heroImage',
-      type: 'upload',
-      label: 'Obraz główny',
-      relationTo: 'media',
-    },
-    {
+  fields.push({
+    name: 'heroImage',
+    type: 'upload',
+    label: 'Obraz główny',
+    relationTo: 'media',
+  })
+
+  if (includeContent) {
+    fields.push({
       name: 'content',
       type: 'richText',
       label: 'Treść',
       required: true,
-    },
-    {
-      name: 'attachments',
-      type: 'upload',
-      hasMany: true,
-      label: 'Załączniki',
-      relationTo: 'media',
-    },
-  )
+    })
+  }
 
   if (includeTaxonomy) {
-    fields.push(
-      {
-        name: 'categories',
-        type: 'relationship',
-        hasMany: true,
-        label: 'Kategorie',
-        relationTo: 'categories',
-      },
-      {
-        name: 'tags',
-        type: 'relationship',
-        hasMany: true,
-        label: 'Tagi',
-        relationTo: 'tags',
-      },
-    )
+    fields.push(...createTaxonomyFields())
   }
 
   fields.push(

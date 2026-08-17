@@ -20,7 +20,7 @@ export const Navigation: GlobalConfig = {
     update: updateNavigation,
   },
   admin: {
-    group: 'Ustawienia',
+    group: 'Ustawienia strony',
   },
   fields: [
     {
@@ -32,10 +32,18 @@ export const Navigation: GlobalConfig = {
             {
               name: 'headerItems',
               type: 'array',
+              admin: {
+                components: {
+                  RowLabel: '/components/admin/DynamicRowLabel#NavigationItemRowLabel',
+                },
+              },
               fields: [
                 {
                   name: 'appearance',
                   type: 'select',
+                  admin: {
+                    isClearable: false,
+                  },
                   defaultValue: 'link',
                   label: 'Wygląd',
                   options: [
@@ -58,6 +66,11 @@ export const Navigation: GlobalConfig = {
             {
               name: 'heroItems',
               type: 'array',
+              admin: {
+                components: {
+                  RowLabel: '/components/admin/DynamicRowLabel#NavigationItemRowLabel',
+                },
+              },
               fields: createLinkFields(),
               label: 'Elementy Hero',
             },
@@ -69,12 +82,22 @@ export const Navigation: GlobalConfig = {
             {
               name: 'socialItems',
               type: 'array',
+              admin: {
+                components: {
+                  RowLabel: '/components/admin/DynamicRowLabel#SocialItemRowLabel',
+                },
+              },
               fields: [...createLinkFields(), ...createIconFields({ required: true })],
               label: 'Media społecznościowe',
             },
             {
               name: 'footerColumns',
               type: 'array',
+              admin: {
+                components: {
+                  RowLabel: '/components/admin/DynamicRowLabel#FooterColumnRowLabel',
+                },
+              },
               fields: [
                 {
                   name: 'title',
@@ -85,6 +108,11 @@ export const Navigation: GlobalConfig = {
                 {
                   name: 'items',
                   type: 'array',
+                  admin: {
+                    components: {
+                      RowLabel: '/components/admin/DynamicRowLabel#FooterColumnItemRowLabel',
+                    },
+                  },
                   fields: createLinkFields(),
                   label: 'Odnośniki',
                 },
@@ -96,5 +124,5 @@ export const Navigation: GlobalConfig = {
       ],
     },
   ],
-  label: 'Menu strony',
+  label: 'Menu',
 }

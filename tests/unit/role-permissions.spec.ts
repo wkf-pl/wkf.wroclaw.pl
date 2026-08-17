@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import { documentTypeOptions } from '@/modules/documents/document-types'
+import { getDocumentPermissionResource } from '@/modules/membership/permission-resources'
 import {
   clientUserHasResourcePermission,
+  createCollectionRolePermissionAccess,
   createRolePermissionAccess,
   resolveRolePermission,
   validateRolePermissions,
@@ -59,6 +62,28 @@ describe('role permissions', () => {
     })
   })
 
+  it.each(documentTypeOptions)(
+    'keeps CRUD grants independent for the $label document type',
+    ({ value }) => {
+      const resource = getDocumentPermissionResource(value)
+      const role = createRole([
+        {
+          canCreate: true,
+          deleteAllowed: true,
+          readAllowed: true,
+          resource,
+          updateAllowed: true,
+        },
+      ])
+      const expectedScope = { documentType: { equals: value } }
+
+      expect(resolveRolePermission([role], resource, 'create', 10)).toBe(true)
+      expect(resolveRolePermission([role], resource, 'read', 10)).toEqual(expectedScope)
+      expect(resolveRolePermission([role], resource, 'update', 10)).toEqual(expectedScope)
+      expect(resolveRolePermission([role], resource, 'delete', 10)).toEqual(expectedScope)
+    },
+  )
+
   it('rejects duplicate resources in one role', () => {
     expect(validateRolePermissions([{ resource: 'posts' }, { resource: 'posts' }])).toBe(
       'Każdy zasób może wystąpić w roli tylko raz.',
@@ -97,5 +122,63 @@ describe('role permissions', () => {
 
     expect(clientUserHasResourcePermission(user, 'posts', 'read')).toBe(true)
     expect(clientUserHasResourcePermission(user, 'users', 'read')).toBe(false)
+  })
+
+  it('keeps website-only role access separate from CMS read access', async () => {
+    const role = createRole([])
+    const websiteAccess = createRolePermissionAccess({ operation: 'read', resource: 'posts' })
+    const request = {
+      context: { website: true },
+      payload: {
+        find: async () => ({ docs: [role] }),
+        findGlobal: async () => ({
+          permissions: [
+            {
+              anonymousAllowed: false,
+              resource: 'posts',
+              roles: [role.id],
+            },
+          ],
+        }),
+      },
+      user: { id: 10, roles: [role.id] },
+    } as unknown as PayloadRequest
+
+    await expect(websiteAccess({ req: request })).resolves.toEqual({
+      _status: { equals: 'published' },
+    })
+
+    request.context = {}
+    await expect(websiteAccess({ req: request })).resolves.toBe(false)
+  })
+
+  it('applies own and published constraints to role read access on the website', async () => {
+    const role = createRole([
+      {
+        readAllowed: true,
+        readOwn: true,
+        resource: 'documents-resolution',
+      },
+    ])
+    const websiteAccess = createCollectionRolePermissionAccess({
+      collection: 'documents',
+      operation: 'read',
+    })
+    const request = {
+      context: { website: true },
+      payload: {
+        find: async () => ({ docs: [role] }),
+        findGlobal: async () => ({ permissions: [] }),
+      },
+      user: { id: 10, roles: [role.id] },
+    } as unknown as PayloadRequest
+
+    await expect(websiteAccess({ req: request })).resolves.toEqual({
+      and: [
+        { documentType: { equals: 'resolution' } },
+        { author: { equals: 10 } },
+        { _status: { equals: 'published' } },
+      ],
+    })
   })
 })

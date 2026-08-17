@@ -2,12 +2,13 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 import { SiteFooter } from '@/app/(frontend)/_components/SiteFooter'
-import type { Footer, Navigation } from '@/payload-types'
+import type { Navigation, SiteSetting } from '@/payload-types'
 
 describe('SiteFooter', () => {
   it('renders formatted copyright text in multiple paragraphs', () => {
-    const footer = {
+    const siteSettings = {
       id: 1,
+      siteName: 'Wrocławski Klub Fantastyki',
       copyrightText: {
         root: {
           children: [createParagraph('Pierwsza linia'), createParagraph('Druga linia', 1)],
@@ -18,10 +19,12 @@ describe('SiteFooter', () => {
           version: 1,
         },
       },
-    } satisfies Footer
+    } satisfies SiteSetting
     const navigation = { id: 1 } as Navigation
 
-    const markup = renderToStaticMarkup(<SiteFooter footer={footer} navigation={navigation} />)
+    const markup = renderToStaticMarkup(
+      <SiteFooter navigation={navigation} siteSettings={siteSettings} />,
+    )
 
     expect(markup).toContain('class="footerCopyright"')
     expect(markup).toContain('<p>Pierwsza linia</p>')

@@ -1,11 +1,11 @@
 import type { CollectionConfig } from 'payload'
 
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { mediaDocumentMimeTypes } from '@/modules/media/media-categories'
 
 const createMedia = createRolePermissionAccess({ operation: 'create', resource: 'media' })
 const deleteMedia = createRolePermissionAccess({ operation: 'delete', resource: 'media' })
 const readMedia = createRolePermissionAccess({
-  anonymousAccess: true,
   operation: 'read',
   resource: 'media',
 })
@@ -20,9 +20,59 @@ export const Media: CollectionConfig = {
     update: updateMedia,
   },
   admin: {
+    components: {
+      Description: '/components/admin/MediaCategoryTabs#MediaCategoryTabs',
+    },
+    defaultColumns: [
+      'filename',
+      'description',
+      'filesize',
+      'width',
+      'height',
+      'url',
+      'thumbnailURL',
+      'categories',
+      'tags',
+      'uploadedBy',
+    ],
     group: 'Treści',
   },
   fields: [
+    {
+      name: 'filesize',
+      type: 'number',
+      admin: {
+        components: { Cell: '/components/admin/MediaTableCells#FileSizeCell' },
+      },
+    },
+    {
+      name: 'width',
+      type: 'number',
+      admin: {
+        components: { Cell: '/components/admin/MediaTableCells#NumberCell' },
+      },
+    },
+    {
+      name: 'height',
+      type: 'number',
+      admin: {
+        components: { Cell: '/components/admin/MediaTableCells#NumberCell' },
+      },
+    },
+    {
+      name: 'url',
+      type: 'text',
+      admin: {
+        components: { Cell: '/components/admin/MediaTableCells#URLCell' },
+      },
+    },
+    {
+      name: 'thumbnailURL',
+      type: 'text',
+      admin: {
+        components: { Cell: '/components/admin/MediaTableCells#URLCell' },
+      },
+    },
     {
       name: 'alt',
       type: 'text',
@@ -32,6 +82,40 @@ export const Media: CollectionConfig = {
       },
       label: 'Tekst alternatywny',
       required: true,
+    },
+    {
+      name: 'description',
+      type: 'textarea',
+      label: 'Opis',
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'categories',
+          type: 'relationship',
+          admin: {
+            components: { Cell: '/components/admin/MediaTableCells#TaxonomyCell' },
+            placeholder: '<brak>',
+            width: '50%',
+          },
+          hasMany: true,
+          label: 'Kategorie',
+          relationTo: 'categories',
+        },
+        {
+          name: 'tags',
+          type: 'relationship',
+          admin: {
+            components: { Cell: '/components/admin/MediaTableCells#TaxonomyCell' },
+            placeholder: '<brak>',
+            width: '50%',
+          },
+          hasMany: true,
+          label: 'Tagi',
+          relationTo: 'tags',
+        },
+      ],
     },
     {
       name: 'uploadedBy',
@@ -70,6 +154,6 @@ export const Media: CollectionConfig = {
     singular: 'Plik',
   },
   upload: {
-    mimeTypes: ['image/*', 'application/pdf'],
+    mimeTypes: ['image/*', ...mediaDocumentMimeTypes],
   },
 }

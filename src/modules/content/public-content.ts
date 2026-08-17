@@ -3,7 +3,16 @@ import { getPayload } from 'payload'
 
 import config from '@payload-config'
 
-import type { Category, ClubSection, Footer, Navigation, Post, Tag } from '@/payload-types'
+import type {
+  Category,
+  ClubSection,
+  Navigation,
+  Post,
+  SiteSetting,
+  Tag,
+} from '@/payload-types'
+import { getCurrentUser } from '@/modules/auth/current-user'
+import { websiteRequestContext } from '@/modules/membership/role-permissions'
 
 type PostTaxonomyFilter = {
   field: 'categories' | 'tags'
@@ -12,12 +21,15 @@ type PostTaxonomyFilter = {
 
 export const findPublishedPageBySlug = cache(async (slug: string) => {
   const payload = await getPayload({ config })
+  const user = await getCurrentUser()
   const result = await payload.find({
     collection: 'pages',
+    context: websiteRequestContext,
     depth: 2,
     draft: false,
     limit: 1,
     overrideAccess: false,
+    user,
     where: {
       and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }],
     },
@@ -36,11 +48,11 @@ export const getPublicNavigation = cache(async (): Promise<Navigation> => {
   })
 })
 
-export const getPublicFooter = cache(async (): Promise<Footer> => {
+export const getPublicSiteSettings = cache(async (): Promise<SiteSetting> => {
   const payload = await getPayload({ config })
   return payload.findGlobal({
-    slug: 'footer',
-    depth: 0,
+    slug: 'site-settings',
+    depth: 1,
     overrideAccess: false,
     user: null,
   })
@@ -48,14 +60,16 @@ export const getPublicFooter = cache(async (): Promise<Footer> => {
 
 export const findPublishedClubSections = cache(async (): Promise<ClubSection[]> => {
   const payload = await getPayload({ config })
+  const user = await getCurrentUser()
   const result = await payload.find({
     collection: 'club-sections',
+    context: websiteRequestContext,
     depth: 2,
     draft: false,
     limit: 100,
     overrideAccess: false,
     sort: ['displayOrder', 'name'],
-    user: null,
+    user,
     where: {
       _status: { equals: 'published' },
     },
@@ -66,12 +80,15 @@ export const findPublishedClubSections = cache(async (): Promise<ClubSection[]> 
 
 export const findPublishedPostBySlug = cache(async (slug: string) => {
   const payload = await getPayload({ config })
+  const user = await getCurrentUser()
   const result = await payload.find({
     collection: 'posts',
+    context: websiteRequestContext,
     depth: 2,
     draft: false,
     limit: 1,
     overrideAccess: false,
+    user,
     where: {
       and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }],
     },
@@ -82,14 +99,17 @@ export const findPublishedPostBySlug = cache(async (slug: string) => {
 
 export async function findPublishedPosts(filter?: PostTaxonomyFilter): Promise<Post[]> {
   const payload = await getPayload({ config })
+  const user = await getCurrentUser()
   const taxonomyConstraint = filter ? { [filter.field]: { equals: filter.id } } : undefined
   const result = await payload.find({
     collection: 'posts',
+    context: websiteRequestContext,
     depth: 2,
     draft: false,
     limit: 100,
     overrideAccess: false,
     sort: ['-publishedAt', '-createdAt'],
+    user,
     where: {
       and: [
         { _status: { equals: 'published' } },
@@ -108,6 +128,7 @@ export const findCategoryBySlug = cache(async (slug: string): Promise<Category |
     depth: 0,
     limit: 1,
     overrideAccess: false,
+    user: null,
     where: {
       slug: { equals: slug },
     },
@@ -123,6 +144,7 @@ export const findTagBySlug = cache(async (slug: string): Promise<null | Tag> => 
     depth: 0,
     limit: 1,
     overrideAccess: false,
+    user: null,
     where: {
       slug: { equals: slug },
     },

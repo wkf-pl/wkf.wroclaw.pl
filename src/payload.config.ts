@@ -6,9 +6,22 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
-import { Categories, ClubSections, Media, Pages, Posts, Roles, Tags, Users } from './collections'
+import {
+  Categories,
+  ClubSections,
+  DocumentFiles,
+  Documents,
+  Media,
+  MemberProfileImages,
+  MemberProfiles,
+  Pages,
+  Posts,
+  Roles,
+  Tags,
+  Users,
+} from './collections'
 import { createEmailAdapter } from './email/create-email-adapter'
-import { Footer, Navigation, SiteSettings } from './globals'
+import { Navigation, SiteSettings, WebsitePermissions } from './globals'
 import { getOptionalEnvironmentVariable, getRequiredEnvironmentVariable } from './lib/env'
 import { createStoragePlugins } from './storage/create-storage-plugins'
 
@@ -23,9 +36,15 @@ const polishAdminLanguage = {
     ...pl.translations,
     general: {
       ...pl.translations.general,
+      createNew: 'Dodaj',
+      createNewLabel: 'Dodaj {{label}}',
       email: 'Adres e-mail',
       emailAddress: 'Adres e-mail',
       payloadSettings: 'Ustawienia panelu',
+    },
+    fields: {
+      ...pl.translations.fields,
+      addNew: 'Dodaj',
     },
   },
 }
@@ -34,8 +53,19 @@ export default buildConfig({
   admin: {
     components: {
       actions: ['/components/admin/UserMenu#UserMenu'],
+      Nav: '/components/admin/AdminNav#AdminNav',
       graphics: {
         Logo: '/components/admin/AdminLogo#AdminLogo',
+      },
+      views: {
+        account: {
+          Component: '/components/admin/AccountView#AccountView',
+        },
+        profile: {
+          Component: '/components/admin/MemberProfileView#MemberProfileView',
+          exact: true,
+          path: '/profile',
+        },
       },
     },
     dateFormat: 'd MMMM yyyy, HH:mm',
@@ -61,8 +91,21 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Roles, Media, Pages, Posts, ClubSections, Categories, Tags],
-  globals: [SiteSettings, Navigation, Footer],
+  collections: [
+    Pages,
+    Posts,
+    Categories,
+    Tags,
+    Media,
+    MemberProfileImages,
+    MemberProfiles,
+    DocumentFiles,
+    Documents,
+    ClubSections,
+    Users,
+    Roles,
+  ],
+  globals: [SiteSettings, Navigation, WebsitePermissions],
   cors: [...trustedOrigins],
   csrf: [...trustedOrigins],
   editor: lexicalEditor(),

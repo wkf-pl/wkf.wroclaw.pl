@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { findPublishedPosts, findTagBySlug } from '@/modules/content/public-content'
+import { findTagBySlug } from '@/modules/content/public-content'
 
-import { PostList } from '../../_components/PostList'
+import { TaxonomyContentPage } from '../../_components/TaxonomyContentPage'
 
 type TagPageProperties = {
   params: Promise<{ tag: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 export const dynamic = 'force-dynamic'
@@ -17,30 +18,19 @@ export async function generateMetadata({ params }: TagPageProperties): Promise<M
 
   return tag
     ? {
-        description: tag.description || `Wpisy oznaczone tagiem ${tag.name}.`,
+        description: tag.description || `Treści oznaczone tagiem ${tag.name}.`,
         title: `#${tag.name}`,
       }
     : {}
 }
 
-export default async function TagPage({ params }: TagPageProperties) {
+export default async function TagPage({ params, searchParams }: TagPageProperties) {
   const { tag: slug } = await params
-  const tag = await findTagBySlug(slug)
+  const [tag, resolvedSearchParams] = await Promise.all([findTagBySlug(slug), searchParams])
 
   if (!tag) {
     notFound()
   }
 
-  const posts = await findPublishedPosts({ field: 'tags', id: tag.id })
-
-  return (
-    <main className="contentShell">
-      <header className="listingHeader">
-        <p className="eyebrow">Tag</p>
-        <h1>#{tag.name}</h1>
-        {tag.description ? <p>{tag.description}</p> : null}
-      </header>
-      <PostList posts={posts} />
-    </main>
-  )
+  return <TaxonomyContentPage kind="tag" searchParams={resolvedSearchParams} taxonomy={tag} />
 }

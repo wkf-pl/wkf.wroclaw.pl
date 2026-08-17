@@ -5,6 +5,7 @@ import {
   findPublishedClubSections,
   findPublishedPosts,
   getPublicNavigation,
+  getPublicSiteSettings,
 } from '@/modules/content/public-content'
 import { hasRenderableIcon, resolveLink, resolvePageLink } from '@/modules/navigation/links'
 
@@ -181,10 +182,11 @@ function Sections({ sections }: { sections: ClubSection[] }) {
 }
 
 export default async function HomePage() {
-  const [posts, sections, navigation] = await Promise.all([
+  const [posts, sections, navigation, siteSettings] = await Promise.all([
     findPublishedPosts(),
     findPublishedClubSections(),
     getPublicNavigation(),
+    getPublicSiteSettings(),
   ])
   const heroItems = navigation.heroItems?.flatMap((item) => {
     const link = resolveLink(item)
@@ -194,6 +196,13 @@ export default async function HomePage() {
   return (
     <main className="homePage">
       <section className="homeHero">
+        {siteSettings.heroImage && typeof siteSettings.heroImage === 'object' && siteSettings.heroImage.url ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element -- CMS media can use a runtime-configured Azure host. */}
+            <img alt="" className="homeHeroImage" src={siteSettings.heroImage.url} />
+            <span aria-hidden="true" className="homeHeroImageShade" />
+          </>
+        ) : null}
         <div className="homeShell">
           <div className="heroContent">
             <h1>

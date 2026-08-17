@@ -1,27 +1,31 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 
-import { findPublishedPosts } from '@/modules/content/public-content'
+import { createContentMetadata } from '@/modules/content/content-metadata'
+import { findPublishedPageBySlug } from '@/modules/content/public-content'
 
-import { PostList } from '../_components/PostList'
+import { CmsPageDocument } from '../_components/CmsPageDocument'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  description: 'Artykuły i aktualności Wrocławskiego Klubu Fantastyki.',
-  title: 'Blog',
+type BlogPageProperties = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function BlogPage() {
-  const posts = await findPublishedPosts()
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await findPublishedPageBySlug('blog')
+  return page ? createContentMetadata(page) : {}
+}
 
-  return (
-    <main className="contentShell">
-      <header className="listingHeader">
-        <p className="eyebrow">WKF</p>
-        <h1>Blog</h1>
-        <p>Artykuły, aktualności i relacje z życia klubu.</p>
-      </header>
-      <PostList posts={posts} />
-    </main>
-  )
+export default async function BlogPage({ searchParams }: BlogPageProperties) {
+  const [page, resolvedSearchParams] = await Promise.all([
+    findPublishedPageBySlug('blog'),
+    searchParams,
+  ])
+
+  if (!page) {
+    notFound()
+  }
+
+  return <CmsPageDocument document={page} pathname="/blog" searchParams={resolvedSearchParams} />
 }
