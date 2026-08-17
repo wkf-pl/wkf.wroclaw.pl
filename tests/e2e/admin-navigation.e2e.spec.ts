@@ -49,3 +49,37 @@ test('groups administrator navigation under Administracja', async ({ page }) => 
 
   expect(groupLabels).toEqual(['Administracja', 'Użytkownik'])
 })
+
+test('uses the requested navigation editor add labels and non-clearable schemes', async ({
+  page,
+}) => {
+  await login({ page, user: editorTestUser })
+  await page.goto('/admin/globals/navigation')
+
+  await expect(page.getByRole('button', { name: 'Dodaj pozycję menu w nagłówku' })).toBeVisible()
+  const headerSchemeFields = page.locator('[id^="field-headerItems"][id$="customScheme"]')
+  await expect(headerSchemeFields.first()).toBeVisible()
+  await expect(headerSchemeFields.locator('.clear-indicator')).toHaveCount(0)
+
+  const heroAddButton = page.getByRole('button', { name: 'Dodaj pozycję menu w sekcji Hero' })
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Hero', exact: true }).click()
+    await expect(heroAddButton).toBeVisible({ timeout: 1_000 })
+  }).toPass()
+  await expect(
+    page.locator('[id^="field-heroItems"][id$="customScheme"] .clear-indicator'),
+  ).toHaveCount(0)
+
+  const socialAddButton = page.getByRole('button', { name: 'Dodaj medium społecznościowe' })
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Stopka', exact: true }).click()
+    await expect(socialAddButton).toBeVisible({ timeout: 1_000 })
+  }).toPass()
+  await expect(page.getByRole('button', { name: 'Dodaj kolumnę menu w stopce' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Dodaj pozycję menu' }).first()).toBeVisible()
+  await expect(
+    page.locator(
+      '[id^="field-socialItems"][id$="customScheme"] .clear-indicator, [id^="field-footerColumns"][id$="customScheme"] .clear-indicator',
+    ),
+  ).toHaveCount(0)
+})

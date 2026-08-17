@@ -59,6 +59,9 @@ function setFieldWidth(field: Field): Field {
 const pageParentField: Field = {
   name: 'parent',
   type: 'relationship',
+  admin: {
+    placeholder: '<brak>',
+  },
   filterOptions: ({ id }) => (id ? { id: { not_equals: id } } : true),
   label: 'Strona nadrzędna',
   relationTo: 'pages',
@@ -73,6 +76,11 @@ export const Pages: CollectionConfig = {
     update: updatePages,
   },
   admin: {
+    components: {
+      edit: {
+        beforeDocumentControls: ['/components/admin/PageCreateLabel#PageCreateLabel'],
+      },
+    },
     defaultColumns: ['title', 'slug', '_status', 'publishedAt', 'updatedAt'],
     group: 'Treści',
     listSearchableFields: ['title', 'slug'],
@@ -98,7 +106,7 @@ export const Pages: CollectionConfig = {
         description:
           'Opcjonalny opis karty. Bez niego użyty zostanie początek pierwszego bloku treści.',
       },
-      label: 'Streszczenie listingu',
+      label: 'Streszczenie',
       maxLength: 500,
     },
     createContentLayoutField('Treści'),

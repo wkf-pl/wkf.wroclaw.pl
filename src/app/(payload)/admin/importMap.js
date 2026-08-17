@@ -30,6 +30,7 @@ import { MemberProfileEntryRowLabel as MemberProfileEntryRowLabel_d89d5b210a2467
 import { MemberProfilesBlockLabel as MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { UserRelationshipCell as UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
 import { UserRelationshipField as UserRelationshipField_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
+import { PageCreateLabel as PageCreateLabel_0ea542d15a7bc53da30cd446a6eac5d4 } from '../../../components/admin/PageCreateLabel'
 import { TaxonomyRelatedContentJoin as TaxonomyRelatedContentJoin_ad60bb5c4bf3dd1eafbb015124f8d349 } from '../../../components/admin/TaxonomyRelatedContentJoin'
 import { TaxonomyCell as TaxonomyCell_fd0f0ca32d7a45be5929fc2ef04497f8 } from '../../../components/admin/MediaTableCells'
 import { URLCell as URLCell_fd0f0ca32d7a45be5929fc2ef04497f8 } from '../../../components/admin/MediaTableCells'
@@ -44,6 +45,7 @@ import { DocumentTypeField as DocumentTypeField_947aecc9229f5a3494b670e39324b4fe
 import { CustomAddressField as CustomAddressField_62e9eb14ca92d7097b00888098bd948f } from '../../../components/admin/CustomAddressField'
 import { FooterColumnItemRowLabel as FooterColumnItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { UserDisplayNameCell as UserDisplayNameCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
+import { UserEmailCell as UserEmailCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
 import { PermissionResourceField as PermissionResourceField_67f510ca66240b59a1f7becaf5b326c0 } from '../../../components/admin/PermissionResourceField'
 import { PermissionRowLabel as PermissionRowLabel_2aad346eb5e12c6ee690c795b76ce94c } from '../../../components/admin/PermissionRowLabel'
 import { NavigationItemRowLabel as NavigationItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
@@ -91,6 +93,7 @@ export const importMap = {
   "/components/admin/ContentBlockLabel#MemberProfilesBlockLabel": MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/UserIdentity#UserRelationshipCell": UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53,
   "/components/admin/UserIdentity#UserRelationshipField": UserRelationshipField_0af2ec3c6a63521c7b2eedb66024da53,
+  "/components/admin/PageCreateLabel#PageCreateLabel": PageCreateLabel_0ea542d15a7bc53da30cd446a6eac5d4,
   "/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin": TaxonomyRelatedContentJoin_ad60bb5c4bf3dd1eafbb015124f8d349,
   "/components/admin/MediaTableCells#TaxonomyCell": TaxonomyCell_fd0f0ca32d7a45be5929fc2ef04497f8,
   "/components/admin/MediaTableCells#URLCell": URLCell_fd0f0ca32d7a45be5929fc2ef04497f8,
@@ -105,6 +108,7 @@ export const importMap = {
   "/components/admin/CustomAddressField#CustomAddressField": CustomAddressField_62e9eb14ca92d7097b00888098bd948f,
   "/components/admin/DynamicRowLabel#FooterColumnItemRowLabel": FooterColumnItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/UserIdentity#UserDisplayNameCell": UserDisplayNameCell_0af2ec3c6a63521c7b2eedb66024da53,
+  "/components/admin/UserIdentity#UserEmailCell": UserEmailCell_0af2ec3c6a63521c7b2eedb66024da53,
   "/components/admin/PermissionResourceField#PermissionResourceField": PermissionResourceField_67f510ca66240b59a1f7becaf5b326c0,
   "/components/admin/PermissionRowLabel#PermissionRowLabel": PermissionRowLabel_2aad346eb5e12c6ee690c795b76ce94c,
   "/components/admin/DynamicRowLabel#NavigationItemRowLabel": NavigationItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,

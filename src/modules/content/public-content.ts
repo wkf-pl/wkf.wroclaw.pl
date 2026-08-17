@@ -3,14 +3,7 @@ import { getPayload } from 'payload'
 
 import config from '@payload-config'
 
-import type {
-  Category,
-  ClubSection,
-  Navigation,
-  Post,
-  SiteSetting,
-  Tag,
-} from '@/payload-types'
+import type { Category, ClubSection, Navigation, Post, SiteSetting, Tag } from '@/payload-types'
 import { getCurrentUser } from '@/modules/auth/current-user'
 import { websiteRequestContext } from '@/modules/membership/role-permissions'
 
@@ -42,6 +35,7 @@ export const getPublicNavigation = cache(async (): Promise<Navigation> => {
   const payload = await getPayload({ config })
   return payload.findGlobal({
     slug: 'navigation',
+    context: websiteRequestContext,
     depth: 2,
     overrideAccess: false,
     user: null,
@@ -52,6 +46,7 @@ export const getPublicSiteSettings = cache(async (): Promise<SiteSetting> => {
   const payload = await getPayload({ config })
   return payload.findGlobal({
     slug: 'site-settings',
+    context: websiteRequestContext,
     depth: 1,
     overrideAccess: false,
     user: null,

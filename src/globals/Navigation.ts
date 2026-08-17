@@ -57,6 +57,10 @@ export const Navigation: GlobalConfig = {
                 ...createIconFields({ showWhenAppearanceIcon: true }),
               ],
               label: 'Elementy nagłówka',
+              labels: {
+                plural: 'Pozycje menu w nagłówku',
+                singular: 'pozycję menu w nagłówku',
+              },
             },
           ],
         },
@@ -73,6 +77,10 @@ export const Navigation: GlobalConfig = {
               },
               fields: createLinkFields(),
               label: 'Elementy Hero',
+              labels: {
+                plural: 'Pozycje menu w sekcji Hero',
+                singular: 'pozycję menu w sekcji Hero',
+              },
             },
           ],
         },
@@ -89,6 +97,10 @@ export const Navigation: GlobalConfig = {
               },
               fields: [...createLinkFields(), ...createIconFields({ required: true })],
               label: 'Media społecznościowe',
+              labels: {
+                plural: 'Media społecznościowe',
+                singular: 'medium społecznościowe',
+              },
             },
             {
               name: 'footerColumns',
@@ -115,9 +127,17 @@ export const Navigation: GlobalConfig = {
                   },
                   fields: createLinkFields(),
                   label: 'Odnośniki',
+                  labels: {
+                    plural: 'Pozycje menu',
+                    singular: 'pozycję menu',
+                  },
                 },
               ],
               label: 'Kolumny linków',
+              labels: {
+                plural: 'Kolumny menu w stopce',
+                singular: 'kolumnę menu w stopce',
+              },
             },
           ],
         },

@@ -227,7 +227,9 @@ test('opens a member profile from account and publishes the automatically create
 
   await page.locator('#field-publicName').fill('Celina E2E')
   await page.getByRole('button', { name: /^Opublikuj/ }).click()
-  await expect(page.getByText('Opublikowano', { exact: true })).toBeVisible({ timeout: 20_000 })
+  await expect(
+    page.locator('.doc-controls__status').getByText('Opublikowano', { exact: true }),
+  ).toBeVisible({ timeout: 20_000 })
 
   await page.goto('/members/codex-member-profile-creator-e2e')
   await expect(page.getByRole('heading', { level: 1, name: 'Celina E2E' })).toBeVisible()

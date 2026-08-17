@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  Link,
   RelationshipField,
   Tooltip,
   useAuth,
@@ -11,12 +12,13 @@ import {
 } from '@payloadcms/ui'
 import type {
   DefaultCellComponentProps,
+  EmailFieldClient,
   RelationshipFieldClient,
   RelationshipFieldClientProps,
   TextFieldClient,
 } from 'payload'
 import { formatAdminURL } from 'payload/shared'
-import type { FocusEvent, MouseEvent } from 'react'
+import type { FocusEvent, MouseEvent, ReactNode } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 
 import type { User } from '@/payload-types'
@@ -59,13 +61,65 @@ export function UserIdentity({ displayName, email }: UserIdentityProperties) {
 
 export function UserDisplayNameCell({
   cellData,
+  collectionSlug,
+  linkURL,
   rowData,
 }: DefaultCellComponentProps<TextFieldClient>) {
   return (
-    <UserIdentity
-      displayName={typeof cellData === 'string' ? cellData : null}
-      email={getStringProperty(rowData, 'email')}
-    />
+    <UserDocumentLink collectionSlug={collectionSlug} linkURL={linkURL} rowData={rowData}>
+      <UserIdentity
+        displayName={typeof cellData === 'string' ? cellData : null}
+        email={getStringProperty(rowData, 'email')}
+      />
+    </UserDocumentLink>
+  )
+}
+
+export function UserEmailCell({
+  cellData,
+  collectionSlug,
+  linkURL,
+  rowData,
+}: DefaultCellComponentProps<EmailFieldClient>) {
+  return (
+    <UserDocumentLink collectionSlug={collectionSlug} linkURL={linkURL} rowData={rowData}>
+      {typeof cellData === 'string' ? cellData : '—'}
+    </UserDocumentLink>
+  )
+}
+
+function UserDocumentLink({
+  children,
+  collectionSlug,
+  linkURL,
+  rowData,
+}: {
+  children: ReactNode
+  collectionSlug: string
+  linkURL?: string
+  rowData: Record<string, unknown>
+}) {
+  const {
+    config: {
+      routes: { admin: adminRoute },
+    },
+  } = useConfig()
+
+  if (rowData.id === null || rowData.id === undefined) {
+    return children
+  }
+
+  const userDocumentURL =
+    linkURL ??
+    formatAdminURL({
+      adminRoute,
+      path: `/collections/${collectionSlug}/${encodeURIComponent(String(rowData.id))}`,
+    })
+
+  return (
+    <Link href={userDocumentURL} prefetch={false}>
+      {children}
+    </Link>
   )
 }
 

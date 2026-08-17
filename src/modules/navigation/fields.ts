@@ -134,6 +134,7 @@ export function createLinkFields(): Field[] {
           type: 'select',
           admin: {
             condition: isCustomTarget,
+            isClearable: false,
             width: '25%',
           },
           defaultValue: 'https',

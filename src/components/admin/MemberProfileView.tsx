@@ -15,6 +15,8 @@ import { formatAdminURL } from 'payload/shared'
 import type { MemberProfile } from '@/payload-types'
 import { getUserIdentity } from '@/modules/membership/role-permissions'
 
+import { MemberProfilePublicationStatusSync } from './MemberProfilePublicationStatusSync'
+
 async function findOwnedProfile({
   ownerID,
   payload,
@@ -163,6 +165,7 @@ export async function MemberProfileView({
       unpublishedVersionCount={unpublishedVersionCount}
       versionCount={versions.totalDocs}
     >
+      <MemberProfilePublicationStatusSync />
       <LivePreviewProvider
         isLivePreviewEnabled={false}
         isLivePreviewing={false}

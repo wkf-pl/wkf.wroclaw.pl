@@ -69,13 +69,27 @@ test('shows display names with email tooltips in the users list', async ({ page 
   await login({ page, user: administratorTestUser })
   await page.goto('/admin/collections/users')
 
+  await expect(page.getByRole('columnheader', { name: /^Adres e-mail/ })).toBeVisible()
   const userName = page
     .locator('.table .wkf-user-identity')
     .filter({ hasText: administratorTestUser.displayName })
   await expect(userName).toBeVisible()
+  await expect(userName.locator('xpath=ancestor::a[1]')).toHaveAttribute(
+    'href',
+    /\/admin\/collections\/users\/\d+$/,
+  )
+  const administratorRow = page
+    .locator('tbody tr')
+    .filter({ hasText: administratorTestUser.email })
+  await expect(
+    administratorRow.getByRole('link', { exact: true, name: administratorTestUser.email }),
+  ).toHaveAttribute('href', /\/admin\/collections\/users\/\d+$/)
   await userName.hover()
 
   await expect(page.locator('.tooltip--show')).toContainText(administratorTestUser.email)
+
+  await page.locator('tbody input[type="checkbox"]').first().check()
+  await expect(page.getByRole('button', { exact: true, name: 'Edytuj' })).toHaveCount(0)
 })
 
 test('shows CMS resources but no administration collections to an editor', async ({ page }) => {

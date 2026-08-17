@@ -1,16 +1,58 @@
 import { expect, test } from '@playwright/test'
 import { getPayload } from 'payload'
+import sharp from 'sharp'
 
 import config from '../../src/payload.config.js'
-import type { Navigation } from '../../src/payload-types.js'
+import type { Media, Navigation, SiteSetting } from '../../src/payload-types.js'
 
 let originalNavigation: Navigation
+let originalSiteSettings: SiteSetting
+let heroMedia: Media
 
 test.beforeAll(async () => {
   const payload = await getPayload({ config })
   originalNavigation = await payload.findGlobal({
     slug: 'navigation',
     depth: 0,
+    overrideAccess: true,
+  })
+  originalSiteSettings = await payload.findGlobal({
+    slug: 'site-settings',
+    depth: 0,
+    overrideAccess: true,
+  })
+  const aboutPages = await payload.find({
+    collection: 'pages',
+    depth: 0,
+    limit: 1,
+    overrideAccess: true,
+    where: { slug: { equals: 'o-nas' } },
+  })
+  const aboutPage = aboutPages.docs[0]
+
+  if (!aboutPage) {
+    throw new Error('Missing the published O nas page required by menu E2E tests.')
+  }
+
+  const heroImageData = await sharp({
+    create: { background: '#b55a2a', channels: 4, height: 48, width: 96 },
+  })
+    .png()
+    .toBuffer()
+  heroMedia = await payload.create({
+    collection: 'media',
+    data: { alt: 'E2E Hero' },
+    file: {
+      data: heroImageData,
+      mimetype: 'image/png',
+      name: 'e2e-home-hero.png',
+      size: heroImageData.length,
+    },
+    overrideAccess: true,
+  })
+  await payload.updateGlobal({
+    slug: 'site-settings',
+    data: { heroImage: heroMedia.id },
     overrideAccess: true,
   })
 
@@ -57,10 +99,9 @@ test.beforeAll(async () => {
         {
           items: [
             {
-              customAddress: 'blog',
-              customScheme: 'path',
-              label: 'Aktualności',
-              targetType: 'custom',
+              label: 'O nas',
+              page: aboutPage.id,
+              targetType: 'page',
             },
           ],
           title: 'Nawigacja',
@@ -85,10 +126,9 @@ test.beforeAll(async () => {
         },
         {
           appearance: 'button',
-          customAddress: 'o-nas',
-          customScheme: 'path',
           label: 'O nas',
-          targetType: 'custom',
+          page: aboutPage.id,
+          targetType: 'page',
         },
       ],
       heroItems: [
@@ -117,6 +157,12 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   const payload = await getPayload({ config })
   await payload.updateGlobal({
+    slug: 'site-settings',
+    data: { heroImage: originalSiteSettings.heroImage },
+    overrideAccess: true,
+  })
+  await payload.delete({ collection: 'media', id: heroMedia.id, overrideAccess: true })
+  await payload.updateGlobal({
     slug: 'navigation',
     data: {
       footerColumns: originalNavigation.footerColumns,
@@ -138,6 +184,7 @@ test('renders editable menus and only published club sections on the home page',
 }) => {
   await page.goto('/')
 
+  await expect(page.locator('.homeHeroImage')).toHaveAttribute('src', /e2e-home-hero\.png/)
   await expect(page.getByRole('navigation', { name: 'Główna nawigacja' })).toContainText(
     'Aktualności',
   )
@@ -145,7 +192,11 @@ test('renders editable menus and only published club sections on the home page',
     'href',
     'mailto:kontakt@example.invalid',
   )
-  await expect(page.getByRole('link', { name: 'O nas' })).toHaveClass(/headerMenuItem-button/)
+  const aboutHeaderLink = page
+    .getByRole('navigation', { name: 'Główna nawigacja' })
+    .getByRole('link', { name: 'O nas' })
+  await expect(aboutHeaderLink).toHaveClass(/headerMenuItem-button/)
+  await expect(aboutHeaderLink).toHaveAttribute('href', '/o-nas')
   await expect(page.getByRole('navigation', { name: 'Obszary klubu' })).toContainText('Gry RPG')
   await expect(page.getByRole('heading', { name: 'E2E RPG' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'E2E LARP' })).toHaveCount(0)
@@ -155,8 +206,11 @@ test('renders editable menus and only published club sections on the home page',
     'https://slack.example.invalid',
   )
   await expect(page.getByRole('navigation', { name: 'Nawigacja w stopce' })).toContainText(
-    'Aktualności',
+    'O nas',
   )
+  await expect(
+    page.getByRole('navigation', { name: 'Nawigacja w stopce' }).getByRole('link', { name: 'O nas' }),
+  ).toHaveAttribute('href', '/o-nas')
 })
 
 test('keeps the global header and footer on blog and CMS pages', async ({ page }) => {

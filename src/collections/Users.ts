@@ -31,6 +31,7 @@ export const Users: CollectionConfig = {
     update: updateUsers,
   },
   admin: {
+    defaultColumns: ['displayName', 'email', 'roles', 'updatedAt'],
     group: 'Administracja',
     hidden: ({ user }) => !clientUserHasResourcePermission(user, 'users', 'read'),
     useAsTitle: 'displayName',
@@ -38,7 +39,18 @@ export const Users: CollectionConfig = {
   auth: {
     depth: 1,
   },
+  disableBulkEdit: true,
   fields: [
+    {
+      name: 'email',
+      type: 'email',
+      admin: {
+        components: {
+          Cell: '/components/admin/UserIdentity#UserEmailCell',
+        },
+      },
+      label: 'Adres e-mail',
+    },
     {
       name: 'displayName',
       type: 'text',

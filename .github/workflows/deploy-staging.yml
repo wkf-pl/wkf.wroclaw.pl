@@ -1,14 +1,7 @@
 name: Deploy staging
 
 on:
-  workflow_run:
-    workflows:
-      - CI
-    branches:
-      - main
-      - master
-    types:
-      - completed
+  workflow_call:
   workflow_dispatch:
 
 concurrency:
@@ -25,7 +18,6 @@ env:
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     environment: staging
     env:
@@ -35,7 +27,7 @@ jobs:
       STAGING_ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
       STAGING_ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
       STAGING_ENTRA_TENANT_ID: ${{ vars.ENTRA_TENANT_ID }}
-      SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      SOURCE_SHA: ${{ github.sha }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4

@@ -76,3 +76,14 @@ test('starts page and post forms with an expanded content block', async ({ page 
     await expect(block.locator('.blocks-field__fields')).toBeVisible()
   }
 })
+
+test('renders the customized page create form', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto('/admin/collections/pages/create')
+
+  await expect(page.locator('.doc-controls__meta')).toContainText('Tworzenie nowej Strony')
+  await expect(page.locator('#field-parent')).toContainText('<brak>')
+  await expect(page.getByRole('textbox', { name: 'Streszczenie' })).toBeVisible()
+  await expect(page.locator('#field-layout')).toContainText('Dodaj blok treści')
+  await expect(page.locator('#field-layout [contenteditable="true"]')).toBeEditable()
+})

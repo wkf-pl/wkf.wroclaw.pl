@@ -56,9 +56,16 @@ Po pierwszym utworzeniu stagingu dodaj do rejestracji aplikacji Entra URI przeki
 https://<adres-stagingu>/.auth/login/aad/callback
 ```
 
+Włącz również wydawanie ID tokenów wymaganych przez przepływ logowania Easy Auth:
+
+```bash
+az ad app update --id "$ENTRA_CLIENT_ID" --enable-id-token-issuance true
+```
+
 ## Wdrożenia
 
-Udane zakończenie `ci.yml` po zmianie w `main` lub `master` uruchamia `deploy-staging.yml`. Workflow:
+Udane zakończenie `ci.yml` po pushu do `dev` wywołuje wielokrotnego użytku
+`deploy-staging.yml`. Pull request uruchamia walidację, ale nie wdrożenie. Workflow stagingowy:
 
 1. uzgadnia wspólne zasoby,
 2. buduje obraz w ACR i odczytuje jego digest,

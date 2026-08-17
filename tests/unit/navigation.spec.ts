@@ -4,6 +4,7 @@ import type { Category, Media, Page, Tag } from '@/payload-types'
 import { ClubSections } from '@/collections/ClubSections'
 import { Navigation } from '@/globals/Navigation'
 import {
+  createLinkFields,
   isCategoryTarget,
   isCustomTarget,
   isPageTarget,
@@ -47,6 +48,31 @@ function createPage(overrides: Partial<Page> = {}): Page {
 }
 
 describe('navigation links', () => {
+  it('does not allow clearing a selected custom URL scheme', () => {
+    const customSchemeField = createLinkFields()
+      .flatMap((field) => ('fields' in field ? field.fields : [field]))
+      .find((field) => 'name' in field && field.name === 'customScheme')
+
+    expect(customSchemeField).toMatchObject({
+      admin: { isClearable: false },
+    })
+  })
+
+  it('uses the requested add-button labels for navigation arrays', () => {
+    expect(findArrayField(Navigation.fields, 'headerItems')).toMatchObject({
+      labels: { singular: 'pozycję menu w nagłówku' },
+    })
+    expect(findArrayField(Navigation.fields, 'heroItems')).toMatchObject({
+      labels: { singular: 'pozycję menu w sekcji Hero' },
+    })
+    expect(findArrayField(Navigation.fields, 'socialItems')).toMatchObject({
+      labels: { singular: 'medium społecznościowe' },
+    })
+    expect(findArrayField(Navigation.fields, 'footerColumns')).toMatchObject({
+      labels: { singular: 'kolumnę menu w stopce' },
+    })
+  })
+
   it('uses descriptive row labels for menu configuration', () => {
     expect(findArrayField(Navigation.fields, 'headerItems')).toMatchObject({
       admin: {

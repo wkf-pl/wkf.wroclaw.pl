@@ -28,6 +28,34 @@ function describeFieldOrder(fields: typeof Pages.fields): (string | string[])[] 
 }
 
 describe('page configuration', () => {
+  it('uses the custom grammatically correct create label', () => {
+    expect(Pages.admin?.components?.edit?.beforeDocumentControls).toContain(
+      '/components/admin/PageCreateLabel#PageCreateLabel',
+    )
+  })
+
+  it('uses the intended create-form labels, placeholder, and empty rich text value', () => {
+    const parentField = Pages.fields
+      .flatMap((field) => ('fields' in field ? field.fields : [field]))
+      .find((field) => 'name' in field && field.name === 'parent')
+    const excerptField = Pages.fields.find(
+      (field) => 'name' in field && field.name === 'listingExcerpt',
+    )
+    const layoutField = Pages.fields.find((field) => 'name' in field && field.name === 'layout')
+
+    expect(parentField).toMatchObject({ admin: { placeholder: '<brak>' } })
+    expect(excerptField).toMatchObject({ label: 'Streszczenie' })
+    expect(layoutField).toMatchObject({
+      defaultValue: [
+        {
+          blockType: 'richText',
+          content: { root: { children: [{ type: 'paragraph' }] } },
+        },
+      ],
+      labels: { singular: 'blok treści' },
+    })
+  })
+
   it('arranges listing controls into the requested rows', () => {
     const rows = ListingBlock.fields.filter((field) => field.type === 'row')
     const rowFieldNames = rows.map((row) =>
