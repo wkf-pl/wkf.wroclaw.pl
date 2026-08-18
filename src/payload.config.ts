@@ -6,15 +6,20 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
+import { migrations } from '../migrations'
+
 import {
   Categories,
   ClubSections,
   DocumentFiles,
   Documents,
+  EventCycles,
+  Events,
   Media,
   MemberProfileImages,
   MemberProfiles,
   Pages,
+  Partners,
   Posts,
   Roles,
   Tags,
@@ -94,6 +99,8 @@ export default buildConfig({
   collections: [
     Pages,
     Posts,
+    Events,
+    EventCycles,
     Categories,
     Tags,
     Media,
@@ -101,6 +108,7 @@ export default buildConfig({
     MemberProfiles,
     DocumentFiles,
     Documents,
+    Partners,
     ClubSections,
     Users,
     Roles,
@@ -120,9 +128,11 @@ export default buildConfig({
     outputFile: path.resolve(directoryName, 'payload-types.ts'),
   },
   db: postgresAdapter({
+    migrationDir: path.resolve(directoryName, '../migrations'),
     pool: {
       connectionString: getRequiredEnvironmentVariable('DATABASE_URL'),
     },
+    prodMigrations: migrations,
   }),
   sharp,
   plugins: createStoragePlugins(),

@@ -67,3 +67,7 @@ export function ContactChannelRowLabel() {
 export function GameRowLabel() {
   return <DynamicLabel prefix="Gra" value={useRowValue('title')} />
 }
+
+export function EventLinkRowLabel() {
+  return <DynamicLabel prefix="Link" value={useRowValue('label')} />
+}

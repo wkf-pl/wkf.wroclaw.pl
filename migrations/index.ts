@@ -1,19 +1,23 @@
-import * as migration_20260810_194314_cms_content from './20260810_194314_cms_content';
-import * as migration_20260811_173414_roles_permissions from './20260811_173414_roles_permissions';
-import * as migration_20260812_152738 from './20260812_152738';
-import * as migration_20260813_085107 from './20260813_085107';
-import * as migration_20260813_134157_user_display_name_required from './20260813_134157_user_display_name_required';
-import * as migration_20260813_141107_unique_user_display_name from './20260813_141107_unique_user_display_name';
-import * as migration_20260813_153850_slack_system_icon from './20260813_153850_slack_system_icon';
-import * as migration_20260813_203713 from './20260813_203713';
-import * as migration_20260814_103530_documents from './20260814_103530_documents';
-import * as migration_20260814_213808_member_profiles from './20260814_213808_member_profiles';
-import * as migration_20260816_003649 from './20260816_003649';
-import * as migration_20260816_010752_repair_footer_rich_text from './20260816_010752_repair_footer_rich_text';
-import * as migration_20260816_130137_posts_layout from './20260816_130137_posts_layout';
-import * as migration_20260816_150812_media_blocks from './20260816_150812_media_blocks';
-import * as migration_20260816_193058_move_footer_settings_to_site_settings from './20260816_193058_move_footer_settings_to_site_settings';
-import * as migration_20260816_205033_unified_web_permissions from './20260816_205033_unified_web_permissions';
+import * as migration_20260810_194314_cms_content from './20260810_194314_cms_content'
+import * as migration_20260811_173414_roles_permissions from './20260811_173414_roles_permissions'
+import * as migration_20260812_152738 from './20260812_152738'
+import * as migration_20260813_085107 from './20260813_085107'
+import * as migration_20260813_134157_user_display_name_required from './20260813_134157_user_display_name_required'
+import * as migration_20260813_141107_unique_user_display_name from './20260813_141107_unique_user_display_name'
+import * as migration_20260813_153850_slack_system_icon from './20260813_153850_slack_system_icon'
+import * as migration_20260813_203713 from './20260813_203713'
+import * as migration_20260814_103530_documents from './20260814_103530_documents'
+import * as migration_20260814_213808_member_profiles from './20260814_213808_member_profiles'
+import * as migration_20260816_003649 from './20260816_003649'
+import * as migration_20260816_010752_repair_footer_rich_text from './20260816_010752_repair_footer_rich_text'
+import * as migration_20260816_130137_posts_layout from './20260816_130137_posts_layout'
+import * as migration_20260816_150812_media_blocks from './20260816_150812_media_blocks'
+import * as migration_20260816_193058_move_footer_settings_to_site_settings from './20260816_193058_move_footer_settings_to_site_settings'
+import * as migration_20260816_205033_unified_web_permissions from './20260816_205033_unified_web_permissions'
+import * as migration_20260818_151047_events from './20260818_151047_events'
+import * as migration_20260818_151505_event_calendar_tracking from './20260818_151505_event_calendar_tracking'
+import * as migration_20260818_164834_event_cycle_default_title from './20260818_164834_event_cycle_default_title'
+import * as migration_20260818_181938_event_link_targets from './20260818_181938_event_link_targets'
 
 export const migrations = [
   {
@@ -94,6 +98,26 @@ export const migrations = [
   {
     up: migration_20260816_205033_unified_web_permissions.up,
     down: migration_20260816_205033_unified_web_permissions.down,
-    name: '20260816_205033_unified_web_permissions'
+    name: '20260816_205033_unified_web_permissions',
   },
-];
+  {
+    up: migration_20260818_151047_events.up,
+    down: migration_20260818_151047_events.down,
+    name: '20260818_151047_events',
+  },
+  {
+    up: migration_20260818_151505_event_calendar_tracking.up,
+    down: migration_20260818_151505_event_calendar_tracking.down,
+    name: '20260818_151505_event_calendar_tracking',
+  },
+  {
+    up: migration_20260818_164834_event_cycle_default_title.up,
+    down: migration_20260818_164834_event_cycle_default_title.down,
+    name: '20260818_164834_event_cycle_default_title',
+  },
+  {
+    up: migration_20260818_181938_event_link_targets.up,
+    down: migration_20260818_181938_event_link_targets.down,
+    name: '20260818_181938_event_link_targets',
+  },
+]

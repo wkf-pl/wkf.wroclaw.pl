@@ -59,6 +59,8 @@ export const ListingBlock: Block = {
           options: [
             { label: 'Strony', value: 'pages' },
             { label: 'Wpisy', value: 'posts' },
+            { label: 'Wydarzenia', value: 'events' },
+            { label: 'Cykle wydarzeń', value: 'event-cycles' },
           ],
           required: true,
           validate: validateListingSources,
@@ -111,6 +113,7 @@ export const ListingBlock: Block = {
             { label: 'Najstarsze', value: 'oldest' },
             { label: 'Tytuł A–Z', value: 'titleAscending' },
             { label: 'Tytuł Z–A', value: 'titleDescending' },
+            { label: 'Termin wydarzenia', value: 'eventDateAscending' },
           ],
           required: true,
         },
@@ -126,6 +129,30 @@ export const ListingBlock: Block = {
             { label: 'Siatka', value: 'grid' },
           ],
           required: true,
+        },
+      ],
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'eventTimeFilter',
+          type: 'select',
+          admin: { isClearable: false, width: '50%' },
+          defaultValue: 'all',
+          label: 'Terminy Wydarzeń',
+          options: [
+            { label: 'Wszystkie', value: 'all' },
+            { label: 'Trwające i nadchodzące', value: 'upcoming' },
+            { label: 'Minione', value: 'past' },
+          ],
+        },
+        {
+          name: 'eventCycle',
+          type: 'relationship',
+          admin: { placeholder: '<bieżący cykl lub brak>', width: '50%' },
+          label: 'Wskazany Cykl wydarzeń',
+          relationTo: 'event-cycles',
         },
       ],
     },

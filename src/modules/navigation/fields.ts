@@ -25,6 +25,10 @@ export function isTagTarget(_data: unknown, siblingData: NavigationSiblingData):
   return siblingData.targetType === 'tag'
 }
 
+function isTarget(type: string) {
+  return (_data: unknown, siblingData: NavigationSiblingData) => siblingData.targetType === type
+}
+
 export function usesCustomIcon(_data: unknown, siblingData: NavigationSiblingData): boolean {
   return siblingData.iconSource === 'media'
 }
@@ -70,7 +74,19 @@ export const validateTagTarget: Validate<unknown, unknown, NavigationSiblingData
   { siblingData },
 ) => (siblingData.targetType !== 'tag' || value ? true : 'Wybierz tag docelowy.')
 
-export function createLinkFields(): Field[] {
+function validateTarget(
+  type: string,
+  message: string,
+): Validate<unknown, unknown, NavigationSiblingData> {
+  return (value, { siblingData }) => (siblingData.targetType !== type || value ? true : message)
+}
+
+export function createLinkFields({
+  compactDatabaseNames = false,
+}: { compactDatabaseNames?: boolean } = {}): Field[] {
+  const databaseName = (name: string): string | undefined =>
+    compactDatabaseNames ? name : undefined
+
   return [
     {
       name: 'label',
@@ -81,15 +97,46 @@ export function createLinkFields(): Field[] {
     {
       name: 'targetType',
       type: 'radio',
+      dbName: databaseName('target'),
       defaultValue: 'custom',
       label: 'Cel odnośnika',
       options: [
         { label: 'Strona', value: 'page' },
         { label: 'Kategoria', value: 'category' },
         { label: 'Tag', value: 'tag' },
+        { label: 'Wydarzenie', value: 'event' },
+        { label: 'Cykl wydarzeń', value: 'eventCycle' },
+        { label: 'Partner', value: 'partner' },
         { label: 'Własny adres', value: 'custom' },
       ],
       required: true,
+    },
+    {
+      name: 'event',
+      type: 'relationship',
+      relationTo: 'events',
+      label: 'Wydarzenie',
+      admin: { condition: isTarget('event') },
+      filterOptions: { _status: { equals: 'published' } },
+      validate: validateTarget('event', 'Wybierz wydarzenie docelowe.'),
+    },
+    {
+      name: 'eventCycle',
+      type: 'relationship',
+      relationTo: 'event-cycles',
+      label: 'Cykl wydarzeń',
+      admin: { condition: isTarget('eventCycle') },
+      filterOptions: { _status: { equals: 'published' } },
+      validate: validateTarget('eventCycle', 'Wybierz cykl docelowy.'),
+    },
+    {
+      name: 'partner',
+      type: 'relationship',
+      relationTo: 'partners',
+      label: 'Partner',
+      admin: { condition: isTarget('partner') },
+      filterOptions: { _status: { equals: 'published' } },
+      validate: validateTarget('partner', 'Wybierz Partnera docelowego.'),
     },
     {
       name: 'page',
@@ -132,6 +179,7 @@ export function createLinkFields(): Field[] {
         {
           name: 'customScheme',
           type: 'select',
+          dbName: databaseName('scheme'),
           admin: {
             condition: isCustomTarget,
             isClearable: false,

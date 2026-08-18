@@ -54,6 +54,27 @@ export const Posts: CollectionConfig = {
     },
     getEditorialField('heroImage'),
     getEditorialField('excerpt'),
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'relatedEvents',
+          type: 'relationship',
+          admin: { placeholder: '<brak>', width: '50%' },
+          hasMany: true,
+          label: 'Powiązane wydarzenia',
+          relationTo: 'events',
+        },
+        {
+          name: 'relatedEventCycles',
+          type: 'relationship',
+          admin: { placeholder: '<brak>', width: '50%' },
+          hasMany: true,
+          label: 'Powiązane cykle',
+          relationTo: 'event-cycles',
+        },
+      ],
+    },
     createContentLayoutField('Treści'),
     getEditorialField('author'),
     getEditorialField('publishedAt'),

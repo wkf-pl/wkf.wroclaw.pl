@@ -31,9 +31,11 @@ export function formatSlug(value: string): string {
 }
 
 export const populateSlug: FieldHook<SlugDocument, string | null | undefined, SlugDocument> = ({
+  context,
   siblingData,
   value,
 }) => {
+  if (context.skipSlugGeneration === true) return value
   const source = value || siblingData.title
 
   return typeof source === 'string' ? formatSlug(source) : value

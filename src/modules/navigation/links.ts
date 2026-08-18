@@ -1,4 +1,13 @@
-import type { Category, Media, Navigation, Page, Tag } from '@/payload-types'
+import type {
+  Category,
+  Event,
+  EventCycle,
+  Media,
+  Navigation,
+  Page,
+  Partner,
+  Tag,
+} from '@/payload-types'
 import { buildCustomTarget, isCustomScheme } from './custom-target'
 import { isSystemIconName } from './icon-names'
 
@@ -6,7 +15,16 @@ export type NavigationItem = NonNullable<Navigation['headerItems']>[number]
 
 type LinkTarget = Pick<
   NavigationItem,
-  'category' | 'customAddress' | 'customScheme' | 'openInNewTab' | 'page' | 'tag' | 'targetType'
+  | 'category'
+  | 'customAddress'
+  | 'customScheme'
+  | 'event'
+  | 'eventCycle'
+  | 'openInNewTab'
+  | 'page'
+  | 'partner'
+  | 'tag'
+  | 'targetType'
 >
 
 export type ResolvedLink = {
@@ -27,6 +45,15 @@ export function resolveLink(item: LinkTarget): ResolvedLink | null {
   } else if (item.targetType === 'tag') {
     const tag = getTaxonomyDocument(item.tag)
     href = tag ? `/tag/${tag.slug}` : undefined
+  } else if (item.targetType === 'event') {
+    const event = getPublishedDocument(item.event)
+    href = event ? `/events/${event.slug}` : undefined
+  } else if (item.targetType === 'eventCycle') {
+    const cycle = getPublishedDocument(item.eventCycle)
+    href = cycle ? `/events/series/${cycle.slug}` : undefined
+  } else if (item.targetType === 'partner') {
+    const partner = getPublishedDocument(item.partner)
+    href = partner ? `/partners/${partner.slug}` : undefined
   } else {
     href = isCustomScheme(item.customScheme)
       ? (buildCustomTarget(item.customScheme, item.customAddress) ?? undefined)
@@ -38,6 +65,14 @@ export function resolveLink(item: LinkTarget): ResolvedLink | null {
   }
 
   return item.openInNewTab ? { href, rel: 'noopener noreferrer', target: '_blank' } : { href }
+}
+
+function getPublishedDocument<T extends Event | EventCycle | Partner>(
+  value: null | number | T | undefined,
+): T | null {
+  return value && typeof value === 'object' && value._status === 'published' && value.slug
+    ? value
+    : null
 }
 
 function getTaxonomyDocument(

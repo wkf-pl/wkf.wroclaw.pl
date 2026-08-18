@@ -1,7 +1,8 @@
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { redirect } from 'next/navigation'
+import type { ReactNode } from 'react'
 
-import type { ListingBlock, Page, Post, User } from '@/payload-types'
+import type { Event, EventCycle, ListingBlock, Page, Partner, Post, User } from '@/payload-types'
 import { getCurrentUser } from '@/modules/auth/current-user'
 import {
   findPublicContent,
@@ -16,10 +17,13 @@ import { MediaBlockSection } from './MediaBlockSection'
 import { TaxonomyLinks } from './TaxonomyLinks'
 
 type CmsPageDocumentProperties = {
-  document: Page | Post
+  document: Event | EventCycle | Page | Partner | Post
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
   showBlogEyebrow?: boolean
+  eyebrow?: string
+  afterBlocks?: ReactNode
+  beforeBlocks?: ReactNode
 }
 
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
@@ -33,15 +37,21 @@ export function CmsPageDocument({
   pathname,
   searchParams,
   showBlogEyebrow = false,
+  eyebrow,
+  afterBlocks,
+  beforeBlocks,
 }: CmsPageDocumentProperties) {
   const authorName = getAuthorName(document.author)
+  const categories = 'categories' in document ? document.categories : undefined
+  const tags = 'tags' in document ? document.tags : undefined
+  const title = 'title' in document ? document.title : document.name
   return (
     <main className="contentShell">
       <article className="cmsDocument cmsPageDocument">
         <header className="cmsDocumentHeader">
-          {showBlogEyebrow ? <p className="eyebrow">Blog</p> : null}
-          <h1>{document.title}</h1>
-          <TaxonomyLinks categories={document.categories} tags={document.tags} />
+          {showBlogEyebrow || eyebrow ? <p className="eyebrow">{eyebrow || 'Blog'}</p> : null}
+          <h1>{title}</h1>
+          <TaxonomyLinks categories={categories} tags={tags} />
           {document.publishedAt || authorName ? (
             <p className="contentMeta">
               {document.publishedAt ? (
@@ -57,6 +67,8 @@ export function CmsPageDocument({
 
         <CmsImage className="heroImage" media={document.heroImage} />
 
+        {beforeBlocks}
+
         <div className="pageBlocks">
           {document.layout.map((block, index) => (
             <PageBlock
@@ -69,6 +81,7 @@ export function CmsPageDocument({
             />
           ))}
         </div>
+        {afterBlocks}
       </article>
     </main>
   )
@@ -81,9 +94,9 @@ async function PageBlock({
   pathname,
   searchParams,
 }: {
-  block: Page['layout'][number] | Post['layout'][number]
+  block: Event['layout'][number] | Page['layout'][number] | Post['layout'][number]
   blockIndex: number
-  document: Page | Post
+  document: Event | EventCycle | Page | Partner | Post
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
 }) {
@@ -126,7 +139,7 @@ async function Listing({
 }: {
   block: ListingBlock
   blockIndex: number
-  document: Page | Post
+  document: Event | EventCycle | Page | Partner | Post
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
 }) {
@@ -137,6 +150,10 @@ async function Listing({
   const result = await findPublicContent(
     {
       categoryId: getRelationshipId(block.category),
+      eventCycleId:
+        getRelationshipId(block.eventCycle) ??
+        ('calendarFeedKey' in document ? document.id : undefined),
+      eventTimeFilter: block.eventTimeFilter ?? 'all',
       page: requestedPage,
       pageSize: block.pageSize,
       pagination: Boolean(block.pagination),
@@ -171,7 +188,7 @@ async function Listing({
 
 function getListingParentId(
   block: ListingBlock,
-  document: Pick<Page | Post, 'id'>,
+  document: Pick<Event | EventCycle | Page | Partner | Post, 'id'>,
 ): number | undefined {
   if (block.parentFilter === 'current') {
     return document.id

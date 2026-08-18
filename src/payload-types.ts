@@ -69,6 +69,8 @@ export interface Config {
   collections: {
     pages: Page;
     posts: Post;
+    events: Event;
+    'event-cycles': EventCycle;
     categories: Category;
     tags: Tag;
     media: Media;
@@ -76,6 +78,7 @@ export interface Config {
     'member-profiles': MemberProfile;
     'document-files': DocumentFile;
     documents: Document;
+    partners: Partner;
     'club-sections': ClubSection;
     users: User;
     roles: Role;
@@ -88,15 +91,21 @@ export interface Config {
     categories: {
       relatedPages: 'pages';
       relatedPosts: 'posts';
+      relatedEvents: 'events';
+      relatedEventCycles: 'event-cycles';
     };
     tags: {
       relatedPages: 'pages';
       relatedPosts: 'posts';
+      relatedEvents: 'events';
+      relatedEventCycles: 'event-cycles';
     };
   };
   collectionsSelect: {
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
+    'event-cycles': EventCyclesSelect<false> | EventCyclesSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -104,6 +113,7 @@ export interface Config {
     'member-profiles': MemberProfilesSelect<false> | MemberProfilesSelect<true>;
     'document-files': DocumentFilesSelect<false> | DocumentFilesSelect<true>;
     documents: DocumentsSelect<false> | DocumentsSelect<true>;
+    partners: PartnersSelect<false> | PartnersSelect<true>;
     'club-sections': ClubSectionsSelect<false> | ClubSectionsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     roles: RolesSelect<false> | RolesSelect<true>;
@@ -217,6 +227,16 @@ export interface Category {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  relatedEvents?: {
+    docs?: (number | Event)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  relatedEventCycles?: {
+    docs?: (number | EventCycle)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -238,6 +258,8 @@ export interface Post {
    * Krótkie wprowadzenie wyświetlane na listach wpisów.
    */
   excerpt: string;
+  relatedEvents?: (number | Event)[] | null;
+  relatedEventCycles?: (number | EventCycle)[] | null;
   layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
   author: number | User;
   /**
@@ -281,8 +303,226 @@ export interface Tag {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  relatedEvents?: {
+    docs?: (number | Event)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  relatedEventCycles?: {
+    docs?: (number | EventCycle)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  title: string;
+  cycle?: (number | null) | EventCycle;
+  categories?: (number | Category)[] | null;
+  tags?: (number | Tag)[] | null;
+  heroImage?: (number | null) | Media;
+  tagline?: string | null;
+  excerpt: string;
+  layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
+  timeMode: 'timed' | 'allDay';
+  eventStatus: 'scheduled' | 'cancelled' | 'postponed' | 'rescheduled';
+  startAt: string;
+  endAt?: string | null;
+  location: {
+    venueName?: string | null;
+    venueWebsite?: string | null;
+    streetAddress?: string | null;
+    postalCode?: string | null;
+    city?: string | null;
+    /**
+     * W Mapach Google wybierz „Udostępnij → Umieść mapę” i wklej skopiowany kod HTML.
+     */
+    mapEmbedURL?: string | null;
+    country: string;
+  };
+  participation: 'public' | 'members';
+  visibility: 'public' | 'members';
+  capacityMode: 'unlimited' | 'exact' | 'approximate';
+  capacity?: number | null;
+  organizers?:
+    | {
+        profile: number | MemberProfile;
+        role?: string | null;
+        responsibilities?: string | null;
+        contactFor?: string | null;
+        showContactChannels?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  partners?:
+    | {
+        partner: number | Partner;
+        roles: ('coOrganizer' | 'sponsor' | 'partner' | 'patron' | 'venueHost' | 'support')[];
+        contribution?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  externalLinks?:
+    | {
+        label: string;
+        targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
+        event?: (number | null) | Event;
+        eventCycle?: (number | null) | EventCycle;
+        partner?: (number | null) | Partner;
+        page?: (number | null) | Page;
+        category?: (number | null) | Category;
+        tag?: (number | null) | Tag;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+        /**
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+         */
+        customAddress?: string | null;
+        openInNewTab?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  seo?: {
+    /**
+     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
+     */
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
+     */
+    image?: (number | null) | Media;
+  };
+  /**
+   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
+   */
+  slug: string;
+  author: number | User;
+  /**
+   * Ustawiana automatycznie przy pierwszej publikacji.
+   */
+  publishedAt?: string | null;
+  defaultsAppliedCycle?: (number | null) | EventCycle;
+  previousStartAt?: string | null;
+  publishedStartAt?: string | null;
+  calendarUID?: string | null;
+  calendarRevision: number;
+  calendarFingerprint?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-cycles".
+ */
+export interface EventCycle {
+  id: number;
+  title: string;
+  categories?: (number | Category)[] | null;
+  tags?: (number | Tag)[] | null;
+  heroImage?: (number | null) | Media;
+  tagline?: string | null;
+  excerpt: string;
+  layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
+  visibility: 'public' | 'members';
+  seo?: {
+    /**
+     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
+     */
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
+     */
+    image?: (number | null) | Media;
+  };
+  eventDefaults: {
+    title?: string | null;
+    heroImage?: (number | null) | Media;
+    tagline?: string | null;
+    excerpt?: string | null;
+    layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
+    categories?: (number | Category)[] | null;
+    tags?: (number | Tag)[] | null;
+    defaultTimeMode?: ('timed' | 'allDay') | null;
+    /**
+     * Format GG:MM, np. 18:00
+     */
+    defaultStartTime?: string | null;
+    defaultDurationMinutes?: number | null;
+    location: {
+      venueName?: string | null;
+      venueWebsite?: string | null;
+      streetAddress?: string | null;
+      postalCode?: string | null;
+      city?: string | null;
+      /**
+       * W Mapach Google wybierz „Udostępnij → Umieść mapę” i wklej skopiowany kod HTML.
+       */
+      mapEmbedURL?: string | null;
+      country: string;
+    };
+    participation: 'public' | 'members';
+    visibility: 'public' | 'members';
+    capacityMode: 'unlimited' | 'exact' | 'approximate';
+    capacity?: number | null;
+    organizers?:
+      | {
+          profile: number | MemberProfile;
+          role?: string | null;
+          responsibilities?: string | null;
+          contactFor?: string | null;
+          showContactChannels?: boolean | null;
+          id?: string | null;
+        }[]
+      | null;
+    partners?:
+      | {
+          partner: number | Partner;
+          roles: ('coOrganizer' | 'sponsor' | 'partner' | 'patron' | 'venueHost' | 'support')[];
+          contribution?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    externalLinks?:
+      | {
+          label: string;
+          targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
+          event?: (number | null) | Event;
+          eventCycle?: (number | null) | EventCycle;
+          partner?: (number | null) | Partner;
+          page?: (number | null) | Page;
+          category?: (number | null) | Category;
+          tag?: (number | null) | Tag;
+          customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+          /**
+           * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+           */
+          customAddress?: string | null;
+          openInNewTab?: boolean | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
+   */
+  slug: string;
+  author: number | User;
+  /**
+   * Ustawiana automatycznie przy pierwszej publikacji.
+   */
+  publishedAt?: string | null;
+  calendarFeedKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -359,6 +599,9 @@ export interface Role {
           | 'member-profile-images'
           | 'pages'
           | 'posts'
+          | 'events'
+          | 'event-cycles'
+          | 'partners'
           | 'documents-resolution'
           | 'documents-statute'
           | 'documents-regulations'
@@ -419,12 +662,14 @@ export interface RichTextBlock {
  */
 export interface ListingBlock {
   heading?: string | null;
-  sources: ('pages' | 'posts')[];
+  sources: ('pages' | 'posts' | 'events' | 'event-cycles')[];
   parentPage?: (number | null) | Page;
   category?: (number | null) | Category;
   tag?: (number | null) | Tag;
-  sort: 'newest' | 'oldest' | 'titleAscending' | 'titleDescending';
+  sort: 'newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending';
   view: 'cards' | 'compact' | 'grid';
+  eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
+  eventCycle?: (number | null) | EventCycle;
   pageSize: number;
   pagination?: boolean | null;
   parentFilter: 'none' | 'current' | 'specific';
@@ -631,6 +876,41 @@ export interface MemberProfileImage {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "partners".
+ */
+export interface Partner {
+  id: number;
+  name: string;
+  heroImage?: (number | null) | Media;
+  excerpt: string;
+  website?: string | null;
+  layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
+  seo?: {
+    /**
+     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
+     */
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
+     */
+    image?: (number | null) | Media;
+  };
+  /**
+   * Adres jest tworzony automatycznie z nazwy, ale można go zmienić.
+   */
+  slug: string;
+  author: number | User;
+  /**
+   * Ustawiana automatycznie przy pierwszej publikacji.
+   */
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "document-files".
  */
 export interface DocumentFile {
@@ -711,7 +991,10 @@ export interface ClubSection {
   menuItems?:
     | {
         label: string;
-        targetType: 'page' | 'category' | 'tag' | 'custom';
+        targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
+        event?: (number | null) | Event;
+        eventCycle?: (number | null) | EventCycle;
+        partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         category?: (number | null) | Category;
         tag?: (number | null) | Tag;
@@ -787,6 +1070,14 @@ export interface PayloadLockedDocument {
         value: number | Post;
       } | null)
     | ({
+        relationTo: 'events';
+        value: number | Event;
+      } | null)
+    | ({
+        relationTo: 'event-cycles';
+        value: number | EventCycle;
+      } | null)
+    | ({
         relationTo: 'categories';
         value: number | Category;
       } | null)
@@ -813,6 +1104,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'documents';
         value: number | Document;
+      } | null)
+    | ({
+        relationTo: 'partners';
+        value: number | Partner;
       } | null)
     | ({
         relationTo: 'club-sections';
@@ -924,6 +1219,8 @@ export interface ListingBlockSelect<T extends boolean = true> {
   tag?: T;
   sort?: T;
   view?: T;
+  eventTimeFilter?: T;
+  eventCycle?: T;
   pageSize?: T;
   pagination?: T;
   parentFilter?: T;
@@ -1004,6 +1301,8 @@ export interface PostsSelect<T extends boolean = true> {
   tags?: T;
   heroImage?: T;
   excerpt?: T;
+  relatedEvents?: T;
+  relatedEventCycles?: T;
   layout?:
     | T
     | {
@@ -1028,6 +1327,207 @@ export interface PostsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events_select".
+ */
+export interface EventsSelect<T extends boolean = true> {
+  title?: T;
+  cycle?: T;
+  categories?: T;
+  tags?: T;
+  heroImage?: T;
+  tagline?: T;
+  excerpt?: T;
+  layout?:
+    | T
+    | {
+        richText?: T | RichTextBlockSelect<T>;
+        listing?: T | ListingBlockSelect<T>;
+        mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        attachments?: T | AttachmentsBlockSelect<T>;
+        memberProfiles?: T | MemberProfilesBlockSelect<T>;
+      };
+  timeMode?: T;
+  eventStatus?: T;
+  startAt?: T;
+  endAt?: T;
+  location?:
+    | T
+    | {
+        venueName?: T;
+        venueWebsite?: T;
+        streetAddress?: T;
+        postalCode?: T;
+        city?: T;
+        mapEmbedURL?: T;
+        country?: T;
+      };
+  participation?: T;
+  visibility?: T;
+  capacityMode?: T;
+  capacity?: T;
+  organizers?:
+    | T
+    | {
+        profile?: T;
+        role?: T;
+        responsibilities?: T;
+        contactFor?: T;
+        showContactChannels?: T;
+        id?: T;
+      };
+  partners?:
+    | T
+    | {
+        partner?: T;
+        roles?: T;
+        contribution?: T;
+        id?: T;
+      };
+  externalLinks?:
+    | T
+    | {
+        label?: T;
+        targetType?: T;
+        event?: T;
+        eventCycle?: T;
+        partner?: T;
+        page?: T;
+        category?: T;
+        tag?: T;
+        customScheme?: T;
+        customAddress?: T;
+        openInNewTab?: T;
+        id?: T;
+      };
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
+  slug?: T;
+  author?: T;
+  publishedAt?: T;
+  defaultsAppliedCycle?: T;
+  previousStartAt?: T;
+  publishedStartAt?: T;
+  calendarUID?: T;
+  calendarRevision?: T;
+  calendarFingerprint?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-cycles_select".
+ */
+export interface EventCyclesSelect<T extends boolean = true> {
+  title?: T;
+  categories?: T;
+  tags?: T;
+  heroImage?: T;
+  tagline?: T;
+  excerpt?: T;
+  layout?:
+    | T
+    | {
+        richText?: T | RichTextBlockSelect<T>;
+        listing?: T | ListingBlockSelect<T>;
+        mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        attachments?: T | AttachmentsBlockSelect<T>;
+        memberProfiles?: T | MemberProfilesBlockSelect<T>;
+      };
+  visibility?: T;
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
+  eventDefaults?:
+    | T
+    | {
+        title?: T;
+        heroImage?: T;
+        tagline?: T;
+        excerpt?: T;
+        layout?:
+          | T
+          | {
+              richText?: T | RichTextBlockSelect<T>;
+              listing?: T | ListingBlockSelect<T>;
+              mediaGallery?: T | MediaGalleryBlockSelect<T>;
+              attachments?: T | AttachmentsBlockSelect<T>;
+              memberProfiles?: T | MemberProfilesBlockSelect<T>;
+            };
+        categories?: T;
+        tags?: T;
+        defaultTimeMode?: T;
+        defaultStartTime?: T;
+        defaultDurationMinutes?: T;
+        location?:
+          | T
+          | {
+              venueName?: T;
+              venueWebsite?: T;
+              streetAddress?: T;
+              postalCode?: T;
+              city?: T;
+              mapEmbedURL?: T;
+              country?: T;
+            };
+        participation?: T;
+        visibility?: T;
+        capacityMode?: T;
+        capacity?: T;
+        organizers?:
+          | T
+          | {
+              profile?: T;
+              role?: T;
+              responsibilities?: T;
+              contactFor?: T;
+              showContactChannels?: T;
+              id?: T;
+            };
+        partners?:
+          | T
+          | {
+              partner?: T;
+              roles?: T;
+              contribution?: T;
+              id?: T;
+            };
+        externalLinks?:
+          | T
+          | {
+              label?: T;
+              targetType?: T;
+              event?: T;
+              eventCycle?: T;
+              partner?: T;
+              page?: T;
+              category?: T;
+              tag?: T;
+              customScheme?: T;
+              customAddress?: T;
+              openInNewTab?: T;
+              id?: T;
+            };
+      };
+  slug?: T;
+  author?: T;
+  publishedAt?: T;
+  calendarFeedKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "categories_select".
  */
 export interface CategoriesSelect<T extends boolean = true> {
@@ -1036,6 +1536,8 @@ export interface CategoriesSelect<T extends boolean = true> {
   description?: T;
   relatedPages?: T;
   relatedPosts?: T;
+  relatedEvents?: T;
+  relatedEventCycles?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1049,6 +1551,8 @@ export interface TagsSelect<T extends boolean = true> {
   description?: T;
   relatedPages?: T;
   relatedPosts?: T;
+  relatedEvents?: T;
+  relatedEventCycles?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1196,6 +1700,38 @@ export interface DocumentsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "partners_select".
+ */
+export interface PartnersSelect<T extends boolean = true> {
+  name?: T;
+  heroImage?: T;
+  excerpt?: T;
+  website?: T;
+  layout?:
+    | T
+    | {
+        richText?: T | RichTextBlockSelect<T>;
+        listing?: T | ListingBlockSelect<T>;
+        mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        attachments?: T | AttachmentsBlockSelect<T>;
+        memberProfiles?: T | MemberProfilesBlockSelect<T>;
+      };
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
+  slug?: T;
+  author?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "club-sections_select".
  */
 export interface ClubSectionsSelect<T extends boolean = true> {
@@ -1208,6 +1744,9 @@ export interface ClubSectionsSelect<T extends boolean = true> {
     | {
         label?: T;
         targetType?: T;
+        event?: T;
+        eventCycle?: T;
+        partner?: T;
         page?: T;
         category?: T;
         tag?: T;
@@ -1327,6 +1866,9 @@ export interface SiteSetting {
   siteDescription?: string | null;
   contactEmail?: string | null;
   heroImage?: (number | null) | Media;
+  homepageEventWindowWeeks?: number | null;
+  homepageEventSlideLimit?: number | null;
+  homepagePostCount?: ('2' | '5' | '8') | null;
   copyrightText?: {
     root: {
       type: string;
@@ -1355,7 +1897,10 @@ export interface Navigation {
     | {
         appearance: 'link' | 'icon' | 'button';
         label: string;
-        targetType: 'page' | 'category' | 'tag' | 'custom';
+        targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
+        event?: (number | null) | Event;
+        eventCycle?: (number | null) | EventCycle;
+        partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         category?: (number | null) | Category;
         tag?: (number | null) | Tag;
@@ -1392,7 +1937,10 @@ export interface Navigation {
   heroItems?:
     | {
         label: string;
-        targetType: 'page' | 'category' | 'tag' | 'custom';
+        targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
+        event?: (number | null) | Event;
+        eventCycle?: (number | null) | EventCycle;
+        partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         category?: (number | null) | Category;
         tag?: (number | null) | Tag;
@@ -1408,7 +1956,10 @@ export interface Navigation {
   socialItems?:
     | {
         label: string;
-        targetType: 'page' | 'category' | 'tag' | 'custom';
+        targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
+        event?: (number | null) | Event;
+        eventCycle?: (number | null) | EventCycle;
+        partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         category?: (number | null) | Category;
         tag?: (number | null) | Tag;
@@ -1448,7 +1999,10 @@ export interface Navigation {
         items?:
           | {
               label: string;
-              targetType: 'page' | 'category' | 'tag' | 'custom';
+              targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
+              event?: (number | null) | Event;
+              eventCycle?: (number | null) | EventCycle;
+              partner?: (number | null) | Partner;
               page?: (number | null) | Page;
               category?: (number | null) | Category;
               tag?: (number | null) | Tag;
@@ -1482,6 +2036,9 @@ export interface WebsitePermission {
           | 'media'
           | 'pages'
           | 'posts'
+          | 'events'
+          | 'event-cycles'
+          | 'partners'
           | 'documents-resolution'
           | 'documents-statute'
           | 'documents-regulations'
@@ -1508,6 +2065,9 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   siteDescription?: T;
   contactEmail?: T;
   heroImage?: T;
+  homepageEventWindowWeeks?: T;
+  homepageEventSlideLimit?: T;
+  homepagePostCount?: T;
   copyrightText?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1524,6 +2084,9 @@ export interface NavigationSelect<T extends boolean = true> {
         appearance?: T;
         label?: T;
         targetType?: T;
+        event?: T;
+        eventCycle?: T;
+        partner?: T;
         page?: T;
         category?: T;
         tag?: T;
@@ -1540,6 +2103,9 @@ export interface NavigationSelect<T extends boolean = true> {
     | {
         label?: T;
         targetType?: T;
+        event?: T;
+        eventCycle?: T;
+        partner?: T;
         page?: T;
         category?: T;
         tag?: T;
@@ -1553,6 +2119,9 @@ export interface NavigationSelect<T extends boolean = true> {
     | {
         label?: T;
         targetType?: T;
+        event?: T;
+        eventCycle?: T;
+        partner?: T;
         page?: T;
         category?: T;
         tag?: T;
@@ -1573,6 +2142,9 @@ export interface NavigationSelect<T extends boolean = true> {
           | {
               label?: T;
               targetType?: T;
+              event?: T;
+              eventCycle?: T;
+              partner?: T;
               page?: T;
               category?: T;
               tag?: T;

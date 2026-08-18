@@ -17,7 +17,7 @@ const updatePages = createRolePermissionAccess({ operation: 'update', resource: 
 
 function combineWithNonSystemPageConstraint(result: AccessResult): AccessResult {
   const nonSystemPage: Where = {
-    or: [{ systemKey: { exists: false } }, { systemKey: { not_equals: 'blog' } }],
+    or: [{ systemKey: { exists: false } }, { systemKey: { not_in: ['blog', 'events'] } }],
   }
 
   if (result === false) {

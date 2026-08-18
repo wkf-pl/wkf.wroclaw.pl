@@ -20,6 +20,8 @@ const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
 })
 
 const contentKindLabels: Record<PublicContentListItem['kind'], string> = {
+  'event-cycles': 'Cykl wydarzeń',
+  events: 'Wydarzenie',
   pages: 'Strona',
   posts: 'Wpis',
 }

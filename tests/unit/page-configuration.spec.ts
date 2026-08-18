@@ -70,6 +70,7 @@ describe('page configuration', () => {
       ['sources', 'parentPage'],
       ['category', 'tag'],
       ['sort', 'view'],
+      ['eventTimeFilter', 'eventCycle'],
       ['pageSize', 'pagination'],
     ])
     expect(describeFieldOrder(ListingBlock.fields)).toEqual([
@@ -77,6 +78,7 @@ describe('page configuration', () => {
       ['sources', 'parentPage'],
       ['category', 'tag'],
       ['sort', 'view'],
+      ['eventTimeFilter', 'eventCycle'],
       ['pageSize', 'pagination'],
       'parentFilter',
       'emptyMessage',
@@ -106,6 +108,7 @@ describe('page configuration', () => {
       ['categories', 'tags'],
       'heroImage',
       'excerpt',
+      ['relatedEvents', 'relatedEventCycles'],
       'layout',
       'author',
       'publishedAt',
@@ -121,6 +124,8 @@ describe('page configuration', () => {
         'description',
         'relatedPages',
         'relatedPosts',
+        'relatedEvents',
+        'relatedEventCycles',
       ])
     }
   })

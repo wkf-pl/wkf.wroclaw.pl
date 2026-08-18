@@ -27,7 +27,7 @@ export async function TaxonomyContentPage({
       pageSize: 12,
       pagination: true,
       sort: 'newest',
-      sources: ['pages', 'posts'],
+      sources: ['pages', 'posts', 'events', 'event-cycles'],
       tagId: kind === 'tag' ? taxonomy.id : undefined,
     },
     await getCurrentUser(),

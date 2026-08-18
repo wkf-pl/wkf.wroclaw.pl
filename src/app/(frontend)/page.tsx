@@ -8,10 +8,12 @@ import {
   getPublicSiteSettings,
 } from '@/modules/content/public-content'
 import { hasRenderableIcon, resolveLink, resolvePageLink } from '@/modules/navigation/links'
+import { findHomepageEvents } from '@/modules/events/public-events'
 
 import { CmsImage } from './_components/CmsImage'
 import { Icon } from './_components/Icon'
 import { MenuIcon } from './_components/MenuIcon'
+import { EventCarousel } from './_components/EventCarousel'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,48 +65,12 @@ function SmallNewsCard({ post }: { post: Post }) {
 }
 
 function NewsSection({ posts }: { posts: Post[] }) {
-  const [featuredPost, ...secondaryPosts] = posts
-
   return (
     <section aria-labelledby="news-heading" className="homeSection homeNews">
       <SectionHeading id="news-heading">Aktualności</SectionHeading>
 
-      {featuredPost ? (
-        <article className="featuredNews">
-          <Link className="featuredNewsImageLink" href={`/blog/${featuredPost.slug}`}>
-            <NewsImage className="featuredNewsImage" post={featuredPost} />
-            <strong className="featuredNewsImageTitle">{featuredPost.title}</strong>
-          </Link>
-          <div className="featuredNewsContent">
-            <h3>{featuredPost.title}</h3>
-            <p>{featuredPost.excerpt}</p>
-            <dl className="featuredNewsDetails">
-              <div>
-                <dt>
-                  <Icon name="time" />
-                  Kiedy:
-                </dt>
-                <dd>wtorek · 18:00</dd>
-              </div>
-              <div>
-                <dt>
-                  <Icon name="location" />
-                  Gdzie:
-                </dt>
-                <dd>Wiking Club</dd>
-              </div>
-            </dl>
-            <Link className="textArrowLink" href={`/blog/${featuredPost.slug}`}>
-              Więcej… <Icon name="arrow" />
-            </Link>
-          </div>
-        </article>
-      ) : (
-        <p className="emptyState">Nie ma jeszcze opublikowanych wpisów.</p>
-      )}
-
       <div className="newsGrid">
-        {secondaryPosts.slice(0, 2).map((post) => (
+        {posts.map((post) => (
           <SmallNewsCard key={post.id} post={post} />
         ))}
         <Link className="allNewsCard" href="/blog">
@@ -188,6 +154,10 @@ export default async function HomePage() {
     getPublicNavigation(),
     getPublicSiteSettings(),
   ])
+  const eventWindowWeeks = siteSettings.homepageEventWindowWeeks ?? 4
+  const eventSlideLimit = siteSettings.homepageEventSlideLimit ?? 6
+  const events = await findHomepageEvents(eventWindowWeeks, eventSlideLimit)
+  const postCount = Number.parseInt(siteSettings.homepagePostCount ?? '2', 10)
   const heroItems = navigation.heroItems?.flatMap((item) => {
     const link = resolveLink(item)
     return link ? [{ item, link }] : []
@@ -196,7 +166,9 @@ export default async function HomePage() {
   return (
     <main className="homePage">
       <section className="homeHero">
-        {siteSettings.heroImage && typeof siteSettings.heroImage === 'object' && siteSettings.heroImage.url ? (
+        {siteSettings.heroImage &&
+        typeof siteSettings.heroImage === 'object' &&
+        siteSettings.heroImage.url ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element -- CMS media can use a runtime-configured Azure host. */}
             <img alt="" className="homeHeroImage" src={siteSettings.heroImage.url} />
@@ -224,7 +196,17 @@ export default async function HomePage() {
       </section>
 
       <div className="homeShell">
-        <NewsSection posts={posts.slice(0, 3)} />
+        {events.length ? (
+          <section aria-labelledby="events-heading" className="homeSection homeEvents">
+            <SectionHeading id="events-heading">Wydarzenia</SectionHeading>
+            <EventCarousel events={events} />
+            <div className="homeEventLinks">
+              <Link href="/events">Wszystkie wydarzenia</Link>
+              <Link href="/events/calendar.ics">Subskrybuj kalendarz WKF</Link>
+            </div>
+          </section>
+        ) : null}
+        <NewsSection posts={posts.slice(0, postCount)} />
         <Sections sections={sections} />
       </div>
     </main>

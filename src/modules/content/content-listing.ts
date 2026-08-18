@@ -2,14 +2,15 @@ import { getPayload, type Where } from 'payload'
 
 import config from '@payload-config'
 
-import type { Category, Media, Page, Post, Tag, User } from '@/payload-types'
+import type { Category, Event, EventCycle, Media, Page, Post, Tag, User } from '@/payload-types'
 import { websiteRequestContext } from '@/modules/membership/role-permissions'
 
-export const taxonomizableCollectionSlugs = ['pages', 'posts'] as const
+export const taxonomizableCollectionSlugs = ['pages', 'posts', 'events', 'event-cycles'] as const
 
 export type TaxonomizableCollectionSlug = (typeof taxonomizableCollectionSlugs)[number]
-export type TaxonomizableDocument = Page | Post
-export type ContentListingSort = 'newest' | 'oldest' | 'titleAscending' | 'titleDescending'
+export type TaxonomizableDocument = Event | EventCycle | Page | Post
+export type ContentListingSort =
+  'eventDateAscending' | 'newest' | 'oldest' | 'titleAscending' | 'titleDescending'
 
 export type PublicContentListItem = {
   categories: Category[]
@@ -36,6 +37,8 @@ export type TaxonomizableCollectionAdapter<TDocument extends TaxonomizableDocume
 }
 
 type TaxonomizableCollectionRegistry = {
+  'event-cycles': TaxonomizableCollectionAdapter<EventCycle>
+  events: TaxonomizableCollectionAdapter<Event>
   pages: TaxonomizableCollectionAdapter<Page>
   posts: TaxonomizableCollectionAdapter<Post>
 }
@@ -92,13 +95,51 @@ const postAdapter = {
   }),
 } satisfies TaxonomizableCollectionAdapter<Post>
 
+const eventAdapter = {
+  buildPublicURL: (event: Event) => `/events/${event.slug}`,
+  collection: 'events',
+  fields: { date: 'startAt', excerpt: 'excerpt', image: 'heroImage', title: 'title' },
+  mapDocument: (event: Event): PublicContentListItem => ({
+    categories: getPopulatedRelationships(event.categories),
+    date: event.startAt,
+    excerpt: event.excerpt,
+    id: event.id,
+    image: getMedia(event.heroImage),
+    kind: 'events',
+    tags: getPopulatedRelationships(event.tags),
+    title: event.title,
+    url: `/events/${event.slug}`,
+  }),
+} satisfies TaxonomizableCollectionAdapter<Event>
+
+const eventCycleAdapter = {
+  buildPublicURL: (cycle: EventCycle) => `/events/series/${cycle.slug}`,
+  collection: 'event-cycles',
+  fields: { date: 'publishedAt', excerpt: 'excerpt', image: 'heroImage', title: 'title' },
+  mapDocument: (cycle: EventCycle): PublicContentListItem => ({
+    categories: getPopulatedRelationships(cycle.categories),
+    date: cycle.publishedAt ?? cycle.createdAt,
+    excerpt: cycle.excerpt,
+    id: cycle.id,
+    image: getMedia(cycle.heroImage),
+    kind: 'event-cycles',
+    tags: getPopulatedRelationships(cycle.tags),
+    title: cycle.title,
+    url: `/events/series/${cycle.slug}`,
+  }),
+} satisfies TaxonomizableCollectionAdapter<EventCycle>
+
 export const taxonomizableCollections = {
+  'event-cycles': eventCycleAdapter,
+  events: eventAdapter,
   pages: pageAdapter,
   posts: postAdapter,
 } satisfies TaxonomizableCollectionRegistry
 
 export type FindPublicContentOptions = {
   categoryId?: number
+  eventCycleId?: number
+  eventTimeFilter?: 'all' | 'past' | 'upcoming'
   page: number
   pageSize: number
   pagination: boolean
@@ -145,6 +186,41 @@ export async function findPublicContent(
 
         return {
           items: result.docs.map(pageAdapter.mapDocument),
+          totalDocs: result.totalDocs,
+        }
+      }
+
+      if (source === 'events') {
+        const result = await payload.find({
+          collection: 'events',
+          context: websiteRequestContext,
+          depth: 2,
+          draft: false,
+          limit: fetchLimit,
+          overrideAccess: false,
+          page: 1,
+          sort: options.sort === 'eventDateAscending' ? ['startAt', 'title'] : payloadSort,
+          user,
+          where: createEventListingWhere(options),
+        })
+        return { items: result.docs.map(eventAdapter.mapDocument), totalDocs: result.totalDocs }
+      }
+
+      if (source === 'event-cycles') {
+        const result = await payload.find({
+          collection: 'event-cycles',
+          context: websiteRequestContext,
+          depth: 2,
+          draft: false,
+          limit: fetchLimit,
+          overrideAccess: false,
+          page: 1,
+          sort: payloadSort,
+          user,
+          where,
+        })
+        return {
+          items: result.docs.map(eventCycleAdapter.mapDocument),
           totalDocs: result.totalDocs,
         }
       }
@@ -203,6 +279,24 @@ function createListingWhere(options: FindPublicContentOptions): Where {
   return { and: conditions }
 }
 
+function createEventListingWhere(options: FindPublicContentOptions): Where {
+  const base = createListingWhere({ ...options, parentId: undefined })
+  const conditions = 'and' in base && Array.isArray(base.and) ? [...base.and] : [base]
+  if (options.eventCycleId !== undefined)
+    conditions.push({ cycle: { equals: options.eventCycleId } })
+  if (options.eventTimeFilter === 'upcoming') {
+    conditions.push({
+      or: [
+        { endAt: { greater_than_equal: new Date().toISOString() } },
+        { startAt: { greater_than_equal: new Date().toISOString() } },
+      ],
+    })
+  } else if (options.eventTimeFilter === 'past') {
+    conditions.push({ startAt: { less_than: new Date().toISOString() } })
+  }
+  return { and: conditions }
+}
+
 function getPayloadSort(sort: ContentListingSort): string[] {
   switch (sort) {
     case 'oldest':
@@ -211,6 +305,8 @@ function getPayloadSort(sort: ContentListingSort): string[] {
       return ['title', '-publishedAt', 'id']
     case 'titleDescending':
       return ['-title', '-publishedAt', 'id']
+    case 'eventDateAscending':
+      return ['publishedAt', 'title', 'id']
     default:
       return ['-publishedAt', 'title', 'id']
   }
@@ -233,6 +329,9 @@ export function createContentComparator(
         break
       case 'titleDescending':
         primaryComparison = -titleComparison
+        break
+      case 'eventDateAscending':
+        primaryComparison = dateComparison
         break
       default:
         primaryComparison = -dateComparison

@@ -53,5 +53,31 @@ export function createRelatedContentJoinFields(taxonomyField: 'categories' | 'ta
       label: 'Powiązane wpisy',
       on: taxonomyField,
     },
+    {
+      name: 'relatedEvents',
+      type: 'join',
+      admin: {
+        components: {
+          Field: '/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin',
+        },
+      },
+      collection: 'events',
+      defaultLimit: 20,
+      label: 'Powiązane wydarzenia',
+      on: taxonomyField,
+    },
+    {
+      name: 'relatedEventCycles',
+      type: 'join',
+      admin: {
+        components: {
+          Field: '/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin',
+        },
+      },
+      collection: 'event-cycles',
+      defaultLimit: 20,
+      label: 'Powiązane cykle wydarzeń',
+      on: taxonomyField,
+    },
   ]
 }

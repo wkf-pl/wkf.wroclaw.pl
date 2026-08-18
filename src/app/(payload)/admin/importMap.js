@@ -31,6 +31,19 @@ import { MemberProfilesBlockLabel as MemberProfilesBlockLabel_d53c993bb109710411
 import { UserRelationshipCell as UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
 import { UserRelationshipField as UserRelationshipField_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
 import { PageCreateLabel as PageCreateLabel_0ea542d15a7bc53da30cd446a6eac5d4 } from '../../../components/admin/PageCreateLabel'
+import { BlurValidatedTextField as BlurValidatedTextField_78245b472a4cd124366becfa8638282c } from '../../../components/admin/BlurValidatedTextField'
+import { GoogleMapEmbedField as GoogleMapEmbedField_857e9fb129ac6aae3aa32a9ad70ddcd1 } from '../../../components/admin/GoogleMapEmbedField'
+import { EventOrganizerRowLabel as EventOrganizerRowLabel_9e59ac5c1cbd76776990b737e017eef3 } from '../../../components/admin/EventRelationshipRowLabel'
+import { EventPartnerRowLabel as EventPartnerRowLabel_9e59ac5c1cbd76776990b737e017eef3 } from '../../../components/admin/EventRelationshipRowLabel'
+import { CustomAddressField as CustomAddressField_62e9eb14ca92d7097b00888098bd948f } from '../../../components/admin/CustomAddressField'
+import { EventLinkRowLabel as EventLinkRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
+import { EventCreateLabel as EventCreateLabel_9321488c4e8960e8bd87c29c2a32b741 } from '../../../components/admin/CollectionLabels'
+import { EventCycleDefaultsApplier as EventCycleDefaultsApplier_cc9b53b3b0ac5687279686608ed384da } from '../../../components/admin/EventCycleDefaultsApplier'
+import { EventActions as EventActions_c22ece76d5a21cdb27fafdfc30d499ed } from '../../../components/admin/EventActions'
+import { AutoSlugField as AutoSlugField_ed11f9fb5a25dfaf526ef43ee4e4462b } from '../../../components/admin/AutoSlugField'
+import { EventCycleCreateLabel as EventCycleCreateLabel_9321488c4e8960e8bd87c29c2a32b741 } from '../../../components/admin/CollectionLabels'
+import { EventCycleDefaultsMirror as EventCycleDefaultsMirror_1c13d5af302bc10d1a9d59dce6491bd0 } from '../../../components/admin/EventCycleDefaultsMirror'
+import { EventCycleActions as EventCycleActions_ff9850e5079c1719ce3b6d7bca67e68d } from '../../../components/admin/EventCycleActions'
 import { TaxonomyRelatedContentJoin as TaxonomyRelatedContentJoin_ad60bb5c4bf3dd1eafbb015124f8d349 } from '../../../components/admin/TaxonomyRelatedContentJoin'
 import { TaxonomyCell as TaxonomyCell_fd0f0ca32d7a45be5929fc2ef04497f8 } from '../../../components/admin/MediaTableCells'
 import { URLCell as URLCell_fd0f0ca32d7a45be5929fc2ef04497f8 } from '../../../components/admin/MediaTableCells'
@@ -42,7 +55,7 @@ import { ContactChannelRowLabel as ContactChannelRowLabel_25248d319d0ee96f21b07b
 import { MemberProfileAddress as MemberProfileAddress_de328f7eecba388f3fa482158aaa97b1 } from '../../../components/admin/MemberProfileAddress'
 import { MemberProfileUsage as MemberProfileUsage_7f4f33cdfc96cc183475e8f31eee11fc } from '../../../components/admin/MemberProfileUsage'
 import { DocumentTypeField as DocumentTypeField_947aecc9229f5a3494b670e39324b4fe } from '../../../components/admin/DocumentTypeField'
-import { CustomAddressField as CustomAddressField_62e9eb14ca92d7097b00888098bd948f } from '../../../components/admin/CustomAddressField'
+import { PartnerCreateLabel as PartnerCreateLabel_9321488c4e8960e8bd87c29c2a32b741 } from '../../../components/admin/CollectionLabels'
 import { FooterColumnItemRowLabel as FooterColumnItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { UserDisplayNameCell as UserDisplayNameCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
 import { UserEmailCell as UserEmailCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
@@ -94,6 +107,19 @@ export const importMap = {
   "/components/admin/UserIdentity#UserRelationshipCell": UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53,
   "/components/admin/UserIdentity#UserRelationshipField": UserRelationshipField_0af2ec3c6a63521c7b2eedb66024da53,
   "/components/admin/PageCreateLabel#PageCreateLabel": PageCreateLabel_0ea542d15a7bc53da30cd446a6eac5d4,
+  "/components/admin/BlurValidatedTextField#BlurValidatedTextField": BlurValidatedTextField_78245b472a4cd124366becfa8638282c,
+  "/components/admin/GoogleMapEmbedField#GoogleMapEmbedField": GoogleMapEmbedField_857e9fb129ac6aae3aa32a9ad70ddcd1,
+  "/components/admin/EventRelationshipRowLabel#EventOrganizerRowLabel": EventOrganizerRowLabel_9e59ac5c1cbd76776990b737e017eef3,
+  "/components/admin/EventRelationshipRowLabel#EventPartnerRowLabel": EventPartnerRowLabel_9e59ac5c1cbd76776990b737e017eef3,
+  "/components/admin/CustomAddressField#CustomAddressField": CustomAddressField_62e9eb14ca92d7097b00888098bd948f,
+  "/components/admin/DynamicRowLabel#EventLinkRowLabel": EventLinkRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
+  "/components/admin/CollectionLabels#EventCreateLabel": EventCreateLabel_9321488c4e8960e8bd87c29c2a32b741,
+  "/components/admin/EventCycleDefaultsApplier#EventCycleDefaultsApplier": EventCycleDefaultsApplier_cc9b53b3b0ac5687279686608ed384da,
+  "/components/admin/EventActions#EventActions": EventActions_c22ece76d5a21cdb27fafdfc30d499ed,
+  "/components/admin/AutoSlugField#AutoSlugField": AutoSlugField_ed11f9fb5a25dfaf526ef43ee4e4462b,
+  "/components/admin/CollectionLabels#EventCycleCreateLabel": EventCycleCreateLabel_9321488c4e8960e8bd87c29c2a32b741,
+  "/components/admin/EventCycleDefaultsMirror#EventCycleDefaultsMirror": EventCycleDefaultsMirror_1c13d5af302bc10d1a9d59dce6491bd0,
+  "/components/admin/EventCycleActions#EventCycleActions": EventCycleActions_ff9850e5079c1719ce3b6d7bca67e68d,
   "/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin": TaxonomyRelatedContentJoin_ad60bb5c4bf3dd1eafbb015124f8d349,
   "/components/admin/MediaTableCells#TaxonomyCell": TaxonomyCell_fd0f0ca32d7a45be5929fc2ef04497f8,
   "/components/admin/MediaTableCells#URLCell": URLCell_fd0f0ca32d7a45be5929fc2ef04497f8,
@@ -105,7 +131,7 @@ export const importMap = {
   "/components/admin/MemberProfileAddress#MemberProfileAddress": MemberProfileAddress_de328f7eecba388f3fa482158aaa97b1,
   "/components/admin/MemberProfileUsage#MemberProfileUsage": MemberProfileUsage_7f4f33cdfc96cc183475e8f31eee11fc,
   "/components/admin/DocumentTypeField#DocumentTypeField": DocumentTypeField_947aecc9229f5a3494b670e39324b4fe,
-  "/components/admin/CustomAddressField#CustomAddressField": CustomAddressField_62e9eb14ca92d7097b00888098bd948f,
+  "/components/admin/CollectionLabels#PartnerCreateLabel": PartnerCreateLabel_9321488c4e8960e8bd87c29c2a32b741,
   "/components/admin/DynamicRowLabel#FooterColumnItemRowLabel": FooterColumnItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/UserIdentity#UserDisplayNameCell": UserDisplayNameCell_0af2ec3c6a63521c7b2eedb66024da53,
   "/components/admin/UserIdentity#UserEmailCell": UserEmailCell_0af2ec3c6a63521c7b2eedb66024da53,
