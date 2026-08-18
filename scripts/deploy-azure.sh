@@ -239,18 +239,18 @@ for attempt in {1..60}; do
   health_check_succeeded=false
 
   if curl --fail --silent --show-error "https://${application_fqdn}/health" >/dev/null; then
-    if [[ "$target_environment" == "staging" ]]; then
-      root_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "https://${application_fqdn}/")"
-      admin_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "https://${application_fqdn}/admin")"
-      login_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "https://${application_fqdn}/.auth/login/aad?post_login_redirect_uri=%2Fadmin")"
-
-      if [[ "$root_status" == "401" && "$admin_status" == "401" && "$login_status" == "302" ]]; then
-        health_check_succeeded=true
-      fi
-    elif curl --fail --silent --show-error --head "https://${application_fqdn}/" >/dev/null \
+    if curl --fail --silent --show-error --head "https://${application_fqdn}/" >/dev/null \
       && curl --fail --silent --show-error --head "https://${application_fqdn}/admin" >/dev/null \
       && curl --fail --silent --show-error --head "https://${application_fqdn}/blog" >/dev/null; then
       health_check_succeeded=true
+
+      if [[ "$target_environment" == "staging" ]]; then
+        robots_content="$(curl --fail --silent --show-error "https://${application_fqdn}/robots.txt")"
+
+        if ! grep --fixed-strings --line-regexp 'Disallow: /' <<<"$robots_content" >/dev/null; then
+          health_check_succeeded=false
+        fi
+      fi
     fi
   fi
 

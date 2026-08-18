@@ -221,7 +221,7 @@ resource authentication 'Microsoft.App/containerApps/authConfigs@2024-03-01' = i
         '/health'
       ]
       redirectToProvider: 'azureactivedirectory'
-      unauthenticatedClientAction: 'RedirectToLoginPage'
+      unauthenticatedClientAction: 'AllowAnonymous'
     }
     httpSettings: {
       requireHttps: true

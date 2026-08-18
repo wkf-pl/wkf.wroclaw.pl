@@ -40,7 +40,8 @@ Produkcja wymaga dodatkowo zmiennej `SMTP_HOST` i sekretów:
 
 Na stagingu SMTP jest początkowo wyłączone. Nie blokuje to działania strony ani panelu, ale funkcje wysyłające pocztę nie będą dostępne do czasu skonfigurowania serwera SMTP.
 
-Staging wymaga dodatkowo zmiennych:
+Staging utrzymuje konfigurację Microsoft Entra na potrzeby opcjonalnego logowania Easy Auth i
+wymaga dodatkowo zmiennych:
 
 - `ENTRA_TENANT_ID`,
 - `ENTRA_CLIENT_ID`,
@@ -48,7 +49,11 @@ Staging wymaga dodatkowo zmiennych:
 
 oraz sekretu `ENTRA_CLIENT_SECRET`.
 
-Rejestracja aplikacji stagingowej musi emitować identyfikatory grup w tokenie. Dostęp jest ograniczony do grupy wskazanej przez `ENTRA_ALLOWED_GROUP_ID`; sam fakt posiadania konta w tenantcie nie wystarcza.
+Rejestracja aplikacji stagingowej musi emitować identyfikatory grup w tokenie. Easy Auth
+przepuszcza anonimowe żądania do strony i panelu Payload, a grupa wskazana przez
+`ENTRA_ALLOWED_GROUP_ID` ogranicza konta używane przy opcjonalnym logowaniu Microsoft.
+Panel Payload nadal wymaga własnego uwierzytelnienia. Staging zwraca również `robots.txt`
+blokujący indeksowanie całej witryny.
 
 Po pierwszym utworzeniu stagingu dodaj do rejestracji aplikacji Entra URI przekierowania:
 
@@ -74,7 +79,8 @@ Udane zakończenie `ci.yml` po pushu do `dev` wywołuje wielokrotnego użytku
 5. wchodzi w jawny tryb maintenance przez dezaktywację aktywnej rewizji,
 6. uruchamia job migracyjny,
 7. dopiero po udanej migracji przełącza aplikację na nowy obraz,
-8. sprawdza readiness oraz odpowiedzi HTTP dla `/`, `/blog` i `/health`,
+8. sprawdza readiness oraz odpowiedzi HTTP dla `/`, `/admin`, `/blog` i `/health`, a na
+   stagingu także blokadę indeksowania w `/robots.txt`,
 9. zapisuje digest w podsumowaniu workflowu.
 
 Skrypt wdrożeniowy wymaga parametru `--maintenance`. Jeżeli migracja lub testy HTTP nie
