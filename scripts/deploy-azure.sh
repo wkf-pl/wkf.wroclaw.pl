@@ -227,6 +227,24 @@ else
     --resource-group "$resource_group_name" \
     --image "$target_image_reference" \
     --output none
+
+  deployed_revision="$(az containerapp show \
+    --name "$application_name" \
+    --resource-group "$resource_group_name" \
+    --query properties.latestRevisionName \
+    --output tsv)"
+
+  if [[ -z "$deployed_revision" ]]; then
+    echo "Could not resolve the deployed application revision." >&2
+    exit 1
+  fi
+
+  az containerapp revision activate \
+    --name "$application_name" \
+    --resource-group "$resource_group_name" \
+    --revision "$deployed_revision" \
+    --output none
+  echo "Activated deployed revision: $deployed_revision"
 fi
 
 application_fqdn="$(az containerapp show \
@@ -235,21 +253,32 @@ application_fqdn="$(az containerapp show \
   --query properties.configuration.ingress.fqdn \
   --output tsv)"
 
+read_http_status() {
+  local route="$1"
+
+  curl --max-time 10 --silent --output /dev/null --write-out '%{http_code}' \
+    "https://${application_fqdn}${route}" || true
+}
+
 for attempt in {1..60}; do
   health_check_succeeded=false
+  health_status="$(read_http_status '/health')"
+  root_status="$(read_http_status '/')"
+  admin_status="$(read_http_status '/admin')"
 
-  if curl --fail --silent --show-error "https://${application_fqdn}/health" >/dev/null; then
-    if curl --fail --silent --show-error --head "https://${application_fqdn}/" >/dev/null \
-      && curl --fail --silent --show-error --head "https://${application_fqdn}/admin" >/dev/null \
-      && curl --fail --silent --show-error --head "https://${application_fqdn}/blog" >/dev/null; then
-      health_check_succeeded=true
+  echo "Deployment check ${attempt}/60: /health=${health_status:-000} /=${root_status:-000} /admin=${admin_status:-000}"
 
-      if [[ "$target_environment" == "staging" ]]; then
-        robots_content="$(curl --fail --silent --show-error "https://${application_fqdn}/robots.txt")"
+  if [[ "$health_status" == "200" && "$root_status" == "200" && "$admin_status" == "200" ]]; then
+    health_check_succeeded=true
 
-        if ! grep --fixed-strings --line-regexp 'Disallow: /' <<<"$robots_content" >/dev/null; then
-          health_check_succeeded=false
-        fi
+    if [[ "$target_environment" == "staging" ]]; then
+      robots_status="$(read_http_status '/robots.txt')"
+      robots_content="$(curl --max-time 10 --silent "https://${application_fqdn}/robots.txt" || true)"
+      echo "Deployment check ${attempt}/60: /robots.txt=${robots_status:-000}, expected Disallow: /"
+
+      if [[ "$robots_status" != "200" ]] \
+        || ! grep --fixed-strings --line-regexp 'Disallow: /' <<<"$robots_content" >/dev/null; then
+        health_check_succeeded=false
       fi
     fi
   fi

@@ -79,8 +79,8 @@ Udane zakończenie `ci.yml` po pushu do `dev` wywołuje wielokrotnego użytku
 5. wchodzi w jawny tryb maintenance przez dezaktywację aktywnej rewizji,
 6. uruchamia job migracyjny,
 7. dopiero po udanej migracji przełącza aplikację na nowy obraz,
-8. sprawdza readiness oraz odpowiedzi HTTP dla `/`, `/admin`, `/blog` i `/health`, a na
-   stagingu także blokadę indeksowania w `/robots.txt`,
+8. sprawdza readiness oraz odpowiedzi HTTP dla `/`, `/admin` i `/health`, a na stagingu
+   także blokadę indeksowania w `/robots.txt`,
 9. zapisuje digest w podsumowaniu workflowu.
 
 Skrypt wdrożeniowy wymaga parametru `--maintenance`. Jeżeli migracja lub testy HTTP nie
