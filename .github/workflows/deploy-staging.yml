@@ -2,13 +2,38 @@ name: Deploy staging
 
 on:
   workflow_call:
+    inputs:
+      provision_infrastructure:
+        default: auto
+        type: string
+      run_migrations:
+        default: auto
+        type: string
   workflow_dispatch:
+    inputs:
+      provision_infrastructure:
+        description: Reconcile all Azure infrastructure before deploying
+        options:
+          - auto
+          - 'true'
+          - 'false'
+        default: auto
+        type: choice
+      run_migrations:
+        description: Enter maintenance mode and run database migrations
+        options:
+          - auto
+          - 'true'
+          - 'false'
+        default: auto
+        type: choice
 
 concurrency:
   group: deploy-staging
   cancel-in-progress: false
 
 permissions:
+  actions: write
   contents: read
   id-token: write
 
@@ -23,15 +48,18 @@ jobs:
     env:
       PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
       POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+      PROVISION_INFRASTRUCTURE_OVERRIDE: ${{ inputs.provision_infrastructure }}
+      RUN_MIGRATIONS_OVERRIDE: ${{ inputs.run_migrations }}
+      SOURCE_SHA: ${{ github.sha }}
       STAGING_ENTRA_ALLOWED_GROUP_ID: ${{ vars.ENTRA_ALLOWED_GROUP_ID }}
       STAGING_ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
       STAGING_ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
       STAGING_ENTRA_TENANT_ID: ${{ vars.ENTRA_TENANT_ID }}
-      SOURCE_SHA: ${{ github.sha }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
+          fetch-depth: 0
           ref: ${{ env.SOURCE_SHA }}
 
       - name: Log in to Azure
@@ -44,50 +72,187 @@ jobs:
       - name: Install Container Apps CLI extension
         run: az extension add --name containerapp --upgrade
 
-      - name: Reconcile shared Azure resources
-        id: shared
+      - name: Determine deployment plan
+        id: plan
         run: |
-          registry_name="$(az deployment group create \
-            --name wkf-shared \
-            --resource-group "rg-${AZURE_RESOURCE_PREFIX}-shared" \
-            --template-file infra/azure/shared.bicep \
-            --parameters location="$AZURE_LOCATION" resourcePrefix="$AZURE_RESOURCE_PREFIX" \
-            --query properties.outputs.registryName.value \
-            --output tsv)"
-          echo "registry_name=$registry_name" >> "$GITHUB_OUTPUT"
+          application_name="${AZURE_RESOURCE_PREFIX}-staging"
+          resource_group_name="rg-${AZURE_RESOURCE_PREFIX}-staging"
+          deployed_source_sha=""
+          existing_image_reference=""
 
-      - name: Build immutable application image
+          active_revision="$(az containerapp revision list \
+            --name "$application_name" \
+            --resource-group "$resource_group_name" \
+            --query 'sort_by([?properties.active], &properties.createdTime)[-1].name' \
+            --output tsv 2>/dev/null || true)"
+
+          if [[ -n "$active_revision" ]]; then
+            deployed_source_sha="$(az containerapp revision show \
+              --name "$application_name" \
+              --resource-group "$resource_group_name" \
+              --revision "$active_revision" \
+              --query "properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value" \
+              --output tsv 2>/dev/null || true)"
+            existing_image_reference="$(az containerapp revision show \
+              --name "$application_name" \
+              --resource-group "$resource_group_name" \
+              --revision "$active_revision" \
+              --query 'properties.template.containers[0].image' \
+              --output tsv)"
+          fi
+
+          plan_file="$(mktemp)"
+          bash scripts/classify-deployment.sh "$deployed_source_sha" "$SOURCE_SHA" "$plan_file"
+          source "$plan_file"
+
+          resolve_override() {
+            local automatic_value="$1"
+            local override_value="$2"
+
+            case "$override_value" in
+              auto | '') printf '%s' "$automatic_value" ;;
+              true | false) printf '%s' "$override_value" ;;
+              *) echo "Unsupported deployment override: $override_value" >&2; return 1 ;;
+            esac
+          }
+
+          provision_infrastructure="$(resolve_override "$provision_infrastructure" "$PROVISION_INFRASTRUCTURE_OVERRIDE")"
+          run_migrations="$(resolve_override "$run_migrations" "$RUN_MIGRATIONS_OVERRIDE")"
+
+          if [[ -z "$active_revision" ]]; then
+            build_image=true
+            provision_infrastructure=true
+            run_migrations=true
+          fi
+
+          should_deploy=true
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            latest_dev_sha="$(git ls-remote origin refs/heads/dev | cut -f1)"
+            if [[ "$SOURCE_SHA" != "$latest_dev_sha" ]]; then
+              should_deploy=false
+              echo "Skipping obsolete deployment $SOURCE_SHA; dev is now $latest_dev_sha."
+            fi
+          fi
+
+          {
+            echo "build_image=$build_image"
+            echo "existing_image_reference=$existing_image_reference"
+            echo "provision_infrastructure=$provision_infrastructure"
+            echo "run_migrations=$run_migrations"
+            echo "should_deploy=$should_deploy"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Resolve shared registry
+        if: steps.plan.outputs.should_deploy == 'true'
+        id: registry
+        run: |
+          if [[ "${{ steps.plan.outputs.provision_infrastructure }}" == "true" ]]; then
+            registry_name="$(az deployment group create \
+              --name wkf-shared \
+              --resource-group "rg-${AZURE_RESOURCE_PREFIX}-shared" \
+              --template-file infra/azure/shared.bicep \
+              --parameters location="$AZURE_LOCATION" resourcePrefix="$AZURE_RESOURCE_PREFIX" \
+              --query properties.outputs.registryName.value \
+              --output tsv)"
+          else
+            registry_name="$(az acr list \
+              --resource-group "rg-${AZURE_RESOURCE_PREFIX}-shared" \
+              --query '[0].name' \
+              --output tsv)"
+          fi
+
+          if [[ -z "$registry_name" ]]; then
+            echo "Could not resolve the shared Azure Container Registry." >&2
+            exit 1
+          fi
+
+          login_server="$(az acr show --name "$registry_name" --query loginServer --output tsv)"
+          {
+            echo "login_server=$login_server"
+            echo "registry_name=$registry_name"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Log in to Azure Container Registry
+        if: steps.plan.outputs.should_deploy == 'true' && steps.plan.outputs.build_image == 'true'
+        run: az acr login --name "${{ steps.registry.outputs.registry_name }}"
+
+      - name: Set up Docker Buildx
+        if: steps.plan.outputs.should_deploy == 'true' && steps.plan.outputs.build_image == 'true'
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push immutable application image
+        if: steps.plan.outputs.should_deploy == 'true' && steps.plan.outputs.build_image == 'true'
         id: image
-        env:
-          REGISTRY_NAME: ${{ steps.shared.outputs.registry_name }}
-        run: |
-          repository="wkf-online"
-          tag="$SOURCE_SHA"
-          az acr build \
-            --registry "$REGISTRY_NAME" \
-            --image "${repository}:${tag}" \
-            .
-          digest="$(az acr repository show \
-            --name "$REGISTRY_NAME" \
-            --image "${repository}:${tag}" \
-            --query digest \
-            --output tsv)"
-          login_server="$(az acr show --name "$REGISTRY_NAME" --query loginServer --output tsv)"
-          image_reference="${login_server}/${repository}@${digest}"
-          echo "digest=$digest" >> "$GITHUB_OUTPUT"
-          echo "image_reference=$image_reference" >> "$GITHUB_OUTPUT"
+        uses: docker/build-push-action@v7
+        with:
+          cache-from: type=gha,scope=wkf-online
+          cache-to: type=gha,mode=max,scope=wkf-online
+          context: .
+          push: true
+          tags: ${{ steps.registry.outputs.login_server }}/wkf-online:${{ env.SOURCE_SHA }}
 
-      - name: Migrate and deploy staging
+      - name: Resolve deployment image
+        if: steps.plan.outputs.should_deploy == 'true'
+        id: deployment-image
         env:
-          IMAGE_REFERENCE: ${{ steps.image.outputs.image_reference }}
-        run: bash scripts/deploy-azure.sh staging "$IMAGE_REFERENCE" --maintenance
+          BUILT_IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+          EXISTING_IMAGE_REFERENCE: ${{ steps.plan.outputs.existing_image_reference }}
+          LOGIN_SERVER: ${{ steps.registry.outputs.login_server }}
+        run: |
+          if [[ "${{ steps.plan.outputs.build_image }}" == "true" ]]; then
+            image_digest="$BUILT_IMAGE_DIGEST"
+            image_reference="${LOGIN_SERVER}/wkf-online@${image_digest}"
+          else
+            image_reference="$EXISTING_IMAGE_REFERENCE"
+            image_digest="${image_reference##*@}"
+          fi
+
+          if [[ ! "$image_digest" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "Could not resolve an immutable image digest." >&2
+            exit 1
+          fi
+
+          {
+            echo "digest=$image_digest"
+            echo "image_reference=$image_reference"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Deploy staging
+        if: steps.plan.outputs.should_deploy == 'true'
+        id: rollout
+        env:
+          IMAGE_REFERENCE: ${{ steps.deployment-image.outputs.image_reference }}
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            latest_dev_sha="$(git ls-remote origin refs/heads/dev | cut -f1)"
+            if [[ "$SOURCE_SHA" != "$latest_dev_sha" ]]; then
+              echo "Skipping obsolete rollout $SOURCE_SHA; dev is now $latest_dev_sha."
+              echo "deployed=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          deployment_options=()
+          if [[ "${{ steps.plan.outputs.provision_infrastructure }}" == "true" ]]; then
+            deployment_options+=(--provision)
+          fi
+          if [[ "${{ steps.plan.outputs.run_migrations }}" == "true" ]]; then
+            deployment_options+=(--maintenance)
+          fi
+
+          bash scripts/deploy-azure.sh staging "$IMAGE_REFERENCE" "${deployment_options[@]}"
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
 
       - name: Publish promotion details
+        if: steps.rollout.outputs.deployed == 'true'
         env:
-          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+          IMAGE_DIGEST: ${{ steps.deployment-image.outputs.digest }}
         run: |
           {
             echo "## Staging deployment"
             echo
             echo "Image digest for production promotion: \`$IMAGE_DIGEST\`"
+            echo "Source commit: \`$SOURCE_SHA\`"
+            echo "Infrastructure reconciled: \`${{ steps.plan.outputs.provision_infrastructure }}\`"
+            echo "Migrations executed: \`${{ steps.plan.outputs.run_migrations }}\`"
           } >> "$GITHUB_STEP_SUMMARY"

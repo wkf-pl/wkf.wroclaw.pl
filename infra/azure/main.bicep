@@ -16,6 +16,9 @@ param resourcePrefix string = 'wkf'
 @description('Immutable application image reference, preferably using an ACR digest.')
 param imageReference string
 
+@description('Git commit represented by the application revision.')
+param sourceSha string = ''
+
 @description('Creates or reconciles the web application. Disable during the first migration.')
 param deployApplication bool = true
 
@@ -95,6 +98,7 @@ module environment './modules/environment.bicep' = {
     smtpSecure: smtpSecure
     smtpSkipVerify: smtpSkipVerify
     smtpUser: smtpUser
+    sourceSha: sourceSha
     tags: {
       application: 'wkf-online'
       environment: environmentName

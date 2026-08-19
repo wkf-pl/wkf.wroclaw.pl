@@ -2,17 +2,46 @@
 
 set -Eeuo pipefail
 
-target_environment="${1:?Usage: deploy-azure.sh <staging|prod> <image-reference> --maintenance}"
-target_image_reference="${2:?Usage: deploy-azure.sh <staging|prod> <image-reference> --maintenance}"
-maintenance_mode="${3:-}"
+target_environment="${1:?Usage: deploy-azure.sh <staging|prod> <image-reference> [--maintenance] [--provision]}"
+target_image_reference="${2:?Usage: deploy-azure.sh <staging|prod> <image-reference> [--maintenance] [--provision]}"
+shift 2
+
+provision_infrastructure=false
+run_migrations=false
+
+for deployment_option in "$@"; do
+  case "$deployment_option" in
+    --maintenance)
+      run_migrations=true
+      ;;
+    --provision)
+      provision_infrastructure=true
+      ;;
+    *)
+      echo "Unknown deployment option: $deployment_option" >&2
+      exit 1
+      ;;
+  esac
+done
 
 if [[ "$target_environment" != "staging" && "$target_environment" != "prod" ]]; then
   echo "Target environment must be staging or prod." >&2
   exit 1
 fi
 
-if [[ "$maintenance_mode" != "--maintenance" ]]; then
-  echo "This deployment changes the database destructively and requires the explicit --maintenance flag." >&2
+source_sha="${SOURCE_SHA:-}"
+if [[ -z "$source_sha" ]]; then
+  source_sha="$(git rev-parse HEAD)"
+fi
+
+if [[ ! "$source_sha" =~ ^[a-f0-9]{40}$ ]]; then
+  echo "SOURCE_SHA must be a full Git commit SHA." >&2
+  exit 1
+fi
+
+health_timeout_seconds="${DEPLOYMENT_HEALTH_TIMEOUT_SECONDS:-600}"
+if [[ ! "$health_timeout_seconds" =~ ^[1-9][0-9]*$ ]]; then
+  echo "DEPLOYMENT_HEALTH_TIMEOUT_SECONDS must be a positive integer." >&2
   exit 1
 fi
 
@@ -23,9 +52,42 @@ application_name="${resource_prefix}-${target_environment}"
 migration_job_name="${resource_prefix}-${target_environment}-migrate"
 parameter_file="infra/azure/environments/${target_environment}.bicepparam"
 previous_revision=""
-backup_name=""
+previous_image_reference=""
+previous_source_sha=""
+backup_name="not-requested"
 maintenance_started=false
 migration_completed=false
+application_update_started=false
+
+get_active_revision() {
+  az containerapp revision list \
+    --name "$application_name" \
+    --resource-group "$resource_group_name" \
+    --query 'sort_by([?properties.active], &properties.createdTime)[-1].name' \
+    --output tsv 2>/dev/null || true
+}
+
+get_revision_image() {
+  local revision_name="$1"
+
+  az containerapp revision show \
+    --name "$application_name" \
+    --resource-group "$resource_group_name" \
+    --revision "$revision_name" \
+    --query 'properties.template.containers[0].image' \
+    --output tsv
+}
+
+get_revision_source_sha() {
+  local revision_name="$1"
+
+  az containerapp revision show \
+    --name "$application_name" \
+    --resource-group "$resource_group_name" \
+    --revision "$revision_name" \
+    --query "properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value" \
+    --output tsv 2>/dev/null || true
+}
 
 wait_for_migration_job() {
   local execution_name="$1"
@@ -33,7 +95,7 @@ wait_for_migration_job() {
   local execution_status=""
   local deadline=$((SECONDS + 1800))
 
-  while (( SECONDS < deadline )); do
+  while ((SECONDS < deadline)); do
     execution_status="$(az containerapp job execution show \
       --name "$migration_job_name" \
       --resource-group "$resource_group_name" \
@@ -80,14 +142,15 @@ run_migration_job() {
   wait_for_migration_job "$execution_name" "$payload_command"
 }
 
-deactivate_current_revisions() {
-  local revision
+deactivate_revisions_except() {
+  local preserved_revision="${1:-}"
+  local active_revision
 
-  while IFS= read -r revision; do
-    if [[ -n "$revision" ]]; then
+  while IFS= read -r active_revision; do
+    if [[ -n "$active_revision" && "$active_revision" != "$preserved_revision" ]]; then
       az containerapp revision deactivate \
         --resource-group "$resource_group_name" \
-        --revision "$revision" \
+        --revision "$active_revision" \
         --output none
     fi
   done < <(az containerapp revision list \
@@ -97,6 +160,30 @@ deactivate_current_revisions() {
     --output tsv 2>/dev/null || true)
 }
 
+restore_previous_revision() {
+  local previous_revision_active=""
+
+  [[ -n "$previous_revision" ]] || return 0
+
+  deactivate_revisions_except "$previous_revision"
+  previous_revision_active="$(az containerapp revision show \
+    --name "$application_name" \
+    --resource-group "$resource_group_name" \
+    --revision "$previous_revision" \
+    --query properties.active \
+    --output tsv 2>/dev/null || true)"
+
+  if [[ "$previous_revision_active" != "true" ]]; then
+    az containerapp revision activate \
+      --resource-group "$resource_group_name" \
+      --revision "$previous_revision" \
+      --output none
+    echo "Reactivated previous revision: $previous_revision" >&2
+  else
+    echo "Previous revision remained active: $previous_revision" >&2
+  fi
+}
+
 rollback_deployment() {
   local failure_status=$?
 
@@ -104,9 +191,6 @@ rollback_deployment() {
   set +e
 
   echo "Deployment failed. Starting automatic rollback." >&2
-  if [[ "$maintenance_started" == "true" ]]; then
-    deactivate_current_revisions
-  fi
 
   if [[ "$migration_completed" == "true" ]]; then
     if ! run_migration_job "migrate:down"; then
@@ -115,12 +199,8 @@ rollback_deployment() {
     fi
   fi
 
-  if [[ -n "$previous_revision" ]]; then
-    az containerapp revision activate \
-      --resource-group "$resource_group_name" \
-      --revision "$previous_revision" \
-      --output none
-    echo "Reactivated previous revision: $previous_revision" >&2
+  if [[ "$maintenance_started" == "true" || "$application_update_started" == "true" ]]; then
+    restore_previous_revision
   fi
 
   exit "$failure_status"
@@ -128,90 +208,94 @@ rollback_deployment() {
 
 trap rollback_deployment ERR
 
-current_image_reference="$(az containerapp show \
+application_exists=false
+if az containerapp show \
   --name "$application_name" \
   --resource-group "$resource_group_name" \
-  --query 'properties.template.containers[0].image' \
-  --output tsv 2>/dev/null || true)"
-
-if [[ -n "$current_image_reference" ]]; then
-  infrastructure_image_reference="$current_image_reference"
-  deploy_application=true
-else
-  infrastructure_image_reference="$target_image_reference"
-  deploy_application=false
-fi
-
-export IMAGE_REFERENCE="$infrastructure_image_reference"
-
-az deployment group create \
-  --name "${resource_prefix}-${target_environment}-infrastructure" \
-  --resource-group "$resource_group_name" \
-  --template-file infra/azure/main.bicep \
-  --parameters "$parameter_file" \
-  --parameters customDomainCertificateId="${CUSTOM_DOMAIN_CERTIFICATE_ID:-}" deployApplication="$deploy_application" location="$azure_location" resourcePrefix="$resource_prefix" \
-  --output none
-
-postgres_server_name="$(az postgres flexible-server list \
-  --resource-group "$resource_group_name" \
-  --query '[0].name' \
-  --output tsv)"
-
-if [[ -z "$postgres_server_name" ]]; then
-  echo "Could not resolve the PostgreSQL Flexible Server for $target_environment." >&2
-  exit 1
-fi
-
-postgres_sku_tier="$(az postgres flexible-server show \
-  --resource-group "$resource_group_name" \
-  --name "$postgres_server_name" \
-  --query 'sku.tier' \
-  --output tsv)"
-
-if [[ "$postgres_sku_tier" == "Burstable" ]]; then
-  backup_name="automatic-backups-only"
-  echo "Skipping on-demand backup for Burstable PostgreSQL; automatic backups remain enabled."
-else
-  backup_name="predeploy-${target_environment}-$(date -u +%Y%m%dT%H%M%SZ)"
-  az postgres flexible-server backup create \
-    --resource-group "$resource_group_name" \
-    --server-name "$postgres_server_name" \
-    --name "$backup_name" \
-    --output none
-  echo "Created on-demand database backup: $backup_name"
-fi
-
-if [[ "$deploy_application" == "true" ]]; then
-  previous_revision="$(az containerapp revision list \
-    --name "$application_name" \
-    --resource-group "$resource_group_name" \
-    --query '[?properties.active].name | [0]' \
-    --output tsv)"
+  --output none 2>/dev/null; then
+  application_exists=true
+  previous_revision="$(get_active_revision)"
 
   if [[ -z "$previous_revision" ]]; then
-    echo "Could not resolve the active application revision before maintenance." >&2
+    echo "The application exists but has no active revision to use as a rollback point." >&2
     exit 1
   fi
 
-  echo "Recorded active revision: $previous_revision"
-  az containerapp revision deactivate \
-    --resource-group "$resource_group_name" \
-    --revision "$previous_revision" \
-    --output none
-  maintenance_started=true
-  echo "Maintenance mode started by deactivating revision: $previous_revision"
+  previous_image_reference="$(get_revision_image "$previous_revision")"
+  previous_source_sha="$(get_revision_source_sha "$previous_revision")"
+  echo "Recorded active revision before deployment: $previous_revision"
 fi
 
-az containerapp job update \
-  --name "$migration_job_name" \
-  --resource-group "$resource_group_name" \
-  --image "$target_image_reference" \
-  --output none
+if [[ "$provision_infrastructure" == "true" ]]; then
+  if [[ "$application_exists" == "true" ]]; then
+    infrastructure_image_reference="$previous_image_reference"
+    infrastructure_source_sha="$previous_source_sha"
+    deploy_application=true
+  else
+    infrastructure_image_reference="$target_image_reference"
+    infrastructure_source_sha="$source_sha"
+    deploy_application=false
+  fi
 
-run_migration_job "migrate"
-migration_completed=true
+  export IMAGE_REFERENCE="$infrastructure_image_reference"
 
-if [[ "$deploy_application" == "false" ]]; then
+  az deployment group create \
+    --name "${resource_prefix}-${target_environment}-infrastructure" \
+    --resource-group "$resource_group_name" \
+    --template-file infra/azure/main.bicep \
+    --parameters "$parameter_file" \
+    --parameters customDomainCertificateId="${CUSTOM_DOMAIN_CERTIFICATE_ID:-}" deployApplication="$deploy_application" location="$azure_location" resourcePrefix="$resource_prefix" sourceSha="$infrastructure_source_sha" \
+    --output none
+elif [[ "$application_exists" != "true" ]]; then
+  echo "The application does not exist. Re-run the deployment with --provision." >&2
+  exit 1
+fi
+
+if [[ "$run_migrations" == "true" ]]; then
+  postgres_server_name="$(az postgres flexible-server list \
+    --resource-group "$resource_group_name" \
+    --query '[0].name' \
+    --output tsv)"
+
+  if [[ -z "$postgres_server_name" ]]; then
+    echo "Could not resolve the PostgreSQL Flexible Server for $target_environment." >&2
+    exit 1
+  fi
+
+  postgres_sku_tier="$(az postgres flexible-server show \
+    --resource-group "$resource_group_name" \
+    --name "$postgres_server_name" \
+    --query 'sku.tier' \
+    --output tsv)"
+
+  if [[ "$postgres_sku_tier" == "Burstable" ]]; then
+    backup_name="automatic-backups-only"
+    echo "Skipping on-demand backup for Burstable PostgreSQL; automatic backups remain enabled."
+  else
+    backup_name="predeploy-${target_environment}-$(date -u +%Y%m%dT%H%M%SZ)"
+    az postgres flexible-server backup create \
+      --resource-group "$resource_group_name" \
+      --server-name "$postgres_server_name" \
+      --name "$backup_name" \
+      --output none
+    echo "Created on-demand database backup: $backup_name"
+  fi
+
+  if [[ "$application_exists" == "true" ]]; then
+    deactivate_revisions_except
+    maintenance_started=true
+    echo "Maintenance mode started after deactivating active revisions."
+  fi
+
+  run_migration_job "migrate"
+  migration_completed=true
+else
+  echo "No migration changes detected; database maintenance was skipped."
+fi
+
+application_update_started=true
+
+if [[ "$application_exists" == "false" ]]; then
   export IMAGE_REFERENCE="$target_image_reference"
 
   az deployment group create \
@@ -219,13 +303,14 @@ if [[ "$deploy_application" == "false" ]]; then
     --resource-group "$resource_group_name" \
     --template-file infra/azure/main.bicep \
     --parameters "$parameter_file" \
-    --parameters customDomainCertificateId="${CUSTOM_DOMAIN_CERTIFICATE_ID:-}" deployApplication=true location="$azure_location" resourcePrefix="$resource_prefix" \
+    --parameters customDomainCertificateId="${CUSTOM_DOMAIN_CERTIFICATE_ID:-}" deployApplication=true location="$azure_location" resourcePrefix="$resource_prefix" sourceSha="$source_sha" \
     --output none
 else
   az containerapp update \
     --name "$application_name" \
     --resource-group "$resource_group_name" \
     --image "$target_image_reference" \
+    --set-env-vars "DEPLOYED_SOURCE_SHA=$source_sha" \
     --output none
 fi
 
@@ -238,25 +323,35 @@ application_fqdn="$(az containerapp show \
 read_http_status() {
   local route="$1"
 
-  curl --max-time 10 --silent --output /dev/null --write-out '%{http_code}' \
+  curl --connect-timeout 3 --max-time 8 --silent --output /dev/null --write-out '%{http_code}' \
     "https://${application_fqdn}${route}" || true
 }
 
-for attempt in {1..60}; do
-  health_check_succeeded=false
+health_deadline=$((SECONDS + health_timeout_seconds))
+health_check_attempt=0
+
+while ((SECONDS < health_deadline)); do
+  health_check_attempt=$((health_check_attempt + 1))
   health_status="$(read_http_status '/health')"
-  root_status="$(read_http_status '/')"
-  admin_status="$(read_http_status '/admin')"
 
-  echo "Deployment check ${attempt}/60: /health=${health_status:-000} /=${root_status:-000} /admin=${admin_status:-000}"
+  if [[ "$health_status" == "200" ]]; then
+    root_status="$(read_http_status '/')"
+    admin_status="$(read_http_status '/admin')"
+  else
+    root_status="skipped"
+    admin_status="skipped"
+  fi
 
+  echo "Deployment check ${health_check_attempt}: /health=${health_status:-000} /=${root_status:-000} /admin=${admin_status:-000}"
+
+  health_check_succeeded=false
   if [[ "$health_status" == "200" && "$root_status" == "200" && "$admin_status" == "200" ]]; then
     health_check_succeeded=true
 
     if [[ "$target_environment" == "staging" ]]; then
       robots_status="$(read_http_status '/robots.txt')"
-      robots_content="$(curl --max-time 10 --silent "https://${application_fqdn}/robots.txt" || true)"
-      echo "Deployment check ${attempt}/60: /robots.txt=${robots_status:-000}, expected Disallow: /"
+      robots_content="$(curl --connect-timeout 3 --max-time 8 --silent "https://${application_fqdn}/robots.txt" || true)"
+      echo "Deployment check ${health_check_attempt}: /robots.txt=${robots_status:-000}, expected Disallow: /"
 
       if [[ "$robots_status" != "200" ]] \
         || ! grep --fixed-strings --line-regexp 'Disallow: /' <<<"$robots_content" >/dev/null; then
@@ -272,10 +367,8 @@ for attempt in {1..60}; do
     exit 0
   fi
 
-  if [[ "$attempt" -lt 60 ]]; then
-    sleep 10
-  fi
+  sleep 5
 done
 
-echo "Deployment checks failed: https://${application_fqdn}" >&2
+echo "Deployment checks did not succeed within ${health_timeout_seconds} seconds: https://${application_fqdn}" >&2
 false

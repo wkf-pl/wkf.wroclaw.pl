@@ -42,6 +42,7 @@ param smtpPort int
 param smtpSecure bool
 param smtpSkipVerify bool
 param smtpUser string
+param sourceSha string
 param tags object
 
 var applicationName = '${resourcePrefix}-${environmentName}'
@@ -141,6 +142,7 @@ module application './application.bicep' = if (deployApplication) {
     smtpSecure: smtpSecure
     smtpSkipVerify: smtpSkipVerify
     smtpUser: smtpUser
+    sourceSha: sourceSha
     storageConnectionString: storage.outputs.connectionString
     tags: tags
   }

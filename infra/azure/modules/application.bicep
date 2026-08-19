@@ -36,6 +36,7 @@ param smtpPort int
 param smtpSecure bool
 param smtpSkipVerify bool
 param smtpUser string
+param sourceSha string
 
 @secure()
 param storageConnectionString string
@@ -124,7 +125,12 @@ var applicationEnvironmentVariables = concat([
     name: 'SMTP_USER'
     value: smtpUser
   }
-], smtpPassword != '' ? [
+], sourceSha != '' ? [
+  {
+    name: 'DEPLOYED_SOURCE_SHA'
+    value: sourceSha
+  }
+] : [], smtpPassword != '' ? [
   {
     name: 'SMTP_PASSWORD'
     secretRef: 'smtp-password'

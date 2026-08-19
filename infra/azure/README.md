@@ -22,7 +22,19 @@ W obu środowiskach skonfiguruj zmienne:
 - `AZURE_SUBSCRIPTION_ID`,
 - `AZURE_TENANT_ID`.
 
-Tożsamość OIDC stagingu otrzymuje rolę `Contributor` wyłącznie w `rg-wkf-staging` i `rg-wkf-shared`. Nie wymaga żadnej roli na poziomie całej subskrypcji ani uprawnień do zarządzania rolami.
+Tożsamość OIDC stagingu otrzymuje rolę `Contributor` wyłącznie w `rg-wkf-staging` i
+`rg-wkf-shared`. Ponieważ obraz jest budowany raz na runnerze GitHub i wysyłany bezpośrednio do
+ACR, tożsamość wymaga również roli danych `AcrPush` na rejestrze w `rg-wkf-shared`. Nie wymaga
+żadnej roli na poziomie całej subskrypcji ani uprawnień do zarządzania rolami. `AcrPush` nadaje
+administrator jednorazowo poza workflowem; sam workflow nie może rozszerzać swoich uprawnień.
+
+Przypisanie dla obecnego rejestru używającego klasycznego trybu RBAC można wykonać jako właściciel
+subskrypcji lub administrator RBAC:
+
+```bash
+registry_id="$(az acr show --name <registry-name> --query id --output tsv)"
+az role assignment create --assignee <github-oidc-client-id> --role AcrPush --scope "$registry_id"
+```
 
 Zarządzana tożsamość `wkf-staging-registry` jest tworzona przed pierwszym wdrożeniem i jednorazowo otrzymuje rolę `AcrPull` w `rg-wkf-shared`. Workflow nie może samodzielnie zmieniać tego przypisania.
 
@@ -70,25 +82,40 @@ az ad app update --id "$ENTRA_CLIENT_ID" --enable-id-token-issuance true
 ## Wdrożenia
 
 Udane zakończenie `ci.yml` po pushu do `dev` wywołuje wielokrotnego użytku
-`deploy-staging.yml`. Pull request uruchamia walidację, ale nie wdrożenie. Workflow stagingowy:
+`deploy-staging.yml`. Pull request uruchamia walidację obrazu z cache’em BuildKit, ale nie
+wdrożenie. Push do `dev` nie buduje obrazu w jobie `verify`; docelowy obraz powstaje i jest
+wysyłany do ACR tylko raz w workflowie stagingowym.
 
-1. uzgadnia wspólne zasoby,
-2. buduje obraz w ACR i odczytuje jego digest,
-3. uzgadnia infrastrukturę stagingu,
-4. tworzy kopię PostgreSQL na żądanie i zapisuje aktywną rewizję,
-5. wchodzi w jawny tryb maintenance przez dezaktywację aktywnej rewizji,
-6. uruchamia job migracyjny,
-7. dopiero po udanej migracji przełącza aplikację na nowy obraz,
-8. sprawdza readiness oraz odpowiedzi HTTP dla `/`, `/admin` i `/health`, a na stagingu
+Każda rewizja zapisuje `DEPLOYED_SOURCE_SHA`. Workflow porównuje ten commit z docelowym i
+automatycznie ustala, czy potrzebne są nowy obraz, pełny provisioning i migracje. Jeżeli aktywna
+rewizja nie ma jeszcze metadanej SHA, bezpiecznie wykonuje wszystkie operacje. Ręczne uruchomienie
+pozwala wymusić lub pominąć provisioning i migracje.
+
+Workflow stagingowy:
+
+1. pomija nieaktualny commit oczekujący w kolejce,
+2. klasyfikuje zmiany względem aktywnej rewizji,
+3. uzgadnia wspólne zasoby i pełną infrastrukturę tylko wtedy, gdy są potrzebne,
+4. buduje i wysyła jeden niezmienny obraz albo ponownie wykorzystuje aktywny digest,
+5. przed zmianami zapisuje faktycznie aktywną rewizję i jej obraz jako punkt rollbacku,
+6. po zmianach migracji tworzy kopię PostgreSQL, wchodzi w maintenance i uruchamia job migracyjny,
+7. przełącza aplikację na nowy obraz; bez migracji pozostawia bezprzerwowe przełączenie trybowi
+   pojedynczej rewizji Container Apps,
+8. przez maksymalnie 10 minut sprawdza readiness oraz odpowiedzi HTTP dla `/`, `/admin` i
+   `/health`, a na stagingu
    także blokadę indeksowania w `/robots.txt`,
 9. zapisuje digest w podsumowaniu workflowu.
 
-Skrypt wdrożeniowy wymaga parametru `--maintenance`. Jeżeli migracja lub testy HTTP nie
-powiodą się, uruchamia `migrate:down` i ponownie aktywuje zapisaną rewizję. Gdy wycofanie
-bazy się nie powiedzie, poprzednia rewizja celowo pozostaje nieaktywna, aby nie uruchomić
-starego kodu na niezgodnym schemacie. Nazwa kopii i rewizji są wypisywane w logu wdrożenia.
+Jeżeli migracja lub testy HTTP nie powiodą się, skrypt uruchamia `migrate:down` tylko wtedy, gdy
+wcześniej zakończył `migrate`, dezaktywuje inne rewizje i przywraca zapisany punkt rollbacku.
+Aktywnej już rewizji nie próbuje ponownie aktywować. Gdy wycofanie bazy się nie powiedzie,
+poprzednia rewizja celowo pozostaje nieaktywna, aby nie uruchomić starego kodu na niezgodnym
+schemacie.
 
-`deploy-production.yml` jest uruchamiany ręcznie. Przyjmuje digest zatwierdzonego obrazu ze stagingu, sprawdza jego obecność w ACR, wykonuje migracje produkcyjne i przełącza aplikację. Obraz nie jest budowany ponownie.
+`deploy-production.yml` jest uruchamiany ręcznie. Przyjmuje digest zatwierdzonego obrazu i pełny
+SHA źródłowy raportowane przez staging, sprawdza obecność obrazu w ACR, automatycznie klasyfikuje
+zmiany i przełącza aplikację. Obraz nie jest budowany ponownie. Operator może jawnie wymusić lub
+pominąć pełny provisioning i migracje.
 
 ## Domena produkcyjna
 

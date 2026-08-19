@@ -36,6 +36,10 @@ RUN DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build" \
     PAYLOAD_SECRET="build-time-only" \
     pnpm build
 
+FROM dependencies AS production-dependencies
+
+RUN pnpm prune --prod
+
 FROM base AS runner
 
 ENV HOSTNAME="0.0.0.0"
@@ -47,7 +51,7 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=dependencies --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=production-dependencies --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/migrations ./migrations
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/src ./src
