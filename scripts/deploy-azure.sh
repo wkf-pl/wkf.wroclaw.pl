@@ -80,36 +80,6 @@ run_migration_job() {
   wait_for_migration_job "$execution_name" "$payload_command"
 }
 
-wait_for_revision_health() {
-  local revision_name="$1"
-  local revision_health=""
-  local deadline=$((SECONDS + 300))
-
-  while (( SECONDS < deadline )); do
-    revision_health="$(az containerapp revision show \
-      --name "$application_name" \
-      --resource-group "$resource_group_name" \
-      --revision "$revision_name" \
-      --query properties.healthState \
-      --output tsv)"
-
-    case "$revision_health" in
-      Healthy)
-        return 0
-        ;;
-      Degraded | Unhealthy)
-        echo "Revision ${revision_name} became ${revision_health} before activation." >&2
-        return 1
-        ;;
-    esac
-
-    sleep 5
-  done
-
-  echo "Revision ${revision_name} did not become healthy within 5 minutes." >&2
-  return 1
-}
-
 deactivate_current_revisions() {
   local revision
 
@@ -257,26 +227,6 @@ else
     --resource-group "$resource_group_name" \
     --image "$target_image_reference" \
     --output none
-
-  deployed_revision="$(az containerapp show \
-    --name "$application_name" \
-    --resource-group "$resource_group_name" \
-    --query properties.latestRevisionName \
-    --output tsv)"
-
-  if [[ -z "$deployed_revision" ]]; then
-    echo "Could not resolve the deployed application revision." >&2
-    exit 1
-  fi
-
-  wait_for_revision_health "$deployed_revision"
-
-  az containerapp revision activate \
-    --name "$application_name" \
-    --resource-group "$resource_group_name" \
-    --revision "$deployed_revision" \
-    --output none
-  echo "Activated deployed revision: $deployed_revision"
 fi
 
 application_fqdn="$(az containerapp show \
