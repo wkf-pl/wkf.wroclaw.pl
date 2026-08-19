@@ -4,6 +4,8 @@ import { getOptionalEnvironmentVariable } from '@/lib/env'
 
 const productionServerUrl = 'https://wkf.wroclaw.pl'
 
+export const dynamic = 'force-dynamic'
+
 export function createRobotsMetadata(serverUrl?: string): MetadataRoute.Robots {
   if (serverUrl !== productionServerUrl) {
     return {
