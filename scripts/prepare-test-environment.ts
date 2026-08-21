@@ -42,9 +42,25 @@ async function main(): Promise<void> {
   await prepareFreshTestSchema({
     expectedMigrationNames: getExpectedMigrationNames(),
     getAppliedMigrationNames,
-    migrateFresh: () =>
-      runCommand('payload', ['migrate:fresh', '--force-accept-warning']).then(() => undefined),
+    migrateFresh: migrateFreshTestDatabase,
   })
+}
+
+async function migrateFreshTestDatabase(): Promise<void> {
+  process.env.PAYLOAD_MIGRATING = 'true'
+  const [{ getPayload }, { default: configPromise }] = await Promise.all([
+    import('payload'),
+    import('../src/payload.config'),
+  ])
+  const payloadConfig = await configPromise
+  payloadConfig.typescript.autoGenerate = false
+  const payload = await getPayload({ config: payloadConfig, disableOnInit: true })
+
+  try {
+    await payload.db.migrateFresh({ forceAcceptWarning: true })
+  } finally {
+    await payload.destroy()
+  }
 }
 
 function getExpectedMigrationNames(): string[] {
@@ -129,8 +145,11 @@ function runCommand(command: string, arguments_: string[], captureOutput = false
 
 const entryPoint = process.argv[1]
 if (entryPoint && resolve(entryPoint) === fileURLToPath(import.meta.url)) {
-  main().catch((error: unknown) => {
-    console.error(error)
-    process.exitCode = 1
-  })
+  void main().then(
+    () => process.exit(0),
+    (error: unknown) => {
+      console.error(error)
+      process.exit(1)
+    },
+  )
 }

@@ -34,8 +34,12 @@ test('configures unique permission resources with Polish labels', async ({ page 
   await addPermission.click()
   const rows = permissions.locator('.array-field__row')
   await expect(rows).toHaveCount(1)
-  const firstResourceField = page.locator('#field-permissions__0__resource')
-  await permissions.getByRole('button', { name: 'Pokaż wszystkie' }).click()
+  const firstRow = rows.nth(0)
+  const firstResourceField = firstRow.locator('#field-permissions__0__resource')
+  await expect(firstRow).toContainText('Uprawnienie 1')
+  if (!(await firstResourceField.isVisible())) {
+    await firstRow.getByRole('button', { name: 'Przełącz blok' }).click()
+  }
   await expect(firstResourceField).toBeVisible()
   await firstResourceField.getByRole('combobox').click()
   await page.locator('.rs__menu').getByText('Media', { exact: true }).click()
@@ -48,8 +52,12 @@ test('configures unique permission resources with Polish labels', async ({ page 
 
   await addPermission.click()
   await expect(rows).toHaveCount(2)
-  const secondResourceField = page.locator('#field-permissions__1__resource')
-  await permissions.getByRole('button', { name: 'Pokaż wszystkie' }).click()
+  const secondRow = rows.nth(1)
+  const secondResourceField = secondRow.locator('#field-permissions__1__resource')
+  await expect(secondRow).toContainText('Uprawnienie 2')
+  if (!(await secondResourceField.isVisible())) {
+    await secondRow.getByRole('button', { name: 'Przełącz blok' }).click()
+  }
   await expect(secondResourceField).toBeVisible()
   await secondResourceField.getByRole('combobox').click()
   await expect(page.locator('.rs__menu').getByText('Media', { exact: true })).toHaveCount(0)

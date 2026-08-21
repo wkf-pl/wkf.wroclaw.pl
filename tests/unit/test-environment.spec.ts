@@ -38,7 +38,9 @@ describe('integration test environment', () => {
 
     expect(packageScripts['prepare:integration']).toContain('scripts/prepare-test-environment.ts')
     expect(packageScripts['prepare:integration']).not.toContain('scripts/seed.ts')
-    expect(preparationScript).toContain("['migrate:fresh', '--force-accept-warning']")
+    expect(preparationScript).toContain('payload.db.migrateFresh')
+    expect(preparationScript).not.toContain("runCommand('payload'")
+    expect(preparationScript).toContain('payloadConfig.typescript.autoGenerate = false')
     expect(composeConfiguration).toContain('- path: .env\n        required: false')
     expect(testEnvironment).toContain('AZURE_STORAGE_ALLOW_CONTAINER_CREATE=true')
   })

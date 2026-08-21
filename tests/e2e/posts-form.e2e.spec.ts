@@ -7,9 +7,11 @@ test('renders dynamic labels for post content blocks', async ({ page }) => {
   await login({ page, user: editorTestUser })
   await page.goto('/admin/collections/posts')
   await page.getByRole('link', { name: 'Erpegowe wtorki 1', exact: true }).click()
+  await page.waitForURL('**/admin/collections/posts/*')
 
   const label = page.locator('.blocks-field__block-header .wkf-content-block-label').first()
 
+  await expect(label).toBeVisible({ timeout: 15_000 })
   await expect(label.locator('strong')).toHaveText('Treść')
   await expect(label).toHaveText(
     'Treść: Erpegowe wtorki to regularne spotkania dla osób, które chcą zagrać, poprowadzić albo po prostu…',
