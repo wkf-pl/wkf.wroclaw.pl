@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import { MemberProfileImages } from '@/collections/MemberProfileImages'
@@ -9,6 +12,7 @@ import {
   validateGame,
   validateUniqueGames,
 } from '@/modules/members/member-profile'
+import { getMemberProfileImageURL } from '@/modules/members/member-profile-image'
 import { createRichTextDocument, extractMemberProfileText } from '@/modules/members/rich-text'
 
 function findNamedField(fields: typeof MemberProfiles.fields, name: string) {
@@ -103,5 +107,14 @@ describe('member profile validation', () => {
     expect(mimeTypes).toContain('image/avif')
     expect(mimeTypes).not.toContain('image/svg+xml')
     expect(mimeTypes).not.toContain('image/gif')
+  })
+
+  it('uses the SVG placeholder when a profile has no photo', () => {
+    expect(getMemberProfileImageURL({ photo: null } as never, 'card')).toBe(
+      '/assets/member-profile-placeholder.svg',
+    )
+    expect(existsSync(resolve(process.cwd(), 'public/assets/member-profile-placeholder.svg'))).toBe(
+      true,
+    )
   })
 })

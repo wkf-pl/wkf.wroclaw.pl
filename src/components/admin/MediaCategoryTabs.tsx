@@ -35,9 +35,7 @@ export function MediaCategoryTabs() {
         <div aria-label="Typ pliku" className="tabs-field__tabs">
           {(['images', 'documents', 'other'] as const).map((category) => {
             const selected =
-              category === 'images' && !where
-                ? true
-                : categoryIsSelected(category, where)
+              category === 'images' && !where ? true : categoryIsSelected(category, where)
 
             return (
               <button

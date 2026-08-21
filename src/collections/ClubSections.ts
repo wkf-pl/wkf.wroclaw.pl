@@ -1,5 +1,9 @@
 import type { CollectionConfig } from 'payload'
 
+import {
+  invalidateHomepageAfterChange,
+  invalidateHomepageAfterDelete,
+} from '@/modules/cache/invalidate-public-data'
 import { populateSlugFromName } from '@/modules/content/slug'
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
@@ -120,6 +124,8 @@ export const ClubSections: CollectionConfig = {
     },
   ],
   hooks: {
+    afterChange: [invalidateHomepageAfterChange],
+    afterDelete: [invalidateHomepageAfterDelete],
     beforeChange: [setPublishedAt],
   },
   labels: {

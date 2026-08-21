@@ -80,3 +80,7 @@ Definicje Bicep znajdują się w `infra/azure/`. Staging i produkcja mają osobn
 Workflow stagingu buduje obraz tylko raz i publikuje jego digest. Produkcja wymaga ręcznego podania digestu sprawdzonego na stagingu. Na obu środowiskach migracje wykonuje osobny Azure Container Apps Job przed przełączeniem obrazu aplikacji.
 
 Szczegółowa konfiguracja Azure i wymagane ustawienia GitHub są opisane w `infra/azure/README.md`.
+
+## Dokumentacja
+
+- [Rejestr decyzji architektonicznych](docs/ADR.md)

@@ -67,6 +67,7 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    'content-listing-items': ContentListingItem;
     pages: Page;
     posts: Post;
     events: Event;
@@ -102,6 +103,7 @@ export interface Config {
     };
   };
   collectionsSelect: {
+    'content-listing-items': ContentListingItemsSelect<false> | ContentListingItemsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
@@ -166,6 +168,89 @@ export interface UserAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "content-listing-items".
+ */
+export interface ContentListingItem {
+  id: number;
+  source: 'pages' | 'posts' | 'events' | 'event-cycles';
+  sourceDocumentId: number;
+  sourceUpdatedAt: string;
+  title: string;
+  url: string;
+  excerpt?: string | null;
+  sortDate: string;
+  eventStartAt?: string | null;
+  eventEndAt?: string | null;
+  visibility?: ('public' | 'members') | null;
+  heroImage?: (number | null) | Media;
+  categories?: (number | Category)[] | null;
+  tags?: (number | Tag)[] | null;
+  parentPage?: (number | null) | Page;
+  eventCycle?: (number | null) | EventCycle;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  /**
+   * Krótki opis obrazu dla czytników ekranu i sytuacji, gdy plik nie może się wyświetlić.
+   */
+  alt: string;
+  description?: string | null;
+  categories?: (number | Category)[] | null;
+  tags?: (number | Tag)[] | null;
+  uploadedBy?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: number;
+  name: string;
+  /**
+   * Adres jest tworzony automatycznie z nazwy.
+   */
+  slug: string;
+  description?: string | null;
+  relatedPages?: {
+    docs?: (number | Page)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  relatedPosts?: {
+    docs?: (number | Post)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  relatedEvents?: {
+    docs?: (number | Event)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  relatedEventCycles?: {
+    docs?: (number | EventCycle)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages".
  */
 export interface Page {
@@ -207,9 +292,9 @@ export interface Page {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "categories".
+ * via the `definition` "tags".
  */
-export interface Category {
+export interface Tag {
   id: number;
   name: string;
   /**
@@ -280,41 +365,6 @@ export interface Post {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "tags".
- */
-export interface Tag {
-  id: number;
-  name: string;
-  /**
-   * Adres jest tworzony automatycznie z nazwy.
-   */
-  slug: string;
-  description?: string | null;
-  relatedPages?: {
-    docs?: (number | Page)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  relatedPosts?: {
-    docs?: (number | Post)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  relatedEvents?: {
-    docs?: (number | Event)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  relatedEventCycles?: {
-    docs?: (number | EventCycle)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -526,114 +576,6 @@ export interface EventCycle {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: number;
-  /**
-   * Krótki opis obrazu dla czytników ekranu i sytuacji, gdy plik nie może się wyświetlić.
-   */
-  alt: string;
-  description?: string | null;
-  categories?: (number | Category)[] | null;
-  tags?: (number | Tag)[] | null;
-  uploadedBy?: (number | null) | User;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
- */
-export interface User {
-  id: number;
-  displayName: string;
-  roles: (number | Role)[];
-  updatedAt: string;
-  createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'users';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "roles".
- */
-export interface Role {
-  id: number;
-  name: string;
-  description?: string | null;
-  key: string;
-  isSystem?: boolean | null;
-  /**
-   * Uprawnienia wielu ról sumują się. Dwa ograniczenia zaznaczone dla jednej operacji obowiązują jednocześnie.
-   */
-  permissions?:
-    | {
-        resource:
-          | 'users'
-          | 'media'
-          | 'member-profiles'
-          | 'member-profile-images'
-          | 'pages'
-          | 'posts'
-          | 'events'
-          | 'event-cycles'
-          | 'partners'
-          | 'documents-resolution'
-          | 'documents-statute'
-          | 'documents-regulations'
-          | 'documents-minutes'
-          | 'documents-report'
-          | 'documents-agreement'
-          | 'documents-license'
-          | 'documents-other'
-          | 'document-files'
-          | 'club-sections'
-          | 'categories'
-          | 'tags'
-          | 'navigation'
-          | 'site-settings';
-        readAllowed?: boolean | null;
-        readOwn?: boolean | null;
-        readPublished?: boolean | null;
-        canCreate?: boolean | null;
-        updateAllowed?: boolean | null;
-        updateOwn?: boolean | null;
-        updatePublished?: boolean | null;
-        deleteAllowed?: boolean | null;
-        deleteOwn?: boolean | null;
-        deletePublished?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "RichTextBlock".
  */
 export interface RichTextBlock {
@@ -834,6 +776,88 @@ export interface MemberProfile {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: number;
+  displayName: string;
+  roles: (number | Role)[];
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "roles".
+ */
+export interface Role {
+  id: number;
+  name: string;
+  description?: string | null;
+  key: string;
+  isSystem?: boolean | null;
+  /**
+   * Uprawnienia wielu ról sumują się. Dwa ograniczenia zaznaczone dla jednej operacji obowiązują jednocześnie.
+   */
+  permissions?:
+    | {
+        resource:
+          | 'users'
+          | 'media'
+          | 'member-profiles'
+          | 'member-profile-images'
+          | 'pages'
+          | 'posts'
+          | 'events'
+          | 'event-cycles'
+          | 'partners'
+          | 'documents-resolution'
+          | 'documents-statute'
+          | 'documents-regulations'
+          | 'documents-minutes'
+          | 'documents-report'
+          | 'documents-agreement'
+          | 'documents-license'
+          | 'documents-other'
+          | 'document-files'
+          | 'club-sections'
+          | 'categories'
+          | 'tags'
+          | 'navigation'
+          | 'site-settings';
+        readAllowed?: boolean | null;
+        readOwn?: boolean | null;
+        readPublished?: boolean | null;
+        canCreate?: boolean | null;
+        updateAllowed?: boolean | null;
+        updateOwn?: boolean | null;
+        updatePublished?: boolean | null;
+        deleteAllowed?: boolean | null;
+        deleteOwn?: boolean | null;
+        deletePublished?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1162,6 +1186,27 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "content-listing-items_select".
+ */
+export interface ContentListingItemsSelect<T extends boolean = true> {
+  source?: T;
+  sourceDocumentId?: T;
+  sourceUpdatedAt?: T;
+  title?: T;
+  url?: T;
+  excerpt?: T;
+  sortDate?: T;
+  eventStartAt?: T;
+  eventEndAt?: T;
+  visibility?: T;
+  heroImage?: T;
+  categories?: T;
+  tags?: T;
+  parentPage?: T;
+  eventCycle?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

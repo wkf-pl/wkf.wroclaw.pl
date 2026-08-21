@@ -6,8 +6,6 @@ import { findPublishedPageBySlug } from '@/modules/content/public-content'
 
 import { CmsPageDocument } from '../_components/CmsPageDocument'
 
-export const dynamic = 'force-dynamic'
-
 type BlogPageProperties = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }

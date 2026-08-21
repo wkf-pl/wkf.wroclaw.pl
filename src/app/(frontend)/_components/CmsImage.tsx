@@ -1,4 +1,5 @@
 import type { Media } from '@/payload-types'
+import { getMediaURL } from '@/modules/media/media-url'
 
 type CmsImageProperties = {
   className?: string
@@ -6,7 +7,8 @@ type CmsImageProperties = {
 }
 
 export function CmsImage({ className, media }: CmsImageProperties) {
-  if (!media || typeof media !== 'object' || !media.url) {
+  const url = getMediaURL(media)
+  if (!url || !media || typeof media !== 'object') {
     return null
   }
 
@@ -17,7 +19,7 @@ export function CmsImage({ className, media }: CmsImageProperties) {
       className={className}
       height={media.height || undefined}
       loading="lazy"
-      src={media.url}
+      src={url}
       width={media.width || undefined}
     />
   )

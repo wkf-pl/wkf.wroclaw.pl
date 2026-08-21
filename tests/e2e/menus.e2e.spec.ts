@@ -1,15 +1,18 @@
 import { expect, test } from '@playwright/test'
-import { getPayload } from 'payload'
+import { getPayload, type Payload } from 'payload'
 import sharp from 'sharp'
 
 import config from '../../src/payload.config.js'
-import type { Media, Navigation, SiteSetting } from '../../src/payload-types.js'
+import type { ClubSection, Media, Navigation, SiteSetting } from '../../src/payload-types.js'
+
+import { login } from '../helpers/login'
+import { editorTestUser } from '../helpers/seedUser'
 
 let originalNavigation: Navigation
 let originalSiteSettings: SiteSetting
 let heroMedia: Media
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ browser }) => {
   const payload = await getPayload({ config })
   originalNavigation = await payload.findGlobal({
     slug: 'navigation',
@@ -50,133 +53,58 @@ test.beforeAll(async () => {
     },
     overrideAccess: true,
   })
-  await payload.updateGlobal({
-    slug: 'site-settings',
-    data: { heroImage: heroMedia.id },
-    overrideAccess: true,
+  const page = await browser.newPage()
+  await login({ page, user: editorTestUser })
+  await deleteTestClubSections(page, payload)
+  await createTestClubSection(page, {
+    _status: 'published',
+    displayOrder: 1,
+    menuItems: [
+      {
+        iconSource: 'system',
+        label: 'Sesje',
+        systemIcon: 'dice',
+        targetType: 'custom',
+        customAddress: 'blog',
+        customScheme: 'path',
+      },
+    ],
+    name: 'E2E RPG',
+    slug: 'e2e-rpg',
   })
-
-  await payload.delete({
-    collection: 'club-sections',
-    overrideAccess: true,
-    where: { slug: { in: ['e2e-rpg', 'e2e-larp'] } },
-  })
-  await payload.create({
-    collection: 'club-sections',
-    data: {
-      _status: 'published',
-      displayOrder: 1,
-      menuItems: [
-        {
-          iconSource: 'system',
-          label: 'Sesje',
-          systemIcon: 'dice',
-          targetType: 'custom',
-          customAddress: 'blog',
-          customScheme: 'path',
-        },
-      ],
-      name: 'E2E RPG',
-      slug: 'e2e-rpg',
-    },
-    overrideAccess: true,
-  })
-  await payload.create({
-    collection: 'club-sections',
-    data: {
+  await createTestClubSection(
+    page,
+    {
       _status: 'draft',
       displayOrder: 2,
       name: 'E2E LARP',
       slug: 'e2e-larp',
     },
-    draft: true,
-    overrideAccess: true,
-  })
-  await payload.updateGlobal({
-    slug: 'navigation',
-    data: {
-      footerColumns: [
-        {
-          items: [
-            {
-              label: 'O nas',
-              page: aboutPage.id,
-              targetType: 'page',
-            },
-          ],
-          title: 'Nawigacja',
-        },
-      ],
-      headerItems: [
-        {
-          appearance: 'link',
-          customAddress: 'blog',
-          customScheme: 'path',
-          label: 'Aktualności',
-          targetType: 'custom',
-        },
-        {
-          appearance: 'icon',
-          iconSource: 'system',
-          label: 'E-mail',
-          systemIcon: 'mail',
-          targetType: 'custom',
-          customAddress: 'kontakt@example.invalid',
-          customScheme: 'mailto',
-        },
-        {
-          appearance: 'button',
-          label: 'O nas',
-          page: aboutPage.id,
-          targetType: 'page',
-        },
-      ],
-      heroItems: [
-        {
-          customAddress: 'blog',
-          customScheme: 'path',
-          label: 'Gry RPG',
-          targetType: 'custom',
-        },
-      ],
-      socialItems: [
-        {
-          iconSource: 'system',
-          label: 'Slack',
-          systemIcon: 'facebook',
-          targetType: 'custom',
-          customAddress: 'slack.example.invalid',
-          customScheme: 'https',
-        },
-      ],
-    },
-    overrideAccess: true,
-  })
+    true,
+  )
+  await updateGlobal(page, 'site-settings', { heroImage: heroMedia.id })
+  await updateGlobal(page, 'navigation', createTestNavigation(aboutPage.id))
+  await page.close()
 })
 
-test.afterAll(async () => {
+test.afterAll(async ({ browser }) => {
   const payload = await getPayload({ config })
-  await payload.updateGlobal({
-    slug: 'site-settings',
-    data: { heroImage: originalSiteSettings.heroImage },
-    overrideAccess: true,
+  const page = await browser.newPage()
+  await login({ page, user: editorTestUser })
+  await updateGlobal(page, 'site-settings', { heroImage: originalSiteSettings.heroImage })
+  await updateGlobal(page, 'navigation', {
+    footerColumns: originalNavigation.footerColumns,
+    headerItems: originalNavigation.headerItems,
+    heroItems: originalNavigation.heroItems,
+    socialItems: originalNavigation.socialItems,
   })
+
   await payload.delete({ collection: 'media', id: heroMedia.id, overrideAccess: true })
-  await payload.updateGlobal({
-    slug: 'navigation',
-    data: {
-      footerColumns: originalNavigation.footerColumns,
-      headerItems: originalNavigation.headerItems,
-      heroItems: originalNavigation.heroItems,
-      socialItems: originalNavigation.socialItems,
-    },
-    overrideAccess: true,
-  })
-  await payload.delete({
-    collection: 'club-sections',
-    overrideAccess: true,
-    where: { slug: { in: ['e2e-rpg', 'e2e-larp'] } },
-  })
+  await deleteTestClubSections(page, payload)
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: 'E2E RPG' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'E2E LARP' })).toHaveCount(0)
+  await page.close()
 })
 
 test('renders editable menus and only published club sections on the home page', async ({
@@ -205,11 +133,11 @@ test('renders editable menus and only published club sections on the home page',
     'href',
     'https://slack.example.invalid',
   )
-  await expect(page.getByRole('navigation', { name: 'Nawigacja w stopce' })).toContainText(
-    'O nas',
-  )
+  await expect(page.getByRole('navigation', { name: 'Nawigacja w stopce' })).toContainText('O nas')
   await expect(
-    page.getByRole('navigation', { name: 'Nawigacja w stopce' }).getByRole('link', { name: 'O nas' }),
+    page
+      .getByRole('navigation', { name: 'Nawigacja w stopce' })
+      .getByRole('link', { name: 'O nas' }),
   ).toHaveAttribute('href', '/o-nas')
 })
 
@@ -220,3 +148,121 @@ test('keeps the global header and footer on blog and CMS pages', async ({ page }
     await expect(page.getByRole('navigation', { name: 'Nawigacja w stopce' })).toBeVisible()
   }
 })
+
+type TestClubSection = Pick<ClubSection, '_status' | 'displayOrder' | 'name' | 'slug'> &
+  Partial<Pick<ClubSection, 'menuItems'>>
+
+async function createTestClubSection(
+  page: import('@playwright/test').Page,
+  data: TestClubSection,
+  draft = false,
+): Promise<void> {
+  const result = await page.evaluate(
+    async ({ data, draft }) => {
+      const response = await fetch(`/api/club-sections${draft ? '?draft=true' : ''}`, {
+        body: JSON.stringify(data),
+        headers: { 'content-type': 'application/json' },
+        method: 'POST',
+      })
+      return { body: await response.text(), ok: response.ok }
+    },
+    { data, draft },
+  )
+
+  expect(result.ok, result.body).toBe(true)
+}
+
+async function deleteTestClubSections(
+  page: import('@playwright/test').Page,
+  payload: Payload,
+): Promise<void> {
+  const sections = await payload.find({
+    collection: 'club-sections',
+    depth: 0,
+    overrideAccess: true,
+    pagination: false,
+    where: { slug: { in: ['e2e-rpg', 'e2e-larp'] } },
+  })
+
+  for (const section of sections.docs) {
+    const result = await page.evaluate(async (sectionID) => {
+      const response = await fetch(`/api/club-sections/${sectionID}`, { method: 'DELETE' })
+      return { body: await response.text(), ok: response.ok }
+    }, section.id)
+
+    expect(result.ok, result.body).toBe(true)
+  }
+}
+
+function createTestNavigation(aboutPageID: number): Partial<Navigation> {
+  return {
+    footerColumns: [
+      {
+        items: [{ label: 'O nas', page: aboutPageID, targetType: 'page' }],
+        title: 'Nawigacja',
+      },
+    ],
+    headerItems: [
+      {
+        appearance: 'link',
+        customAddress: 'blog',
+        customScheme: 'path',
+        label: 'Aktualności',
+        targetType: 'custom',
+      },
+      {
+        appearance: 'icon',
+        customAddress: 'kontakt@example.invalid',
+        customScheme: 'mailto',
+        iconSource: 'system',
+        label: 'E-mail',
+        systemIcon: 'mail',
+        targetType: 'custom',
+      },
+      {
+        appearance: 'button',
+        label: 'O nas',
+        page: aboutPageID,
+        targetType: 'page',
+      },
+    ],
+    heroItems: [
+      {
+        customAddress: 'blog',
+        customScheme: 'path',
+        label: 'Gry RPG',
+        targetType: 'custom',
+      },
+    ],
+    socialItems: [
+      {
+        customAddress: 'slack.example.invalid',
+        customScheme: 'https',
+        iconSource: 'system',
+        label: 'Slack',
+        systemIcon: 'facebook',
+        targetType: 'custom',
+      },
+    ],
+  }
+}
+
+async function updateGlobal(
+  page: import('@playwright/test').Page,
+  slug: 'navigation' | 'site-settings',
+  data: Partial<Navigation> | Partial<SiteSetting>,
+): Promise<void> {
+  const result = await page.evaluate(
+    async ({ data, slug }) => {
+      const response = await fetch(`/api/globals/${slug}`, {
+        body: JSON.stringify(data),
+        headers: { 'content-type': 'application/json' },
+        method: 'POST',
+      })
+      return { body: await response.text(), ok: response.ok }
+    },
+    { data, slug },
+  )
+
+  expect(result.ok, result.body).toBe(true)
+}

@@ -18,6 +18,7 @@ import * as migration_20260818_151047_events from './20260818_151047_events'
 import * as migration_20260818_151505_event_calendar_tracking from './20260818_151505_event_calendar_tracking'
 import * as migration_20260818_164834_event_cycle_default_title from './20260818_164834_event_cycle_default_title'
 import * as migration_20260818_181938_event_link_targets from './20260818_181938_event_link_targets'
+import * as migration_20260821_092652_content_listing_index from './20260821_092652_content_listing_index'
 
 export const migrations = [
   {
@@ -119,5 +120,10 @@ export const migrations = [
     up: migration_20260818_181938_event_link_targets.up,
     down: migration_20260818_181938_event_link_targets.down,
     name: '20260818_181938_event_link_targets',
+  },
+  {
+    up: migration_20260821_092652_content_listing_index.up,
+    down: migration_20260821_092652_content_listing_index.down,
+    name: '20260821_092652_content_listing_index',
   },
 ]

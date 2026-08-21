@@ -371,39 +371,45 @@ async function ensureNavigation(aboutPage: Page, blogPage: Page): Promise<void> 
   })
 }
 
-const author = await findOrCreateAuthor()
-let rpgBackgroundImage: Media | undefined
+try {
+  const author = await findOrCreateAuthor()
+  let rpgBackgroundImage: Media | undefined
 
-for (const seedPost of seedPosts) {
-  const media = await findOrCreateMedia(seedPost, author)
-  await ensurePost(seedPost, author, media)
+  for (const seedPost of seedPosts) {
+    const media = await findOrCreateMedia(seedPost, author)
+    await ensurePost(seedPost, author, media)
 
-  if (seedPost.slug === 'wiesci-z-klubu') {
-    rpgBackgroundImage = media
+    if (seedPost.slug === 'wiesci-z-klubu') {
+      rpgBackgroundImage = media
+    }
   }
+
+  const aboutPage = await ensureAboutPage(author)
+  const blogPage = await ensureBlogPage(author)
+  await ensureNavigation(aboutPage, blogPage)
+  await ensureClubSection({
+    backgroundImage: rpgBackgroundImage,
+    displayOrder: 10,
+    name: 'RPG',
+    status: 'published',
+  })
+  await ensureClubSection({
+    displayOrder: 20,
+    name: 'LARP',
+    status: 'draft',
+  })
+
+  await payload.updateGlobal({
+    slug: 'site-settings',
+    data: {
+      siteDescription: 'Klub ludzi z wyobraźnią',
+      siteName: 'Wrocławski Klub Fantastyki',
+    },
+  })
+
+  payload.logger.info('Seed completed: site settings, navigation, pages, posts and club sections')
+} finally {
+  await payload.destroy()
 }
 
-const aboutPage = await ensureAboutPage(author)
-const blogPage = await ensureBlogPage(author)
-await ensureNavigation(aboutPage, blogPage)
-await ensureClubSection({
-  backgroundImage: rpgBackgroundImage,
-  displayOrder: 10,
-  name: 'RPG',
-  status: 'published',
-})
-await ensureClubSection({
-  displayOrder: 20,
-  name: 'LARP',
-  status: 'draft',
-})
-
-await payload.updateGlobal({
-  slug: 'site-settings',
-  data: {
-    siteDescription: 'Klub ludzi z wyobraźnią',
-    siteName: 'Wrocławski Klub Fantastyki',
-  },
-})
-
-payload.logger.info('Seed completed: site settings, navigation, pages, posts and club sections')
+process.exit(0)

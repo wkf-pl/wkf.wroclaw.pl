@@ -206,6 +206,45 @@ test('renders an embedded profile with its contextual label instead of the club 
   await expect(page.getByRole('link', { exact: true, name: 'Alicja Bez Zdjęcia' })).toBeVisible()
 })
 
+test('invalidates the cached public profile after a Payload update', async ({ page }) => {
+  await page.goto(`/members/${ownerProfile.slug}`)
+  await expect(page.getByRole('heading', { level: 1, name: 'Alicja Bez Zdjęcia' })).toBeVisible()
+
+  await login({ page, user: profileOwnerUser })
+  const updateResponse = await updatePublicProfileName(
+    page,
+    ownerProfile.id,
+    'Alicja Po Aktualizacji Cache',
+  )
+  expect(updateResponse.ok, updateResponse.body).toBe(true)
+
+  await page.goto(`/members/${ownerProfile.slug}`)
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Alicja Po Aktualizacji Cache' }),
+  ).toBeVisible()
+
+  const restoreResponse = await updatePublicProfileName(page, ownerProfile.id, 'Alicja Bez Zdjęcia')
+  expect(restoreResponse.ok, restoreResponse.body).toBe(true)
+})
+
+async function updatePublicProfileName(
+  page: import('@playwright/test').Page,
+  profileID: number,
+  publicName: string,
+): Promise<{ body: string; ok: boolean }> {
+  return page.evaluate(
+    async ({ profileID, publicName }) => {
+      const response = await fetch(`/api/member-profiles/${profileID}?draft=false`, {
+        body: JSON.stringify({ _status: 'published', publicName }),
+        headers: { 'content-type': 'application/json' },
+        method: 'PATCH',
+      })
+      return { body: await response.text(), ok: response.ok }
+    },
+    { profileID, publicName },
+  )
+}
+
 test('opens a member profile from account and publishes the automatically created draft', async ({
   page,
 }) => {

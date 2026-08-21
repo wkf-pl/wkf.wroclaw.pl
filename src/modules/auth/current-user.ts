@@ -7,8 +7,9 @@ import config from '@payload-config'
 import type { User } from '@/payload-types'
 
 export const getCurrentUser = cache(async (): Promise<null | User> => {
+  const requestHeaders = await headers()
   const payload = await getPayload({ config })
-  const authentication = await payload.auth({ headers: await headers() })
+  const authentication = await payload.auth({ headers: requestHeaders })
 
   return authentication.user
 })

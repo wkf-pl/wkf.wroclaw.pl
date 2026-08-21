@@ -1,9 +1,9 @@
 import { APIError, type CollectionBeforeValidateHook } from 'payload'
 
-type RelationshipValue = number | string | { id: number | string } | null | undefined
+import { getRelationshipId, type RelationshipReference } from '@/lib/relationships'
 
 type ManualMediaItem = {
-  media?: RelationshipValue
+  media?: RelationshipReference
 }
 
 type MediaBlock = {
@@ -12,18 +12,12 @@ type MediaBlock = {
   selectionMode?: unknown
 }
 
-function getRelationshipId(value: RelationshipValue): number | string | null {
-  if (typeof value === 'number' || typeof value === 'string') {
-    return value
-  }
-
-  return value && typeof value === 'object' ? value.id : null
-}
-
 export const validateMediaBlocks: CollectionBeforeValidateHook = async ({ data, req }) => {
   if (!data || !Array.isArray(data.layout)) {
     return data
   }
+
+  const galleryMediaByID = new Map<string, number | string>()
 
   for (const candidate of data.layout) {
     if (!candidate || typeof candidate !== 'object') {
@@ -48,7 +42,7 @@ export const validateMediaBlocks: CollectionBeforeValidateHook = async ({ data, 
           ? getRelationshipId((item as ManualMediaItem).media)
           : null,
       )
-      .filter((id): id is number | string => id !== null)
+      .filter((id): id is number | string => id !== undefined)
 
     if (mediaIds.length !== block.items.length) {
       throw new APIError('Każdy ręcznie dodany element musi wskazywać plik.', 400)
@@ -63,17 +57,31 @@ export const validateMediaBlocks: CollectionBeforeValidateHook = async ({ data, 
     }
 
     for (const mediaId of mediaIds) {
-      const media = await req.payload.findByID({
-        collection: 'media',
-        depth: 0,
-        id: mediaId,
-        overrideAccess: true,
-        req,
-      })
+      galleryMediaByID.set(String(mediaId), mediaId)
+    }
+  }
 
-      if (!media.mimeType?.startsWith('image/')) {
-        throw new APIError('Galeria mediów może zawierać wyłącznie obrazy.', 400)
-      }
+  const galleryMediaIDs = [...galleryMediaByID.values()]
+  if (galleryMediaIDs.length === 0) {
+    return data
+  }
+
+  const mediaResult = await req.payload.find({
+    collection: 'media',
+    depth: 0,
+    limit: galleryMediaIDs.length,
+    overrideAccess: true,
+    pagination: false,
+    req,
+    select: { id: true, mimeType: true },
+    where: { id: { in: galleryMediaIDs } },
+  })
+  const mediaByID = new Map(mediaResult.docs.map((media) => [String(media.id), media]))
+
+  for (const mediaId of galleryMediaIDs) {
+    const media = mediaByID.get(String(mediaId))
+    if (!media?.mimeType?.startsWith('image/')) {
+      throw new APIError('Galeria mediów może zawierać wyłącznie obrazy.', 400)
     }
   }
 

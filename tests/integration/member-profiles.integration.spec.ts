@@ -3,6 +3,10 @@ import { getPayload, type Payload } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { findMemberProfileUsages } from '@/modules/members/member-profile-usages'
+import {
+  findPublicMemberProfileBySlug,
+  findPublicMemberProfiles,
+} from '@/modules/members/public-members'
 import { createRichTextDocument } from '@/modules/members/rich-text'
 import type { MemberProfile, Page, Role, User } from '@/payload-types'
 import config from '@/payload.config'
@@ -175,6 +179,14 @@ describe('member profiles integration', () => {
     expect(publicResult.docs[0]).not.toHaveProperty('owner')
     expect(publicResult.docs[0]).not.toHaveProperty('moderatorHidden')
     expect(publicResult.docs[0]).not.toHaveProperty('moderationReason')
+
+    const [publicProfiles, publicProfile] = await Promise.all([
+      findPublicMemberProfiles(),
+      findPublicMemberProfileBySlug(profile.slug),
+    ])
+    expect(publicProfiles.map((item) => item.id)).toContain(profile.id)
+    expect(publicProfile?.id).toBe(profile.id)
+    expect(publicProfile).not.toHaveProperty('owner')
   })
 
   it('finds CMS pages that embed the profile block', async () => {

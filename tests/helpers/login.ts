@@ -9,19 +9,22 @@ export interface LoginOptions {
   }
 }
 
-/**
- * Logs the user into the admin panel via the login page.
- */
+/** Authenticates through the API and opens the admin panel. */
 export async function login({
   page,
-  serverURL = 'http://127.0.0.1:3000',
+  serverURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000',
   user,
 }: LoginOptions): Promise<void> {
-  await page.goto(`${serverURL}/admin/login`)
+  const response = await page.request.post(`${serverURL}/api/users/login`, {
+    data: {
+      email: user.email,
+      password: user.password,
+    },
+  })
 
-  await page.fill('#field-email', user.email)
-  await page.fill('#field-password', user.password)
-  await page.click('button[type="submit"]')
+  if (!response.ok()) {
+    throw new Error(`E2E login failed with status ${response.status()}: ${await response.text()}`)
+  }
 
-  await page.waitForURL(`${serverURL}/admin`)
+  await page.goto(`${serverURL}/admin`)
 }

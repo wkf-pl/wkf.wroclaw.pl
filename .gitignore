@@ -17,6 +17,9 @@
 
 # Next.js and TypeScript
 /.next/
+/.next-container/
+/.next-host/
+/.next-e2e-ci/
 /out/
 *.tsbuildinfo
 next-env.d.ts
@@ -34,3 +37,6 @@ yarn-error.log*
 
 # OS files
 .DS_Store
+
+pr.md
+commit.txt

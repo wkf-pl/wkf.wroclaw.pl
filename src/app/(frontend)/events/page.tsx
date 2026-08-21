@@ -8,7 +8,6 @@ import { CmsPageDocument } from '../_components/CmsPageDocument'
 import { ContentPagination } from '../_components/ContentPagination'
 import { EventList } from '../_components/EventList'
 
-export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Wydarzenia' }
 
 export default async function EventsPage({

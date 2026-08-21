@@ -3,33 +3,46 @@ import { getPayload, type Where } from 'payload'
 
 import config from '@payload-config'
 
-import type { MemberProfile, MemberProfileImage } from '@/payload-types'
+import type { MemberProfile } from '@/payload-types'
+import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
+import { websiteRequestContext } from '@/modules/membership/role-permissions'
+
+export { getMemberProfileImage, getMemberProfileImageURL } from './member-profile-image'
 
 const publicProfileConditions: Where[] = [{ _status: { equals: 'published' } }]
 const publicProfileWhere: Where = { and: publicProfileConditions }
 
-export const findPublicMemberProfiles = cache(async (): Promise<MemberProfile[]> => {
-  const payload = await getPayload({ config })
-  const result = await payload.find({
-    collection: 'member-profiles',
-    depth: 1,
-    draft: false,
-    limit: 0,
-    overrideAccess: false,
-    pagination: false,
-    sort: 'publicName',
-    user: null,
-    where: publicProfileWhere,
-  })
+const findPublicMemberProfilesCached = cachePublicData(
+  'public-member-profiles',
+  async (): Promise<MemberProfile[]> => {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'member-profiles',
+      context: websiteRequestContext,
+      depth: 1,
+      draft: false,
+      limit: 0,
+      overrideAccess: false,
+      pagination: false,
+      sort: 'publicName',
+      user: null,
+      where: publicProfileWhere,
+    })
 
-  return result.docs
-})
+    return result.docs
+  },
+  { revalidate: 300, tags: [publicCacheTags.memberProfiles] },
+)
 
-export const findPublicMemberProfileBySlug = cache(
+export const findPublicMemberProfiles = cache(findPublicMemberProfilesCached)
+
+const findPublicMemberProfileBySlugCached = cachePublicData(
+  'public-member-profile-by-slug',
   async (slug: string): Promise<MemberProfile | null> => {
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'member-profiles',
+      context: websiteRequestContext,
       depth: 1,
       draft: false,
       limit: 1,
@@ -43,16 +56,10 @@ export const findPublicMemberProfileBySlug = cache(
 
     return result.docs[0] ?? null
   },
+  { revalidate: 3600, tags: [publicCacheTags.memberProfiles] },
 )
 
-export function getMemberProfileImage(profile: MemberProfile): MemberProfileImage | null {
-  return profile.photo && typeof profile.photo === 'object' ? profile.photo : null
-}
-
-export function getMemberProfileImageURL(profile: MemberProfile, size: 'card' | 'profile'): string {
-  const image = getMemberProfileImage(profile)
-  return image?.sizes?.[size]?.url || image?.url || '/assets/member-profile-placeholder.svg'
-}
+export const findPublicMemberProfileBySlug = cache(findPublicMemberProfileBySlugCached)
 
 export function getContactChannelLabel(type: string): string {
   const labels: Record<string, string> = {

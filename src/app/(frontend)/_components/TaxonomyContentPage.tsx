@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 
 import type { Category, Tag } from '@/payload-types'
-import { getCurrentUser } from '@/modules/auth/current-user'
 import { findPublicContent } from '@/modules/content/content-listing'
 
 import { ContentList } from './ContentList'
@@ -20,18 +19,15 @@ export async function TaxonomyContentPage({
 }: TaxonomyContentPageProperties) {
   const requestedPage = getRequestedPage(searchParams.page)
   const pathname = `/${kind}/${taxonomy.slug}`
-  const result = await findPublicContent(
-    {
-      categoryId: kind === 'category' ? taxonomy.id : undefined,
-      page: requestedPage,
-      pageSize: 12,
-      pagination: true,
-      sort: 'newest',
-      sources: ['pages', 'posts', 'events', 'event-cycles'],
-      tagId: kind === 'tag' ? taxonomy.id : undefined,
-    },
-    await getCurrentUser(),
-  )
+  const result = await findPublicContent({
+    categoryId: kind === 'category' ? taxonomy.id : undefined,
+    page: requestedPage,
+    pageSize: 12,
+    pagination: true,
+    sort: 'newest',
+    sources: ['pages', 'posts', 'events', 'event-cycles'],
+    tagId: kind === 'tag' ? taxonomy.id : undefined,
+  })
 
   if (requestedPage > result.totalPages) {
     redirect(createPaginatedURL(pathname, searchParams, 'page', result.totalPages))

@@ -6,6 +6,7 @@ import { formatAdminURL } from 'payload/shared'
 import { useState } from 'react'
 
 import type { User } from '@/payload-types'
+import { userHasRole } from '@/modules/membership/user-roles'
 
 export function UserMenu() {
   const { logOut, user } = useAuth<User>()
@@ -24,9 +25,7 @@ export function UserMenu() {
   const accountURL = formatAdminURL({ adminRoute, path: accountRoute })
   const loginURL = formatAdminURL({ adminRoute, path: loginRoute })
   const profileURL = formatAdminURL({ adminRoute, path: '/profile' })
-  const hasMemberRole = Boolean(
-    user?.roles?.some((role) => typeof role === 'object' && role !== null && role.key === 'member'),
-  )
+  const hasMemberRole = userHasRole(user, 'member')
 
   async function handleLogOut() {
     if (isLoggingOut) {

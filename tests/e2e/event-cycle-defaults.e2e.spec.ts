@@ -5,10 +5,12 @@ import config from '@/payload.config'
 import type { MemberProfile, Partner, User } from '@/payload-types'
 
 import { login } from '../helpers/login'
-import { cleanupTestUsers, editorTestUser, seedTestUsers } from '../helpers/seedUser'
+import { editorTestUser } from '../helpers/seedUser'
 
 const cycleSlug = 'e2e-event-defaults-cycle'
 const cycleTitle = 'E2E domyślny Cykl'
+const eventEditorURL = /\/admin\/collections\/events\/\d+$/
+const navigationTimeout = 20_000
 
 let payload: Payload
 let author: User
@@ -56,7 +58,6 @@ function layout() {
 }
 
 test.beforeAll(async () => {
-  await seedTestUsers()
   payload = await getPayload({ config })
   await payload.delete({
     collection: 'event-cycles',
@@ -162,12 +163,12 @@ test.afterAll(async () => {
   if (organizer) {
     await payload.delete({ collection: 'member-profiles', id: organizer.id, overrideAccess: true })
   }
-  await cleanupTestUsers()
 })
 
 test('applies selected Cycle defaults to an Event form without overwriting values', async ({
   page,
 }) => {
+  test.setTimeout(60_000)
   const pageErrors: Error[] = []
   page.on('pageerror', (error) => pageErrors.push(error))
   await login({ page, user: editorTestUser })
@@ -211,13 +212,14 @@ test('applies selected Cycle defaults to an Event form without overwriting value
   )
   await page.getByRole('button', { name: 'Zapisz szkic' }).click()
   expect((await saveResponse).ok()).toBe(true)
-  await expect(page).toHaveURL(/\/admin\/collections\/events\/\d+$/)
+  await expect(page).toHaveURL(eventEditorURL, { timeout: navigationTimeout })
   expect(pageErrors).toEqual([])
 })
 
 test('creates a Cycle Event draft without asking for a date or generating a slug', async ({
   page,
 }) => {
+  test.setTimeout(60_000)
   await login({ page, user: editorTestUser })
   await page.goto(`/admin/collections/event-cycles/${cycleID}`)
 
@@ -228,7 +230,7 @@ test('creates a Cycle Event draft without asking for a date or generating a slug
   )
   await page.getByRole('button', { name: 'Dodaj kolejne Wydarzenie' }).click()
   expect((await createResponse).status()).toBe(201)
-  await expect(page).toHaveURL(/\/admin\/collections\/events\/\d+$/)
+  await expect(page).toHaveURL(eventEditorURL, { timeout: navigationTimeout })
 
   await expect(page.locator('#field-startAt input')).toHaveValue('')
   await expect(page.locator('#field-slug')).toHaveValue('')

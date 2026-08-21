@@ -1,5 +1,9 @@
 import type { CollectionConfig } from 'payload'
 
+import {
+  invalidateListingsAfterChange,
+  invalidateListingsAfterDelete,
+} from '@/modules/cache/invalidate-public-data'
 import { populateSlugFromName } from '@/modules/content/slug'
 import { createRelatedContentJoinFields } from '@/modules/content/taxonomy-fields'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
@@ -56,6 +60,10 @@ export const Tags: CollectionConfig = {
     },
     ...createRelatedContentJoinFields('tags'),
   ],
+  hooks: {
+    afterChange: [invalidateListingsAfterChange],
+    afterDelete: [invalidateListingsAfterDelete],
+  },
   labels: {
     plural: 'Tagi',
     singular: 'Tag',

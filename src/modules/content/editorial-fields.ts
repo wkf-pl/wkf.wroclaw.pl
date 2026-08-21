@@ -141,3 +141,23 @@ export function createEditorialFields({
 
   return fields
 }
+
+export function getEditorialField(fields: Field[], name: string): Field {
+  const field = fields.find((candidate) => 'name' in candidate && candidate.name === name)
+
+  if (!field) {
+    throw new Error(`Missing editorial field: ${name}`)
+  }
+
+  return field
+}
+
+export function withFieldWidth(field: Field, width: string): Field {
+  return {
+    ...field,
+    admin: {
+      ...('admin' in field && field.admin ? field.admin : {}),
+      width,
+    },
+  } as Field
+}

@@ -1,11 +1,23 @@
 import type { Access, AccessResult, CollectionConfig, Field, Where } from 'payload'
 
-import { createEditorialFields } from '@/modules/content/editorial-fields'
+import {
+  createEditorialFields,
+  getEditorialField,
+  withFieldWidth,
+} from '@/modules/content/editorial-fields'
+import {
+  removeContentListingAfterDelete,
+  syncContentListingAfterChange,
+} from '@/modules/content/content-listing-index'
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
+import { populateListingExcerptOnPublish } from '@/modules/content/listing-excerpt'
 import { validatePageStructure } from '@/modules/content/page-validation'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import {
+  combineAccessWithConstraint,
+  createRolePermissionAccess,
+} from '@/modules/membership/role-permissions'
 
 const createPages = createRolePermissionAccess({ operation: 'create', resource: 'pages' })
 const deletePagesByRole = createRolePermissionAccess({ operation: 'delete', resource: 'pages' })
@@ -20,11 +32,7 @@ function combineWithNonSystemPageConstraint(result: AccessResult): AccessResult 
     or: [{ systemKey: { exists: false } }, { systemKey: { not_in: ['blog', 'events'] } }],
   }
 
-  if (result === false) {
-    return false
-  }
-
-  return result === true ? nonSystemPage : { and: [result, nonSystemPage] }
+  return combineAccessWithConstraint(result, nonSystemPage)
 }
 
 const deletePages: Access = async (arguments_) =>
@@ -35,26 +43,6 @@ const editorialFields = createEditorialFields({
   includeTaxonomy: true,
   reserveApplicationSlugs: true,
 })
-
-function getEditorialField(name: string): Field {
-  const field = editorialFields.find((candidate) => 'name' in candidate && candidate.name === name)
-
-  if (!field) {
-    throw new Error(`Missing editorial field: ${name}`)
-  }
-
-  return field
-}
-
-function setFieldWidth(field: Field): Field {
-  return {
-    ...field,
-    admin: {
-      ...('admin' in field && field.admin ? field.admin : {}),
-      width: '50%',
-    },
-  } as Field
-}
 
 const pageParentField: Field = {
   name: 'parent',
@@ -89,16 +77,19 @@ export const Pages: CollectionConfig = {
   fields: [
     {
       type: 'row',
-      fields: [setFieldWidth(getEditorialField('title')), setFieldWidth(pageParentField)],
+      fields: [
+        withFieldWidth(getEditorialField(editorialFields, 'title'), '50%'),
+        withFieldWidth(pageParentField, '50%'),
+      ],
     },
     {
       type: 'row',
       fields: [
-        setFieldWidth(getEditorialField('categories')),
-        setFieldWidth(getEditorialField('tags')),
+        withFieldWidth(getEditorialField(editorialFields, 'categories'), '50%'),
+        withFieldWidth(getEditorialField(editorialFields, 'tags'), '50%'),
       ],
     },
-    getEditorialField('heroImage'),
+    getEditorialField(editorialFields, 'heroImage'),
     {
       name: 'listingExcerpt',
       type: 'textarea',
@@ -110,10 +101,10 @@ export const Pages: CollectionConfig = {
       maxLength: 500,
     },
     createContentLayoutField('Treści'),
-    getEditorialField('seo'),
-    getEditorialField('slug'),
-    getEditorialField('author'),
-    getEditorialField('publishedAt'),
+    getEditorialField(editorialFields, 'seo'),
+    getEditorialField(editorialFields, 'slug'),
+    getEditorialField(editorialFields, 'author'),
+    getEditorialField(editorialFields, 'publishedAt'),
     {
       name: 'systemKey',
       type: 'text',
@@ -125,7 +116,9 @@ export const Pages: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeChange: [setPublishedAt],
+    afterChange: [syncContentListingAfterChange],
+    afterDelete: [removeContentListingAfterDelete],
+    beforeChange: [populateListingExcerptOnPublish, setPublishedAt],
     beforeValidate: [validateMediaBlocks, validatePageStructure],
   },
   labels: {

@@ -1,5 +1,6 @@
 import type { Access, AccessResult, PayloadRequest } from 'payload'
 
+import { getRelationshipId } from '@/lib/relationships'
 import {
   combineAccessResults,
   createCollectionRolePermissionAccess,
@@ -15,19 +16,6 @@ const readDocumentFilesByPermission = createRolePermissionAccess({
   operation: 'read',
   resource: 'document-files',
 })
-
-function getRelationshipId(value: unknown): number | string | undefined {
-  if (typeof value === 'number' || typeof value === 'string') {
-    return value
-  }
-
-  if (value && typeof value === 'object' && 'id' in value) {
-    const id = value.id
-    return typeof id === 'number' || typeof id === 'string' ? id : undefined
-  }
-
-  return undefined
-}
 
 export async function findAccessibleDocumentFileIds(
   req: PayloadRequest,

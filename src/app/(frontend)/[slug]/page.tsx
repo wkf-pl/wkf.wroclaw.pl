@@ -11,8 +11,6 @@ type PageProperties = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export const dynamic = 'force-dynamic'
-
 export async function generateMetadata({ params }: PageProperties): Promise<Metadata> {
   const { slug } = await params
   const page = await findPublishedPageBySlug(slug)
@@ -29,5 +27,7 @@ export default async function StaticPage({ params, searchParams }: PagePropertie
     notFound()
   }
 
-  return <CmsPageDocument document={page} pathname={`/${slug}`} searchParams={resolvedSearchParams} />
+  return (
+    <CmsPageDocument document={page} pathname={`/${slug}`} searchParams={resolvedSearchParams} />
+  )
 }

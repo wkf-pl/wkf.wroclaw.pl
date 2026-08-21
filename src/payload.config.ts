@@ -11,6 +11,7 @@ import { migrations } from '../migrations'
 import {
   Categories,
   ClubSections,
+  ContentListingItems,
   DocumentFiles,
   Documents,
   EventCycles,
@@ -25,6 +26,7 @@ import {
   Tags,
   Users,
 } from './collections'
+import { shouldPushDatabaseSchema } from './database/schema-mode'
 import { createEmailAdapter } from './email/create-email-adapter'
 import { Navigation, SiteSettings, WebsitePermissions } from './globals'
 import { getOptionalEnvironmentVariable, getRequiredEnvironmentVariable } from './lib/env'
@@ -97,6 +99,7 @@ export default buildConfig({
     },
   },
   collections: [
+    ContentListingItems,
     Pages,
     Posts,
     Events,
@@ -129,6 +132,7 @@ export default buildConfig({
   },
   db: postgresAdapter({
     migrationDir: path.resolve(directoryName, '../migrations'),
+    push: shouldPushDatabaseSchema(),
     pool: {
       connectionString: getRequiredEnvironmentVariable('DATABASE_URL'),
     },

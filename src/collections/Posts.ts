@@ -1,6 +1,10 @@
 import type { CollectionConfig } from 'payload'
 
-import { createEditorialFields } from '@/modules/content/editorial-fields'
+import { createEditorialFields, getEditorialField } from '@/modules/content/editorial-fields'
+import {
+  removeContentListingAfterDelete,
+  syncContentListingAfterChange,
+} from '@/modules/content/content-listing-index'
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
@@ -20,16 +24,6 @@ const editorialFields = createEditorialFields({
   includeTaxonomy: true,
 })
 
-function getEditorialField(name: string) {
-  const field = editorialFields.find((candidate) => 'name' in candidate && candidate.name === name)
-
-  if (!field) {
-    throw new Error(`Missing editorial field: ${name}`)
-  }
-
-  return field
-}
-
 export const Posts: CollectionConfig = {
   slug: 'posts',
   access: {
@@ -46,14 +40,17 @@ export const Posts: CollectionConfig = {
   },
   defaultSort: '-publishedAt',
   fields: [
-    getEditorialField('title'),
-    getEditorialField('slug'),
+    getEditorialField(editorialFields, 'title'),
+    getEditorialField(editorialFields, 'slug'),
     {
       type: 'row',
-      fields: [getEditorialField('categories'), getEditorialField('tags')],
+      fields: [
+        getEditorialField(editorialFields, 'categories'),
+        getEditorialField(editorialFields, 'tags'),
+      ],
     },
-    getEditorialField('heroImage'),
-    getEditorialField('excerpt'),
+    getEditorialField(editorialFields, 'heroImage'),
+    getEditorialField(editorialFields, 'excerpt'),
     {
       type: 'row',
       fields: [
@@ -76,11 +73,13 @@ export const Posts: CollectionConfig = {
       ],
     },
     createContentLayoutField('Treści'),
-    getEditorialField('author'),
-    getEditorialField('publishedAt'),
-    getEditorialField('seo'),
+    getEditorialField(editorialFields, 'author'),
+    getEditorialField(editorialFields, 'publishedAt'),
+    getEditorialField(editorialFields, 'seo'),
   ],
   hooks: {
+    afterChange: [syncContentListingAfterChange],
+    afterDelete: [removeContentListingAfterDelete],
     beforeChange: [setPublishedAt],
     beforeValidate: [validateMediaBlocks],
   },

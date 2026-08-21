@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 
 import type { AttachmentsBlock, Media, MediaGalleryBlock } from '@/payload-types'
-import { getCurrentUser } from '@/modules/auth/current-user'
+import { getRelationshipId } from '@/lib/relationships'
 import { findPublicMedia, type MediaListingKind } from '@/modules/media/media-listing'
 
 import { AttachmentList } from './AttachmentList'
@@ -25,20 +25,17 @@ export async function MediaBlockSection({
   const parameterSuffix = (block.id ?? String(blockIndex + 1)).replace(/[^a-zA-Z0-9_-]/g, '')
   const parameterName = `${kind}_${parameterSuffix}`
   const requestedPage = block.pagination ? getRequestedPage(searchParams[parameterName]) : 1
-  const result = await findPublicMedia(
-    {
-      categoryId: getRelationshipId(block.category),
-      kind,
-      manualMedia: getManualMedia(block),
-      page: requestedPage,
-      pageSize: block.pageSize,
-      pagination: Boolean(block.pagination),
-      selectionMode: block.selectionMode,
-      sort: block.sort ?? 'newest',
-      tagId: getRelationshipId(block.tag),
-    },
-    await getCurrentUser(),
-  )
+  const result = await findPublicMedia({
+    categoryId: getRelationshipId(block.category),
+    kind,
+    manualMedia: getManualMedia(block),
+    page: requestedPage,
+    pageSize: block.pageSize,
+    pagination: Boolean(block.pagination),
+    selectionMode: block.selectionMode,
+    sort: block.sort ?? 'newest',
+    tagId: getRelationshipId(block.tag),
+  })
 
   if (block.pagination && requestedPage > result.totalPages) {
     redirect(createPaginatedURL(pathname, searchParams, parameterName, result.totalPages))
@@ -71,14 +68,6 @@ export async function MediaBlockSection({
 
 function getManualMedia(block: AttachmentsBlock | MediaGalleryBlock): (Media | number)[] {
   return block.items?.map((item) => item.media) ?? []
-}
-
-function getRelationshipId(value: null | number | { id: number } | undefined): number | undefined {
-  if (typeof value === 'number') {
-    return value
-  }
-
-  return value && typeof value === 'object' ? value.id : undefined
 }
 
 function getDefaultEmptyMessage(kind: MediaListingKind): string {

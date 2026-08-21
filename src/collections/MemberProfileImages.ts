@@ -2,6 +2,10 @@ import sharp from 'sharp'
 import type { Access, CollectionConfig } from 'payload'
 import { APIError } from 'payload'
 
+import {
+  invalidateMemberProfileImagesAfterChange,
+  invalidateMemberProfileImagesAfterDelete,
+} from '@/modules/cache/invalidate-public-data'
 import { getRelationshipID, isMember } from '@/modules/members/member-profile'
 import { combineAccessResults, getUserIdentity } from '@/modules/membership/role-permissions'
 
@@ -63,6 +67,8 @@ export const MemberProfileImages: CollectionConfig = {
     },
   ],
   hooks: {
+    afterChange: [invalidateMemberProfileImagesAfterChange],
+    afterDelete: [invalidateMemberProfileImagesAfterDelete],
     beforeValidate: [
       async ({ data, operation, originalDoc, req }) => {
         if (!data) {

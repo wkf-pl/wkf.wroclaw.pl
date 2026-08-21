@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 import sharp from 'sharp'
 
@@ -175,25 +175,33 @@ describe('public media listing', () => {
   })
 
   it('preserves manual order and paginates the selected files', async () => {
-    const result = await findPublicMedia({
-      kind: 'attachments',
-      manualMedia: [documentFile, secondImage, firstImage],
-      page: 2,
-      pageSize: 2,
-      pagination: true,
-      selectionMode: 'manual',
-      sort: 'newest',
-    })
+    const findSpy = vi.spyOn(payload, 'find')
+    try {
+      const result = await findPublicMedia({
+        kind: 'attachments',
+        manualMedia: [documentFile.id, secondImage.id, firstImage.id],
+        page: 2,
+        pageSize: 2,
+        pagination: true,
+        selectionMode: 'manual',
+        sort: 'newest',
+      })
 
-    expect(result.totalDocs).toBe(3)
-    expect(result.totalPages).toBe(2)
-    expect(result.items.map((item) => item.filename)).toEqual([filenames[0]])
+      expect(result.totalDocs).toBe(3)
+      expect(result.totalPages).toBe(2)
+      expect(result.items.map((item) => item.filename)).toEqual([filenames[0]])
+      expect(
+        findSpy.mock.calls.filter(([arguments_]) => arguments_.collection === 'media'),
+      ).toHaveLength(1)
+    } finally {
+      findSpy.mockRestore()
+    }
   })
 
   it('applies page size as a limit when pagination is disabled', async () => {
     const result = await findPublicMedia({
       kind: 'attachments',
-      manualMedia: [documentFile, secondImage, firstImage],
+      manualMedia: [documentFile.id, secondImage.id, firstImage.id],
       page: 1,
       pageSize: 2,
       pagination: false,

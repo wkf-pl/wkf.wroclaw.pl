@@ -1,14 +1,18 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { getPayload, type Payload } from 'payload'
+import { createLocalReq, getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
 import { findPublicContent } from '@/modules/content/content-listing'
-import type { Category, Page, Post, Tag, User } from '@/payload-types'
+import { syncContentListingItem } from '@/modules/content/content-listing-index'
+import type { Category, ContentListingItem, Page, Post, Tag, User } from '@/payload-types'
+
+import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/integration-author'
 
 const testSlugs = {
   category: 'integration-shared-category',
   childPage: 'integration-child-page',
   draftPost: 'integration-taxonomy-draft-post',
+  lifecyclePage: 'integration-listing-lifecycle',
   page: 'integration-taxonomy-page',
   post: 'integration-taxonomy-post',
   tag: 'integration-shared-tag',
@@ -54,7 +58,7 @@ beforeAll(async () => {
     payload.delete({
       collection: 'pages',
       overrideAccess: true,
-      where: { slug: { in: [testSlugs.page, testSlugs.childPage] } },
+      where: { slug: { in: [testSlugs.page, testSlugs.childPage, testSlugs.lifecyclePage] } },
     }),
     payload.delete({
       collection: 'posts',
@@ -75,17 +79,7 @@ beforeAll(async () => {
     }),
   ])
 
-  const users = await payload.find({
-    collection: 'users',
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-    pagination: false,
-  })
-  if (!users.docs[0]) {
-    throw new Error('Integration test requires an existing author.')
-  }
-  author = users.docs[0]
+  author = await createIntegrationAuthor(payload, 'content-taxonomy')
 
   ;[category, tag] = await Promise.all([
     payload.create({
@@ -172,7 +166,7 @@ afterAll(async () => {
     payload.delete({
       collection: 'pages',
       overrideAccess: true,
-      where: { slug: { in: [testSlugs.page, testSlugs.childPage] } },
+      where: { slug: { in: [testSlugs.page, testSlugs.childPage, testSlugs.lifecyclePage] } },
     }),
     payload.delete({
       collection: 'posts',
@@ -180,10 +174,13 @@ afterAll(async () => {
       where: { slug: { in: [testSlugs.post, testSlugs.draftPost] } },
     }),
   ])
-  await Promise.all([
-    payload.delete({ collection: 'categories', id: category.id, overrideAccess: true }),
-    payload.delete({ collection: 'tags', id: tag.id, overrideAccess: true }),
-  ])
+  if (category && tag) {
+    await Promise.all([
+      payload.delete({ collection: 'categories', id: category.id, overrideAccess: true }),
+      payload.delete({ collection: 'tags', id: tag.id, overrideAccess: true }),
+    ])
+  }
+  await deleteIntegrationAuthor(payload, author)
 })
 
 describe('shared content taxonomy', () => {
@@ -202,6 +199,16 @@ describe('shared content taxonomy', () => {
       ['posts', post.title],
       ['pages', page.title],
     ])
+
+    const childResult = await findPublicContent({
+      page: 1,
+      pageSize: 12,
+      pagination: true,
+      parentId: page.id,
+      sort: 'titleAscending',
+      sources: ['pages'],
+    })
+    expect(childResult.items.map((item) => item.id)).toEqual([childPage.id])
   })
 
   it('exposes both collection relations through reverse Join fields', async () => {
@@ -217,6 +224,150 @@ describe('shared content taxonomy', () => {
     expect(populatedCategory.relatedPosts?.docs).toHaveLength(2)
   })
 
+  it('persists a generated page excerpt and projects only listing fields into the index', async () => {
+    const storedPage = await payload.findByID({
+      collection: 'pages',
+      depth: 0,
+      id: page.id,
+      overrideAccess: true,
+    })
+    const index = await findListingIndex('pages', page.id)
+
+    expect(storedPage.listingExcerpt).toBe('Page excerpt')
+    expect(index).toMatchObject({
+      excerpt: 'Page excerpt',
+      source: 'pages',
+      sourceDocumentId: page.id,
+      title: page.title,
+      url: `/${testSlugs.page}`,
+    })
+    expect(index).not.toHaveProperty('layout')
+  })
+
+  it('rebuilds a missing index entry with the migration backfill primitive', async () => {
+    const index = await findListingIndex('pages', page.id)
+    if (!index) throw new Error('Expected the published page to have an index entry.')
+    await payload.delete({
+      collection: 'content-listing-items',
+      id: index.id,
+      overrideAccess: true,
+    })
+
+    const req = await createLocalReq(
+      {
+        context: { skipContentListingSync: true, skipPublicCacheInvalidation: true },
+      },
+      payload,
+    )
+    await syncContentListingItem(req, 'pages', page.id)
+
+    expect(await findListingIndex('pages', page.id)).toMatchObject({
+      sourceDocumentId: page.id,
+      title: page.title,
+    })
+  })
+
+  it('keeps the published projection during autosave, then handles republish, unpublish and delete', async () => {
+    const lifecyclePage = await payload.create({
+      collection: 'pages',
+      data: {
+        _status: 'published',
+        author: author.id,
+        layout: [{ blockType: 'richText', content: createLexicalDocument('Lifecycle excerpt') }],
+        slug: testSlugs.lifecyclePage,
+        title: 'Published lifecycle page',
+      },
+      overrideAccess: true,
+    })
+
+    await payload.update({
+      collection: 'pages',
+      data: { title: 'Draft lifecycle page' },
+      draft: true,
+      id: lifecyclePage.id,
+      overrideAccess: true,
+    })
+    expect(await findListingIndex('pages', lifecyclePage.id)).toMatchObject({
+      title: 'Published lifecycle page',
+    })
+
+    await payload.update({
+      collection: 'pages',
+      data: { _status: 'published', title: 'Republished lifecycle page' },
+      draft: false,
+      id: lifecyclePage.id,
+      overrideAccess: true,
+    })
+    expect(await findListingIndex('pages', lifecyclePage.id)).toMatchObject({
+      title: 'Republished lifecycle page',
+    })
+
+    await payload.update({
+      collection: 'pages',
+      data: { _status: 'draft' },
+      id: lifecyclePage.id,
+      overrideAccess: true,
+      unpublishAllLocales: true,
+    })
+    expect(await findListingIndex('pages', lifecyclePage.id)).toBeNull()
+
+    await payload.update({
+      collection: 'pages',
+      data: { _status: 'published' },
+      draft: false,
+      id: lifecyclePage.id,
+      overrideAccess: true,
+    })
+    expect(await findListingIndex('pages', lifecyclePage.id)).not.toBeNull()
+
+    await payload.delete({ collection: 'pages', id: lifecyclePage.id, overrideAccess: true })
+    expect(await findListingIndex('pages', lifecyclePage.id)).toBeNull()
+  })
+
+  it('uses database pagination for a deep mixed listing page', async () => {
+    const createdPosts: Post[] = []
+    try {
+      for (let i = 0; i < 7; i += 1) {
+        createdPosts.push(
+          await payload.create({
+            collection: 'posts',
+            data: {
+              _status: 'published',
+              author: author.id,
+              categories: [category.id],
+              excerpt: `Pagination excerpt ${i}`,
+              layout: [{ blockType: 'richText', content: createLexicalDocument(`Content ${i}`) }],
+              publishedAt: new Date(Date.UTC(2026, 7, 15 + i)).toISOString(),
+              slug: `integration-pagination-${i}`,
+              tags: [tag.id],
+              title: `Integration pagination ${i}`,
+            },
+            overrideAccess: true,
+          }),
+        )
+      }
+
+      const result = await findPublicContent({
+        categoryId: category.id,
+        page: 4,
+        pageSize: 2,
+        pagination: true,
+        sort: 'newest',
+        sources: ['posts', 'pages', 'posts'],
+        tagId: tag.id,
+      })
+
+      expect(result.items).toHaveLength(2)
+      expect(result.page).toBe(4)
+      expect(result.pageSize).toBe(2)
+      expect(result.totalDocs).toBe(9)
+    } finally {
+      for (const createdPost of createdPosts) {
+        await payload.delete({ collection: 'posts', id: createdPost.id, overrideAccess: true })
+      }
+    }
+  })
+
   it('rejects a cycle in persisted page parents', async () => {
     await expect(
       payload.update({
@@ -228,3 +379,20 @@ describe('shared content taxonomy', () => {
     ).rejects.toMatchObject({ status: 400 })
   })
 })
+
+async function findListingIndex(
+  source: ContentListingItem['source'],
+  sourceDocumentID: number,
+): Promise<ContentListingItem | null> {
+  const result = await payload.find({
+    collection: 'content-listing-items',
+    depth: 0,
+    limit: 1,
+    overrideAccess: true,
+    pagination: false,
+    where: {
+      and: [{ source: { equals: source } }, { sourceDocumentId: { equals: sourceDocumentID } }],
+    },
+  })
+  return result.docs[0] ?? null
+}

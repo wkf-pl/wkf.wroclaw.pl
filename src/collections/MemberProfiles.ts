@@ -1,6 +1,10 @@
 import { APIError, type Access, type CollectionConfig, type FieldAccess, type Where } from 'payload'
 
 import {
+  invalidateMemberProfilesAfterChange,
+  invalidateMemberProfilesAfterDelete,
+} from '@/modules/cache/invalidate-public-data'
+import {
   type ContactChannelType,
   contactChannelOptions,
   createBaseProfileSlug,
@@ -341,6 +345,7 @@ export const MemberProfiles: CollectionConfig = {
 
         return doc
       },
+      invalidateMemberProfilesAfterChange,
     ],
     afterDelete: [
       async ({ doc, req }) => {
@@ -356,6 +361,7 @@ export const MemberProfiles: CollectionConfig = {
 
         return doc
       },
+      invalidateMemberProfilesAfterDelete,
     ],
     beforeValidate: [
       async ({ data, operation, originalDoc, req }) => {

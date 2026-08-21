@@ -11,6 +11,7 @@ import {
   userCanPerformResourceOperation,
 } from '@/modules/membership/role-permissions'
 import { getDocumentPermissionResource } from '@/modules/membership/permission-resources'
+import { getRelationshipId } from '@/lib/relationships'
 
 const createDocuments = createCollectionRolePermissionAccess({
   collection: 'documents',
@@ -25,36 +26,23 @@ const updateDocuments = createCollectionRolePermissionAccess({
   operation: 'update',
 })
 
-function getRelationshipId(value: unknown): number | string | undefined {
-  if (typeof value === 'number' || typeof value === 'string') {
-    return value
-  }
-
-  if (value && typeof value === 'object' && 'id' in value) {
-    const id = value.id
-    return typeof id === 'number' || typeof id === 'string' ? id : undefined
-  }
-
-  return undefined
-}
-
 function getSelectedFileIds(data: Record<string, unknown>): (number | string)[] {
-  const ids = new Set<number | string>()
+  const idsByValue = new Map<string, number | string>()
   const primaryFileId = getRelationshipId(data.primaryFile)
   if (primaryFileId !== undefined) {
-    ids.add(primaryFileId)
+    idsByValue.set(String(primaryFileId), primaryFileId)
   }
 
   if (Array.isArray(data.attachments)) {
     for (const attachment of data.attachments) {
       const attachmentId = getRelationshipId(attachment)
       if (attachmentId !== undefined) {
-        ids.add(attachmentId)
+        idsByValue.set(String(attachmentId), attachmentId)
       }
     }
   }
 
-  return [...ids]
+  return [...idsByValue.values()]
 }
 
 export const Documents: CollectionConfig = {
@@ -183,14 +171,15 @@ export const Documents: CollectionConfig = {
   hooks: {
     afterChange: [
       async ({ doc, req }) => {
-        for (const fileId of getSelectedFileIds(doc)) {
+        const selectedFileIds = getSelectedFileIds(doc)
+        if (selectedFileIds.length > 0) {
           await req.payload.update({
             collection: 'document-files',
             context: { assigningDocumentFile: true },
             data: { document: doc.id },
-            id: fileId,
             overrideAccess: true,
             req,
+            where: { id: { in: selectedFileIds } },
           })
         }
 
@@ -200,25 +189,13 @@ export const Documents: CollectionConfig = {
     beforeChange: [setPublishedAt],
     beforeDelete: [
       async ({ id, req }) => {
-        const files = await req.payload.find({
+        await req.payload.delete({
           collection: 'document-files',
-          depth: 0,
-          limit: 1000,
+          context: { ...req.context, deletingDocumentId: id },
           overrideAccess: true,
-          pagination: false,
           req,
           where: { document: { equals: id } },
         })
-
-        for (const file of files.docs) {
-          await req.payload.delete({
-            collection: 'document-files',
-            context: { deletingDocumentId: id },
-            id: file.id,
-            overrideAccess: true,
-            req,
-          })
-        }
       },
     ],
     beforeValidate: [
@@ -238,19 +215,31 @@ export const Documents: CollectionConfig = {
           }
         }
 
-        const documentId = getRelationshipId(originalDoc?.id)
-        for (const fileId of getSelectedFileIds(nextData)) {
-          const file = await req.payload.findByID({
+        const selectedFileIds = getSelectedFileIds(nextData)
+        if (selectedFileIds.length > 0) {
+          const files = await req.payload.find({
             collection: 'document-files',
             depth: 0,
-            id: fileId,
+            limit: selectedFileIds.length,
             overrideAccess: true,
+            pagination: false,
             req,
+            select: { document: true, id: true },
+            where: { id: { in: selectedFileIds } },
           })
-          const ownerDocumentId = getRelationshipId(file.document)
+          const filesByID = new Map(files.docs.map((file) => [String(file.id), file]))
+          const documentId = getRelationshipId(originalDoc?.id)
 
-          if (ownerDocumentId !== undefined && ownerDocumentId !== documentId) {
-            throw new APIError('Wybrany plik należy już do innego dokumentu.', 400)
+          for (const fileId of selectedFileIds) {
+            const file = filesByID.get(String(fileId))
+            if (!file) {
+              throw new APIError('Nie znaleziono wybranego pliku dokumentu.', 400)
+            }
+
+            const ownerDocumentId = getRelationshipId(file.document)
+            if (ownerDocumentId !== undefined && ownerDocumentId !== documentId) {
+              throw new APIError('Wybrany plik należy już do innego dokumentu.', 400)
+            }
           }
         }
 

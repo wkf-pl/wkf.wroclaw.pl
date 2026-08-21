@@ -1,6 +1,10 @@
-import type { CollectionConfig, Field } from 'payload'
+import type { CollectionConfig } from 'payload'
 
-import { createEditorialFields } from '@/modules/content/editorial-fields'
+import {
+  invalidatePartnersAfterChange,
+  invalidatePartnersAfterDelete,
+} from '@/modules/cache/invalidate-public-data'
+import { createEditorialFields, getEditorialField } from '@/modules/content/editorial-fields'
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
 import { populateSlugFromName } from '@/modules/content/slug'
@@ -13,12 +17,6 @@ const readPartners = createRolePermissionAccess({ operation: 'read', resource: '
 const updatePartners = createRolePermissionAccess({ operation: 'update', resource: 'partners' })
 
 const editorialFields = createEditorialFields({ includeContent: false })
-
-function editorialField(name: string): Field {
-  const field = editorialFields.find((candidate) => 'name' in candidate && candidate.name === name)
-  if (!field) throw new Error(`Missing editorial field: ${name}`)
-  return field
-}
 
 export const Partners: CollectionConfig = {
   slug: 'partners',
@@ -39,7 +37,7 @@ export const Partners: CollectionConfig = {
   },
   fields: [
     { name: 'name', type: 'text', label: 'Nazwa', required: true },
-    editorialField('heroImage'),
+    getEditorialField(editorialFields, 'heroImage'),
     {
       name: 'excerpt',
       type: 'textarea',
@@ -63,7 +61,7 @@ export const Partners: CollectionConfig = {
       },
     },
     createContentLayoutField('Treści'),
-    editorialField('seo'),
+    getEditorialField(editorialFields, 'seo'),
     {
       name: 'slug',
       type: 'text',
@@ -77,10 +75,12 @@ export const Partners: CollectionConfig = {
       required: true,
       unique: true,
     },
-    editorialField('author'),
-    editorialField('publishedAt'),
+    getEditorialField(editorialFields, 'author'),
+    getEditorialField(editorialFields, 'publishedAt'),
   ],
   hooks: {
+    afterChange: [invalidatePartnersAfterChange],
+    afterDelete: [invalidatePartnersAfterDelete],
     beforeChange: [setPublishedAt],
     beforeValidate: [validateMediaBlocks],
   },

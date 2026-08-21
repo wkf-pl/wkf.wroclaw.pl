@@ -1,5 +1,8 @@
 .next
+.next-e2e-ci
+AGENTS.md
 media
+migrations/*.json
 node_modules
 .pnpm-store
 playwright-report

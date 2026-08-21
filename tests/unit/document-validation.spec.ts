@@ -13,7 +13,6 @@ describe('document validation', () => {
       validateDocumentNumber('', { siblingData: { documentType: 'agreement' } } as never),
     ).toBe(true)
   })
-
 })
 
 describe('document route inputs', () => {

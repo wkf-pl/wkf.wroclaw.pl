@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 
 import type { Event, EventCycle, ListingBlock, Page, Partner, Post, User } from '@/payload-types'
-import { getCurrentUser } from '@/modules/auth/current-user'
+import { getRelationshipId } from '@/lib/relationships'
 import {
   findPublicContent,
   type TaxonomizableCollectionSlug,
@@ -147,23 +147,20 @@ async function Listing({
   const parameterName = `listing_${parameterSuffix}`
   const requestedPage = block.pagination ? getRequestedPage(searchParams[parameterName]) : 1
   const parentId = getListingParentId(block, document)
-  const result = await findPublicContent(
-    {
-      categoryId: getRelationshipId(block.category),
-      eventCycleId:
-        getRelationshipId(block.eventCycle) ??
-        ('calendarFeedKey' in document ? document.id : undefined),
-      eventTimeFilter: block.eventTimeFilter ?? 'all',
-      page: requestedPage,
-      pageSize: block.pageSize,
-      pagination: Boolean(block.pagination),
-      parentId,
-      sort: block.sort,
-      sources: block.sources as TaxonomizableCollectionSlug[],
-      tagId: getRelationshipId(block.tag),
-    },
-    await getCurrentUser(),
-  )
+  const result = await findPublicContent({
+    categoryId: getRelationshipId(block.category),
+    eventCycleId:
+      getRelationshipId(block.eventCycle) ??
+      ('calendarFeedKey' in document ? document.id : undefined),
+    eventTimeFilter: block.eventTimeFilter ?? 'all',
+    page: requestedPage,
+    pageSize: block.pageSize,
+    pagination: Boolean(block.pagination),
+    parentId,
+    sort: block.sort,
+    sources: block.sources as TaxonomizableCollectionSlug[],
+    tagId: getRelationshipId(block.tag),
+  })
 
   if (block.pagination && requestedPage > result.totalPages) {
     redirect(createPaginatedURL(pathname, searchParams, parameterName, result.totalPages))
@@ -195,14 +192,6 @@ function getListingParentId(
   }
 
   return block.parentFilter === 'specific' ? getRelationshipId(block.parentPage) : undefined
-}
-
-function getRelationshipId(value: null | number | { id: number } | undefined): number | undefined {
-  if (typeof value === 'number') {
-    return value
-  }
-
-  return value && typeof value === 'object' ? value.id : undefined
 }
 
 function getAuthorName(author: null | number | User): null | string {

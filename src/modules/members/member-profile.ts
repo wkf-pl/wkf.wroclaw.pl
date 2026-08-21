@@ -1,7 +1,7 @@
 import type { PayloadRequest, Validate } from 'payload'
 
 import { formatSlug } from '@/modules/content/slug'
-import { getRequestRoles, getUserIdentity } from '@/modules/membership/role-permissions'
+import { getRequestRoles } from '@/modules/membership/role-permissions'
 
 export const memberRoleKey = 'member'
 
@@ -118,13 +118,4 @@ export function validateUniqueGames(value: unknown): string | true {
 export function createBaseProfileSlug(publicName: unknown): string {
   const formattedName = typeof publicName === 'string' ? formatSlug(publicName) : ''
   return formattedName || 'member'
-}
-
-export function isEffectivelyPublic(profile: { _status?: null | string }): boolean {
-  return profile._status === 'published'
-}
-
-export function ownDocumentConstraint(req: PayloadRequest, field = 'owner') {
-  const userID = getUserIdentity(req.user)
-  return userID === undefined ? false : { [field]: { equals: userID } }
 }

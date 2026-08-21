@@ -1,8 +1,12 @@
 import { randomUUID } from 'node:crypto'
 
-import type { Access, AccessResult, CollectionConfig, Field, Where } from 'payload'
+import type { Access, CollectionConfig, Field } from 'payload'
 
-import { createEditorialFields } from '@/modules/content/editorial-fields'
+import { createEditorialFields, getEditorialField } from '@/modules/content/editorial-fields'
+import {
+  removeContentListingAfterDelete,
+  syncContentListingAfterChange,
+} from '@/modules/content/content-listing-index'
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
 import { populateSlug } from '@/modules/content/slug'
@@ -20,6 +24,7 @@ import { timeModeOptions, visibilityOptions } from '@/modules/events/constants'
 import { isMember } from '@/modules/members/member-profile'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import {
+  combineAccessWithConstraint,
   createRolePermissionAccess,
   websiteRequestContext,
 } from '@/modules/membership/role-permissions'
@@ -29,28 +34,16 @@ const deleteCycles = createRolePermissionAccess({ operation: 'delete', resource:
 const readCyclesByRole = createRolePermissionAccess({ operation: 'read', resource: 'event-cycles' })
 const updateCycles = createRolePermissionAccess({ operation: 'update', resource: 'event-cycles' })
 
-function combineWithVisibility(result: AccessResult, visibility: true | Where): AccessResult {
-  if (result === false) return false
-  if (result === true) return visibility
-  if (visibility === true) return result
-  return { and: [result, visibility] }
-}
-
 const readCycles: Access = async (arguments_) => {
   const result = await readCyclesByRole(arguments_)
   if (arguments_.req.context?.website !== websiteRequestContext.website) return result
-  return combineWithVisibility(
+  return combineAccessWithConstraint(
     result,
     (await isMember(arguments_.req)) ? true : { visibility: { equals: 'public' } },
   )
 }
 
 const editorialFields = createEditorialFields({ includeContent: false, includeTaxonomy: true })
-function editorialField(name: string): Field {
-  const field = editorialFields.find((candidate) => 'name' in candidate && candidate.name === name)
-  if (!field) throw new Error(`Missing editorial field: ${name}`)
-  return field
-}
 
 const eventCycleSlugField: Field = {
   name: 'slug',
@@ -93,9 +86,15 @@ export const EventCycles: CollectionConfig = {
         {
           label: 'Opis cyklu',
           fields: [
-            editorialField('title'),
-            { type: 'row', fields: [editorialField('categories'), editorialField('tags')] },
-            editorialField('heroImage'),
+            getEditorialField(editorialFields, 'title'),
+            {
+              type: 'row',
+              fields: [
+                getEditorialField(editorialFields, 'categories'),
+                getEditorialField(editorialFields, 'tags'),
+              ],
+            },
+            getEditorialField(editorialFields, 'heroImage'),
             { name: 'tagline', type: 'text', label: 'Hasło reklamowe', maxLength: 180 },
             {
               name: 'excerpt',
@@ -116,7 +115,7 @@ export const EventCycles: CollectionConfig = {
             },
           ],
         },
-        { label: 'SEO', fields: [editorialField('seo')] },
+        { label: 'SEO', fields: [getEditorialField(editorialFields, 'seo')] },
         {
           label: 'Domyślne dane Wydarzenia',
           fields: [
@@ -179,8 +178,8 @@ export const EventCycles: CollectionConfig = {
       ],
     },
     eventCycleSlugField,
-    editorialField('author'),
-    editorialField('publishedAt'),
+    getEditorialField(editorialFields, 'author'),
+    getEditorialField(editorialFields, 'publishedAt'),
     {
       name: 'calendarFeedKey',
       type: 'text',
@@ -190,6 +189,8 @@ export const EventCycles: CollectionConfig = {
     },
   ],
   hooks: {
+    afterChange: [syncContentListingAfterChange],
+    afterDelete: [removeContentListingAfterDelete],
     beforeChange: [
       ({ data }) => {
         data.calendarFeedKey ||= randomUUID()

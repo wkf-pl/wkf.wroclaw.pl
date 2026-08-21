@@ -73,6 +73,30 @@ export async function seedTestUsers(): Promise<void> {
 /** Cleans up users created by admin panel access tests. */
 export async function cleanupTestUsers(): Promise<void> {
   const payload = await getPayload({ config })
+  const existingTestUsers = await payload.find({
+    collection: 'users',
+    depth: 0,
+    limit: testUsers.length,
+    overrideAccess: true,
+    pagination: false,
+    where: {
+      email: {
+        in: testUsers.map(({ user }) => user.email),
+      },
+    },
+  })
+
+  if (existingTestUsers.docs.length > 0) {
+    await payload.delete({
+      collection: 'payload-locked-documents',
+      overrideAccess: true,
+      where: {
+        'user.value': {
+          in: existingTestUsers.docs.map(({ id }) => id),
+        },
+      },
+    })
+  }
 
   await payload.delete({
     collection: 'users',

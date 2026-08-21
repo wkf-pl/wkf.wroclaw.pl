@@ -1,5 +1,6 @@
 import type { GlobalConfig } from 'payload'
 
+import { invalidateNavigationAfterChange } from '@/modules/cache/invalidate-public-data'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 import { createIconFields, createLinkFields } from '@/modules/navigation/fields'
 
@@ -144,5 +145,6 @@ export const Navigation: GlobalConfig = {
       ],
     },
   ],
+  hooks: { afterChange: [invalidateNavigationAfterChange] },
   label: 'Menu',
 }

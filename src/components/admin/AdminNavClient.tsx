@@ -11,6 +11,7 @@ import { formatAdminURL } from 'payload/shared'
 import React, { Fragment } from 'react'
 
 import type { User } from '@/payload-types'
+import { userHasRole } from '@/modules/membership/user-roles'
 
 const baseClass = 'nav'
 
@@ -32,9 +33,7 @@ export function AdminNavClient({
     },
   } = useConfig()
   const { i18n } = useTranslation()
-  const hasMemberRole = Boolean(
-    user?.roles?.some((role) => typeof role === 'object' && role !== null && role.key === 'member'),
-  )
+  const hasMemberRole = userHasRole(user, 'member')
 
   return (
     <Fragment>

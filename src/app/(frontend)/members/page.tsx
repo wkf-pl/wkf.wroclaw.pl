@@ -4,8 +4,6 @@ import { findPublicMemberProfiles } from '@/modules/members/public-members'
 
 import { MemberProfileCard } from '../_components/MemberProfileCard'
 
-export const dynamic = 'force-dynamic'
-
 export const metadata: Metadata = {
   description: 'Publiczne wizytówki członków Wrocławskiego Klubu Fantastyki.',
   title: 'Klubowicze',

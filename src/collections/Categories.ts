@@ -1,5 +1,9 @@
 import type { CollectionConfig } from 'payload'
 
+import {
+  invalidateListingsAfterChange,
+  invalidateListingsAfterDelete,
+} from '@/modules/cache/invalidate-public-data'
 import { populateSlugFromName } from '@/modules/content/slug'
 import { createRelatedContentJoinFields } from '@/modules/content/taxonomy-fields'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
@@ -65,6 +69,10 @@ export const Categories: CollectionConfig = {
     },
     ...createRelatedContentJoinFields('categories'),
   ],
+  hooks: {
+    afterChange: [invalidateListingsAfterChange],
+    afterDelete: [invalidateListingsAfterDelete],
+  },
   labels: {
     plural: 'Kategorie',
     singular: 'Kategoria',

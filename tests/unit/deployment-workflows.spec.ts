@@ -30,6 +30,17 @@ describe('deployment workflows', () => {
     expect(stagingWorkflow).not.toContain('az acr build')
   })
 
+  it('runs every repository-level validation in CI', () => {
+    const continuousIntegrationWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm format:check')
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm generate:importmap')
+    expect(continuousIntegrationWorkflow).toContain('git diff --exit-code --')
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm test:integration')
+    expect(continuousIntegrationWorkflow).toContain('playwright install --with-deps chromium')
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm test:e2e:ci')
+  })
+
   it('preserves deployment safety boundaries', () => {
     const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
     const applicationTemplate = readFileSync('infra/azure/modules/application.bicep', 'utf8')
@@ -47,5 +58,16 @@ describe('deployment workflows', () => {
     expect(dockerfile).toContain('FROM dependencies AS production-dependencies')
     expect(dockerfile).toContain('RUN pnpm prune --prod')
     expect(dockerfile).toContain('COPY --from=production-dependencies')
+  })
+
+  it('keeps the local Next data cache on a single scale-to-zero replica', () => {
+    const mainTemplate = readFileSync('infra/azure/main.bicep', 'utf8')
+    const stagingParameters = readFileSync('infra/azure/environments/staging.bicepparam', 'utf8')
+    const productionParameters = readFileSync('infra/azure/environments/prod.bicepparam', 'utf8')
+
+    for (const content of [mainTemplate, stagingParameters, productionParameters]) {
+      expect(content).toMatch(/param minimumReplicas(?: int)? = 0/)
+      expect(content).toMatch(/param maximumReplicas(?: int)? = 1/)
+    }
   })
 })

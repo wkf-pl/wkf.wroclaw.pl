@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Page } from '@/payload-types'
 import {
   createContentComparator,
-  extractPageExcerpt,
   type PublicContentListItem,
 } from '@/modules/content/content-listing'
+import {
+  extractFirstRichTextParagraph,
+  populateListingExcerptOnPublish,
+} from '@/modules/content/listing-excerpt'
 import {
   createPaginatedURL,
   getRequestedPage,
 } from '@/app/(frontend)/_components/ContentPagination'
+import { ContentListingItems } from '@/collections/ContentListingItems'
 
 function createItem(overrides: Partial<PublicContentListItem> = {}): PublicContentListItem {
   return {
@@ -27,32 +30,111 @@ function createItem(overrides: Partial<PublicContentListItem> = {}): PublicConte
 }
 
 describe('content listing', () => {
-  it('extracts and truncates the first rich-text block as a page excerpt', () => {
-    const page = {
-      layout: [
-        {
-          blockType: 'richText',
-          content: {
-            root: {
-              children: [
-                {
-                  children: [{ text: 'Pierwszy opis strony', type: 'text', version: 1 }],
-                  type: 'paragraph',
-                  version: 1,
-                },
-              ],
-              direction: null,
-              format: '',
-              indent: 0,
-              type: 'root',
-              version: 1,
-            },
+  it('keeps the listing index internal and unavailable through generated APIs', () => {
+    expect(ContentListingItems.admin).toMatchObject({ hidden: true })
+    expect(ContentListingItems.endpoints).toBe(false)
+    expect(ContentListingItems.graphQL).toBe(false)
+    expect(ContentListingItems.access?.create?.({} as never)).toBe(false)
+    expect(ContentListingItems.access?.update?.({} as never)).toBe(false)
+    expect(ContentListingItems.access?.delete?.({} as never)).toBe(false)
+    expect(
+      ContentListingItems.fields.some((field) => 'name' in field && field.name === 'layout'),
+    ).toBe(false)
+  })
+
+  it('extracts the first non-empty paragraph from the first rich-text block', () => {
+    const layout = [
+      { blockType: 'mediaGallery' },
+      {
+        blockType: 'richText',
+        content: {
+          root: {
+            children: [
+              { children: [{ text: 'Nagłówek' }], type: 'heading' },
+              { children: [], type: 'paragraph' },
+              {
+                children: [
+                  { text: 'Pierwszy ' },
+                  { children: [{ text: 'opis' }], type: 'link' },
+                  { text: ' strony' },
+                ],
+                type: 'paragraph',
+              },
+            ],
           },
         },
-      ],
-    } as unknown as Page
+      },
+      {
+        blockType: 'richText',
+        content: {
+          root: { children: [{ children: [{ text: 'Drugi blok' }], type: 'paragraph' }] },
+        },
+      },
+    ]
 
-    expect(extractPageExcerpt(page)).toBe('Pierwszy opis strony')
+    expect(extractFirstRichTextParagraph(layout)).toBe('Pierwszy opis strony')
+  })
+
+  it('limits generated excerpts to 500 characters at a word boundary', () => {
+    const paragraph = `${'słowo '.repeat(100)}koniec`
+    const excerpt = extractFirstRichTextParagraph([
+      {
+        blockType: 'richText',
+        content: { root: { children: [{ children: [{ text: paragraph }], type: 'paragraph' }] } },
+      },
+    ])
+
+    expect(excerpt?.length).toBeLessThanOrEqual(500)
+    expect(excerpt).not.toMatch(/\s$/)
+  })
+
+  it('fills a blank excerpt only when publishing', () => {
+    const layout = [
+      {
+        blockType: 'richText',
+        content: {
+          root: {
+            children: [
+              {
+                children: [{ text: 'Pierwszy opis strony', type: 'text', version: 1 }],
+                type: 'paragraph',
+                version: 1,
+              },
+            ],
+            direction: null,
+            format: '',
+            indent: 0,
+            type: 'root',
+            version: 1,
+          },
+        },
+      },
+    ]
+
+    expect(
+      populateListingExcerptOnPublish({
+        data: { _status: 'published', layout, listingExcerpt: '  ' },
+        originalDoc: {},
+      } as never),
+    ).toMatchObject({ listingExcerpt: 'Pierwszy opis strony' })
+    expect(
+      populateListingExcerptOnPublish({
+        data: { _status: 'draft', layout, listingExcerpt: null },
+        originalDoc: {},
+      } as never),
+    ).not.toHaveProperty('listingExcerpt', 'Pierwszy opis strony')
+    expect(
+      populateListingExcerptOnPublish({
+        data: { _status: 'published', layout, listingExcerpt: 'Ręczne streszczenie' },
+        originalDoc: {},
+      } as never),
+    ).toMatchObject({ listingExcerpt: 'Ręczne streszczenie' })
+    expect(
+      populateListingExcerptOnPublish({
+        data: { _status: 'published', layout, listingExcerpt: null },
+        originalDoc: { listingExcerpt: 'Stare ręczne streszczenie' },
+      } as never),
+    ).toMatchObject({ listingExcerpt: 'Pierwszy opis strony' })
   })
 
   it('sorts mixed content deterministically by date, title, kind and ID', () => {

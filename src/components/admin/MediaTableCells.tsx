@@ -47,10 +47,7 @@ export function URLCell({ cellData }: DefaultCellComponentProps<TextFieldClient>
   )
 }
 
-export function TaxonomyCell({
-  cellData,
-  field,
-}: DefaultCellComponentProps<TextFieldClient>) {
+export function TaxonomyCell({ cellData, field }: DefaultCellComponentProps<TextFieldClient>) {
   const relationTo = field.name === 'categories' ? 'categories' : 'tags'
   const relationshipIDs = Array.isArray(cellData)
     ? cellData.flatMap((value) => {
@@ -86,12 +83,18 @@ export function TaxonomyCell({
     <span>
       {relationshipIDs.map((id, index) => {
         const document = relatedDocuments?.[id]
-        const href = formatAdminURL({ adminRoute, path: `/collections/${relationTo}/${id}`, serverURL })
+        const href = formatAdminURL({
+          adminRoute,
+          path: `/collections/${relationTo}/${id}`,
+          serverURL,
+        })
 
         return (
           <span key={id}>
             {index ? ', ' : null}
-            <a href={href} onClick={(event) => event.stopPropagation()}>{document?.name ?? 'Ładowanie…'}</a>
+            <a href={href} onClick={(event) => event.stopPropagation()}>
+              {document?.name ?? 'Ładowanie…'}
+            </a>
           </span>
         )
       })}

@@ -6,10 +6,11 @@ import config from '@/payload.config'
 import type { Media, User } from '@/payload-types'
 
 import { login } from '../helpers/login'
-import { cleanupTestUsers, editorTestUser, seedTestUsers } from '../helpers/seedUser'
+import { editorTestUser } from '../helpers/seedUser'
 
-const pageSlug = 'e2e-media-blocks-page'
-const postSlug = 'e2e-media-blocks-post'
+const fixtureRunID = Date.now()
+const pageSlug = `e2e-media-blocks-page-${fixtureRunID}`
+const postSlug = `e2e-media-blocks-post-${fixtureRunID}`
 const filenames = ['e2e-gallery-first.png', 'e2e-gallery-second.png', 'e2e-attachment.pdf']
 const testPDF = Buffer.from(
   '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\nxref\n0 1\n0000000000 65535 f\n%%EOF\n',
@@ -23,7 +24,6 @@ let attachment: Media
 
 test.beforeAll(async () => {
   test.setTimeout(30_000)
-  await seedTestUsers()
   payload = await getPayload({ config })
   await cleanupContent()
 
@@ -116,7 +116,6 @@ test.afterAll(async () => {
   if (payload) {
     await cleanupContent()
   }
-  await cleanupTestUsers()
 })
 
 test('opens gallery images in a captioned and zoomable lightbox', async ({ page }) => {
@@ -159,14 +158,27 @@ test('keeps block pagination working on a single post route', async ({ page }) =
   await expect(page.getByText(filenames[2], { exact: true })).toBeVisible()
 })
 
-test('offers both media blocks in the page editor', async ({ page }) => {
-  await login({ page, user: editorTestUser })
-  await page.goto('/admin/collections/pages/create')
+test('invalidates cached media block data after a Payload update', async ({ page }) => {
+  await page.goto(`/${pageSlug}`)
+  await expect(page.getByRole('link', { name: /e2e-attachment\.pdf/ })).toContainText(
+    'Opis załącznika PDF',
+  )
 
-  const layout = page.locator('#field-layout')
-  await layout.getByRole('button', { name: 'Dodaj', exact: true }).last().click()
-  await expect(page.getByText('Galeria mediów', { exact: true })).toBeVisible()
-  await expect(page.getByText('Załączniki', { exact: true })).toBeVisible()
+  await login({ page, user: editorTestUser })
+  const updateResponse = await updateMediaDescription(
+    page,
+    attachment.id,
+    'Opis po unieważnieniu cache',
+  )
+  expect(updateResponse.ok, updateResponse.body).toBe(true)
+
+  await page.goto(`/${pageSlug}`)
+  await expect(page.getByRole('link', { name: /e2e-attachment\.pdf/ })).toContainText(
+    'Opis po unieważnieniu cache',
+  )
+
+  const restoreResponse = await updateMediaDescription(page, attachment.id, 'Opis załącznika PDF')
+  expect(restoreResponse.ok, restoreResponse.body).toBe(true)
 })
 
 async function createMedia(
@@ -177,10 +189,28 @@ async function createMedia(
 ): Promise<Media> {
   return payload.create({
     collection: 'media',
-    data: { alt: filename, description },
+    data: { alt: filename, description, uploadedBy: author.id },
     file: { data, mimetype, name: filename, size: data.length },
     overrideAccess: true,
   })
+}
+
+async function updateMediaDescription(
+  page: import('@playwright/test').Page,
+  mediaID: number,
+  description: string,
+): Promise<{ body: string; ok: boolean }> {
+  return page.evaluate(
+    async ({ description, mediaID }) => {
+      const response = await fetch(`/api/media/${mediaID}`, {
+        body: JSON.stringify({ description }),
+        headers: { 'content-type': 'application/json' },
+        method: 'PATCH',
+      })
+      return { body: await response.text(), ok: response.ok }
+    },
+    { description, mediaID },
+  )
 }
 
 async function cleanupContent(): Promise<void> {

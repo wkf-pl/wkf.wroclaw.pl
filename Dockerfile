@@ -34,7 +34,7 @@ RUN DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build" \
     AZURE_STORAGE_CONNECTION_STRING="UseDevelopmentStorage=true" \
     AZURE_STORAGE_CONTAINER_NAME="media" \
     PAYLOAD_SECRET="build-time-only" \
-    pnpm build
+    pnpm build:container
 
 FROM dependencies AS production-dependencies
 

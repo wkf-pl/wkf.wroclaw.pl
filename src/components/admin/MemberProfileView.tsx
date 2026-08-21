@@ -13,7 +13,9 @@ import type { AdminViewServerProps, SanitizedCollectionPermission } from 'payloa
 import { formatAdminURL } from 'payload/shared'
 
 import type { MemberProfile } from '@/payload-types'
+import { skipPublicCacheInvalidationContextKey } from '@/modules/cache/public-data-cache'
 import { getUserIdentity } from '@/modules/membership/role-permissions'
+import { userHasRole } from '@/modules/membership/user-roles'
 
 import { MemberProfilePublicationStatusSync } from './MemberProfilePublicationStatusSync'
 
@@ -54,6 +56,10 @@ async function ensureOwnedProfile(properties: {
   try {
     return await properties.payload.create({
       collection: 'member-profiles',
+      context: {
+        ...properties.req.context,
+        [skipPublicCacheInvalidationContextKey]: true,
+      },
       data: {
         owner: properties.ownerID,
         publicName: properties.userName,
@@ -82,9 +88,7 @@ export async function MemberProfileView({
   const { permissions, req } = initPageResult
   const { payload, user } = req
   const ownerID = getUserIdentity(user)
-  const isMember = Boolean(
-    user?.roles?.some((role) => typeof role === 'object' && role !== null && role.key === 'member'),
-  )
+  const isMember = userHasRole(user, 'member')
 
   if (!user || typeof ownerID !== 'number' || !isMember) {
     redirect('/admin/account')

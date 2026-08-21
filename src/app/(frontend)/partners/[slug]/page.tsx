@@ -17,8 +17,6 @@ type Properties = {
   params: Promise<{ slug: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
-export const dynamic = 'force-dynamic'
-
 export async function generateMetadata({ params }: Properties): Promise<Metadata> {
   const partner = await findPublishedPartnerBySlug((await params).slug)
   return partner ? createContentMetadata(partner) : {}

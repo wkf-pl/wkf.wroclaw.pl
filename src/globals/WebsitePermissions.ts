@@ -1,6 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
 import { adminOnly } from '@/access/adminOnly'
+import { invalidateAllPublicDataAfterGlobalChange } from '@/modules/cache/invalidate-public-data'
 import { websitePermissionResourceOptions } from '@/modules/membership/permission-resources'
 import { validateWebsitePermissions } from '@/modules/membership/role-permissions'
 
@@ -62,5 +63,6 @@ export const WebsitePermissions: GlobalConfig = {
       validate: validateWebsitePermissions,
     },
   ],
+  hooks: { afterChange: [invalidateAllPublicDataAfterGlobalChange] },
   label: 'Uprawnienia WWW',
 }

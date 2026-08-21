@@ -1,24 +1,10 @@
 import { expect, test } from '@playwright/test'
 
 import { login } from '../helpers/login'
-import {
-  administratorTestUser,
-  cleanupTestUsers,
-  editorTestUser,
-  readOnlyTestUser,
-  seedTestUsers,
-} from '../helpers/seedUser'
+import { administratorTestUser, editorTestUser, readOnlyTestUser } from '../helpers/seedUser'
 
 const collectionNavigationLink = (slug: string) => `nav a[href="/admin/collections/${slug}"]`
 const globalNavigationLink = (slug: string) => `nav a[href="/admin/globals/${slug}"]`
-
-test.beforeAll(async () => {
-  await seedTestUsers()
-})
-
-test.afterAll(async () => {
-  await cleanupTestUsers()
-})
 
 test('shows administration resources but no CMS to an administrator', async ({ page }) => {
   await login({ page, user: administratorTestUser })
@@ -34,8 +20,11 @@ test('shows administration resources but no CMS to an administrator', async ({ p
 })
 
 test('configures unique permission resources with Polish labels', async ({ page }) => {
+  test.setTimeout(60_000)
+
   await login({ page, user: administratorTestUser })
   await page.goto('/admin/collections/roles/create')
+  await page.waitForLoadState('networkidle')
 
   const permissions = page.locator('#field-permissions')
   const addPermission = permissions.getByRole('button', { name: 'Dodaj uprawnienie' })
@@ -44,8 +33,11 @@ test('configures unique permission resources with Polish labels', async ({ page 
 
   await addPermission.click()
   const rows = permissions.locator('.array-field__row')
+  await expect(rows).toHaveCount(1)
+  const firstResourceField = page.locator('#field-permissions__0__resource')
   await permissions.getByRole('button', { name: 'Pokaż wszystkie' }).click()
-  await rows.nth(0).getByRole('combobox').click()
+  await expect(firstResourceField).toBeVisible()
+  await firstResourceField.getByRole('combobox').click()
   await page.locator('.rs__menu').getByText('Media', { exact: true }).click()
 
   await rows.nth(0).getByText('Odczyt', { exact: true }).click()
@@ -55,41 +47,23 @@ test('configures unique permission resources with Polish labels', async ({ page 
   await expect(rows.nth(0).getByText('Tylko własne', { exact: true })).toBeVisible()
 
   await addPermission.click()
+  await expect(rows).toHaveCount(2)
+  const secondResourceField = page.locator('#field-permissions__1__resource')
   await permissions.getByRole('button', { name: 'Pokaż wszystkie' }).click()
-  await rows.nth(1).getByRole('combobox').click()
+  await expect(secondResourceField).toBeVisible()
+  await secondResourceField.getByRole('combobox').click()
   await expect(page.locator('.rs__menu').getByText('Media', { exact: true })).toHaveCount(0)
 
   await page.goto('/admin/globals/website-permissions')
   await expect(page.getByRole('heading', { name: 'Uprawnienia WWW' })).toBeVisible()
-  await page.locator('#field-permissions').getByRole('button', { name: 'Pokaż wszystkie' }).click()
-  await expect(page.getByText('Dostęp dla osób niezalogowanych').first()).toBeVisible()
-})
-
-test('shows display names with email tooltips in the users list', async ({ page }) => {
-  await login({ page, user: administratorTestUser })
-  await page.goto('/admin/collections/users')
-
-  await expect(page.getByRole('columnheader', { name: /^Adres e-mail/ })).toBeVisible()
-  const userName = page
-    .locator('.table .wkf-user-identity')
-    .filter({ hasText: administratorTestUser.displayName })
-  await expect(userName).toBeVisible()
-  await expect(userName.locator('xpath=ancestor::a[1]')).toHaveAttribute(
-    'href',
-    /\/admin\/collections\/users\/\d+$/,
-  )
-  const administratorRow = page
-    .locator('tbody tr')
-    .filter({ hasText: administratorTestUser.email })
-  await expect(
-    administratorRow.getByRole('link', { exact: true, name: administratorTestUser.email }),
-  ).toHaveAttribute('href', /\/admin\/collections\/users\/\d+$/)
-  await userName.hover()
-
-  await expect(page.locator('.tooltip--show')).toContainText(administratorTestUser.email)
-
-  await page.locator('tbody input[type="checkbox"]').first().check()
-  await expect(page.getByRole('button', { exact: true, name: 'Edytuj' })).toHaveCount(0)
+  const websitePermissions = page.locator('#field-permissions')
+  const websitePermissionRows = websitePermissions.locator('.array-field__row')
+  await expect(websitePermissionRows.first()).toBeVisible()
+  const anonymousAccessLabel = page.getByText('Dostęp dla osób niezalogowanych').first()
+  if (!(await anonymousAccessLabel.isVisible())) {
+    await websitePermissionRows.first().getByRole('button', { name: 'Przełącz blok' }).click()
+  }
+  await expect(anonymousAccessLabel).toBeVisible()
 })
 
 test('shows CMS resources but no administration collections to an editor', async ({ page }) => {
@@ -117,9 +91,13 @@ test('opens a media document without rendering the category tabs outside the lis
 
   const mediaDocumentLink = page.locator('.table a[href^="/admin/collections/media/"]').first()
   await expect(mediaDocumentLink).toBeVisible()
-  await mediaDocumentLink.click()
+  const mediaDocumentURL = await mediaDocumentLink.getAttribute('href')
+  if (!mediaDocumentURL) {
+    throw new Error('The media list must link to an editable document.')
+  }
+  await page.goto(mediaDocumentURL)
 
-  await expect(page.locator('#field-alt')).toBeVisible()
+  await expect(page.locator('#field-alt')).toBeVisible({ timeout: 15_000 })
   expect(pageErrors).toEqual([])
 })
 

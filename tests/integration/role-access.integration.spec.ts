@@ -50,6 +50,10 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  if (!payload) {
+    return
+  }
+
   await payload.delete({
     collection: 'club-sections',
     overrideAccess: true,

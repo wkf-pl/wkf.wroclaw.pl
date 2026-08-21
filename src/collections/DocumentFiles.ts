@@ -67,18 +67,7 @@ export const DocumentFiles: CollectionConfig = {
   hooks: {
     beforeDelete: [
       async ({ id, req }) => {
-        const file = await req.payload.findByID({
-          collection: 'document-files',
-          depth: 0,
-          id,
-          overrideAccess: true,
-          req,
-        })
-        const deletingDocumentId = req.context?.deletingDocumentId
-        const parentDocumentId =
-          typeof file.document === 'object' && file.document ? file.document.id : file.document
-
-        if (deletingDocumentId !== undefined && parentDocumentId === deletingDocumentId) {
+        if (req.context?.deletingDocumentId !== undefined) {
           return
         }
 

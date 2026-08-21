@@ -130,8 +130,14 @@ describe('media blocks', () => {
     ])
   })
 
-  it('rejects non-image files in a manual gallery on the server', async () => {
-    const findByID = vi.fn().mockResolvedValue({ id: 9, mimeType: 'application/pdf' })
+  it('validates every manual gallery with one media query', async () => {
+    const find = vi.fn().mockResolvedValue({
+      docs: [
+        { id: 7, mimeType: 'image/png' },
+        { id: 8, mimeType: 'image/webp' },
+        { id: 9, mimeType: 'application/pdf' },
+      ],
+    })
 
     await expect(
       validateMediaBlocks({
@@ -139,14 +145,27 @@ describe('media blocks', () => {
           layout: [
             {
               blockType: 'mediaGallery',
+              items: [{ media: 7 }, { media: 8 }],
+              selectionMode: 'manual',
+            },
+            {
+              blockType: 'mediaGallery',
               items: [{ media: 9 }],
               selectionMode: 'manual',
             },
           ],
         },
-        req: { payload: { findByID } },
+        req: { payload: { find } },
       } as never),
     ).rejects.toMatchObject({ status: 400 })
-    expect(findByID).toHaveBeenCalledWith(expect.objectContaining({ collection: 'media', id: 9 }))
+    expect(find).toHaveBeenCalledTimes(1)
+    expect(find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'media',
+        depth: 0,
+        pagination: false,
+        where: { id: { in: [7, 8, 9] } },
+      }),
+    )
   })
 })

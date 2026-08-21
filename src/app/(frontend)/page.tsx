@@ -15,8 +15,6 @@ import { Icon } from './_components/Icon'
 import { MenuIcon } from './_components/MenuIcon'
 import { EventCarousel } from './_components/EventCarousel'
 
-export const dynamic = 'force-dynamic'
-
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric',
   month: 'long',

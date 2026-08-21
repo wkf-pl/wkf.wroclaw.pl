@@ -11,8 +11,6 @@ type BlogPostPageProperties = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export const dynamic = 'force-dynamic'
-
 export async function generateMetadata({ params }: BlogPostPageProperties): Promise<Metadata> {
   const { slug } = await params
   const post = await findPublishedPostBySlug(slug)

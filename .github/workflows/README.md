@@ -1,6 +1,7 @@
 # Deployment workflows
 
-- `ci.yml` uruchamia sprawdzenia statyczne i testy. Pull request dodatkowo waliduje produkcyjny
+- `ci.yml` sprawdza formatowanie i artefakty Payload, uruchamia lint, typecheck oraz testy
+  jednostkowe, integracyjne i E2E na izolowanej bazie. Pull request dodatkowo waliduje produkcyjny
   obraz z cache’em BuildKit. Po udanym pushu do `dev` wywołuje workflow stagingowy, który buduje
   i wysyła ten obraz tylko raz.
 - `deploy-staging.yml` porównuje commit aktywnej rewizji z wdrażanym commitem. Pełny provisioning

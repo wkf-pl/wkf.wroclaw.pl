@@ -10,8 +10,6 @@ type TagPageProperties = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export const dynamic = 'force-dynamic'
-
 export async function generateMetadata({ params }: TagPageProperties): Promise<Metadata> {
   const { tag: slug } = await params
   const tag = await findTagBySlug(slug)

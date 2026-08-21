@@ -36,7 +36,7 @@ param postgresStorageSizeGB int = 32
 param postgresBackupRetentionDays int = 7
 
 param minimumReplicas int = 0
-param maximumReplicas int = 2
+param maximumReplicas int = 1
 
 param customDomainName string = ''
 param customDomainCertificateId string = ''

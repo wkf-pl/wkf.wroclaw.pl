@@ -36,10 +36,3 @@ export const partnerRoleOptions = [
   { label: 'Gospodarz miejsca', value: 'venueHost' },
   { label: 'Wsparcie', value: 'support' },
 ] as const
-
-export const externalLinkTypeOptions = [
-  { label: 'Strona wydarzenia', value: 'eventPage' },
-  { label: 'Facebook', value: 'facebook' },
-  { label: 'Instagram', value: 'instagram' },
-  { label: 'Inny link', value: 'other' },
-] as const

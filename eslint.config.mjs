@@ -25,7 +25,7 @@ export default defineConfig([
     },
   },
   globalIgnores([
-    '.next/**',
+    '.next*/**',
     'playwright-report/**',
     'src/app/(payload)/admin/importMap.js',
     'src/payload-generated-schema.ts',

@@ -1,6 +1,14 @@
-import type { Access, AccessResult, CollectionConfig, Field, Where } from 'payload'
+import type { Access, CollectionConfig } from 'payload'
 
-import { createEditorialFields } from '@/modules/content/editorial-fields'
+import {
+  createEditorialFields,
+  getEditorialField,
+  withFieldWidth,
+} from '@/modules/content/editorial-fields'
+import {
+  removeContentListingAfterDelete,
+  syncContentListingAfterChange,
+} from '@/modules/content/content-listing-index'
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
 import {
@@ -16,6 +24,7 @@ import { createNextEventEndpoint } from '@/modules/events/create-next-event'
 import { isMember } from '@/modules/members/member-profile'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import {
+  combineAccessWithConstraint,
   createRolePermissionAccess,
   websiteRequestContext,
 } from '@/modules/membership/role-permissions'
@@ -25,35 +34,16 @@ const deleteEvents = createRolePermissionAccess({ operation: 'delete', resource:
 const readEventsByRole = createRolePermissionAccess({ operation: 'read', resource: 'events' })
 const updateEvents = createRolePermissionAccess({ operation: 'update', resource: 'events' })
 
-function combineWithVisibility(result: AccessResult, visibility: true | Where): AccessResult {
-  if (result === false) return false
-  if (result === true) return visibility
-  if (visibility === true) return result
-  return { and: [result, visibility] }
-}
-
 const readEvents: Access = async (arguments_) => {
   const result = await readEventsByRole(arguments_)
   if (arguments_.req.context?.website !== websiteRequestContext.website) return result
-  return combineWithVisibility(
+  return combineAccessWithConstraint(
     result,
     (await isMember(arguments_.req)) ? true : { visibility: { equals: 'public' } },
   )
 }
 
 const editorialFields = createEditorialFields({ includeContent: false, includeTaxonomy: true })
-function editorialField(name: string): Field {
-  const field = editorialFields.find((candidate) => 'name' in candidate && candidate.name === name)
-  if (!field) throw new Error(`Missing editorial field: ${name}`)
-  return field
-}
-
-function halfWidth(field: Field): Field {
-  return {
-    ...field,
-    admin: { ...('admin' in field ? field.admin : undefined), width: '50%' },
-  } as Field
-}
 
 export const Events: CollectionConfig = {
   slug: 'events',
@@ -79,7 +69,7 @@ export const Events: CollectionConfig = {
     {
       type: 'row',
       fields: [
-        halfWidth(editorialField('title')),
+        withFieldWidth(getEditorialField(editorialFields, 'title'), '50%'),
         {
           name: 'cycle',
           type: 'relationship',
@@ -91,9 +81,12 @@ export const Events: CollectionConfig = {
     },
     {
       type: 'row',
-      fields: [halfWidth(editorialField('categories')), halfWidth(editorialField('tags'))],
+      fields: [
+        withFieldWidth(getEditorialField(editorialFields, 'categories'), '50%'),
+        withFieldWidth(getEditorialField(editorialFields, 'tags'), '50%'),
+      ],
     },
-    editorialField('heroImage'),
+    getEditorialField(editorialFields, 'heroImage'),
     { name: 'tagline', type: 'text', label: 'Hasło reklamowe', maxLength: 180 },
     { name: 'excerpt', type: 'textarea', label: 'Streszczenie', maxLength: 500, required: true },
     createContentLayoutField('Treści'),
@@ -103,10 +96,10 @@ export const Events: CollectionConfig = {
     createOrganizerField(),
     createPartnersField(),
     createExternalLinksField(),
-    editorialField('seo'),
-    editorialField('slug'),
-    editorialField('author'),
-    editorialField('publishedAt'),
+    getEditorialField(editorialFields, 'seo'),
+    getEditorialField(editorialFields, 'slug'),
+    getEditorialField(editorialFields, 'author'),
+    getEditorialField(editorialFields, 'publishedAt'),
     {
       name: 'defaultsAppliedCycle',
       type: 'relationship',
@@ -132,6 +125,8 @@ export const Events: CollectionConfig = {
     { name: 'calendarFingerprint', type: 'text', admin: { hidden: true, readOnly: true } },
   ],
   hooks: {
+    afterChange: [syncContentListingAfterChange],
+    afterDelete: [removeContentListingAfterDelete],
     beforeChange: [updateEventCalendarMetadata, setPublishedAt],
     beforeValidate: [applyEventCycleDefaults, validateMediaBlocks],
   },

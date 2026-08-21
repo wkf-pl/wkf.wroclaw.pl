@@ -1,5 +1,6 @@
 import type { Access, AccessResult, PayloadRequest, Where } from 'payload'
 
+import { getRelationshipId, type RelationshipReference } from '@/lib/relationships'
 import {
   getCollectionPermissionResources,
   getWebsitePermissionResourcesForCollection,
@@ -14,8 +15,6 @@ import {
 export const administratorRoleKey = 'administrator'
 export const defaultUserRoleKey = 'user'
 export const websiteRequestContext = { website: true } as const
-
-type RelationshipReference = number | string | { id: number | string }
 
 export type PermissionGrant = {
   allowed?: boolean | null
@@ -65,12 +64,12 @@ export function getUserIdentity(user: unknown): number | string | undefined {
   return typeof id === 'number' || typeof id === 'string' ? id : undefined
 }
 
-function getUserRoleReferences(user: unknown): RelationshipReference[] {
+function getUserRoleReferences(user: unknown): NonNullable<RelationshipReference>[] {
   if (!user || typeof user !== 'object' || !('roles' in user) || !Array.isArray(user.roles)) {
     return []
   }
 
-  return user.roles.filter((role): role is RelationshipReference => {
+  return user.roles.filter((role): role is NonNullable<RelationshipReference> => {
     if (typeof role === 'number' || typeof role === 'string') {
       return true
     }
@@ -82,10 +81,6 @@ function getUserRoleReferences(user: unknown): RelationshipReference[] {
       (typeof role.id === 'number' || typeof role.id === 'string'),
     )
   })
-}
-
-function getRelationshipId(reference: RelationshipReference): number | string {
-  return typeof reference === 'object' ? reference.id : reference
 }
 
 export async function getRequestRoles(req: PayloadRequest): Promise<RoleRecord[]> {
@@ -143,6 +138,16 @@ async function getWebsitePermissions(req: PayloadRequest): Promise<WebsitePermis
 
   websitePermissionsByRequest.set(req, permissionsPromise)
   return permissionsPromise
+}
+
+export async function hasAnonymousWebsiteAccess(
+  req: PayloadRequest,
+  resource: WebsitePermissionResource,
+): Promise<boolean> {
+  const permissions = await getWebsitePermissions(req)
+  return permissions.some(
+    (permission) => permission.resource === resource && permission.anonymousAllowed === true,
+  )
 }
 
 export async function isAdministrator(req: PayloadRequest): Promise<boolean> {
@@ -363,6 +368,21 @@ export function combineAccessResults(...results: AccessResult[]): AccessResult {
   }
 
   return scopes.length === 1 ? scopes[0] : { or: scopes }
+}
+
+export function combineAccessWithConstraint(
+  result: AccessResult,
+  constraint: true | Where,
+): AccessResult {
+  if (result === false) {
+    return false
+  }
+
+  if (result === true) {
+    return constraint
+  }
+
+  return constraint === true ? result : { and: [result, constraint] }
 }
 
 function isWebsiteRequest(req: PayloadRequest, isReadingStaticFile?: boolean): boolean {

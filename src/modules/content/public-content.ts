@@ -4,7 +4,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 
 import type { Category, ClubSection, Navigation, Post, SiteSetting, Tag } from '@/payload-types'
-import { getCurrentUser } from '@/modules/auth/current-user'
+import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import { websiteRequestContext } from '@/modules/membership/role-permissions'
 
 type PostTaxonomyFilter = {
@@ -12,138 +12,184 @@ type PostTaxonomyFilter = {
   id: number
 }
 
-export const findPublishedPageBySlug = cache(async (slug: string) => {
-  const payload = await getPayload({ config })
-  const user = await getCurrentUser()
-  const result = await payload.find({
-    collection: 'pages',
-    context: websiteRequestContext,
-    depth: 2,
-    draft: false,
-    limit: 1,
-    overrideAccess: false,
-    user,
-    where: {
-      and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }],
-    },
-  })
+const findPublishedPageBySlugCached = cachePublicData(
+  'published-page-by-slug',
+  async (slug: string) => {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'pages',
+      context: websiteRequestContext,
+      depth: 2,
+      draft: false,
+      limit: 1,
+      overrideAccess: false,
+      user: null,
+      where: {
+        and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }],
+      },
+    })
 
-  return result.docs[0] ?? null
-})
+    return result.docs[0] ?? null
+  },
+  { revalidate: 3600, tags: [publicCacheTags.pages] },
+)
 
-export const getPublicNavigation = cache(async (): Promise<Navigation> => {
-  const payload = await getPayload({ config })
-  return payload.findGlobal({
-    slug: 'navigation',
-    context: websiteRequestContext,
-    depth: 2,
-    overrideAccess: false,
-    user: null,
-  })
-})
+export const findPublishedPageBySlug = cache(findPublishedPageBySlugCached)
 
-export const getPublicSiteSettings = cache(async (): Promise<SiteSetting> => {
-  const payload = await getPayload({ config })
-  return payload.findGlobal({
-    slug: 'site-settings',
-    context: websiteRequestContext,
-    depth: 1,
-    overrideAccess: false,
-    user: null,
-  })
-})
+const getPublicNavigationCached = cachePublicData(
+  'public-navigation',
+  async (): Promise<Navigation> => {
+    const payload = await getPayload({ config })
+    return payload.findGlobal({
+      slug: 'navigation',
+      context: websiteRequestContext,
+      depth: 2,
+      overrideAccess: false,
+      user: null,
+    })
+  },
+  { revalidate: 300, tags: [publicCacheTags.navigation, publicCacheTags.homepage] },
+)
 
-export const findPublishedClubSections = cache(async (): Promise<ClubSection[]> => {
-  const payload = await getPayload({ config })
-  const user = await getCurrentUser()
-  const result = await payload.find({
-    collection: 'club-sections',
-    context: websiteRequestContext,
-    depth: 2,
-    draft: false,
-    limit: 100,
-    overrideAccess: false,
-    sort: ['displayOrder', 'name'],
-    user,
-    where: {
-      _status: { equals: 'published' },
-    },
-  })
+export const getPublicNavigation = cache(getPublicNavigationCached)
 
-  return result.docs
-})
+const getPublicSiteSettingsCached = cachePublicData(
+  'public-site-settings',
+  async (): Promise<SiteSetting> => {
+    const payload = await getPayload({ config })
+    return payload.findGlobal({
+      slug: 'site-settings',
+      context: websiteRequestContext,
+      depth: 1,
+      overrideAccess: false,
+      user: null,
+    })
+  },
+  { revalidate: 300, tags: [publicCacheTags.siteSettings, publicCacheTags.homepage] },
+)
 
-export const findPublishedPostBySlug = cache(async (slug: string) => {
-  const payload = await getPayload({ config })
-  const user = await getCurrentUser()
-  const result = await payload.find({
-    collection: 'posts',
-    context: websiteRequestContext,
-    depth: 2,
-    draft: false,
-    limit: 1,
-    overrideAccess: false,
-    user,
-    where: {
-      and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }],
-    },
-  })
+export const getPublicSiteSettings = cache(getPublicSiteSettingsCached)
 
-  return result.docs[0] ?? null
-})
+const findPublishedClubSectionsCached = cachePublicData(
+  'published-club-sections',
+  async (): Promise<ClubSection[]> => {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'club-sections',
+      context: websiteRequestContext,
+      depth: 2,
+      draft: false,
+      limit: 100,
+      overrideAccess: false,
+      sort: ['displayOrder', 'name'],
+      user: null,
+      where: {
+        _status: { equals: 'published' },
+      },
+    })
 
-export async function findPublishedPosts(filter?: PostTaxonomyFilter): Promise<Post[]> {
-  const payload = await getPayload({ config })
-  const user = await getCurrentUser()
-  const taxonomyConstraint = filter ? { [filter.field]: { equals: filter.id } } : undefined
-  const result = await payload.find({
-    collection: 'posts',
-    context: websiteRequestContext,
-    depth: 2,
-    draft: false,
-    limit: 100,
-    overrideAccess: false,
-    sort: ['-publishedAt', '-createdAt'],
-    user,
-    where: {
-      and: [
-        { _status: { equals: 'published' } },
-        ...(taxonomyConstraint ? [taxonomyConstraint] : []),
-      ],
-    },
-  })
+    return result.docs
+  },
+  { revalidate: 300, tags: [publicCacheTags.homepage] },
+)
 
-  return result.docs
+export const findPublishedClubSections = cache(findPublishedClubSectionsCached)
+
+const findPublishedPostBySlugCached = cachePublicData(
+  'published-post-by-slug',
+  async (slug: string) => {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'posts',
+      context: websiteRequestContext,
+      depth: 2,
+      draft: false,
+      limit: 1,
+      overrideAccess: false,
+      user: null,
+      where: {
+        and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }],
+      },
+    })
+
+    return result.docs[0] ?? null
+  },
+  { revalidate: 3600, tags: [publicCacheTags.posts] },
+)
+
+export const findPublishedPostBySlug = cache(findPublishedPostBySlugCached)
+
+const findPublishedPostsCached = cachePublicData(
+  'published-posts',
+  async (field?: PostTaxonomyFilter['field'], id?: number): Promise<Post[]> => {
+    const payload = await getPayload({ config })
+    const taxonomyConstraint = field && id !== undefined ? { [field]: { equals: id } } : undefined
+    const result = await payload.find({
+      collection: 'posts',
+      context: websiteRequestContext,
+      depth: 2,
+      draft: false,
+      limit: 100,
+      overrideAccess: false,
+      sort: ['-publishedAt', '-createdAt'],
+      user: null,
+      where: {
+        and: [
+          { _status: { equals: 'published' } },
+          ...(taxonomyConstraint ? [taxonomyConstraint] : []),
+        ],
+      },
+    })
+
+    return result.docs
+  },
+  { revalidate: 300, tags: [publicCacheTags.posts, publicCacheTags.homepage] },
+)
+
+export function findPublishedPosts(filter?: PostTaxonomyFilter): Promise<Post[]> {
+  return findPublishedPostsCached(filter?.field, filter?.id)
 }
 
-export const findCategoryBySlug = cache(async (slug: string): Promise<Category | null> => {
-  const payload = await getPayload({ config })
-  const result = await payload.find({
-    collection: 'categories',
-    depth: 0,
-    limit: 1,
-    overrideAccess: false,
-    user: null,
-    where: {
-      slug: { equals: slug },
-    },
-  })
+const findCategoryBySlugCached = cachePublicData(
+  'category-by-slug',
+  async (slug: string): Promise<Category | null> => {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'categories',
+      depth: 0,
+      limit: 1,
+      overrideAccess: false,
+      user: null,
+      where: {
+        slug: { equals: slug },
+      },
+    })
 
-  return result.docs[0] ?? null
-})
+    return result.docs[0] ?? null
+  },
+  { revalidate: 3600, tags: [publicCacheTags.contentListings] },
+)
 
-export const findTagBySlug = cache(async (slug: string): Promise<null | Tag> => {
-  const payload = await getPayload({ config })
-  const result = await payload.find({
-    collection: 'tags',
-    depth: 0,
-    limit: 1,
-    overrideAccess: false,
-    user: null,
-    where: {
-      slug: { equals: slug },
-    },
-  })
+export const findCategoryBySlug = cache(findCategoryBySlugCached)
 
-  return result.docs[0] ?? null
-})
+const findTagBySlugCached = cachePublicData(
+  'tag-by-slug',
+  async (slug: string): Promise<null | Tag> => {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'tags',
+      depth: 0,
+      limit: 1,
+      overrideAccess: false,
+      user: null,
+      where: {
+        slug: { equals: slug },
+      },
+    })
+
+    return result.docs[0] ?? null
+  },
+  { revalidate: 3600, tags: [publicCacheTags.contentListings] },
+)
+
+export const findTagBySlug = cache(findTagBySlugCached)

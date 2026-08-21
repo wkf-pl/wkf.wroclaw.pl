@@ -5,6 +5,8 @@ import config from '@/payload.config'
 import type { Document, Role, User, WebsitePermission } from '@/payload-types'
 import { websiteRequestContext } from '@/modules/membership/role-permissions'
 
+import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/integration-author'
+
 const testSlugs = ['integration-public-document', 'integration-role-document']
 const testPDF = Buffer.from(
   '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\nxref\n0 1\n0000000000 65535 f\n%%EOF\n',
@@ -66,15 +68,7 @@ beforeAll(async () => {
   payload = await getPayload({ config })
   await cleanupTestDocuments()
 
-  const users = await payload.find({
-    collection: 'users',
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-    pagination: false,
-  })
-  if (!users.docs[0]) throw new Error('Integration test requires an existing author.')
-  author = users.docs[0]
+  author = await createIntegrationAuthor(payload, 'documents')
   ;[memberRole, userRole] = await Promise.all([findRole('member'), findRole('user')])
 
   const websitePermissions = await payload.findGlobal({
@@ -172,6 +166,7 @@ afterAll(async () => {
     data: { permissions: originalWebsitePermissions },
     overrideAccess: true,
   })
+  await deleteIntegrationAuthor(payload, author)
 })
 
 describe('document website access integration', () => {
@@ -234,5 +229,138 @@ describe('document website access integration', () => {
 
     expect(documents.docs).toEqual([])
     expect(files.docs.some(({ id }) => id === roleDocument.primaryFile)).toBe(false)
+  })
+
+  it('assigns multiple files and deletes them with their parent document', async () => {
+    const fixtureID = Date.now()
+    const createdFileIDs: number[] = []
+    let createdDocumentID: number | undefined
+
+    try {
+      const primaryFile = await payload.create({
+        collection: 'document-files',
+        data: { label: 'Bulk primary PDF' },
+        file: {
+          data: testPDF,
+          mimetype: 'application/pdf',
+          name: `integration-bulk-primary-${fixtureID}.pdf`,
+          size: testPDF.length,
+        },
+        overrideAccess: true,
+      })
+      const attachment = await payload.create({
+        collection: 'document-files',
+        data: { label: 'Bulk attachment PDF' },
+        file: {
+          data: testPDF,
+          mimetype: 'application/pdf',
+          name: `integration-bulk-attachment-${fixtureID}.pdf`,
+          size: testPDF.length,
+        },
+        overrideAccess: true,
+      })
+      createdFileIDs.push(primaryFile.id, attachment.id)
+
+      const document = await payload.create({
+        collection: 'documents',
+        data: {
+          _status: 'draft',
+          attachments: [attachment.id],
+          author: author.id,
+          documentDate: '2026-08-21T00:00:00.000Z',
+          documentType: 'statute',
+          primaryFile: primaryFile.id,
+          slug: `integration-bulk-document-${fixtureID}`,
+          title: 'Integration bulk document',
+        },
+        draft: true,
+        overrideAccess: true,
+      })
+      createdDocumentID = document.id
+
+      const assignedFiles = await payload.find({
+        collection: 'document-files',
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { id: { in: createdFileIDs } },
+      })
+      expect(assignedFiles.docs).toHaveLength(2)
+      expect(
+        assignedFiles.docs.map((file) =>
+          typeof file.document === 'object' && file.document ? file.document.id : file.document,
+        ),
+      ).toEqual([document.id, document.id])
+
+      await payload.delete({
+        collection: 'documents',
+        id: document.id,
+        overrideAccess: true,
+      })
+      createdDocumentID = undefined
+
+      const deletedFiles = await payload.find({
+        collection: 'document-files',
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { id: { in: createdFileIDs } },
+      })
+      expect(deletedFiles.docs).toEqual([])
+    } finally {
+      if (createdDocumentID !== undefined) {
+        await payload.delete({
+          collection: 'documents',
+          id: createdDocumentID,
+          overrideAccess: true,
+        })
+      }
+      if (createdFileIDs.length > 0) {
+        await payload.delete({
+          collection: 'document-files',
+          overrideAccess: true,
+          where: { id: { in: createdFileIDs } },
+        })
+      }
+    }
+  })
+
+  it('does not let another document take an assigned file', async () => {
+    const primaryFileID =
+      typeof publicDocument.primaryFile === 'object'
+        ? publicDocument.primaryFile.id
+        : publicDocument.primaryFile
+
+    await expect(
+      payload.create({
+        collection: 'documents',
+        data: {
+          _status: 'draft',
+          author: author.id,
+          documentDate: '2026-08-21T00:00:00.000Z',
+          documentType: 'statute',
+          primaryFile: primaryFileID,
+          slug: `integration-file-takeover-${Date.now()}`,
+          title: 'Integration file takeover',
+        },
+        draft: true,
+        overrideAccess: true,
+      }),
+    ).rejects.toMatchObject({ status: 400 })
+  })
+
+  it('does not delete a file while its document still references it', async () => {
+    const primaryFileID =
+      typeof publicDocument.primaryFile === 'object'
+        ? publicDocument.primaryFile.id
+        : publicDocument.primaryFile
+
+    await expect(
+      payload.delete({
+        collection: 'document-files',
+        id: primaryFileID,
+        overrideAccess: true,
+      }),
+    ).rejects.toMatchObject({ status: 400 })
   })
 })

@@ -1,0 +1,148 @@
+import { readdirSync, readFileSync } from 'node:fs'
+
+import { describe, expect, it } from 'vitest'
+
+import { prepareFreshTestSchema } from '../../scripts/prepare-test-environment'
+import { shouldPushDatabaseSchema } from '@/database/schema-mode'
+
+import {
+  assertIntegrationTestDatabaseURL,
+  integrationTestDatabaseName,
+} from '../helpers/test-environment'
+
+describe('integration test environment', () => {
+  it('pushes the database schema only in development', () => {
+    expect(shouldPushDatabaseSchema('development', '')).toBe(true)
+    expect(shouldPushDatabaseSchema('test', '')).toBe(false)
+    expect(shouldPushDatabaseSchema('production', '')).toBe(false)
+    expect(shouldPushDatabaseSchema(undefined, '')).toBe(false)
+    expect(shouldPushDatabaseSchema('development', 'true')).toBe(false)
+  })
+
+  it('uses the dedicated test database configured by the setup file', () => {
+    expect(new URL(process.env.DATABASE_URL!).pathname).toBe(`/${integrationTestDatabaseName}`)
+  })
+
+  it('rejects a development database URL', () => {
+    expect(() =>
+      assertIntegrationTestDatabaseURL('postgresql://wkf:wkf@127.0.0.1:5432/wkf'),
+    ).toThrow('Integration tests require the wkf_test database')
+  })
+
+  it('prepares the isolated database before running integration tests', () => {
+    const packageConfiguration = readFileSync('package.json', 'utf8')
+    const packageScripts = JSON.parse(packageConfiguration).scripts as Record<string, string>
+    const preparationScript = readFileSync('scripts/prepare-test-environment.ts', 'utf8')
+    const composeConfiguration = readFileSync('compose.yml', 'utf8')
+    const testEnvironment = readFileSync('test.env', 'utf8')
+
+    expect(packageScripts['prepare:integration']).toContain('scripts/prepare-test-environment.ts')
+    expect(packageScripts['prepare:integration']).not.toContain('scripts/seed.ts')
+    expect(preparationScript).toContain("['migrate:fresh', '--force-accept-warning']")
+    expect(composeConfiguration).toContain('- path: .env\n        required: false')
+    expect(testEnvironment).toContain('AZURE_STORAGE_ALLOW_CONTAINER_CREATE=true')
+  })
+
+  it('creates a fresh schema once and verifies its complete migration history', async () => {
+    let migrationAttempts = 0
+
+    await prepareFreshTestSchema({
+      expectedMigrationNames: ['001_initial'],
+      getAppliedMigrationNames: async () => ['001_initial'],
+      migrateFresh: async () => {
+        migrationAttempts += 1
+      },
+    })
+
+    expect(migrationAttempts).toBe(1)
+  })
+
+  it('fails before seeding when a successful migration command does not create the schema', async () => {
+    await expect(
+      prepareFreshTestSchema({
+        expectedMigrationNames: ['001_initial', '002_content'],
+        getAppliedMigrationNames: async () => [],
+        migrateFresh: async () => undefined,
+      }),
+    ).rejects.toThrow(
+      'Payload migrations did not create the expected schema. Missing migrations: 001_initial, 002_content.',
+    )
+  })
+
+  it('runs CI end-to-end tests against the isolated test environment', () => {
+    const packageConfiguration = readFileSync('package.json', 'utf8')
+    const packageScripts = JSON.parse(packageConfiguration).scripts as Record<string, string>
+    const playwrightConfiguration = readFileSync('playwright.config.ts', 'utf8')
+
+    expect(packageScripts['prepare:e2e']).toContain('scripts/seed.ts')
+    expect(packageScripts['seed']).toContain('tsx ./scripts/seed.ts')
+    expect(packageScripts['test:e2e:ci']).toContain('pnpm prepare:e2e')
+    expect(packageConfiguration).toContain('DOTENV_CONFIG_OVERRIDE=true')
+    expect(packageConfiguration).toContain('DOTENV_CONFIG_PATH=test.env')
+    expect(packageConfiguration).toContain('NEXT_DIST_DIR=.next-e2e-ci')
+    expect(packageConfiguration).toContain('PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100')
+    expect(packageConfiguration).toContain('PLAYWRIGHT_REUSE_EXISTING_SERVER=false')
+    expect(playwrightConfiguration).toContain('PLAYWRIGHT_OUTPUT_DIR')
+    expect(playwrightConfiguration).toContain('PLAYWRIGHT_HTML_OUTPUT_DIR')
+    expect(playwrightConfiguration).toContain("join(tmpdir(), 'wkf-online-playwright-results')")
+    expect(playwrightConfiguration).toContain("join(tmpdir(), 'wkf-online-playwright-report')")
+  })
+
+  it('manages shared Playwright users once per complete run', () => {
+    const playwrightConfiguration = readFileSync('playwright.config.ts', 'utf8')
+    const endToEndSpecifications = readdirSync('tests/e2e').filter((fileName) =>
+      fileName.endsWith('.spec.ts'),
+    )
+
+    expect(playwrightConfiguration).toContain("globalSetup: './tests/e2e/global-setup.ts'")
+    expect(playwrightConfiguration).toContain("globalTeardown: './tests/e2e/global-teardown.ts'")
+
+    for (const fileName of endToEndSpecifications) {
+      const specification = readFileSync(`tests/e2e/${fileName}`, 'utf8')
+      expect(specification).not.toContain('seedTestUsers')
+      expect(specification).not.toContain('cleanupTestUsers')
+    }
+  })
+
+  it('authenticates E2E helpers without repeatedly exercising the login form', () => {
+    const loginHelper = readFileSync('tests/helpers/login.ts', 'utf8')
+
+    expect(loginHelper).toContain('page.request.post(`${serverURL}/api/users/login`')
+    expect(loginHelper).not.toContain("page.fill('#field-email'")
+    expect(loginHelper).not.toContain("page.fill('#field-password'")
+  })
+
+  it('runs independent CI validation groups in parallel', () => {
+    const continuousIntegrationWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+
+    expect(continuousIntegrationWorkflow).toMatch(/^  verify:\n/m)
+    expect(continuousIntegrationWorkflow).toMatch(/^  integration:\n/m)
+    expect(continuousIntegrationWorkflow).toMatch(/^  end-to-end:\n/m)
+    expect(continuousIntegrationWorkflow).toMatch(/^  validate-container:\n/m)
+    expect(continuousIntegrationWorkflow).toContain('needs: [verify, integration, end-to-end]')
+    expect(continuousIntegrationWorkflow).toContain('shard: [1, 2]')
+    expect(continuousIntegrationWorkflow).toContain('PLAYWRIGHT_SHARD: ${{ matrix.shard }}/2')
+    expect(continuousIntegrationWorkflow).toContain('playwright-diagnostics-${{ matrix.shard }}')
+  })
+
+  it('keeps host and container Next build artifacts separate', () => {
+    const composeConfiguration = readFileSync('compose.yml', 'utf8')
+    const eslintConfiguration = readFileSync('eslint.config.mjs', 'utf8')
+    const packageConfiguration = readFileSync('package.json', 'utf8')
+
+    expect(packageConfiguration).toContain(
+      '"dev": "cross-env NODE_ENV=development NEXT_DIST_DIR=.next-host',
+    )
+    expect(packageConfiguration).toContain(
+      '"dev:container": "cross-env NODE_ENV=development NEXT_DIST_DIR=.next-container',
+    )
+    expect(packageConfiguration).toContain(
+      '"build": "cross-env NODE_ENV=production NEXT_DIST_DIR=.next-host',
+    )
+    expect(packageConfiguration).toContain('"build:container": "cross-env NODE_ENV=production')
+    expect(composeConfiguration).toContain('command: pnpm dev:container')
+    expect(composeConfiguration).toContain('NODE_ENV: development')
+    expect(composeConfiguration).toContain('app_next:/app/.next-container')
+    expect(eslintConfiguration).toContain("'.next*/**'")
+  })
+})

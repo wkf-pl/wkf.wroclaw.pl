@@ -2,7 +2,8 @@ import { getPayload, type Where } from 'payload'
 
 import config from '@payload-config'
 
-import type { Media, User } from '@/payload-types'
+import type { Media } from '@/payload-types'
+import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import { websiteRequestContext } from '@/modules/membership/role-permissions'
 
 export type MediaListingKind = 'attachments' | 'mediaGallery'
@@ -43,85 +44,142 @@ export type PublicMediaResult = {
   totalPages: number
 }
 
-export async function findPublicMedia(
-  options: FindPublicMediaOptions,
-  user: null | User = null,
-): Promise<PublicMediaResult> {
-  const requestedPage = Math.max(1, Math.floor(options.page))
-  const pageSize = Math.min(100, Math.max(1, Math.floor(options.pageSize)))
+type MediaListDocument = Pick<
+  Media,
+  | 'alt'
+  | 'createdAt'
+  | 'description'
+  | 'filename'
+  | 'filesize'
+  | 'height'
+  | 'id'
+  | 'mimeType'
+  | 'url'
+  | 'width'
+>
 
-  if (options.selectionMode === 'manual') {
-    const media = await populateManualMedia(options.manualMedia ?? [], user)
+export type NormalizedPublicMediaOptions = Omit<FindPublicMediaOptions, 'manualMedia'>
+
+const mediaSelect = {
+  alt: true,
+  createdAt: true,
+  description: true,
+  filename: true,
+  filesize: true,
+  height: true,
+  id: true,
+  mimeType: true,
+  url: true,
+  width: true,
+} as const
+
+const findFilteredPublicMediaCached = cachePublicData(
+  'filtered-public-media',
+  async (options: NormalizedPublicMediaOptions): Promise<PublicMediaResult> => {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'media',
+      context: websiteRequestContext,
+      depth: 0,
+      limit: options.pageSize,
+      overrideAccess: false,
+      page: options.pagination ? options.page : 1,
+      select: mediaSelect,
+      sort: getPayloadSort(options.sort),
+      user: null,
+      where: createMediaWhere(options),
+    })
+
+    return {
+      items: result.docs.map(mapMedia),
+      page: options.page,
+      pageSize: options.pageSize,
+      totalDocs: result.totalDocs,
+      totalPages: options.pagination ? Math.max(1, result.totalPages) : 1,
+    }
+  },
+  { revalidate: 300, tags: [publicCacheTags.media] },
+)
+
+const findManualPublicMediaByIDsCached = cachePublicData(
+  'manual-public-media-by-ids',
+  async (
+    options: NormalizedPublicMediaOptions,
+    mediaIDs: number[],
+  ): Promise<PublicMediaResult> => {
+    let media: MediaListDocument[] = []
+    if (mediaIDs.length > 0) {
+      const payload = await getPayload({ config })
+      const result = await payload.find({
+        collection: 'media',
+        context: websiteRequestContext,
+        depth: 0,
+        limit: mediaIDs.length,
+        overrideAccess: false,
+        pagination: false,
+        select: mediaSelect,
+        user: null,
+        where: { id: { in: [...new Set(mediaIDs)] } },
+      })
+      const mediaByID = new Map(result.docs.map((item) => [item.id, item]))
+      media = mediaIDs.flatMap((mediaID) => {
+        const item = mediaByID.get(mediaID)
+        return item ? [item] : []
+      })
+    }
+
     const eligibleMedia =
       options.kind === 'mediaGallery'
         ? media.filter((item) => item.mimeType?.startsWith('image/'))
         : media
     const totalDocs = eligibleMedia.length
-    const totalPages = options.pagination ? Math.max(1, Math.ceil(totalDocs / pageSize)) : 1
-    const offset = options.pagination ? (requestedPage - 1) * pageSize : 0
+    const totalPages = options.pagination
+      ? Math.max(1, Math.ceil(totalDocs / options.pageSize))
+      : 1
+    const offset = options.pagination ? (options.page - 1) * options.pageSize : 0
 
     return {
-      items: eligibleMedia.slice(offset, offset + pageSize).map(mapMedia),
-      page: requestedPage,
-      pageSize,
+      items: eligibleMedia.slice(offset, offset + options.pageSize).map(mapMedia),
+      page: options.page,
+      pageSize: options.pageSize,
       totalDocs,
       totalPages,
     }
-  }
+  },
+  { revalidate: 300, tags: [publicCacheTags.media] },
+)
 
-  const payload = await getPayload({ config })
-  const result = await payload.find({
-    collection: 'media',
-    context: websiteRequestContext,
-    depth: 0,
-    limit: pageSize,
-    overrideAccess: false,
-    page: options.pagination ? requestedPage : 1,
-    sort: getPayloadSort(options.sort),
-    user,
-    where: createMediaWhere(options),
-  })
+export async function findPublicMedia(options: FindPublicMediaOptions): Promise<PublicMediaResult> {
+  const normalizedOptions = normalizePublicMediaOptions(options)
 
-  return {
-    items: result.docs.map(mapMedia),
-    page: requestedPage,
-    pageSize,
-    totalDocs: result.totalDocs,
-    totalPages: options.pagination ? Math.max(1, result.totalPages) : 1,
-  }
-}
-
-async function populateManualMedia(
-  values: (Media | number)[],
-  user: null | User,
-): Promise<Media[]> {
-  const payload = await getPayload({ config })
-
-  return (
-    await Promise.all(
-      values.map(async (value) => {
-        if (typeof value === 'object') {
-          return value
-        }
-
-        try {
-          return await payload.findByID({
-            collection: 'media',
-            context: websiteRequestContext,
-            depth: 0,
-            id: value,
-            overrideAccess: false,
-            user,
-          })
-        } catch {
-          return null
-        }
-      }),
+  if (options.selectionMode === 'manual') {
+    const mediaIDs = (options.manualMedia ?? []).map((media) =>
+      typeof media === 'number' ? media : media.id,
     )
-  ).filter((value): value is Media => value !== null)
+    return findManualPublicMediaByIDsCached(normalizedOptions, mediaIDs)
+  }
+
+  return findFilteredPublicMediaCached(normalizedOptions)
 }
 
-function createMediaWhere(options: FindPublicMediaOptions): Where {
+export function normalizePublicMediaOptions(
+  options: FindPublicMediaOptions,
+): NormalizedPublicMediaOptions {
+  return {
+    categoryId: options.categoryId,
+    kind: options.kind,
+    page: Math.max(1, Math.floor(options.page)),
+    pageSize: Math.min(100, Math.max(1, Math.floor(options.pageSize))),
+    pagination: options.pagination,
+    selectionMode: options.selectionMode,
+    sort: options.sort,
+    tagId: options.tagId,
+  }
+}
+
+function createMediaWhere(
+  options: Pick<FindPublicMediaOptions, 'categoryId' | 'kind' | 'tagId'>,
+): Where {
   const conditions: Where[] = []
 
   if (options.categoryId !== undefined) {
@@ -152,7 +210,7 @@ function getPayloadSort(sort: MediaListingSort): string[] {
   }
 }
 
-function mapMedia(media: Media): PublicMediaListItem {
+function mapMedia(media: MediaListDocument): PublicMediaListItem {
   return {
     alt: media.alt,
     createdAt: media.createdAt,

@@ -1,5 +1,6 @@
 import type { GlobalConfig } from 'payload'
 
+import { invalidateSiteSettingsAfterChange } from '@/modules/cache/invalidate-public-data'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 
 const readSiteSettings = createRolePermissionAccess({
@@ -86,5 +87,6 @@ export const SiteSettings: GlobalConfig = {
       label: 'Tekst praw autorskich',
     },
   ],
+  hooks: { afterChange: [invalidateSiteSettingsAfterChange] },
   label: 'Podstawowe',
 }

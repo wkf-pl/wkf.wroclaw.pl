@@ -1,15 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { login } from '../helpers/login'
-import { cleanupTestUsers, editorTestUser, seedTestUsers } from '../helpers/seedUser'
-
-test.beforeAll(async () => {
-  await seedTestUsers()
-})
-
-test.afterAll(async () => {
-  await cleanupTestUsers()
-})
+import { editorTestUser } from '../helpers/seedUser'
 
 test('renders Cycle tabs, generated URL and grammatical creation labels', async ({ page }) => {
   await login({ page, user: editorTestUser })
@@ -63,5 +55,9 @@ test('renders Cycle tabs, generated URL and grammatical creation labels', async 
   await expect(page.getByRole('button', { name: 'Dodaj następne' })).toHaveCount(0)
 
   await page.goto('/admin/collections/partners')
-  await expect(page.getByRole('link', { name: 'Dodaj Partnera' })).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: 'Dodaj Partnera', exact: true }).filter({
+      hasText: 'Dodaj Partnera',
+    }),
+  ).toBeVisible()
 })

@@ -12,6 +12,8 @@ Grupy zasobów tworzymy wcześniej, poza workflowem. `shared.bicep` wdraża wsp�
 
 Pliki `environments/staging.bicepparam` i `environments/prod.bicepparam` zawierają wyłącznie niesekretne różnice środowisk. Sekrety są pobierane w czasie kompilacji parametrów ze zmiennych środowiskowych.
 
+Oba środowiska skalują aplikację od zera do jednej repliki, ponieważ lokalny Next Data Cache nie jest współdzielony między replikami. Uzasadnienie i ścieżkę dalszego skalowania opisuje [ADR 0001](../../docs/ADR/0001-content-listing-index-and-public-data-cache.md).
+
 ## GitHub environments
 
 Utwórz środowiska GitHub `staging` i `prod`. Środowisko `prod` powinno mieć wymagane ręczne zatwierdzenie.

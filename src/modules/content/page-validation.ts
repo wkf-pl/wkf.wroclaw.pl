@@ -1,14 +1,6 @@
 import { APIError, type CollectionBeforeValidateHook } from 'payload'
 
-type RelationshipValue = number | string | { id: number | string } | null | undefined
-
-function getRelationshipId(value: RelationshipValue): number | string | null {
-  if (typeof value === 'number' || typeof value === 'string') {
-    return value
-  }
-
-  return value && typeof value === 'object' ? value.id : null
-}
+import { getRelationshipId, type RelationshipReference } from '@/lib/relationships'
 
 export const validatePageStructure: CollectionBeforeValidateHook = async ({
   data,
@@ -52,10 +44,10 @@ export const validatePageStructure: CollectionBeforeValidateHook = async ({
     originalDoc && typeof originalDoc === 'object' && 'id' in originalDoc
       ? (originalDoc.id as number | string)
       : null
-  let parentId = getRelationshipId(data.parent as RelationshipValue)
+  let parentId = getRelationshipId(data.parent as RelationshipReference)
   const visitedPageIds = new Set<number | string>()
 
-  while (parentId !== null) {
+  while (parentId !== undefined) {
     if (parentId === currentPageId || visitedPageIds.has(parentId)) {
       throw new APIError('Strona nadrzędna tworzyłaby cykl w hierarchii stron.', 400)
     }
@@ -68,7 +60,7 @@ export const validatePageStructure: CollectionBeforeValidateHook = async ({
       overrideAccess: true,
       req,
     })
-    parentId = getRelationshipId(parentPage.parent as RelationshipValue)
+    parentId = getRelationshipId(parentPage.parent as RelationshipReference)
   }
 
   return data

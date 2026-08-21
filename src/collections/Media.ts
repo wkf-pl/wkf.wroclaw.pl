@@ -1,5 +1,9 @@
 import type { CollectionConfig } from 'payload'
 
+import {
+  invalidateAllPublicDataAfterChange,
+  invalidateAllPublicDataAfterDelete,
+} from '@/modules/cache/invalidate-public-data'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 import { mediaDocumentMimeTypes } from '@/modules/media/media-categories'
 
@@ -136,6 +140,8 @@ export const Media: CollectionConfig = {
     },
   ],
   hooks: {
+    afterChange: [invalidateAllPublicDataAfterChange],
+    afterDelete: [invalidateAllPublicDataAfterDelete],
     beforeValidate: [
       ({ data, operation, req }) => {
         if (operation === 'create' && req.user) {

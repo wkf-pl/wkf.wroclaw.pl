@@ -1,8 +1,5 @@
 import type { Event, EventCycle, Partner } from '@/payload-types'
-
-function mediaURL(value: Event['heroImage']): string | undefined {
-  return value && typeof value === 'object' ? value.url || undefined : undefined
-}
+import { getMediaURL } from '@/modules/media/media-url'
 
 export function createEventStructuredData(event: Event) {
   if (event.visibility !== 'public') return null
@@ -24,7 +21,7 @@ export function createEventStructuredData(event: Event) {
     eventStatus: status,
     previousStartDate: event.previousStartAt || undefined,
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-    image: mediaURL(event.heroImage),
+    image: getMediaURL(event.heroImage),
     location: event.location?.venueName
       ? {
           '@type': 'Place',
@@ -76,6 +73,6 @@ export function createPartnerStructuredData(partner: Partner) {
     name: partner.name,
     description: partner.excerpt,
     url: partner.website || `https://wkf.wroclaw.pl/partners/${partner.slug}`,
-    logo: mediaURL(partner.heroImage),
+    logo: getMediaURL(partner.heroImage),
   }
 }
