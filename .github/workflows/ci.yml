@@ -3,9 +3,6 @@ name: CI
 on:
   workflow_dispatch:
   pull_request:
-  push:
-    branches:
-      - master
 
 permissions:
   contents: read
@@ -91,7 +88,6 @@ jobs:
           retention-days: 7
 
   validate-container:
-    if: github.event_name == 'pull_request' || github.ref != 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -108,13 +104,3 @@ jobs:
           context: .
           push: false
           tags: wkf-online:ci
-
-  deploy-staging:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [verify, integration, end-to-end]
-    permissions:
-      actions: write
-      contents: read
-      id-token: write
-    secrets: inherit
-    uses: ./.github/workflows/deploy-staging.yml

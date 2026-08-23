@@ -125,7 +125,7 @@ describe('integration test environment', () => {
     expect(continuousIntegrationWorkflow).toMatch(/^  integration:\n/m)
     expect(continuousIntegrationWorkflow).toMatch(/^  end-to-end:\n/m)
     expect(continuousIntegrationWorkflow).toMatch(/^  validate-container:\n/m)
-    expect(continuousIntegrationWorkflow).toContain('needs: [verify, integration, end-to-end]')
+    expect(continuousIntegrationWorkflow).not.toContain('needs:')
     expect(continuousIntegrationWorkflow).toContain('shard: [1, 2]')
     expect(continuousIntegrationWorkflow).toContain('PLAYWRIGHT_SHARD: ${{ matrix.shard }}/2')
     expect(continuousIntegrationWorkflow).toContain('playwright-diagnostics-${{ matrix.shard }}')

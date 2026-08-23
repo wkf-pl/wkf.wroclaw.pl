@@ -20,12 +20,18 @@ describe('deployment workflows', () => {
 
   it('keeps the CI and staging build paths single and cache-aware', () => {
     const continuousIntegrationWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+    const stagingTriggerWorkflow = readFileSync(
+      '.github/workflows/deploy-staging-on-master.yml',
+      'utf8',
+    )
     const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
 
     expect(continuousIntegrationWorkflow).not.toContain('run: pnpm build')
-    expect(continuousIntegrationWorkflow).toContain("github.ref != 'refs/heads/master'")
-    expect(continuousIntegrationWorkflow).toContain("github.ref == 'refs/heads/master'")
+    expect(continuousIntegrationWorkflow).not.toMatch(/^  push:/m)
     expect(continuousIntegrationWorkflow).toContain('cache-to: type=gha,mode=max,scope=wkf-online')
+    expect(stagingTriggerWorkflow).toMatch(/^  push:\n    branches:\n      - master$/m)
+    expect(stagingTriggerWorkflow).toContain('uses: ./.github/workflows/deploy-staging.yml')
+    expect(stagingTriggerWorkflow).not.toContain('needs:')
     expect(stagingWorkflow).toContain('git ls-remote origin refs/heads/master')
     expect(stagingWorkflow).toContain('docker/build-push-action@v7')
     expect(stagingWorkflow).toContain('push: true')

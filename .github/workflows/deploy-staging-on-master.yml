@@ -1,0 +1,16 @@
+name: Deploy staging from master
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  actions: write
+  contents: read
+  id-token: write
+
+jobs:
+  deploy-staging:
+    secrets: inherit
+    uses: ./.github/workflows/deploy-staging.yml
