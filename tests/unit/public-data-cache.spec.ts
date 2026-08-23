@@ -7,7 +7,6 @@ import {
   getMemberProfileCacheTags,
   getMemberProfileImageCacheTags,
   getPartnerCacheTags,
-  invalidateAllPublicDataAfterGlobalChange,
   invalidateMemberProfileImagesAfterChange,
   invalidateMemberProfileImagesAfterDelete,
   invalidateMemberProfilesAfterChange,
@@ -16,7 +15,6 @@ import {
   invalidatePartnersAfterDelete,
 } from '@/modules/cache/invalidate-public-data'
 import { normalizePublicMediaOptions } from '@/modules/media/media-listing'
-import { WebsitePermissions } from '@/globals/WebsitePermissions'
 import { MemberProfileImages } from '@/collections/MemberProfileImages'
 import { MemberProfiles } from '@/collections/MemberProfiles'
 import { Partners } from '@/collections/Partners'
@@ -78,9 +76,6 @@ describe('public data cache', () => {
       [publicCacheTags.sitemap, { expire: 0 }],
       [publicCacheTags.homepage, { expire: 0 }],
     ])
-    expect(WebsitePermissions.hooks?.afterChange).toContain(
-      invalidateAllPublicDataAfterGlobalChange,
-    )
   })
 
   it('maps partner and member profile changes to all embedded cache dependencies', () => {

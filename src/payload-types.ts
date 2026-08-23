@@ -131,12 +131,10 @@ export interface Config {
   globals: {
     'site-settings': SiteSetting;
     navigation: Navigation;
-    'website-permissions': WebsitePermission;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     navigation: NavigationSelect<false> | NavigationSelect<true>;
-    'website-permissions': WebsitePermissionsSelect<false> | WebsitePermissionsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -181,7 +179,6 @@ export interface ContentListingItem {
   sortDate: string;
   eventStartAt?: string | null;
   eventEndAt?: string | null;
-  visibility?: ('public' | 'members') | null;
   heroImage?: (number | null) | Media;
   categories?: (number | Category)[] | null;
   tags?: (number | Tag)[] | null;
@@ -372,8 +369,8 @@ export interface Post {
  */
 export interface Event {
   id: number;
-  title: string;
   cycle?: (number | null) | EventCycle;
+  title: string;
   categories?: (number | Category)[] | null;
   tags?: (number | Tag)[] | null;
   heroImage?: (number | null) | Media;
@@ -397,7 +394,6 @@ export interface Event {
     country: string;
   };
   participation: 'public' | 'members';
-  visibility: 'public' | 'members';
   capacityMode: 'unlimited' | 'exact' | 'approximate';
   capacity?: number | null;
   organizers?:
@@ -480,7 +476,6 @@ export interface EventCycle {
   tagline?: string | null;
   excerpt: string;
   layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
-  visibility: 'public' | 'members';
   seo?: {
     /**
      * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
@@ -519,7 +514,6 @@ export interface EventCycle {
       country: string;
     };
     participation: 'public' | 'members';
-    visibility: 'public' | 'members';
     capacityMode: 'unlimited' | 'exact' | 'approximate';
     capacity?: number | null;
     organizers?:
@@ -829,15 +823,7 @@ export interface Role {
           | 'events'
           | 'event-cycles'
           | 'partners'
-          | 'documents-resolution'
-          | 'documents-statute'
-          | 'documents-regulations'
-          | 'documents-minutes'
-          | 'documents-report'
-          | 'documents-agreement'
-          | 'documents-license'
-          | 'documents-other'
-          | 'document-files'
+          | 'documents'
           | 'club-sections'
           | 'categories'
           | 'tags'
@@ -1201,7 +1187,6 @@ export interface ContentListingItemsSelect<T extends boolean = true> {
   sortDate?: T;
   eventStartAt?: T;
   eventEndAt?: T;
-  visibility?: T;
   heroImage?: T;
   categories?: T;
   tags?: T;
@@ -1375,8 +1360,8 @@ export interface PostsSelect<T extends boolean = true> {
  * via the `definition` "events_select".
  */
 export interface EventsSelect<T extends boolean = true> {
-  title?: T;
   cycle?: T;
+  title?: T;
   categories?: T;
   tags?: T;
   heroImage?: T;
@@ -1407,7 +1392,6 @@ export interface EventsSelect<T extends boolean = true> {
         country?: T;
       };
   participation?: T;
-  visibility?: T;
   capacityMode?: T;
   capacity?: T;
   organizers?:
@@ -1484,7 +1468,6 @@ export interface EventCyclesSelect<T extends boolean = true> {
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
       };
-  visibility?: T;
   seo?:
     | T
     | {
@@ -1525,7 +1508,6 @@ export interface EventCyclesSelect<T extends boolean = true> {
               country?: T;
             };
         participation?: T;
-        visibility?: T;
         capacityMode?: T;
         capacity?: T;
         organizers?:
@@ -2068,41 +2050,6 @@ export interface Navigation {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "website-permissions".
- */
-export interface WebsitePermission {
-  id: number;
-  /**
-   * Dostęp anonimowy obowiązuje również po zalogowaniu. Role z prawem Odczytu w CMS automatycznie widzą opublikowane treści na WWW.
-   */
-  permissions?:
-    | {
-        resource:
-          | 'media'
-          | 'pages'
-          | 'posts'
-          | 'events'
-          | 'event-cycles'
-          | 'partners'
-          | 'documents-resolution'
-          | 'documents-statute'
-          | 'documents-regulations'
-          | 'documents-minutes'
-          | 'documents-report'
-          | 'documents-agreement'
-          | 'documents-license'
-          | 'documents-other'
-          | 'club-sections';
-        anonymousAllowed?: boolean | null;
-        roles?: (number | Role)[] | null;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-settings_select".
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
@@ -2198,23 +2145,6 @@ export interface NavigationSelect<T extends boolean = true> {
               openInNewTab?: T;
               id?: T;
             };
-        id?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "website-permissions_select".
- */
-export interface WebsitePermissionsSelect<T extends boolean = true> {
-  permissions?:
-    | T
-    | {
-        resource?: T;
-        anonymousAllowed?: T;
-        roles?: T;
         id?: T;
       };
   updatedAt?: T;

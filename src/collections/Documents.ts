@@ -2,28 +2,26 @@ import { APIError, type CollectionConfig } from 'payload'
 
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { populateSlug } from '@/modules/content/slug'
-import { documentTypeOptions, isDocumentType } from '@/modules/documents/document-types'
+import { documentTypeOptions } from '@/modules/documents/document-types'
 import { readDocuments } from '@/modules/documents/document-access'
 import { validateDocumentNumber } from '@/modules/documents/document-validation'
 import {
   clientUserHasCollectionPermission,
-  createCollectionRolePermissionAccess,
-  userCanPerformResourceOperation,
+  createRolePermissionAccess,
 } from '@/modules/membership/role-permissions'
-import { getDocumentPermissionResource } from '@/modules/membership/permission-resources'
 import { getRelationshipId } from '@/lib/relationships'
 
-const createDocuments = createCollectionRolePermissionAccess({
-  collection: 'documents',
+const createDocuments = createRolePermissionAccess({
   operation: 'create',
+  resource: 'documents',
 })
-const deleteDocuments = createCollectionRolePermissionAccess({
-  collection: 'documents',
+const deleteDocuments = createRolePermissionAccess({
   operation: 'delete',
+  resource: 'documents',
 })
-const updateDocuments = createCollectionRolePermissionAccess({
-  collection: 'documents',
+const updateDocuments = createRolePermissionAccess({
   operation: 'update',
+  resource: 'documents',
 })
 
 function getSelectedFileIds(data: Record<string, unknown>): (number | string)[] {
@@ -87,9 +85,6 @@ export const Documents: CollectionConfig = {
       name: 'documentType',
       type: 'select',
       admin: {
-        components: {
-          Field: '/components/admin/DocumentTypeField#DocumentTypeField',
-        },
         isClearable: false,
       },
       defaultValue: 'resolution',
@@ -199,21 +194,8 @@ export const Documents: CollectionConfig = {
       },
     ],
     beforeValidate: [
-      async ({ data, operation, originalDoc, req }) => {
+      async ({ data, originalDoc, req }) => {
         const nextData = { ...originalDoc, ...data }
-
-        if (req.user && isDocumentType(nextData.documentType)) {
-          const allowed = await userCanPerformResourceOperation({
-            data: nextData,
-            operation: operation === 'create' ? 'create' : 'update',
-            req,
-            resource: getDocumentPermissionResource(nextData.documentType),
-          })
-
-          if (!allowed) {
-            throw new APIError('Nie masz uprawnień do wybranego rodzaju dokumentu.', 403)
-          }
-        }
 
         const selectedFileIds = getSelectedFileIds(nextData)
         if (selectedFileIds.length > 0) {

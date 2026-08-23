@@ -3,7 +3,7 @@ import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
 import type { Role, User } from '@/payload-types'
-import { websiteRequestContext } from '@/modules/membership/role-permissions'
+import { publicRequestContext } from '@/modules/content/public-access'
 
 let payload: Payload
 let administratorRole: Role
@@ -81,11 +81,11 @@ describe('role access integration', () => {
     expect(editorRoles.docs[0]).toMatchObject({ id: editorRole.id, name: editorRole.name })
   })
 
-  it('keeps anonymous website access after signing in without CMS read', async () => {
+  it('keeps public access independent from signing in without CMS read', async () => {
     await expect(
       payload.find({
         collection: 'posts',
-        context: websiteRequestContext,
+        context: publicRequestContext,
         overrideAccess: false,
         user: null,
       }),
@@ -94,7 +94,7 @@ describe('role access integration', () => {
     await expect(
       payload.find({
         collection: 'posts',
-        context: websiteRequestContext,
+        context: publicRequestContext,
         overrideAccess: false,
         user: createAuthenticatedUser(-3, userRole),
       }),
@@ -157,7 +157,7 @@ describe('role access integration', () => {
 
     const result = await payload.find({
       collection: 'club-sections',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       overrideAccess: false,
       user: null,
       where: { slug: { in: ['integration-published', 'integration-draft'] } },

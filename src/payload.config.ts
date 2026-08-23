@@ -26,9 +26,8 @@ import {
   Tags,
   Users,
 } from './collections'
-import { shouldPushDatabaseSchema } from './database/schema-mode'
 import { createEmailAdapter } from './email/create-email-adapter'
-import { Navigation, SiteSettings, WebsitePermissions } from './globals'
+import { Navigation, SiteSettings } from './globals'
 import { getOptionalEnvironmentVariable, getRequiredEnvironmentVariable } from './lib/env'
 import { createStoragePlugins } from './storage/create-storage-plugins'
 
@@ -116,7 +115,7 @@ export default buildConfig({
     Users,
     Roles,
   ],
-  globals: [SiteSettings, Navigation, WebsitePermissions],
+  globals: [SiteSettings, Navigation],
   cors: [...trustedOrigins],
   csrf: [...trustedOrigins],
   editor: lexicalEditor(),
@@ -132,7 +131,7 @@ export default buildConfig({
   },
   db: postgresAdapter({
     migrationDir: path.resolve(directoryName, '../migrations'),
-    push: shouldPushDatabaseSchema(),
+    push: false,
     pool: {
       connectionString: getRequiredEnvironmentVariable('DATABASE_URL'),
     },

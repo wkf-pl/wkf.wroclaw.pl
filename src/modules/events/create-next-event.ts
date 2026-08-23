@@ -74,7 +74,6 @@ async function handler(req: PayloadRequest): Promise<Response> {
         tags: source.tags?.map((item) => (typeof item === 'object' ? item.id : item)),
         timeMode: source.timeMode,
         title: source.title,
-        visibility: source.visibility,
       }
 
   const doc = await req.payload.create({ collection: 'events', data, draft: true, req })

@@ -5,7 +5,7 @@ import config from '@payload-config'
 
 import type { Event, EventCycle, Partner, Post } from '@/payload-types'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
-import { websiteRequestContext } from '@/modules/membership/role-permissions'
+import { publicRequestContext } from '@/modules/content/public-access'
 
 const published: Where = { _status: { equals: 'published' } }
 
@@ -37,7 +37,7 @@ async function findPublicDocument<T extends Event | EventCycle | Partner>(
   const payload = await getPayload({ config })
   const result = await payload.find({
     collection,
-    context: websiteRequestContext,
+    context: publicRequestContext,
     depth: 3,
     draft: false,
     limit: 1,
@@ -87,7 +87,7 @@ async function findCurrentAndUpcomingEventsUncached(
   if (beforeISOString) conditions.push({ startAt: { less_than_equal: beforeISOString } })
   const result = await payload.find({
     collection: 'events',
-    context: websiteRequestContext,
+    context: publicRequestContext,
     depth: 3,
     draft: false,
     limit,
@@ -126,7 +126,7 @@ const findPastEventsCached = cachePublicData(
     const payload = await getPayload({ config })
     return payload.find({
       collection: 'events',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 2,
       draft: false,
       limit,
@@ -165,7 +165,7 @@ export const findEventsForCycle = cachePublicData(
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'events',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 2,
       draft: false,
       limit: 100,
@@ -185,7 +185,7 @@ export const findEventsForPartner = cachePublicData(
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'events',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 2,
       draft: false,
       limit: 100,
@@ -205,7 +205,7 @@ export const findCyclesForPartner = cachePublicData(
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'event-cycles',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 2,
       draft: false,
       limit: 100,
@@ -225,7 +225,7 @@ export const findPostsRelatedToEvent = cachePublicData(
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'posts',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 2,
       draft: false,
       limit: 100,
@@ -245,7 +245,7 @@ export const findPostsRelatedToCycle = cachePublicData(
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'posts',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 2,
       draft: false,
       limit: 100,

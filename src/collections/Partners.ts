@@ -9,11 +9,16 @@ import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
 import { populateSlugFromName } from '@/modules/content/slug'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
+import { publishedPublicAccess } from '@/modules/content/public-access'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 
 const createPartners = createRolePermissionAccess({ operation: 'create', resource: 'partners' })
 const deletePartners = createRolePermissionAccess({ operation: 'delete', resource: 'partners' })
-const readPartners = createRolePermissionAccess({ operation: 'read', resource: 'partners' })
+const readPartners = createRolePermissionAccess({
+  operation: 'read',
+  publicAccess: publishedPublicAccess,
+  resource: 'partners',
+})
 const updatePartners = createRolePermissionAccess({ operation: 'update', resource: 'partners' })
 
 const editorialFields = createEditorialFields({ includeContent: false })

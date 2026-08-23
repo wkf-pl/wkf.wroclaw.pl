@@ -4,7 +4,7 @@ import config from '@payload-config'
 
 import type { Media } from '@/payload-types'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
-import { websiteRequestContext } from '@/modules/membership/role-permissions'
+import { publicRequestContext } from '@/modules/content/public-access'
 
 export type MediaListingKind = 'attachments' | 'mediaGallery'
 export type MediaListingSort = 'nameAscending' | 'nameDescending' | 'newest' | 'oldest'
@@ -79,7 +79,7 @@ const findFilteredPublicMediaCached = cachePublicData(
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'media',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 0,
       limit: options.pageSize,
       overrideAccess: false,
@@ -112,7 +112,7 @@ const findManualPublicMediaByIDsCached = cachePublicData(
       const payload = await getPayload({ config })
       const result = await payload.find({
         collection: 'media',
-        context: websiteRequestContext,
+        context: publicRequestContext,
         depth: 0,
         limit: mediaIDs.length,
         overrideAccess: false,

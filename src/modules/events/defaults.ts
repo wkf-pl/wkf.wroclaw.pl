@@ -88,7 +88,6 @@ export function mergeEventCycleDefaults(currentData: Data, cycle: EventCycle): D
   applyIfEmpty(data, 'tags', relationshipIDs(defaults.tags))
   applyIfEmpty(data, 'timeMode', defaults.defaultTimeMode)
   applyIfEmpty(data, 'participation', defaults.participation)
-  applyIfEmpty(data, 'visibility', defaults.visibility)
   applyIfEmpty(data, 'capacityMode', defaults.capacityMode)
   applyIfEmpty(data, 'capacity', defaults.capacity)
   applyIfEmpty(data, 'organizers', normalizeRelationshipRows(defaults.organizers, 'profile'))

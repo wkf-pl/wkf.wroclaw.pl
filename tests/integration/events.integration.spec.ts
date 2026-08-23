@@ -2,10 +2,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
-import type { Event, Partner, Role, User } from '@/payload-types'
+import type { Partner, User } from '@/payload-types'
 import { findPublicContent } from '@/modules/content/content-listing'
 import { findEventsForPartner, findPublishedPartnerBySlug } from '@/modules/events/public-events'
-import { websiteRequestContext } from '@/modules/membership/role-permissions'
+import { publicRequestContext } from '@/modules/content/public-access'
 
 import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/integration-author'
 
@@ -21,7 +21,6 @@ const slugs = {
 
 let payload: Payload
 let author: User
-let memberRole: Role
 let partner: Partner
 
 function layout() {
@@ -63,18 +62,6 @@ function layout() {
   ]
 }
 
-function memberUser(): User {
-  return {
-    collection: 'users',
-    createdAt: new Date(0).toISOString(),
-    displayName: 'Integration Member',
-    email: 'integration-member@example.invalid',
-    id: -100,
-    roles: [memberRole.id],
-    updatedAt: new Date(0).toISOString(),
-  }
-}
-
 async function cleanup() {
   if (!payload) {
     return
@@ -104,18 +91,7 @@ async function cleanup() {
 beforeAll(async () => {
   payload = await getPayload({ config })
   await cleanup()
-  const roles = await payload.find({
-    collection: 'roles',
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-    where: { key: { equals: 'member' } },
-  })
-  if (!roles.docs[0]) {
-    throw new Error('Integration test requires the migrated member role.')
-  }
   author = await createIntegrationAuthor(payload, 'events')
-  memberRole = roles.docs[0]
   partner = await payload.create({
     collection: 'partners',
     data: {
@@ -136,7 +112,11 @@ afterAll(async () => {
   await deleteIntegrationAuthor(payload, author)
 })
 
-function eventData(slug: string, visibility: Event['visibility'], status: 'draft' | 'published') {
+function eventData(
+  slug: string,
+  participation: 'members' | 'public',
+  status: 'draft' | 'published',
+) {
   return {
     _status: status,
     author: author.id,
@@ -146,17 +126,16 @@ function eventData(slug: string, visibility: Event['visibility'], status: 'draft
     excerpt: `Integration event ${slug}`,
     layout: layout(),
     location: { city: 'Wrocław', country: 'Polska', venueName: 'WKF' },
-    participation: visibility === 'members' ? ('members' as const) : ('public' as const),
+    participation,
     slug,
     startAt: '2030-09-10T16:00:00.000Z',
     timeMode: 'timed' as const,
     title: slug,
-    visibility,
   }
 }
 
 describe('events integration', () => {
-  it('keeps drafts and member-only events out of anonymous website reads', async () => {
+  it('shows all published events publicly while keeping drafts hidden', async () => {
     await Promise.all([
       payload.create({
         collection: 'events',
@@ -185,23 +164,13 @@ describe('events integration', () => {
     ])
     const anonymous = await payload.find({
       collection: 'events',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       draft: false,
       overrideAccess: false,
       user: null,
       where: { slug: { in: Object.values(slugs) } },
     })
-    expect(anonymous.docs.map((event) => event.slug)).toEqual([slugs.public])
-
-    const member = await payload.find({
-      collection: 'events',
-      context: websiteRequestContext,
-      draft: false,
-      overrideAccess: false,
-      user: memberUser(),
-      where: { slug: { in: Object.values(slugs) } },
-    })
-    expect(member.docs.map((event) => event.slug).sort()).toEqual(
+    expect(anonymous.docs.map((event) => event.slug).sort()).toEqual(
       [slugs.members, slugs.public].sort(),
     )
 
@@ -214,13 +183,13 @@ describe('events integration', () => {
       sources: ['events'],
     })
     expect(publicListing.items.map((item) => item.url)).toContain(`/events/${slugs.public}`)
-    expect(publicListing.items.map((item) => item.url)).not.toContain(`/events/${slugs.members}`)
+    expect(publicListing.items.map((item) => item.url)).toContain(`/events/${slugs.members}`)
 
     const publicPartner = await findPublishedPartnerBySlug(slugs.partner)
     const partnerEvents = await findEventsForPartner(partner.id)
     expect(publicPartner?.id).toBe(partner.id)
     expect(partnerEvents.map((event) => event.slug)).toContain(slugs.public)
-    expect(partnerEvents.map((event) => event.slug)).not.toContain(slugs.members)
+    expect(partnerEvents.map((event) => event.slug)).toContain(slugs.members)
   })
 
   it('copies cycle defaults once and records published calendar metadata', async () => {
@@ -235,14 +204,12 @@ describe('events integration', () => {
         layout: layout(),
         slug: slugs.cycle,
         title: 'Integration cycle',
-        visibility: 'public',
         eventDefaults: {
           capacityMode: 'unlimited',
           excerpt: 'Copied cycle excerpt',
           layout: layout(),
           location: { city: 'Wrocław', country: 'Polska', venueName: 'Cycle venue' },
           participation: 'public',
-          visibility: 'public',
         },
       },
     })

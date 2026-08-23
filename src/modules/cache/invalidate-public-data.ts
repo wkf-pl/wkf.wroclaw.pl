@@ -125,13 +125,6 @@ export const invalidateAllPublicDataAfterDelete: CollectionAfterDeleteHook = ({ 
   return doc
 }
 
-export const invalidateAllPublicDataAfterGlobalChange: GlobalAfterChangeHook = ({ doc, req }) => {
-  if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
-    invalidatePublicCacheTags(Object.values(publicCacheTags))
-  }
-  return doc
-}
-
 export const invalidateNavigationAfterChange: GlobalAfterChangeHook = ({ doc, req }) => {
   if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
     invalidatePublicCacheTags([publicCacheTags.navigation, publicCacheTags.homepage])

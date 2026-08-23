@@ -1,7 +1,3 @@
-import type { Where } from 'payload'
-
-import { documentTypeOptions, type DocumentType } from '@/modules/documents/document-types'
-
 type PermissionResourceDefinition = {
   collection?: string
   global?: string
@@ -9,27 +5,7 @@ type PermissionResourceDefinition = {
   label: string
   ownershipField?: string
   publishedField?: string
-  website?: boolean
-  where?: Where
 }
-
-const documentPermissionResources = documentTypeOptions.reduce<
-  Record<`documents-${DocumentType}`, PermissionResourceDefinition>
->(
-  (resources, { label, value }) => {
-    resources[`documents-${value}`] = {
-      collection: 'documents',
-      kind: 'collection',
-      label: `Dokumenty: ${label}`,
-      ownershipField: 'author',
-      publishedField: '_status',
-      website: true,
-      where: { documentType: { equals: value } },
-    }
-    return resources
-  },
-  {} as Record<`documents-${DocumentType}`, PermissionResourceDefinition>,
-)
 
 export const permissionResources = {
   users: {
@@ -43,7 +19,6 @@ export const permissionResources = {
     kind: 'collection',
     label: 'Media',
     ownershipField: 'uploadedBy',
-    website: true,
   },
   'member-profiles': {
     collection: 'member-profiles',
@@ -63,7 +38,6 @@ export const permissionResources = {
     label: 'Strony',
     ownershipField: 'author',
     publishedField: '_status',
-    website: true,
   },
   posts: {
     collection: 'posts',
@@ -71,7 +45,6 @@ export const permissionResources = {
     label: 'Wpisy',
     ownershipField: 'author',
     publishedField: '_status',
-    website: true,
   },
   events: {
     collection: 'events',
@@ -79,7 +52,6 @@ export const permissionResources = {
     label: 'Wydarzenia',
     ownershipField: 'author',
     publishedField: '_status',
-    website: true,
   },
   'event-cycles': {
     collection: 'event-cycles',
@@ -87,7 +59,6 @@ export const permissionResources = {
     label: 'Cykle wydarzeń',
     ownershipField: 'author',
     publishedField: '_status',
-    website: true,
   },
   partners: {
     collection: 'partners',
@@ -95,20 +66,19 @@ export const permissionResources = {
     label: 'Partnerzy',
     ownershipField: 'author',
     publishedField: '_status',
-    website: true,
   },
-  ...documentPermissionResources,
-  'document-files': {
-    collection: 'document-files',
+  documents: {
+    collection: 'documents',
     kind: 'collection',
-    label: 'Pliki dokumentów',
+    label: 'Dokumenty',
+    ownershipField: 'author',
+    publishedField: '_status',
   },
   'club-sections': {
     collection: 'club-sections',
     kind: 'collection',
     label: 'Sekcje klubowe',
     publishedField: '_status',
-    website: true,
   },
   categories: {
     collection: 'categories',
@@ -134,28 +104,12 @@ export const permissionResources = {
 
 export type PermissionResource = keyof typeof permissionResources
 export type PermissionOperation = 'create' | 'read' | 'update' | 'delete'
-export type WebsitePermissionResource = {
-  [Resource in PermissionResource]: (typeof permissionResources)[Resource] extends {
-    website: true
-  }
-    ? Resource
-    : never
-}[PermissionResource]
-
 export const permissionResourceOptions = Object.entries(permissionResources).map(
   ([value, resource]) => ({ label: resource.label, value }),
 )
 
-export const websitePermissionResourceOptions = permissionResourceOptions.filter(({ value }) =>
-  resourceSupportsWebsite(value),
-)
-
 export function isPermissionResource(value: unknown): value is PermissionResource {
   return typeof value === 'string' && value in permissionResources
-}
-
-export function isWebsitePermissionResource(value: unknown): value is WebsitePermissionResource {
-  return isPermissionResource(value) && resourceSupportsWebsite(value)
 }
 
 export function resourceSupportsOwnership(resource: unknown): boolean {
@@ -170,26 +124,10 @@ export function resourceSupportsCreateAndDelete(resource: unknown): boolean {
   return isPermissionResource(resource) && permissionResources[resource].kind === 'collection'
 }
 
-export function resourceSupportsWebsite(resource: unknown): resource is WebsitePermissionResource {
-  return isPermissionResource(resource) && 'website' in permissionResources[resource]
-}
-
 export function getCollectionPermissionResources(collection: string): PermissionResource[] {
   return (Object.keys(permissionResources) as PermissionResource[]).filter(
     (resource) =>
       'collection' in permissionResources[resource] &&
       permissionResources[resource].collection === collection,
   )
-}
-
-export function getWebsitePermissionResourcesForCollection(
-  collection: string,
-): WebsitePermissionResource[] {
-  return getCollectionPermissionResources(collection).filter(isWebsitePermissionResource)
-}
-
-export function getDocumentPermissionResource(
-  documentType: DocumentType,
-): `documents-${DocumentType}` {
-  return `documents-${documentType}`
 }

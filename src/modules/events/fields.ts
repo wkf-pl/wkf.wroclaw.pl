@@ -6,7 +6,6 @@ import {
   participationOptions,
   partnerRoleOptions,
   timeModeOptions,
-  visibilityOptions,
 } from './constants'
 import { normalizeGoogleMapsEmbedField, validateGoogleMapsEmbed } from './map-embed'
 import { createLinkFields } from '@/modules/navigation/fields'
@@ -124,19 +123,10 @@ export function createParticipationFields({ prefix = '' }: { prefix?: string } =
         {
           name: `${prefix}participation`,
           type: 'select',
-          admin: { isClearable: false, width: '50%' },
+          admin: { isClearable: false },
           defaultValue: 'public',
           label: 'Uczestnictwo',
           options: [...participationOptions],
-          required: true,
-        },
-        {
-          name: `${prefix}visibility`,
-          type: 'select',
-          admin: { isClearable: false, width: '50%' },
-          defaultValue: 'public',
-          label: 'Widoczność',
-          options: [...visibilityOptions],
           required: true,
         },
       ],

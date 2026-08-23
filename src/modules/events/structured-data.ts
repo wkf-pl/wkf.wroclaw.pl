@@ -2,7 +2,6 @@ import type { Event, EventCycle, Partner } from '@/payload-types'
 import { getMediaURL } from '@/modules/media/media-url'
 
 export function createEventStructuredData(event: Event) {
-  if (event.visibility !== 'public') return null
   const status =
     event.eventStatus === 'cancelled'
       ? 'https://schema.org/EventCancelled'

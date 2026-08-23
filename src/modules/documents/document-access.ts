@@ -1,28 +1,27 @@
-import type { Access, AccessResult, PayloadRequest } from 'payload'
+import type { Access, PayloadRequest } from 'payload'
 
 import { getRelationshipId } from '@/lib/relationships'
+import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 import {
-  combineAccessResults,
-  createCollectionRolePermissionAccess,
-  createRolePermissionAccess,
-  websiteRequestContext,
-} from '@/modules/membership/role-permissions'
+  isPublicRequest,
+  publicRequestContext,
+  publishedPublicAccess,
+} from '@/modules/content/public-access'
 
-export const readDocuments = createCollectionRolePermissionAccess({
-  collection: 'documents',
+export const readDocuments = createRolePermissionAccess({
   operation: 'read',
+  publicAccess: publishedPublicAccess,
+  resource: 'documents',
 })
 const readDocumentFilesByPermission = createRolePermissionAccess({
   operation: 'read',
-  resource: 'document-files',
+  resource: 'documents',
 })
 
-export async function findAccessibleDocumentFileIds(
-  req: PayloadRequest,
-): Promise<(number | string)[]> {
+export async function findPublicDocumentFileIds(req: PayloadRequest): Promise<(number | string)[]> {
   const documents = await req.payload.find({
     collection: 'documents',
-    context: websiteRequestContext,
+    context: publicRequestContext,
     depth: 0,
     limit: 1000,
     overrideAccess: false,
@@ -49,20 +48,10 @@ export async function findAccessibleDocumentFileIds(
 }
 
 export const readDocumentFiles: Access = async (arguments_) => {
-  const permissionAccess = await readDocumentFilesByPermission(arguments_)
-  if (permissionAccess === true) {
-    return true
+  if (!isPublicRequest(arguments_.req, arguments_.isReadingStaticFile)) {
+    return readDocumentFilesByPermission(arguments_)
   }
 
-  const isWebsiteRequest =
-    arguments_.req.context?.website === true || arguments_.isReadingStaticFile === true
-  if (!isWebsiteRequest) {
-    return permissionAccess
-  }
-
-  const accessibleFileIds = await findAccessibleDocumentFileIds(arguments_.req)
-  const relationshipAccess: AccessResult =
-    accessibleFileIds.length > 0 ? { id: { in: accessibleFileIds } } : false
-
-  return combineAccessResults(permissionAccess, relationshipAccess)
+  const publicFileIds = await findPublicDocumentFileIds(arguments_.req)
+  return publicFileIds.length > 0 ? { id: { in: publicFileIds } } : false
 }

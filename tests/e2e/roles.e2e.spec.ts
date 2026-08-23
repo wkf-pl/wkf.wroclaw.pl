@@ -11,7 +11,7 @@ test('shows administration resources but no CMS to an administrator', async ({ p
 
   await expect(page.locator(collectionNavigationLink('users'))).toBeVisible()
   await expect(page.locator(collectionNavigationLink('roles'))).toBeVisible()
-  await expect(page.locator(globalNavigationLink('website-permissions'))).toBeVisible()
+  await expect(page.locator(globalNavigationLink('website-permissions'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('posts'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('pages'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('documents'))).toHaveCount(0)
@@ -61,17 +61,11 @@ test('configures unique permission resources with Polish labels', async ({ page 
   await expect(secondResourceField).toBeVisible()
   await secondResourceField.getByRole('combobox').click()
   await expect(page.locator('.rs__menu').getByText('Media', { exact: true })).toHaveCount(0)
-
-  await page.goto('/admin/globals/website-permissions')
-  await expect(page.getByRole('heading', { name: 'Uprawnienia WWW' })).toBeVisible()
-  const websitePermissions = page.locator('#field-permissions')
-  const websitePermissionRows = websitePermissions.locator('.array-field__row')
-  await expect(websitePermissionRows.first()).toBeVisible()
-  const anonymousAccessLabel = page.getByText('Dostęp dla osób niezalogowanych').first()
-  if (!(await anonymousAccessLabel.isVisible())) {
-    await websitePermissionRows.first().getByRole('button', { name: 'Przełącz blok' }).click()
-  }
-  await expect(anonymousAccessLabel).toBeVisible()
+  await expect(page.locator('.rs__menu').getByText('Dokumenty', { exact: true })).toBeVisible()
+  await expect(page.locator('.rs__menu').getByText(/^Dokumenty:/)).toHaveCount(0)
+  await expect(
+    page.locator('.rs__menu').getByText('Pliki dokumentów', { exact: true }),
+  ).toHaveCount(0)
 })
 
 test('shows CMS resources but no administration collections to an editor', async ({ page }) => {

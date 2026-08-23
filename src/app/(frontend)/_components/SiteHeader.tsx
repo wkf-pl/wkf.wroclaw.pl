@@ -5,15 +5,7 @@ import type { Navigation } from '@/payload-types'
 import { hasRenderableIcon, resolveLink } from '@/modules/navigation/links'
 
 import { MenuIcon } from './MenuIcon'
-import { AccountActions } from './AccountActions'
-
-export function SiteHeader({
-  displayName,
-  navigation,
-}: {
-  displayName?: null | string
-  navigation: Navigation
-}) {
+export function SiteHeader({ navigation }: { navigation: Navigation }) {
   const items = navigation.headerItems?.flatMap((item) => {
     const link = resolveLink(item)
     return link && (item.appearance !== 'icon' || hasRenderableIcon(item)) ? [{ item, link }] : []
@@ -56,7 +48,6 @@ export function SiteHeader({
             ))}
           </nav>
         ) : null}
-        <AccountActions displayName={displayName} />
       </header>
     </div>
   )

@@ -6,6 +6,7 @@ import {
 } from '@/modules/cache/invalidate-public-data'
 import { populateSlugFromName } from '@/modules/content/slug'
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
+import { publishedPublicAccess } from '@/modules/content/public-access'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 import { createIconFields, createLinkFields } from '@/modules/navigation/fields'
 
@@ -19,6 +20,7 @@ const deleteClubSections = createRolePermissionAccess({
 })
 const readClubSections = createRolePermissionAccess({
   operation: 'read',
+  publicAccess: publishedPublicAccess,
   resource: 'club-sections',
 })
 const updateClubSections = createRolePermissionAccess({

@@ -11,6 +11,7 @@ const createMedia = createRolePermissionAccess({ operation: 'create', resource: 
 const deleteMedia = createRolePermissionAccess({ operation: 'delete', resource: 'media' })
 const readMedia = createRolePermissionAccess({
   operation: 'read',
+  publicAccess: true,
   resource: 'media',
 })
 const updateMedia = createRolePermissionAccess({ operation: 'update', resource: 'media' })

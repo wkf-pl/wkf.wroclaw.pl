@@ -53,7 +53,6 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
     tags: relationshipIDs(document.tags),
     title: document.title,
     url: buildPublicURL(source, document.slug),
-    visibility: event?.visibility ?? cycle?.visibility ?? null,
   }
 }
 

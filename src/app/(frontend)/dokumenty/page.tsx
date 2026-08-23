@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 
-import { getCurrentUser } from '@/modules/auth/current-user'
 import {
-  findAccessibleDocuments,
+  findPublishedDocuments,
   parseDocumentListFilters,
 } from '@/modules/documents/public-documents'
 
@@ -20,19 +19,16 @@ export default async function DocumentsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const [user, resolvedSearchParams] = await Promise.all([getCurrentUser(), searchParams])
+  const resolvedSearchParams = await searchParams
   const filters = parseDocumentListFilters(resolvedSearchParams)
-  const result = await findAccessibleDocuments({ filters, user })
+  const result = await findPublishedDocuments({ filters })
 
   return (
     <main className="contentShell">
       <header className="listingHeader">
         <p className="eyebrow">Klub</p>
         <h1>Dokumenty klubowe</h1>
-        <p>
-          Uchwały, regulaminy, protokoły i pozostałe dokumenty udostępnione publicznie lub Twoim
-          rolom.
-        </p>
+        <p>Uchwały, regulaminy, protokoły i pozostałe dokumenty udostępnione publicznie.</p>
       </header>
       <DocumentList
         documents={result.docs}

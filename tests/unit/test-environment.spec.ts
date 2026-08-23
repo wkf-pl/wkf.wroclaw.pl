@@ -3,7 +3,6 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 import { prepareFreshTestSchema } from '../../scripts/prepare-test-environment'
-import { shouldPushDatabaseSchema } from '@/database/schema-mode'
 
 import {
   assertIntegrationTestDatabaseURL,
@@ -11,12 +10,17 @@ import {
 } from '../helpers/test-environment'
 
 describe('integration test environment', () => {
-  it('pushes the database schema only in development', () => {
-    expect(shouldPushDatabaseSchema('development', '')).toBe(true)
-    expect(shouldPushDatabaseSchema('test', '')).toBe(false)
-    expect(shouldPushDatabaseSchema('production', '')).toBe(false)
-    expect(shouldPushDatabaseSchema(undefined, '')).toBe(false)
-    expect(shouldPushDatabaseSchema('development', 'true')).toBe(false)
+  it('uses migrations instead of interactive schema pushes', () => {
+    const payloadConfiguration = readFileSync('src/payload.config.ts', 'utf8')
+    const composeConfiguration = readFileSync('compose.yml', 'utf8')
+    const containerStartupScript = readFileSync('scripts/start-development-container.sh', 'utf8')
+
+    expect(payloadConfiguration).toContain('push: false')
+    expect(payloadConfiguration).not.toContain('shouldPushDatabaseSchema')
+    expect(composeConfiguration).toContain('command: ./scripts/start-development-container.sh')
+    expect(containerStartupScript).toContain(
+      'pnpm exec tsx scripts/prepare-development-migrations.ts\npnpm payload migrate\nexec pnpm dev:container',
+    )
   })
 
   it('uses the dedicated test database configured by the setup file', () => {
@@ -142,7 +146,7 @@ describe('integration test environment', () => {
       '"build": "cross-env NODE_ENV=production NEXT_DIST_DIR=.next-host',
     )
     expect(packageConfiguration).toContain('"build:container": "cross-env NODE_ENV=production')
-    expect(composeConfiguration).toContain('command: pnpm dev:container')
+    expect(composeConfiguration).toContain('command: ./scripts/start-development-container.sh')
     expect(composeConfiguration).toContain('NODE_ENV: development')
     expect(composeConfiguration).toContain('app_next:/app/.next-container')
     expect(eslintConfiguration).toContain("'.next*/**'")

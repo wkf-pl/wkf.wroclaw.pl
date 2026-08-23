@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import type { Access, CollectionConfig, Field } from 'payload'
+import type { CollectionConfig, Field } from 'payload'
 
 import { createEditorialFields, getEditorialField } from '@/modules/content/editorial-fields'
 import {
@@ -20,28 +20,19 @@ import {
 } from '@/modules/events/fields'
 import { copyEventCycleContentToDefaults } from '@/modules/events/hooks'
 import { createEventFromCycleEndpoint } from '@/modules/events/create-event-from-cycle'
-import { timeModeOptions, visibilityOptions } from '@/modules/events/constants'
-import { isMember } from '@/modules/members/member-profile'
+import { timeModeOptions } from '@/modules/events/constants'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
-import {
-  combineAccessWithConstraint,
-  createRolePermissionAccess,
-  websiteRequestContext,
-} from '@/modules/membership/role-permissions'
+import { publishedPublicAccess } from '@/modules/content/public-access'
+import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 
 const createCycles = createRolePermissionAccess({ operation: 'create', resource: 'event-cycles' })
 const deleteCycles = createRolePermissionAccess({ operation: 'delete', resource: 'event-cycles' })
-const readCyclesByRole = createRolePermissionAccess({ operation: 'read', resource: 'event-cycles' })
+const readCycles = createRolePermissionAccess({
+  operation: 'read',
+  publicAccess: publishedPublicAccess,
+  resource: 'event-cycles',
+})
 const updateCycles = createRolePermissionAccess({ operation: 'update', resource: 'event-cycles' })
-
-const readCycles: Access = async (arguments_) => {
-  const result = await readCyclesByRole(arguments_)
-  if (arguments_.req.context?.website !== websiteRequestContext.website) return result
-  return combineAccessWithConstraint(
-    result,
-    (await isMember(arguments_.req)) ? true : { visibility: { equals: 'public' } },
-  )
-}
 
 const editorialFields = createEditorialFields({ includeContent: false, includeTaxonomy: true })
 
@@ -73,7 +64,7 @@ export const EventCycles: CollectionConfig = {
         ],
       },
     },
-    defaultColumns: ['title', 'slug', 'visibility', '_status', 'publishedAt'],
+    defaultColumns: ['title', 'slug', '_status', 'publishedAt'],
     group: 'Treści',
     listSearchableFields: ['title', 'slug', 'excerpt'],
     useAsTitle: 'title',
@@ -104,15 +95,6 @@ export const EventCycles: CollectionConfig = {
               required: true,
             },
             createContentLayoutField('Treści'),
-            {
-              name: 'visibility',
-              type: 'select',
-              admin: { isClearable: false },
-              defaultValue: 'public',
-              label: 'Widoczność cyklu',
-              options: [...visibilityOptions],
-              required: true,
-            },
           ],
         },
         { label: 'SEO', fields: [getEditorialField(editorialFields, 'seo')] },

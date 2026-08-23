@@ -14,6 +14,7 @@ import { createContentLayoutField } from '@/modules/content/layout-field'
 import { populateListingExcerptOnPublish } from '@/modules/content/listing-excerpt'
 import { validatePageStructure } from '@/modules/content/page-validation'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
+import { publishedPublicAccess } from '@/modules/content/public-access'
 import {
   combineAccessWithConstraint,
   createRolePermissionAccess,
@@ -23,6 +24,7 @@ const createPages = createRolePermissionAccess({ operation: 'create', resource: 
 const deletePagesByRole = createRolePermissionAccess({ operation: 'delete', resource: 'pages' })
 const readPages = createRolePermissionAccess({
   operation: 'read',
+  publicAccess: publishedPublicAccess,
   resource: 'pages',
 })
 const updatePages = createRolePermissionAccess({ operation: 'update', resource: 'pages' })

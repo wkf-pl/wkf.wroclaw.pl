@@ -1,9 +1,9 @@
-import { APIError, getPayload, type Where } from 'payload'
+import { getPayload, type Where } from 'payload'
 
 import config from '@payload-config'
 
-import type { Document, User } from '@/payload-types'
-import { websiteRequestContext } from '@/modules/membership/role-permissions'
+import type { Document } from '@/payload-types'
+import { publicRequestContext } from '@/modules/content/public-access'
 
 const pageSize = 20
 
@@ -13,13 +13,7 @@ export type DocumentListFilters = {
   year?: number
 }
 
-export async function findAccessibleDocuments({
-  filters,
-  user,
-}: {
-  filters: DocumentListFilters
-  user: null | User
-}) {
+export async function findPublishedDocuments({ filters }: { filters: DocumentListFilters }) {
   const payload = await getPayload({ config })
   const conditions: Where[] = []
 
@@ -36,65 +30,36 @@ export async function findAccessibleDocuments({
     })
   }
 
-  try {
-    return await payload.find({
-      collection: 'documents',
-      context: websiteRequestContext,
-      depth: 1,
-      limit: pageSize,
-      overrideAccess: false,
-      page: filters.page,
-      sort: ['-documentDate', 'title'],
-      user,
-      where: conditions.length > 0 ? { and: conditions } : undefined,
-    })
-  } catch (err) {
-    if (!(err instanceof APIError) || err.status !== 403) {
-      throw err
-    }
+  conditions.push({ _status: { equals: 'published' } })
 
-    return {
-      docs: [],
-      hasNextPage: false,
-      hasPrevPage: false,
-      limit: pageSize,
-      nextPage: null,
-      page: filters.page,
-      pagingCounter: 1,
-      prevPage: null,
-      totalDocs: 0,
-      totalPages: 0,
-    }
-  }
+  return payload.find({
+    collection: 'documents',
+    context: publicRequestContext,
+    depth: 1,
+    draft: false,
+    limit: pageSize,
+    overrideAccess: false,
+    page: filters.page,
+    sort: ['-documentDate', 'title'],
+    user: null,
+    where: { and: conditions },
+  })
 }
 
-export async function findAccessibleDocumentBySlug({
-  slug,
-  user,
-}: {
-  slug: string
-  user: null | User
-}): Promise<Document | null> {
+export async function findPublishedDocumentBySlug(slug: string): Promise<Document | null> {
   const payload = await getPayload({ config })
-  try {
-    const result = await payload.find({
-      collection: 'documents',
-      context: websiteRequestContext,
-      depth: 1,
-      limit: 1,
-      overrideAccess: false,
-      user,
-      where: { slug: { equals: slug } },
-    })
+  const result = await payload.find({
+    collection: 'documents',
+    context: publicRequestContext,
+    depth: 1,
+    draft: false,
+    limit: 1,
+    overrideAccess: false,
+    user: null,
+    where: { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] },
+  })
 
-    return result.docs[0] ?? null
-  } catch (err) {
-    if (err instanceof APIError && err.status === 403) {
-      return null
-    }
-
-    throw err
-  }
+  return result.docs[0] ?? null
 }
 
 export function parseDocumentListFilters(

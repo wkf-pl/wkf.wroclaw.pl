@@ -54,7 +54,6 @@ import { GameRowLabel as GameRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '.
 import { ContactChannelRowLabel as ContactChannelRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { MemberProfileAddress as MemberProfileAddress_de328f7eecba388f3fa482158aaa97b1 } from '../../../components/admin/MemberProfileAddress'
 import { MemberProfileUsage as MemberProfileUsage_7f4f33cdfc96cc183475e8f31eee11fc } from '../../../components/admin/MemberProfileUsage'
-import { DocumentTypeField as DocumentTypeField_947aecc9229f5a3494b670e39324b4fe } from '../../../components/admin/DocumentTypeField'
 import { PartnerCreateLabel as PartnerCreateLabel_9321488c4e8960e8bd87c29c2a32b741 } from '../../../components/admin/CollectionLabels'
 import { FooterColumnItemRowLabel as FooterColumnItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { UserDisplayNameCell as UserDisplayNameCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
@@ -130,7 +129,6 @@ export const importMap = {
   "/components/admin/DynamicRowLabel#ContactChannelRowLabel": ContactChannelRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/MemberProfileAddress#MemberProfileAddress": MemberProfileAddress_de328f7eecba388f3fa482158aaa97b1,
   "/components/admin/MemberProfileUsage#MemberProfileUsage": MemberProfileUsage_7f4f33cdfc96cc183475e8f31eee11fc,
-  "/components/admin/DocumentTypeField#DocumentTypeField": DocumentTypeField_947aecc9229f5a3494b670e39324b4fe,
   "/components/admin/CollectionLabels#PartnerCreateLabel": PartnerCreateLabel_9321488c4e8960e8bd87c29c2a32b741,
   "/components/admin/DynamicRowLabel#FooterColumnItemRowLabel": FooterColumnItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/UserIdentity#UserDisplayNameCell": UserDisplayNameCell_0af2ec3c6a63521c7b2eedb66024da53,

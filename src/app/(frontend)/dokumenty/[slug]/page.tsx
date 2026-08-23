@@ -2,9 +2,8 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { getCurrentUser } from '@/modules/auth/current-user'
 import { getDocumentTypeLabel } from '@/modules/documents/document-types'
-import { findAccessibleDocumentBySlug } from '@/modules/documents/public-documents'
+import { findPublishedDocumentBySlug } from '@/modules/documents/public-documents'
 import type { DocumentFile } from '@/payload-types'
 
 export const dynamic = 'force-dynamic'
@@ -21,13 +20,11 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const user = await getCurrentUser()
-  const document = await findAccessibleDocumentBySlug({ slug, user })
+  const document = await findPublishedDocumentBySlug(slug)
 
   return document
     ? {
         description: document.summary,
-        robots: user ? { index: false } : undefined,
         title: document.title,
       }
     : {}
@@ -35,7 +32,7 @@ export async function generateMetadata({
 
 export default async function DocumentPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const document = await findAccessibleDocumentBySlug({ slug, user: await getCurrentUser() })
+  const document = await findPublishedDocumentBySlug(slug)
 
   if (!document) notFound()
 

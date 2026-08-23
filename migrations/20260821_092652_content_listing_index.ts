@@ -13,7 +13,32 @@ const indexedCollections: TaxonomizableCollectionSlug[] = [
 ]
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
-  await db.execute(sql`
+  const existingSchema = await db.execute(sql`
+    SELECT
+      to_regclass('public.content_listing_items') IS NOT NULL AS "itemsTable",
+      to_regclass('public.content_listing_items_rels') IS NOT NULL AS "relationsTable",
+      to_regtype('public.enum_content_listing_items_source') IS NOT NULL AS "sourceType",
+      to_regtype('public.enum_content_listing_items_visibility') IS NOT NULL AS "visibilityType"
+  `)
+  const schemaParts = existingSchema.rows[0] as
+    | {
+        itemsTable: boolean
+        relationsTable: boolean
+        sourceType: boolean
+        visibilityType: boolean
+      }
+    | undefined
+  const schemaAlreadyExists = schemaParts && Object.values(schemaParts).every(Boolean)
+  const schemaIsMissing = schemaParts && Object.values(schemaParts).every((exists) => !exists)
+
+  if (!schemaAlreadyExists && !schemaIsMissing) {
+    throw new Error(
+      'Content listing schema is only partially present. Restore the database backup before running migrations.',
+    )
+  }
+
+  if (schemaIsMissing) {
+    await db.execute(sql`
    CREATE TYPE "public"."enum_content_listing_items_source" AS ENUM('pages', 'posts', 'events', 'event-cycles');
   CREATE TYPE "public"."enum_content_listing_items_visibility" AS ENUM('public', 'members');
   CREATE TABLE "content_listing_items" (
@@ -65,7 +90,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "content_listing_items_rels_parent_idx" ON "content_listing_items_rels" USING btree ("parent_id");
   CREATE INDEX "content_listing_items_rels_path_idx" ON "content_listing_items_rels" USING btree ("path");
   CREATE INDEX "content_listing_items_rels_categories_id_idx" ON "content_listing_items_rels" USING btree ("categories_id");
-  CREATE INDEX "content_listing_items_rels_tags_id_idx" ON "content_listing_items_rels" USING btree ("tags_id");`)
+    CREATE INDEX "content_listing_items_rels_tags_id_idx" ON "content_listing_items_rels" USING btree ("tags_id");`)
+  }
 
   req.context = {
     ...req.context,
@@ -95,15 +121,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
       const listingExcerpt = extractFirstRichTextParagraph(page.layout)
       if (!listingExcerpt) continue
 
-      await payload.update({
-        collection: 'pages',
-        context: req.context,
-        data: { listingExcerpt },
-        draft: false,
-        id: page.id,
-        overrideAccess: true,
-        req,
-      })
+      await db.execute(
+        sql`UPDATE "pages" SET "listing_excerpt" = ${listingExcerpt} WHERE "id" = ${page.id}`,
+      )
     }
 
     if (pages.docs.length < batchSize) break
@@ -133,6 +153,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
       if (documents.docs.length < batchSize) break
     }
   }
+
+  await db.execute(sql`DELETE FROM "payload_migrations" WHERE "name" = 'dev'`)
 }
 
 export async function down({ db, payload: _payload, req: _req }: MigrateDownArgs): Promise<void> {
