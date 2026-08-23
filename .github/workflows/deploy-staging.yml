@@ -127,10 +127,10 @@ jobs:
 
           should_deploy=true
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            latest_dev_sha="$(git ls-remote origin refs/heads/dev | cut -f1)"
-            if [[ "$SOURCE_SHA" != "$latest_dev_sha" ]]; then
+            latest_master_sha="$(git ls-remote origin refs/heads/master | cut -f1)"
+            if [[ "$SOURCE_SHA" != "$latest_master_sha" ]]; then
               should_deploy=false
-              echo "Skipping obsolete deployment $SOURCE_SHA; dev is now $latest_dev_sha."
+              echo "Skipping obsolete deployment $SOURCE_SHA; master is now $latest_master_sha."
             fi
           fi
 
@@ -224,9 +224,9 @@ jobs:
           IMAGE_REFERENCE: ${{ steps.deployment-image.outputs.image_reference }}
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            latest_dev_sha="$(git ls-remote origin refs/heads/dev | cut -f1)"
-            if [[ "$SOURCE_SHA" != "$latest_dev_sha" ]]; then
-              echo "Skipping obsolete rollout $SOURCE_SHA; dev is now $latest_dev_sha."
+            latest_master_sha="$(git ls-remote origin refs/heads/master | cut -f1)"
+            if [[ "$SOURCE_SHA" != "$latest_master_sha" ]]; then
+              echo "Skipping obsolete rollout $SOURCE_SHA; master is now $latest_master_sha."
               echo "deployed=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
