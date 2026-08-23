@@ -4,8 +4,6 @@ on:
   pull_request:
   push:
     branches:
-      - dev
-      - main
       - master
 
 permissions:
@@ -92,7 +90,7 @@ jobs:
           retention-days: 7
 
   validate-container:
-    if: github.event_name == 'pull_request' || github.ref != 'refs/heads/dev'
+    if: github.event_name == 'pull_request' || github.ref != 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -111,7 +109,7 @@ jobs:
           tags: wkf-online:ci
 
   deploy-staging:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [verify, integration, end-to-end]
     permissions:
       actions: write
