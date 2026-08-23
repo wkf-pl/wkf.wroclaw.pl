@@ -3,7 +3,6 @@ import { Roboto_Slab } from 'next/font/google'
 import type { ReactNode } from 'react'
 
 import { getPublicNavigation, getPublicSiteSettings } from '@/modules/content/public-content'
-import { getCurrentUser } from '@/modules/auth/current-user'
 
 import { SiteFooter } from './_components/SiteFooter'
 import { SiteHeader } from './_components/SiteHeader'
@@ -38,16 +37,15 @@ type FrontendLayoutProperties = {
 }
 
 export default async function FrontendLayout({ children }: FrontendLayoutProperties) {
-  const [navigation, siteSettings, user] = await Promise.all([
+  const [navigation, siteSettings] = await Promise.all([
     getPublicNavigation(),
     getPublicSiteSettings(),
-    getCurrentUser(),
   ])
 
   return (
     <html lang="pl">
       <body className={robotoSlab.variable}>
-        <SiteHeader displayName={user?.displayName} navigation={navigation} />
+        <SiteHeader navigation={navigation} />
         {children}
         <SiteFooter navigation={navigation} siteSettings={siteSettings} />
       </body>

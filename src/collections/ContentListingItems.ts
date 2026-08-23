@@ -1,28 +1,11 @@
-import type { Access, CollectionConfig, Where } from 'payload'
+import type { Access, CollectionConfig } from 'payload'
 
-import {
-  hasAnonymousWebsiteAccess,
-  websiteRequestContext,
-} from '@/modules/membership/role-permissions'
+import { isPublicRequest } from '@/modules/content/public-access'
 
 const sourceResources = ['pages', 'posts', 'events', 'event-cycles'] as const
 
-const readContentListingItems: Access = async ({ req }) => {
-  if (req.context?.website !== websiteRequestContext.website) return false
-
-  const conditions: Where[] = []
-  for (const source of sourceResources) {
-    if (!(await hasAnonymousWebsiteAccess(req, source))) continue
-    conditions.push(
-      source === 'events' || source === 'event-cycles'
-        ? { and: [{ source: { equals: source } }, { visibility: { equals: 'public' } }] }
-        : { source: { equals: source } },
-    )
-  }
-
-  if (!conditions.length) return false
-  return conditions.length === 1 ? conditions[0] : { or: conditions }
-}
+const readContentListingItems: Access = ({ isReadingStaticFile, req }) =>
+  isPublicRequest(req, isReadingStaticFile)
 
 export const ContentListingItems: CollectionConfig = {
   slug: 'content-listing-items',
@@ -50,15 +33,6 @@ export const ContentListingItems: CollectionConfig = {
     { name: 'sortDate', type: 'date', index: true, required: true },
     { name: 'eventStartAt', type: 'date', index: true },
     { name: 'eventEndAt', type: 'date', index: true },
-    {
-      name: 'visibility',
-      type: 'select',
-      index: true,
-      options: [
-        { label: 'Public', value: 'public' },
-        { label: 'Members', value: 'members' },
-      ],
-    },
     { name: 'heroImage', type: 'upload', relationTo: 'media' },
     { name: 'categories', type: 'relationship', hasMany: true, relationTo: 'categories' },
     { name: 'tags', type: 'relationship', hasMany: true, relationTo: 'tags' },

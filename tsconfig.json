@@ -34,7 +34,9 @@
     ".next-host/dev/types/**/*.ts",
     ".next-e2e-ci/dev/types/**/*.ts",
     ".next-e2e-ci/dev/dev/types/**/*.ts",
-    ".next-e2e-ci/types/**/*.ts"
+    ".next-e2e-ci/types/**/*.ts",
+    ".next-container/types/**/*.ts",
+    ".next-container/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

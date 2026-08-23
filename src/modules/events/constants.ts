@@ -17,11 +17,6 @@ export const participationOptions = [
   { label: 'Dla klubowiczów', value: 'members' },
 ] as const
 
-export const visibilityOptions = [
-  { label: 'Publiczna', value: 'public' },
-  { label: 'Tylko dla klubowiczów', value: 'members' },
-] as const
-
 export const capacityModeOptions = [
   { label: 'Bez limitu', value: 'unlimited' },
   { label: 'Dokładna liczba miejsc', value: 'exact' },

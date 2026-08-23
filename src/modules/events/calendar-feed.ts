@@ -3,7 +3,7 @@ import { getPayload, type Where } from 'payload'
 import config from '@payload-config'
 
 import type { Event, EventCycle } from '@/payload-types'
-import { websiteRequestContext } from '@/modules/membership/role-permissions'
+import { publicRequestContext } from '@/modules/content/public-access'
 
 export async function findPublicCalendarEvents(seriesKey?: null | string): Promise<{
   events: Event[]
@@ -13,25 +13,20 @@ export async function findPublicCalendarEvents(seriesKey?: null | string): Promi
   let series: EventCycle | null = null
   const conditions: Where[] = [
     { _status: { equals: 'published' } },
-    { visibility: { equals: 'public' } },
     { startAt: { greater_than_equal: new Date(Date.now() - 365 * 86_400_000).toISOString() } },
   ]
 
   if (seriesKey) {
     const cycleResult = await payload.find({
       collection: 'event-cycles',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 0,
       draft: false,
       limit: 1,
       overrideAccess: false,
       user: null,
       where: {
-        and: [
-          { _status: { equals: 'published' } },
-          { visibility: { equals: 'public' } },
-          { calendarFeedKey: { equals: seriesKey } },
-        ],
+        and: [{ _status: { equals: 'published' } }, { calendarFeedKey: { equals: seriesKey } }],
       },
     })
     series = cycleResult.docs[0] ?? null
@@ -41,7 +36,7 @@ export async function findPublicCalendarEvents(seriesKey?: null | string): Promi
 
   const result = await payload.find({
     collection: 'events',
-    context: websiteRequestContext,
+    context: publicRequestContext,
     depth: 1,
     draft: false,
     limit: 1000,

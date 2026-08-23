@@ -1,20 +1,17 @@
 import type { Access, AccessResult, PayloadRequest, Where } from 'payload'
 
 import { getRelationshipId, type RelationshipReference } from '@/lib/relationships'
+import { isPublicRequest } from '@/modules/content/public-access'
 import {
   getCollectionPermissionResources,
-  getWebsitePermissionResourcesForCollection,
   isPermissionResource,
-  isWebsitePermissionResource,
   permissionResources,
   type PermissionOperation,
   type PermissionResource,
-  type WebsitePermissionResource,
 } from './permission-resources'
 
 export const administratorRoleKey = 'administrator'
 export const defaultUserRoleKey = 'user'
-export const websiteRequestContext = { website: true } as const
 
 export type PermissionGrant = {
   allowed?: boolean | null
@@ -42,18 +39,7 @@ export type RoleRecord = {
   permissions?: RolePermission[] | null
 }
 
-type WebsitePermission = {
-  anonymousAllowed?: boolean | null
-  resource?: string | null
-  roles?: RelationshipReference[] | null
-}
-
-type WebsitePermissionSettings = {
-  permissions?: WebsitePermission[] | null
-}
-
 const rolesByRequest = new WeakMap<PayloadRequest, Promise<RoleRecord[]>>()
-const websitePermissionsByRequest = new WeakMap<PayloadRequest, Promise<WebsitePermission[]>>()
 
 export function getUserIdentity(user: unknown): number | string | undefined {
   if (!user || typeof user !== 'object' || !('id' in user)) {
@@ -117,39 +103,6 @@ export async function getRequestRoles(req: PayloadRequest): Promise<RoleRecord[]
   return rolesPromise
 }
 
-async function getWebsitePermissions(req: PayloadRequest): Promise<WebsitePermission[]> {
-  const cachedPermissions = websitePermissionsByRequest.get(req)
-  if (cachedPermissions) {
-    return cachedPermissions
-  }
-
-  const permissionsPromise = req.payload
-    .findGlobal({
-      slug: 'website-permissions',
-      depth: 0,
-      overrideAccess: true,
-      req,
-    })
-    .then((settings) =>
-      ((settings as WebsitePermissionSettings).permissions ?? []).filter(
-        (permission): permission is WebsitePermission => Boolean(permission),
-      ),
-    )
-
-  websitePermissionsByRequest.set(req, permissionsPromise)
-  return permissionsPromise
-}
-
-export async function hasAnonymousWebsiteAccess(
-  req: PayloadRequest,
-  resource: WebsitePermissionResource,
-): Promise<boolean> {
-  const permissions = await getWebsitePermissions(req)
-  return permissions.some(
-    (permission) => permission.resource === resource && permission.anonymousAllowed === true,
-  )
-}
-
 export async function isAdministrator(req: PayloadRequest): Promise<boolean> {
   const roles = await getRequestRoles(req)
   return roles.some((role) => role.key === administratorRoleKey)
@@ -210,19 +163,13 @@ function combineWithAnd(...conditions: (true | Where)[]): true | Where {
   return filters.length === 1 ? filters[0] : { and: filters }
 }
 
-function getBaseScope(resource: PermissionResource): true | Where {
-  const definition = permissionResources[resource]
-  return 'where' in definition && definition.where ? definition.where : true
-}
-
 function buildScope(
   resource: PermissionResource,
   grant: PermissionGrant,
   userId: number | string,
-  forcePublished = false,
 ): true | Where {
   const definition = permissionResources[resource]
-  const conditions: (true | Where)[] = [getBaseScope(resource)]
+  const conditions: (true | Where)[] = []
   const ownershipField = 'ownershipField' in definition ? definition.ownershipField : undefined
   const publishedField = 'publishedField' in definition ? definition.publishedField : undefined
 
@@ -234,7 +181,7 @@ function buildScope(
     })
   }
 
-  if ((forcePublished || grant.published) && publishedField) {
+  if (grant.published && publishedField) {
     conditions.push({
       [publishedField]: {
         equals: 'published',
@@ -297,66 +244,6 @@ export function resolveCollectionRolePermission(
   )
 }
 
-function roleIdsMatch(permission: WebsitePermission, userRoleIds: Set<string>): boolean {
-  return (permission.roles ?? []).some((role) => userRoleIds.has(String(getRelationshipId(role))))
-}
-
-function getWebsiteScope(resource: WebsitePermissionResource): true | Where {
-  return buildScope(resource, {}, 0, true)
-}
-
-async function resolveWebsiteResourcePermission(
-  req: PayloadRequest,
-  resource: WebsitePermissionResource,
-): Promise<AccessResult> {
-  const [roles, websitePermissions] = await Promise.all([
-    getRequestRoles(req),
-    getWebsitePermissions(req),
-  ])
-  const userId = getUserIdentity(req.user)
-  const userRoleIds = new Set(roles.map((role) => String(role.id)))
-  const policy = websitePermissions.find((permission) => permission.resource === resource)
-  const scopes: AccessResult[] = []
-
-  if (policy?.anonymousAllowed || (policy && roleIdsMatch(policy, userRoleIds))) {
-    scopes.push(getWebsiteScope(resource))
-  }
-
-  if (userId !== undefined) {
-    for (const role of roles) {
-      for (const permission of role.permissions ?? []) {
-        if (permission.resource !== resource || !permission.readAllowed) continue
-        scopes.push(
-          buildScope(
-            resource,
-            {
-              allowed: true,
-              own: permission.readOwn,
-            },
-            userId,
-            true,
-          ),
-        )
-      }
-    }
-  }
-
-  return combineAccessResults(...scopes)
-}
-
-async function resolveWebsiteCollectionPermission(
-  req: PayloadRequest,
-  collection: string,
-): Promise<AccessResult> {
-  return combineAccessResults(
-    ...(await Promise.all(
-      getWebsitePermissionResourcesForCollection(collection).map((resource) =>
-        resolveWebsiteResourcePermission(req, resource),
-      ),
-    )),
-  )
-}
-
 export function combineAccessResults(...results: AccessResult[]): AccessResult {
   if (results.some((result) => result === true)) {
     return true
@@ -385,28 +272,26 @@ export function combineAccessWithConstraint(
   return constraint === true ? result : { and: [result, constraint] }
 }
 
-function isWebsiteRequest(req: PayloadRequest, isReadingStaticFile?: boolean): boolean {
-  return req.context?.website === true || isReadingStaticFile === true
-}
-
 export function createRolePermissionAccess({
   anonymousAccess = false,
   operation,
+  publicAccess,
   resource,
   selfAccess = false,
 }: {
   anonymousAccess?: AccessResult
   operation: PermissionOperation
+  publicAccess?: AccessResult
   resource: PermissionResource
   selfAccess?: boolean
 }): Access {
   return async ({ isReadingStaticFile, req }) => {
     if (
       operation === 'read' &&
-      isWebsitePermissionResource(resource) &&
-      isWebsiteRequest(req, isReadingStaticFile)
+      publicAccess !== undefined &&
+      isPublicRequest(req, isReadingStaticFile)
     ) {
-      return resolveWebsiteResourcePermission(req, resource)
+      return publicAccess
     }
 
     const userId = getUserIdentity(req.user)
@@ -432,13 +317,19 @@ export function createRolePermissionAccess({
 export function createCollectionRolePermissionAccess({
   collection,
   operation,
+  publicAccess,
 }: {
   collection: string
   operation: PermissionOperation
+  publicAccess?: AccessResult
 }): Access {
   return async ({ isReadingStaticFile, req }) => {
-    if (operation === 'read' && isWebsiteRequest(req, isReadingStaticFile)) {
-      return resolveWebsiteCollectionPermission(req, collection)
+    if (
+      operation === 'read' &&
+      publicAccess !== undefined &&
+      isPublicRequest(req, isReadingStaticFile)
+    ) {
+      return publicAccess
     }
 
     const userId = getUserIdentity(req.user)
@@ -497,13 +388,6 @@ export async function userCanPerformResourceOperation({
 
 export function validateRolePermissions(value: unknown): true | string {
   return validateUniquePermissionResources(value, 'Każdy zasób może wystąpić w roli tylko raz.')
-}
-
-export function validateWebsitePermissions(value: unknown): true | string {
-  return validateUniquePermissionResources(
-    value,
-    'Każdy zasób może wystąpić w ustawieniach WWW tylko raz.',
-  )
 }
 
 function validateUniquePermissionResources(value: unknown, message: string): true | string {

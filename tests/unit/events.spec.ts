@@ -29,7 +29,6 @@ function eventFixture(overrides: Partial<Event> = {}): Event {
     eventStatus: 'scheduled',
     startAt: '2026-09-08T16:00:00.000Z',
     participation: 'public',
-    visibility: 'public',
     capacityMode: 'unlimited',
     location: { country: 'Polska' },
     slug: 'erpegowy-wtorek',
@@ -43,7 +42,7 @@ function eventFixture(overrides: Partial<Event> = {}): Event {
 }
 
 describe('events model', () => {
-  it('keeps participation and visibility in one row', () => {
+  it('keeps participation as the only audience-related Event field', () => {
     const row = Events.fields.find(
       (field) =>
         field.type === 'row' &&
@@ -53,7 +52,6 @@ describe('events model', () => {
     if (row?.type !== 'row') throw new Error('Missing participation row')
     expect(row.fields.map((field) => ('name' in field ? field.name : null))).toEqual([
       'participation',
-      'visibility',
     ])
   })
 
@@ -154,7 +152,6 @@ describe('events model', () => {
         location: { country: 'Polska' },
         participation: 'public',
         capacityMode: 'unlimited',
-        visibility: 'public',
       },
     } as never)
 

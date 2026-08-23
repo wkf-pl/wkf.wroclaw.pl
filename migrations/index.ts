@@ -19,6 +19,8 @@ import * as migration_20260818_151505_event_calendar_tracking from './20260818_1
 import * as migration_20260818_164834_event_cycle_default_title from './20260818_164834_event_cycle_default_title'
 import * as migration_20260818_181938_event_link_targets from './20260818_181938_event_link_targets'
 import * as migration_20260821_092652_content_listing_index from './20260821_092652_content_listing_index'
+import * as migration_20260823_001526_simplify_public_access from './20260823_001526_simplify_public_access'
+import * as migration_20260823_103700_remove_orphan_document_versions from './20260823_103700_remove_orphan_document_versions'
 
 export const migrations = [
   {
@@ -125,5 +127,15 @@ export const migrations = [
     up: migration_20260821_092652_content_listing_index.up,
     down: migration_20260821_092652_content_listing_index.down,
     name: '20260821_092652_content_listing_index',
+  },
+  {
+    up: migration_20260823_001526_simplify_public_access.up,
+    down: migration_20260823_001526_simplify_public_access.down,
+    name: '20260823_001526_simplify_public_access',
+  },
+  {
+    up: migration_20260823_103700_remove_orphan_document_versions.up,
+    down: migration_20260823_103700_remove_orphan_document_versions.down,
+    name: '20260823_103700_remove_orphan_document_versions',
   },
 ]

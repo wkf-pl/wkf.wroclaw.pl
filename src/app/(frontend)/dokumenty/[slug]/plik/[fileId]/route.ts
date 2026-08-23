@@ -1,11 +1,10 @@
 import { getStorageClient } from '@payloadcms/storage-azure'
-import { headers } from 'next/headers'
-import { APIError, getPayload } from 'payload'
+import { getPayload } from 'payload'
 
 import config from '@payload-config'
 
 import { getRequiredEnvironmentVariable } from '@/lib/env'
-import { websiteRequestContext } from '@/modules/membership/role-permissions'
+import { publicRequestContext } from '@/modules/content/public-access'
 import type { Document } from '@/payload-types'
 
 export async function GET(
@@ -17,36 +16,28 @@ export async function GET(
   if (!Number.isSafeInteger(parsedFileId)) return new Response(null, { status: 404 })
 
   const payload = await getPayload({ config })
-  const authentication = await payload.auth({ headers: await headers() })
-  let document: Document | undefined
-  try {
-    const documents = await payload.find({
-      collection: 'documents',
-      context: websiteRequestContext,
-      depth: 0,
-      limit: 1,
-      overrideAccess: false,
-      user: authentication.user,
-      where: {
-        and: [
-          { slug: { equals: slug } },
-          {
-            or: [
-              { primaryFile: { equals: parsedFileId } },
-              { attachments: { contains: parsedFileId } },
-            ],
-          },
-        ],
-      },
-    })
-    document = documents.docs[0]
-  } catch (err) {
-    if (err instanceof APIError && err.status === 403) {
-      return new Response(null, { status: 404 })
-    }
-
-    throw err
-  }
+  const documents = await payload.find({
+    collection: 'documents',
+    context: publicRequestContext,
+    depth: 0,
+    draft: false,
+    limit: 1,
+    overrideAccess: false,
+    user: null,
+    where: {
+      and: [
+        { slug: { equals: slug } },
+        { _status: { equals: 'published' } },
+        {
+          or: [
+            { primaryFile: { equals: parsedFileId } },
+            { attachments: { contains: parsedFileId } },
+          ],
+        },
+      ],
+    },
+  })
+  const document: Document | undefined = documents.docs[0]
   if (!document) return new Response(null, { status: 404 })
 
   const file = await payload.findByID({
@@ -84,7 +75,7 @@ export async function GET(
 
     const responseHeaders = new Headers({
       'Accept-Ranges': 'bytes',
-      'Cache-Control': authentication.user ? 'private, no-store' : 'public, max-age=3600',
+      'Cache-Control': 'public, max-age=3600',
       'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
       'Content-Length': `${range ? range.end - range.start + 1 : fileSize}`,
       'Content-Type': properties.contentType || 'application/pdf',

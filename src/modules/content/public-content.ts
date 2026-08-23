@@ -5,7 +5,7 @@ import config from '@payload-config'
 
 import type { Category, ClubSection, Navigation, Post, SiteSetting, Tag } from '@/payload-types'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
-import { websiteRequestContext } from '@/modules/membership/role-permissions'
+import { publicRequestContext } from '@/modules/content/public-access'
 
 type PostTaxonomyFilter = {
   field: 'categories' | 'tags'
@@ -18,7 +18,7 @@ const findPublishedPageBySlugCached = cachePublicData(
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'pages',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 2,
       draft: false,
       limit: 1,
@@ -42,7 +42,7 @@ const getPublicNavigationCached = cachePublicData(
     const payload = await getPayload({ config })
     return payload.findGlobal({
       slug: 'navigation',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 2,
       overrideAccess: false,
       user: null,
@@ -59,7 +59,7 @@ const getPublicSiteSettingsCached = cachePublicData(
     const payload = await getPayload({ config })
     return payload.findGlobal({
       slug: 'site-settings',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 1,
       overrideAccess: false,
       user: null,
@@ -76,7 +76,7 @@ const findPublishedClubSectionsCached = cachePublicData(
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'club-sections',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 2,
       draft: false,
       limit: 100,
@@ -101,7 +101,7 @@ const findPublishedPostBySlugCached = cachePublicData(
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'posts',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 2,
       draft: false,
       limit: 1,
@@ -126,7 +126,7 @@ const findPublishedPostsCached = cachePublicData(
     const taxonomyConstraint = field && id !== undefined ? { [field]: { equals: id } } : undefined
     const result = await payload.find({
       collection: 'posts',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 2,
       draft: false,
       limit: 100,

@@ -2,8 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
-import type { Document, Role, User, WebsitePermission } from '@/payload-types'
-import { websiteRequestContext } from '@/modules/membership/role-permissions'
+import type { Document, Role, User } from '@/payload-types'
+import { publicRequestContext } from '@/modules/content/public-access'
 
 import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/integration-author'
 
@@ -18,7 +18,6 @@ let memberRole: Role
 let userRole: Role
 let publicDocument: Document
 let roleDocument: Document
-let originalWebsitePermissions: WebsitePermission['permissions']
 
 function createAuthenticatedUser(id: number, role: Role): User {
   return {
@@ -70,35 +69,6 @@ beforeAll(async () => {
 
   author = await createIntegrationAuthor(payload, 'documents')
   ;[memberRole, userRole] = await Promise.all([findRole('member'), findRole('user')])
-
-  const websitePermissions = await payload.findGlobal({
-    slug: 'website-permissions',
-    depth: 0,
-    overrideAccess: true,
-  })
-  originalWebsitePermissions = websitePermissions.permissions
-  const retainedPermissions = (websitePermissions.permissions ?? []).filter(
-    ({ resource }) => resource !== 'documents-resolution' && resource !== 'documents-statute',
-  )
-  await payload.updateGlobal({
-    slug: 'website-permissions',
-    data: {
-      permissions: [
-        ...retainedPermissions,
-        {
-          anonymousAllowed: true,
-          resource: 'documents-resolution',
-          roles: [],
-        },
-        {
-          anonymousAllowed: false,
-          resource: 'documents-statute',
-          roles: [memberRole.id],
-        },
-      ],
-    },
-    overrideAccess: true,
-  })
 
   const [publicFile, roleFile] = await Promise.all([
     payload.create({
@@ -161,32 +131,29 @@ beforeAll(async () => {
 afterAll(async () => {
   if (!payload) return
   await cleanupTestDocuments()
-  await payload.updateGlobal({
-    slug: 'website-permissions',
-    data: { permissions: originalWebsitePermissions },
-    overrideAccess: true,
-  })
   await deleteIntegrationAuthor(payload, author)
 })
 
 describe('document website access integration', () => {
-  it('shows anonymous users only document types enabled for anonymous access', async () => {
+  it('shows every published document type to anonymous users', async () => {
     const result = await payload.find({
       collection: 'documents',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       overrideAccess: false,
       user: null,
       where: { slug: { in: testSlugs } },
     })
 
-    expect(result.docs.map(({ id }) => id)).toEqual([publicDocument.id])
+    expect(result.docs.map(({ id }) => id).sort()).toEqual(
+      [publicDocument.id, roleDocument.id].sort(),
+    )
   })
 
-  it('adds role-only website access without granting CMS or API read access', async () => {
+  it('keeps public results independent from the signed-in role without granting CMS access', async () => {
     const user = createAuthenticatedUser(-10, memberRole)
     const websiteDocuments = await payload.find({
       collection: 'documents',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       overrideAccess: false,
       user,
       where: { slug: { in: testSlugs } },
@@ -211,24 +178,28 @@ describe('document website access integration', () => {
     ).rejects.toMatchObject({ status: 403 })
   })
 
-  it('does not reveal role-only documents or inherited files to another role', async () => {
+  it('exposes files inherited from every published document', async () => {
     const user = createAuthenticatedUser(-11, userRole)
     const documents = await payload.find({
       collection: 'documents',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       overrideAccess: false,
       user,
-      where: { slug: { equals: testSlugs[1] } },
+      where: { slug: { in: testSlugs } },
     })
     const files = await payload.find({
       collection: 'document-files',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       overrideAccess: false,
       user,
     })
 
-    expect(documents.docs).toEqual([])
-    expect(files.docs.some(({ id }) => id === roleDocument.primaryFile)).toBe(false)
+    const roleFileID =
+      typeof roleDocument.primaryFile === 'object'
+        ? roleDocument.primaryFile.id
+        : roleDocument.primaryFile
+    expect(documents.docs).toHaveLength(2)
+    expect(files.docs.some(({ id }) => id === roleFileID)).toBe(true)
   })
 
   it('assigns multiple files and deletes them with their parent document', async () => {

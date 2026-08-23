@@ -5,7 +5,7 @@ import config from '@payload-config'
 
 import type { MemberProfile } from '@/payload-types'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
-import { websiteRequestContext } from '@/modules/membership/role-permissions'
+import { publicRequestContext } from '@/modules/content/public-access'
 
 export { getMemberProfileImage, getMemberProfileImageURL } from './member-profile-image'
 
@@ -18,7 +18,7 @@ const findPublicMemberProfilesCached = cachePublicData(
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'member-profiles',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 1,
       draft: false,
       limit: 0,
@@ -42,7 +42,7 @@ const findPublicMemberProfileBySlugCached = cachePublicData(
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'member-profiles',
-      context: websiteRequestContext,
+      context: publicRequestContext,
       depth: 1,
       draft: false,
       limit: 1,

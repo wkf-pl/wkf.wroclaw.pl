@@ -5,7 +5,7 @@ services:
     build:
       context: .
       target: development
-    command: pnpm dev:container
+    command: ./scripts/start-development-container.sh
     depends_on:
       postgres:
         condition: service_healthy

@@ -5,15 +5,15 @@ import { readDocumentFiles } from '@/modules/documents/document-access'
 
 const createDocumentFiles = createRolePermissionAccess({
   operation: 'create',
-  resource: 'document-files',
+  resource: 'documents',
 })
 const deleteDocumentFiles = createRolePermissionAccess({
   operation: 'delete',
-  resource: 'document-files',
+  resource: 'documents',
 })
 const updateDocumentFiles = createRolePermissionAccess({
   operation: 'update',
-  resource: 'document-files',
+  resource: 'documents',
 })
 
 export const DocumentFiles: CollectionConfig = {

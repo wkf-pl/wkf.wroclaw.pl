@@ -12,7 +12,7 @@ import type {
   Post,
   Tag,
 } from '@/payload-types'
-import { websiteRequestContext } from '@/modules/membership/role-permissions'
+import { publicRequestContext } from '@/modules/content/public-access'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 
 export const taxonomizableCollectionSlugs = ['pages', 'posts', 'events', 'event-cycles'] as const
@@ -62,7 +62,7 @@ async function findPublicContentUncached(
   const pageSize = Math.min(100, Math.max(1, Math.floor(options.pageSize)))
   const result = await payload.find({
     collection: 'content-listing-items',
-    context: websiteRequestContext,
+    context: publicRequestContext,
     depth: 1,
     limit: pageSize,
     overrideAccess: false,

@@ -7,6 +7,7 @@ import {
 } from '@/modules/content/content-listing-index'
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
+import { publishedPublicAccess } from '@/modules/content/public-access'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 
@@ -14,6 +15,7 @@ const createPosts = createRolePermissionAccess({ operation: 'create', resource: 
 const deletePosts = createRolePermissionAccess({ operation: 'delete', resource: 'posts' })
 const readPosts = createRolePermissionAccess({
   operation: 'read',
+  publicAccess: publishedPublicAccess,
   resource: 'posts',
 })
 const updatePosts = createRolePermissionAccess({ operation: 'update', resource: 'posts' })

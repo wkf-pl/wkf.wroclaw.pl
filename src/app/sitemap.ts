@@ -5,7 +5,7 @@ import config from '@payload-config'
 
 import { createPublicSitemap } from '@/modules/content/sitemap'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
-import { websiteRequestContext } from '@/modules/membership/role-permissions'
+import { publicRequestContext } from '@/modules/content/public-access'
 
 async function loadPublicSitemap(): Promise<MetadataRoute.Sitemap> {
   const payload = await getPayload({ config })
@@ -13,7 +13,7 @@ async function loadPublicSitemap(): Promise<MetadataRoute.Sitemap> {
     await Promise.all([
       payload.find({
         collection: 'pages',
-        context: websiteRequestContext,
+        context: publicRequestContext,
         depth: 0,
         draft: false,
         limit: 1000,
@@ -24,7 +24,7 @@ async function loadPublicSitemap(): Promise<MetadataRoute.Sitemap> {
       }),
       payload.find({
         collection: 'posts',
-        context: websiteRequestContext,
+        context: publicRequestContext,
         depth: 0,
         draft: false,
         limit: 1000,
@@ -35,7 +35,7 @@ async function loadPublicSitemap(): Promise<MetadataRoute.Sitemap> {
       }),
       payload.find({
         collection: 'categories',
-        context: websiteRequestContext,
+        context: publicRequestContext,
         depth: 0,
         limit: 1000,
         overrideAccess: false,
@@ -44,7 +44,7 @@ async function loadPublicSitemap(): Promise<MetadataRoute.Sitemap> {
       }),
       payload.find({
         collection: 'tags',
-        context: websiteRequestContext,
+        context: publicRequestContext,
         depth: 0,
         limit: 1000,
         overrideAccess: false,
@@ -53,33 +53,29 @@ async function loadPublicSitemap(): Promise<MetadataRoute.Sitemap> {
       }),
       payload.find({
         collection: 'events',
-        context: websiteRequestContext,
+        context: publicRequestContext,
         depth: 0,
         draft: false,
         limit: 1000,
         overrideAccess: false,
         pagination: false,
         user: null,
-        where: {
-          and: [{ _status: { equals: 'published' } }, { visibility: { equals: 'public' } }],
-        },
+        where: { _status: { equals: 'published' } },
       }),
       payload.find({
         collection: 'event-cycles',
-        context: websiteRequestContext,
+        context: publicRequestContext,
         depth: 0,
         draft: false,
         limit: 1000,
         overrideAccess: false,
         pagination: false,
         user: null,
-        where: {
-          and: [{ _status: { equals: 'published' } }, { visibility: { equals: 'public' } }],
-        },
+        where: { _status: { equals: 'published' } },
       }),
       payload.find({
         collection: 'partners',
-        context: websiteRequestContext,
+        context: publicRequestContext,
         depth: 0,
         draft: false,
         limit: 1000,
@@ -90,7 +86,7 @@ async function loadPublicSitemap(): Promise<MetadataRoute.Sitemap> {
       }),
       payload.find({
         collection: 'member-profiles',
-        context: websiteRequestContext,
+        context: publicRequestContext,
         depth: 0,
         draft: false,
         limit: 1000,

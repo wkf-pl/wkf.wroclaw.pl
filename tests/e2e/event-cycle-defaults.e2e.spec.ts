@@ -125,7 +125,6 @@ test.beforeAll(async () => {
         participation: 'public',
         tagline: 'Domyślne hasło E2E',
         title: 'Domyślny tytuł E2E',
-        visibility: 'public',
         externalLinks: [
           {
             customAddress: 'example.com/wydarzenie',
@@ -139,7 +138,6 @@ test.beforeAll(async () => {
       layout: layout(),
       slug: cycleSlug,
       title: cycleTitle,
-      visibility: 'public',
     },
     overrideAccess: true,
   })

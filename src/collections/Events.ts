@@ -1,4 +1,4 @@
-import type { Access, CollectionConfig } from 'payload'
+import type { CollectionConfig } from 'payload'
 
 import {
   createEditorialFields,
@@ -21,27 +21,18 @@ import {
 } from '@/modules/events/fields'
 import { applyEventCycleDefaults, updateEventCalendarMetadata } from '@/modules/events/hooks'
 import { createNextEventEndpoint } from '@/modules/events/create-next-event'
-import { isMember } from '@/modules/members/member-profile'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
-import {
-  combineAccessWithConstraint,
-  createRolePermissionAccess,
-  websiteRequestContext,
-} from '@/modules/membership/role-permissions'
+import { publishedPublicAccess } from '@/modules/content/public-access'
+import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 
 const createEvents = createRolePermissionAccess({ operation: 'create', resource: 'events' })
 const deleteEvents = createRolePermissionAccess({ operation: 'delete', resource: 'events' })
-const readEventsByRole = createRolePermissionAccess({ operation: 'read', resource: 'events' })
+const readEvents = createRolePermissionAccess({
+  operation: 'read',
+  publicAccess: publishedPublicAccess,
+  resource: 'events',
+})
 const updateEvents = createRolePermissionAccess({ operation: 'update', resource: 'events' })
-
-const readEvents: Access = async (arguments_) => {
-  const result = await readEventsByRole(arguments_)
-  if (arguments_.req.context?.website !== websiteRequestContext.website) return result
-  return combineAccessWithConstraint(
-    result,
-    (await isMember(arguments_.req)) ? true : { visibility: { equals: 'public' } },
-  )
-}
 
 const editorialFields = createEditorialFields({ includeContent: false, includeTaxonomy: true })
 
@@ -58,7 +49,7 @@ export const Events: CollectionConfig = {
         ],
       },
     },
-    defaultColumns: ['title', 'startAt', 'eventStatus', 'visibility', '_status'],
+    defaultColumns: ['title', 'startAt', 'eventStatus', '_status'],
     group: 'Treści',
     listSearchableFields: ['title', 'slug', 'excerpt'],
     useAsTitle: 'title',
@@ -69,7 +60,6 @@ export const Events: CollectionConfig = {
     {
       type: 'row',
       fields: [
-        withFieldWidth(getEditorialField(editorialFields, 'title'), '50%'),
         {
           name: 'cycle',
           type: 'relationship',
@@ -77,6 +67,7 @@ export const Events: CollectionConfig = {
           label: 'Cykl wydarzeń',
           relationTo: 'event-cycles',
         },
+        withFieldWidth(getEditorialField(editorialFields, 'title'), '50%'),
       ],
     },
     {
