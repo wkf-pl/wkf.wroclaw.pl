@@ -23,8 +23,10 @@ describe('deployment workflows', () => {
     const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
 
     expect(continuousIntegrationWorkflow).not.toContain('run: pnpm build')
-    expect(continuousIntegrationWorkflow).toContain("github.ref != 'refs/heads/dev'")
+    expect(continuousIntegrationWorkflow).toContain("github.ref != 'refs/heads/master'")
+    expect(continuousIntegrationWorkflow).toContain("github.ref == 'refs/heads/master'")
     expect(continuousIntegrationWorkflow).toContain('cache-to: type=gha,mode=max,scope=wkf-online')
+    expect(stagingWorkflow).toContain('git ls-remote origin refs/heads/master')
     expect(stagingWorkflow).toContain('docker/build-push-action@v7')
     expect(stagingWorkflow).toContain('push: true')
     expect(stagingWorkflow).not.toContain('az acr build')
