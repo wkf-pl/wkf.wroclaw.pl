@@ -8,7 +8,7 @@ import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-ca
 import { publicRequestContext } from '@/modules/content/public-access'
 
 type PostTaxonomyFilter = {
-  field: 'categories' | 'tags'
+  field: 'category' | 'tags'
   id: number
 }
 

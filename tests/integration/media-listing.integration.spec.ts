@@ -90,7 +90,7 @@ beforeAll(async () => {
 
   await payload.create({
     collection: 'media',
-    data: { alt: 'Outside image', categories: [category.id] },
+    data: { alt: 'Outside image', category: category.id },
     file: {
       data: firstImageData,
       mimetype: 'image/png',
@@ -212,6 +212,83 @@ describe('public media listing', () => {
     expect(result.totalPages).toBe(1)
     expect(result.items.map((item) => item.filename)).toEqual(filenames.slice(1, 3).reverse())
   })
+
+  it('includes media assigned to a descendant category', async () => {
+    const childCategorySlug = 'integration-media-child-category'
+    const childFilename = 'integration-media-child.png'
+    await payload.delete({
+      collection: 'media',
+      overrideAccess: true,
+      where: { filename: { equals: childFilename } },
+    })
+    const existingChildCategories = await payload.find({
+      collection: 'categories',
+      depth: 0,
+      limit: 10,
+      overrideAccess: true,
+      pagination: false,
+      where: { slug: { equals: childCategorySlug } },
+    })
+    for (const existingChildCategory of existingChildCategories.docs) {
+      await payload.delete({
+        collection: 'categories',
+        id: existingChildCategory.id,
+        overrideAccess: true,
+      })
+    }
+
+    const childCategory = await payload.create({
+      collection: 'categories',
+      data: {
+        name: 'Integration media child category',
+        parent: category.id,
+        slug: childCategorySlug,
+      },
+      overrideAccess: true,
+    })
+    try {
+      const imageData = await sharp({
+        create: { background: '#3a8054', channels: 4, height: 24, width: 24 },
+      })
+        .png()
+        .toBuffer()
+      await payload.create({
+        collection: 'media',
+        data: { alt: childFilename, category: childCategory.id, tags: [tag.id] },
+        file: {
+          data: imageData,
+          mimetype: 'image/png',
+          name: childFilename,
+          size: imageData.length,
+        },
+        overrideAccess: true,
+      })
+
+      const result = await findPublicMedia({
+        categoryId: category.id,
+        kind: 'mediaGallery',
+        page: 1,
+        pageSize: 12,
+        pagination: true,
+        selectionMode: 'filters',
+        sort: 'nameAscending',
+        tagId: tag.id,
+      })
+
+      expect(result.items.map((item) => item.filename)).toContain(childFilename)
+    } finally {
+      await payload.delete({
+        collection: 'media',
+        overrideAccess: true,
+        where: { filename: { equals: childFilename } },
+      })
+      await payload.delete({
+        collection: 'categories',
+        id: childCategory.id,
+        overrideAccess: true,
+      })
+    }
+  }, 20_000)
 })
 
 async function createMedia({
@@ -229,7 +306,7 @@ async function createMedia({
     collection: 'media',
     data: {
       alt: filename,
-      categories: [category.id],
+      category: category.id,
       description,
       tags: [tag.id],
     },

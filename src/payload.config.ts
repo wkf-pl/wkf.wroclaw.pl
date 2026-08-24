@@ -1,4 +1,5 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
+import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { pl } from '@payloadcms/translations/languages/pl'
 import path from 'path'
@@ -30,6 +31,7 @@ import { createEmailAdapter } from './email/create-email-adapter'
 import { Navigation, SiteSettings } from './globals'
 import { getOptionalEnvironmentVariable, getRequiredEnvironmentVariable } from './lib/env'
 import { createStoragePlugins } from './storage/create-storage-plugins'
+import { generateHierarchyLabel, generateHierarchyURL } from './modules/content/hierarchy'
 
 const fileName = fileURLToPath(import.meta.url)
 const directoryName = path.dirname(fileName)
@@ -138,7 +140,15 @@ export default buildConfig({
     prodMigrations: migrations,
   }),
   sharp,
-  plugins: createStoragePlugins(),
+  plugins: [
+    nestedDocsPlugin({
+      collections: ['pages', 'categories'],
+      generateLabel: generateHierarchyLabel,
+      generateURL: generateHierarchyURL,
+      parentFieldSlug: 'parent',
+    }),
+    ...createStoragePlugins(),
+  ],
 })
 
 function getTrustedOrigins(configuredServerURL: string | undefined): string[] {

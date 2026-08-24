@@ -20,11 +20,6 @@ function isEmpty(value: unknown): boolean {
   )
 }
 
-function relationshipIDs(value: unknown): unknown {
-  if (!Array.isArray(value)) return value
-  return value.map((item) => getEventRelationshipID(item) ?? item)
-}
-
 function cloneWithoutInlineIDs(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(cloneWithoutInlineIDs)
   if (!value || typeof value !== 'object') return value
@@ -84,8 +79,12 @@ export function mergeEventCycleDefaults(currentData: Data, cycle: EventCycle): D
   applyIfEmpty(data, 'tagline', defaults.tagline)
   applyIfEmpty(data, 'excerpt', defaults.excerpt)
   applyIfEmpty(data, 'layout', cloneWithoutInlineIDs(defaults.layout))
-  applyIfEmpty(data, 'categories', relationshipIDs(defaults.categories))
-  applyIfEmpty(data, 'tags', relationshipIDs(defaults.tags))
+  applyIfEmpty(data, 'category', getEventRelationshipID(defaults.category) ?? defaults.category)
+  applyIfEmpty(
+    data,
+    'tags',
+    defaults.tags?.map((item) => getEventRelationshipID(item) ?? item),
+  )
   applyIfEmpty(data, 'timeMode', defaults.defaultTimeMode)
   applyIfEmpty(data, 'participation', defaults.participation)
   applyIfEmpty(data, 'capacityMode', defaults.capacityMode)

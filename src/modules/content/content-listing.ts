@@ -12,6 +12,7 @@ import type {
   Post,
   Tag,
 } from '@/payload-types'
+import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 
@@ -22,7 +23,7 @@ export type ContentListingSort =
   'eventDateAscending' | 'newest' | 'oldest' | 'titleAscending' | 'titleDescending'
 
 export type PublicContentListItem = {
-  categories: Category[]
+  category: Category | null
   date: null | string
   excerpt: null | string
   id: number
@@ -54,8 +55,12 @@ export type PublicContentResult = {
   totalPages: number
 }
 
+type CachedFindPublicContentOptions = FindPublicContentOptions & {
+  categoryIds?: number[]
+}
+
 async function findPublicContentUncached(
-  options: FindPublicContentOptions,
+  options: CachedFindPublicContentOptions,
 ): Promise<PublicContentResult> {
   const payload = await getPayload({ config })
   const page = options.pagination ? Math.max(1, Math.floor(options.page)) : 1
@@ -73,7 +78,7 @@ async function findPublicContentUncached(
       tags: { name: true, slug: true },
     },
     select: {
-      categories: true,
+      category: true,
       excerpt: true,
       heroImage: true,
       sortDate: true,
@@ -106,9 +111,15 @@ const findPublicContentCached = cachePublicData(
   },
 )
 
-export function findPublicContent(options: FindPublicContentOptions): Promise<PublicContentResult> {
+export async function findPublicContent(
+  options: FindPublicContentOptions,
+): Promise<PublicContentResult> {
+  const categoryIds =
+    options.categoryId === undefined ? undefined : await findCategorySubtreeIDs(options.categoryId)
+
   return findPublicContentCached({
     categoryId: options.categoryId,
+    categoryIds,
     eventCycleId: options.eventCycleId,
     eventTimeFilter: options.eventTimeFilter,
     page: Math.max(1, Math.floor(options.page)),
@@ -121,10 +132,11 @@ export function findPublicContent(options: FindPublicContentOptions): Promise<Pu
   })
 }
 
-function createListingWhere(options: FindPublicContentOptions): Where {
+function createListingWhere(options: CachedFindPublicContentOptions): Where {
   const conditions: Where[] = [{ source: { in: [...new Set(options.sources)].sort() } }]
-  if (options.categoryId !== undefined)
-    conditions.push({ categories: { equals: options.categoryId } })
+  if (options.categoryIds !== undefined) {
+    conditions.push({ category: { in: options.categoryIds } })
+  }
   if (options.tagId !== undefined) conditions.push({ tags: { equals: options.tagId } })
   if (options.parentId !== undefined) conditions.push({ parentPage: { equals: options.parentId } })
   if (options.eventCycleId !== undefined) {
@@ -174,7 +186,7 @@ function getPayloadSort(sort: ContentListingSort): string[] {
 
 type SelectedListingItem = Pick<
   ContentListingItem,
-  | 'categories'
+  | 'category'
   | 'excerpt'
   | 'heroImage'
   | 'sortDate'
@@ -187,7 +199,7 @@ type SelectedListingItem = Pick<
 
 function mapIndexItem(item: SelectedListingItem): PublicContentListItem {
   return {
-    categories: populatedRelationships(item.categories),
+    category: populatedRelationship(item.category),
     date: item.sortDate,
     excerpt: item.excerpt ?? null,
     id: item.sourceDocumentId,

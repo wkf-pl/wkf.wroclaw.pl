@@ -15,15 +15,6 @@ function relationshipID(value: null | number | { id: number } | undefined): numb
       : undefined
 }
 
-function relationshipIDs(values: (number | { id: number })[] | null | undefined): number[] {
-  return (
-    values?.flatMap((value) => {
-      const id = relationshipID(value)
-      return id === undefined ? [] : [id]
-    }) ?? []
-  )
-}
-
 function buildPublicURL(source: TaxonomizableCollectionSlug, slug: string): string {
   if (source === 'posts') return `/blog/${slug}`
   if (source === 'events') return `/events/${slug}`
@@ -38,7 +29,7 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
   const post = source === 'posts' ? (document as Post) : null
 
   return {
-    categories: relationshipIDs(document.categories),
+    category: relationshipID(document.category),
     eventCycle: event ? relationshipID(event.cycle) : null,
     eventEndAt: event?.endAt ?? null,
     eventStartAt: event?.startAt ?? null,
@@ -50,7 +41,11 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
     source,
     sourceDocumentId: document.id,
     sourceUpdatedAt: document.updatedAt,
-    tags: relationshipIDs(document.tags),
+    tags:
+      document.tags?.flatMap((tag) => {
+        const id = relationshipID(tag)
+        return id === undefined ? [] : [id]
+      }) ?? [],
     title: document.title,
     url: buildPublicURL(source, document.slug),
   }

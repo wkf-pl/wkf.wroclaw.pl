@@ -6,6 +6,7 @@ import { formatAdminURL } from 'payload/shared'
 import { useEffect } from 'react'
 
 type TaxonomyDocument = {
+  fullTitle?: string
   id?: number | string
   name?: string
 }
@@ -48,18 +49,17 @@ export function URLCell({ cellData }: DefaultCellComponentProps<TextFieldClient>
 }
 
 export function TaxonomyCell({ cellData, field }: DefaultCellComponentProps<TextFieldClient>) {
-  const relationTo = field.name === 'categories' ? 'categories' : 'tags'
-  const relationshipIDs = Array.isArray(cellData)
-    ? cellData.flatMap((value) => {
-        if (typeof value === 'number' || typeof value === 'string') return [value]
-        if (value && typeof value === 'object' && 'id' in value) {
-          const id = value.id
-          return typeof id === 'number' || typeof id === 'string' ? [id] : []
-        }
+  const relationTo = field.name === 'category' ? 'categories' : 'tags'
+  const values = Array.isArray(cellData) ? cellData : [cellData]
+  const relationshipIDs = values.flatMap((value) => {
+    if (typeof value === 'number' || typeof value === 'string') return [value]
+    if (value && typeof value === 'object' && 'id' in value) {
+      const id = value.id
+      return typeof id === 'number' || typeof id === 'string' ? [id] : []
+    }
 
-        return []
-      })
-    : []
+    return []
+  })
   const { documents, getRelationships } = useListRelationships()
   const relatedDocuments = documents[relationTo] as Record<string, TaxonomyDocument> | undefined
   const missingRelationships = relationshipIDs.filter((id) => relatedDocuments?.[id] === undefined)
@@ -93,7 +93,7 @@ export function TaxonomyCell({ cellData, field }: DefaultCellComponentProps<Text
           <span key={id}>
             {index ? ', ' : null}
             <a href={href} onClick={(event) => event.stopPropagation()}>
-              {document?.name ?? 'Ładowanie…'}
+              {document?.fullTitle ?? document?.name ?? 'Ładowanie…'}
             </a>
           </span>
         )

@@ -83,11 +83,33 @@
 }
 
 .wkf-profile-sidebar-field,
-.wkf-profile-usage {
+.wkf-profile-usage,
+.wkf-hierarchy-path {
   padding: 18px;
   border: 1px solid var(--theme-elevation-150);
   border-radius: var(--style-radius-s);
   background: var(--theme-elevation-50);
+}
+
+.wkf-hierarchy-path {
+  p {
+    margin: 0;
+  }
+
+  ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li:not(:last-child)::after {
+    margin-left: 6px;
+    color: var(--theme-elevation-500);
+    content: '›';
+  }
 }
 
 .wkf-profile-sidebar-field {

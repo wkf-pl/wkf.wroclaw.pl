@@ -8,10 +8,12 @@ import {
   findPublicContent,
   type TaxonomizableCollectionSlug,
 } from '@/modules/content/content-listing'
+import { createPageBreadcrumbs } from '@/modules/content/public-hierarchy'
 
 import { CmsImage } from './CmsImage'
 import { ContentList } from './ContentList'
 import { ContentPagination, createPaginatedURL, getRequestedPage } from './ContentPagination'
+import { HierarchyBreadcrumbs } from './HierarchyBreadcrumbs'
 import { MemberProfilesSection } from './MemberProfilesSection'
 import { MediaBlockSection } from './MediaBlockSection'
 import { TaxonomyLinks } from './TaxonomyLinks'
@@ -32,7 +34,7 @@ const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
   year: 'numeric',
 })
 
-export function CmsPageDocument({
+export async function CmsPageDocument({
   document,
   pathname,
   searchParams,
@@ -42,16 +44,18 @@ export function CmsPageDocument({
   beforeBlocks,
 }: CmsPageDocumentProperties) {
   const authorName = getAuthorName(document.author)
-  const categories = 'categories' in document ? document.categories : undefined
+  const category = 'category' in document ? document.category : undefined
   const tags = 'tags' in document ? document.tags : undefined
   const title = 'title' in document ? document.title : document.name
+  const breadcrumbs = 'breadcrumbs' in document ? await createPageBreadcrumbs(document) : []
   return (
     <main className="contentShell">
       <article className="cmsDocument cmsPageDocument">
         <header className="cmsDocumentHeader">
+          <HierarchyBreadcrumbs breadcrumbs={breadcrumbs} />
           {showBlogEyebrow || eyebrow ? <p className="eyebrow">{eyebrow || 'Blog'}</p> : null}
           <h1>{title}</h1>
-          <TaxonomyLinks categories={categories} tags={tags} />
+          <TaxonomyLinks category={category} tags={tags} />
           {document.publishedAt || authorName ? (
             <p className="contentMeta">
               {document.publishedAt ? (

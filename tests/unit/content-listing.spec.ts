@@ -16,7 +16,7 @@ import { ContentListingItems } from '@/collections/ContentListingItems'
 
 function createItem(overrides: Partial<PublicContentListItem> = {}): PublicContentListItem {
   return {
-    categories: [],
+    category: null,
     date: '2026-01-01T00:00:00.000Z',
     excerpt: null,
     id: 1,

@@ -34,6 +34,7 @@
     "@payloadcms/db-postgres": "3.87.1",
     "@payloadcms/email-nodemailer": "3.87.1",
     "@payloadcms/next": "3.87.1",
+    "@payloadcms/plugin-nested-docs": "3.87.1",
     "@payloadcms/richtext-lexical": "3.87.1",
     "@payloadcms/storage-azure": "3.87.1",
     "@payloadcms/translations": "3.87.1",

@@ -760,6 +760,46 @@ body:has(> .homePage) .siteHeader {
   text-decoration: none;
 }
 
+.hierarchyBreadcrumbs {
+  margin-bottom: 1.25rem;
+  color: #9faab2;
+  font-size: 0.9rem;
+}
+
+.hierarchyBreadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hierarchyBreadcrumbs li + li::before {
+  margin-right: 0.4rem;
+  color: var(--gold);
+  content: '›';
+}
+
+.hierarchyBreadcrumbs a,
+.childCategories a {
+  color: var(--gold-light);
+}
+
+.childCategories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.5rem;
+}
+
+.childCategories a {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgb(243 163 19 / 45%);
+  border-radius: 0.35rem;
+  text-decoration: none;
+}
+
 .attachments {
   margin-top: 3rem;
   padding-top: 2rem;

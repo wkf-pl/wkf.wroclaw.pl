@@ -112,7 +112,7 @@ describe('media blocks', () => {
       'thumbnailURL',
       'alt',
       'description',
-      'categories',
+      'category',
       'tags',
       'uploadedBy',
     ])
@@ -124,7 +124,7 @@ describe('media blocks', () => {
       'height',
       'url',
       'thumbnailURL',
-      'categories',
+      'category',
       'tags',
       'uploadedBy',
     ])

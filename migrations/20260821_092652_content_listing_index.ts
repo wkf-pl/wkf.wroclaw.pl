@@ -1,18 +1,6 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
-import type { TaxonomizableCollectionSlug } from '../src/modules/content/content-listing'
-import { syncContentListingItem } from '../src/modules/content/content-listing-index'
-import { extractFirstRichTextParagraph } from '../src/modules/content/listing-excerpt'
-
-const batchSize = 100
-const indexedCollections: TaxonomizableCollectionSlug[] = [
-  'pages',
-  'posts',
-  'events',
-  'event-cycles',
-]
-
-export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
+export async function up({ db }: MigrateUpArgs): Promise<void> {
   const existingSchema = await db.execute(sql`
     SELECT
       to_regclass('public.content_listing_items') IS NOT NULL AS "itemsTable",
@@ -93,67 +81,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
     CREATE INDEX "content_listing_items_rels_tags_id_idx" ON "content_listing_items_rels" USING btree ("tags_id");`)
   }
 
-  req.context = {
-    ...req.context,
-    skipContentListingSync: true,
-    skipPublicCacheInvalidation: true,
-  }
-
-  let lastPageID = 0
-  while (true) {
-    const pages = await payload.find({
-      collection: 'pages',
-      depth: 0,
-      draft: false,
-      limit: batchSize,
-      overrideAccess: true,
-      req,
-      select: { id: true, layout: true, listingExcerpt: true },
-      sort: 'id',
-      where: {
-        and: [{ id: { greater_than: lastPageID } }, { _status: { equals: 'published' } }],
-      },
-    })
-
-    for (const page of pages.docs) {
-      lastPageID = page.id
-      if (page.listingExcerpt?.trim()) continue
-      const listingExcerpt = extractFirstRichTextParagraph(page.layout)
-      if (!listingExcerpt) continue
-
-      await db.execute(
-        sql`UPDATE "pages" SET "listing_excerpt" = ${listingExcerpt} WHERE "id" = ${page.id}`,
-      )
-    }
-
-    if (pages.docs.length < batchSize) break
-  }
-
-  for (const collection of indexedCollections) {
-    let lastDocumentID = 0
-    while (true) {
-      const documents = await payload.find({
-        collection,
-        depth: 0,
-        draft: false,
-        limit: batchSize,
-        overrideAccess: true,
-        req,
-        sort: 'id',
-        where: {
-          and: [{ id: { greater_than: lastDocumentID } }, { _status: { equals: 'published' } }],
-        },
-      })
-
-      for (const document of documents.docs) {
-        lastDocumentID = document.id
-        await syncContentListingItem(req, collection, document.id)
-      }
-
-      if (documents.docs.length < batchSize) break
-    }
-  }
-
+  // The current-schema backfill belongs to the latest schema migration. Keeping it there allows
+  // fresh databases to run historical migrations without querying columns that do not exist yet.
   await db.execute(sql`DELETE FROM "payload_migrations" WHERE "name" = 'dev'`)
 }
 

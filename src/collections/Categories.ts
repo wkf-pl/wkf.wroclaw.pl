@@ -1,10 +1,16 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Field } from 'payload'
 
 import {
   invalidateListingsAfterChange,
   invalidateListingsAfterDelete,
 } from '@/modules/cache/invalidate-public-data'
 import { populateSlugFromName } from '@/modules/content/slug'
+import {
+  createHierarchyDisplayFields,
+  populateHierarchyFullTitle,
+  preventDeletingCategoryWithChildren,
+  validateHierarchy,
+} from '@/modules/content/hierarchy'
 import { createRelatedContentJoinFields } from '@/modules/content/taxonomy-fields'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 
@@ -26,6 +32,14 @@ const updateCategories = createRolePermissionAccess({
   resource: 'categories',
 })
 
+const categoryParentField: Field = {
+  name: 'parent',
+  type: 'relationship',
+  admin: { placeholder: '<brak>' },
+  label: 'Kategoria nadrzędna',
+  relationTo: 'categories',
+}
+
 export const Categories: CollectionConfig = {
   slug: 'categories',
   access: {
@@ -35,10 +49,10 @@ export const Categories: CollectionConfig = {
     update: updateCategories,
   },
   admin: {
-    defaultColumns: ['name', 'slug', 'updatedAt'],
+    defaultColumns: ['fullTitle', 'slug', 'updatedAt'],
     group: 'Treści',
-    listSearchableFields: ['name', 'slug'],
-    useAsTitle: 'name',
+    listSearchableFields: ['fullTitle', 'name', 'slug'],
+    useAsTitle: 'fullTitle',
   },
   fields: [
     {
@@ -67,11 +81,23 @@ export const Categories: CollectionConfig = {
       type: 'textarea',
       label: 'Opis',
     },
-    ...createRelatedContentJoinFields('categories'),
+    categoryParentField,
+    {
+      name: 'fullTitle',
+      type: 'text',
+      admin: { hidden: true, readOnly: true },
+      index: true,
+      label: 'Pełna ścieżka',
+    },
+    ...createRelatedContentJoinFields('category'),
+    ...createHierarchyDisplayFields('categories'),
   ],
   hooks: {
     afterChange: [invalidateListingsAfterChange],
     afterDelete: [invalidateListingsAfterDelete],
+    beforeChange: [populateHierarchyFullTitle],
+    beforeDelete: [preventDeletingCategoryWithChildren],
+    beforeValidate: [validateHierarchy],
   },
   labels: {
     plural: 'Kategorie',

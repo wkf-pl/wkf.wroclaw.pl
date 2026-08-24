@@ -36,7 +36,7 @@ export const Media: CollectionConfig = {
       'height',
       'url',
       'thumbnailURL',
-      'categories',
+      'category',
       'tags',
       'uploadedBy',
     ],
@@ -97,15 +97,14 @@ export const Media: CollectionConfig = {
       type: 'row',
       fields: [
         {
-          name: 'categories',
+          name: 'category',
           type: 'relationship',
           admin: {
             components: { Cell: '/components/admin/MediaTableCells#TaxonomyCell' },
             placeholder: '<brak>',
             width: '50%',
           },
-          hasMany: true,
-          label: 'Kategorie',
+          label: 'Kategoria',
           relationTo: 'categories',
         },
         {

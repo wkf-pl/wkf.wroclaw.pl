@@ -1,7 +1,5 @@
 import { APIError, type CollectionBeforeValidateHook } from 'payload'
 
-import { getRelationshipId, type RelationshipReference } from '@/lib/relationships'
-
 export const validatePageStructure: CollectionBeforeValidateHook = async ({
   data,
   originalDoc,
@@ -38,29 +36,6 @@ export const validatePageStructure: CollectionBeforeValidateHook = async ({
     data.slug = data.systemKey
   } else if (data.slug === 'blog' || data.slug === 'events') {
     throw new APIError('Ten slug jest zarezerwowany dla strony systemowej.', 400)
-  }
-
-  const currentPageId =
-    originalDoc && typeof originalDoc === 'object' && 'id' in originalDoc
-      ? (originalDoc.id as number | string)
-      : null
-  let parentId = getRelationshipId(data.parent as RelationshipReference)
-  const visitedPageIds = new Set<number | string>()
-
-  while (parentId !== undefined) {
-    if (parentId === currentPageId || visitedPageIds.has(parentId)) {
-      throw new APIError('Strona nadrzędna tworzyłaby cykl w hierarchii stron.', 400)
-    }
-
-    visitedPageIds.add(parentId)
-    const parentPage = await req.payload.findByID({
-      collection: 'pages',
-      depth: 0,
-      id: parentId,
-      overrideAccess: true,
-      req,
-    })
-    parentId = getRelationshipId(parentPage.parent as RelationshipReference)
   }
 
   return data

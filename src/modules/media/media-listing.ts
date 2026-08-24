@@ -4,6 +4,7 @@ import config from '@payload-config'
 
 import type { Media } from '@/payload-types'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
+import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
 
 export type MediaListingKind = 'attachments' | 'mediaGallery'
@@ -58,7 +59,9 @@ type MediaListDocument = Pick<
   | 'width'
 >
 
-export type NormalizedPublicMediaOptions = Omit<FindPublicMediaOptions, 'manualMedia'>
+export type NormalizedPublicMediaOptions = Omit<FindPublicMediaOptions, 'manualMedia'> & {
+  categoryIds?: number[]
+}
 
 const mediaSelect = {
   alt: true,
@@ -150,7 +153,13 @@ const findManualPublicMediaByIDsCached = cachePublicData(
 )
 
 export async function findPublicMedia(options: FindPublicMediaOptions): Promise<PublicMediaResult> {
-  const normalizedOptions = normalizePublicMediaOptions(options)
+  const normalizedOptions: NormalizedPublicMediaOptions = {
+    ...normalizePublicMediaOptions(options),
+    categoryIds:
+      options.categoryId === undefined
+        ? undefined
+        : await findCategorySubtreeIDs(options.categoryId),
+  }
 
   if (options.selectionMode === 'manual') {
     const mediaIDs = (options.manualMedia ?? []).map((media) =>
@@ -178,12 +187,12 @@ export function normalizePublicMediaOptions(
 }
 
 function createMediaWhere(
-  options: Pick<FindPublicMediaOptions, 'categoryId' | 'kind' | 'tagId'>,
+  options: Pick<NormalizedPublicMediaOptions, 'categoryIds' | 'kind' | 'tagId'>,
 ): Where {
   const conditions: Where[] = []
 
-  if (options.categoryId !== undefined) {
-    conditions.push({ categories: { equals: options.categoryId } })
+  if (options.categoryIds !== undefined) {
+    conditions.push({ category: { in: options.categoryIds } })
   }
 
   if (options.tagId !== undefined) {

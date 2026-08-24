@@ -180,7 +180,7 @@ export interface ContentListingItem {
   eventStartAt?: string | null;
   eventEndAt?: string | null;
   heroImage?: (number | null) | Media;
-  categories?: (number | Category)[] | null;
+  category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
   parentPage?: (number | null) | Page;
   eventCycle?: (number | null) | EventCycle;
@@ -196,7 +196,7 @@ export interface Media {
    */
   alt: string;
   description?: string | null;
-  categories?: (number | Category)[] | null;
+  category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
   uploadedBy?: (number | null) | User;
   updatedAt: string;
@@ -223,6 +223,8 @@ export interface Category {
    */
   slug: string;
   description?: string | null;
+  parent?: (number | null) | Category;
+  fullTitle?: string | null;
   relatedPages?: {
     docs?: (number | Page)[];
     hasNextPage?: boolean;
@@ -243,6 +245,14 @@ export interface Category {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  breadcrumbs?:
+    | {
+        doc?: (number | null) | Category;
+        url?: string | null;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -254,8 +264,9 @@ export interface Page {
   id: number;
   title: string;
   parent?: (number | null) | Page;
-  categories?: (number | Category)[] | null;
+  category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
+  fullTitle?: string | null;
   heroImage?: (number | null) | Media;
   /**
    * Opcjonalny opis karty. Bez niego użyty zostanie początek pierwszego bloku treści.
@@ -283,6 +294,14 @@ export interface Page {
    */
   publishedAt?: string | null;
   systemKey?: string | null;
+  breadcrumbs?:
+    | {
+        doc?: (number | null) | Page;
+        url?: string | null;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -333,7 +352,7 @@ export interface Post {
    * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
    */
   slug: string;
-  categories?: (number | Category)[] | null;
+  category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
   heroImage?: (number | null) | Media;
   /**
@@ -371,7 +390,7 @@ export interface Event {
   id: number;
   cycle?: (number | null) | EventCycle;
   title: string;
-  categories?: (number | Category)[] | null;
+  category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
   heroImage?: (number | null) | Media;
   tagline?: string | null;
@@ -470,7 +489,7 @@ export interface Event {
 export interface EventCycle {
   id: number;
   title: string;
-  categories?: (number | Category)[] | null;
+  category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
   heroImage?: (number | null) | Media;
   tagline?: string | null;
@@ -493,7 +512,7 @@ export interface EventCycle {
     tagline?: string | null;
     excerpt?: string | null;
     layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
-    categories?: (number | Category)[] | null;
+    category?: (number | null) | Category;
     tags?: (number | Tag)[] | null;
     defaultTimeMode?: ('timed' | 'allDay') | null;
     /**
@@ -1188,7 +1207,7 @@ export interface ContentListingItemsSelect<T extends boolean = true> {
   eventStartAt?: T;
   eventEndAt?: T;
   heroImage?: T;
-  categories?: T;
+  category?: T;
   tags?: T;
   parentPage?: T;
   eventCycle?: T;
@@ -1200,8 +1219,9 @@ export interface ContentListingItemsSelect<T extends boolean = true> {
 export interface PagesSelect<T extends boolean = true> {
   title?: T;
   parent?: T;
-  categories?: T;
+  category?: T;
   tags?: T;
+  fullTitle?: T;
   heroImage?: T;
   listingExcerpt?: T;
   layout?:
@@ -1224,6 +1244,14 @@ export interface PagesSelect<T extends boolean = true> {
   author?: T;
   publishedAt?: T;
   systemKey?: T;
+  breadcrumbs?:
+    | T
+    | {
+        doc?: T;
+        url?: T;
+        label?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1327,7 +1355,7 @@ export interface MemberProfilesBlockSelect<T extends boolean = true> {
 export interface PostsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
-  categories?: T;
+  category?: T;
   tags?: T;
   heroImage?: T;
   excerpt?: T;
@@ -1362,7 +1390,7 @@ export interface PostsSelect<T extends boolean = true> {
 export interface EventsSelect<T extends boolean = true> {
   cycle?: T;
   title?: T;
-  categories?: T;
+  category?: T;
   tags?: T;
   heroImage?: T;
   tagline?: T;
@@ -1454,7 +1482,7 @@ export interface EventsSelect<T extends boolean = true> {
  */
 export interface EventCyclesSelect<T extends boolean = true> {
   title?: T;
-  categories?: T;
+  category?: T;
   tags?: T;
   heroImage?: T;
   tagline?: T;
@@ -1491,7 +1519,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
               attachments?: T | AttachmentsBlockSelect<T>;
               memberProfiles?: T | MemberProfilesBlockSelect<T>;
             };
-        categories?: T;
+        category?: T;
         tags?: T;
         defaultTimeMode?: T;
         defaultStartTime?: T;
@@ -1561,10 +1589,20 @@ export interface CategoriesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   description?: T;
+  parent?: T;
+  fullTitle?: T;
   relatedPages?: T;
   relatedPosts?: T;
   relatedEvents?: T;
   relatedEventCycles?: T;
+  breadcrumbs?:
+    | T
+    | {
+        doc?: T;
+        url?: T;
+        label?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1590,7 +1628,7 @@ export interface TagsSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   description?: T;
-  categories?: T;
+  category?: T;
   tags?: T;
   uploadedBy?: T;
   updatedAt?: T;

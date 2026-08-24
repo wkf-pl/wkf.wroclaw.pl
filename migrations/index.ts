@@ -21,6 +21,7 @@ import * as migration_20260818_181938_event_link_targets from './20260818_181938
 import * as migration_20260821_092652_content_listing_index from './20260821_092652_content_listing_index'
 import * as migration_20260823_001526_simplify_public_access from './20260823_001526_simplify_public_access'
 import * as migration_20260823_103700_remove_orphan_document_versions from './20260823_103700_remove_orphan_document_versions'
+import * as migration_20260823_232129 from './20260823_232129'
 
 export const migrations = [
   {
@@ -137,5 +138,10 @@ export const migrations = [
     up: migration_20260823_103700_remove_orphan_document_versions.up,
     down: migration_20260823_103700_remove_orphan_document_versions.down,
     name: '20260823_103700_remove_orphan_document_versions',
+  },
+  {
+    up: migration_20260823_232129.up,
+    down: migration_20260823_232129.down,
+    name: '20260823_232129',
   },
 ]
