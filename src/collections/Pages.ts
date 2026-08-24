@@ -12,6 +12,11 @@ import {
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
 import { populateListingExcerptOnPublish } from '@/modules/content/listing-excerpt'
+import {
+  createHierarchyDisplayFields,
+  populateHierarchyFullTitle,
+  validateHierarchy,
+} from '@/modules/content/hierarchy'
 import { validatePageStructure } from '@/modules/content/page-validation'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
@@ -52,7 +57,6 @@ const pageParentField: Field = {
   admin: {
     placeholder: '<brak>',
   },
-  filterOptions: ({ id }) => (id ? { id: { not_equals: id } } : true),
   label: 'Strona nadrzędna',
   relationTo: 'pages',
 }
@@ -71,10 +75,10 @@ export const Pages: CollectionConfig = {
         beforeDocumentControls: ['/components/admin/PageCreateLabel#PageCreateLabel'],
       },
     },
-    defaultColumns: ['title', 'slug', '_status', 'publishedAt', 'updatedAt'],
+    defaultColumns: ['fullTitle', 'slug', '_status', 'publishedAt', 'updatedAt'],
     group: 'Treści',
-    listSearchableFields: ['title', 'slug'],
-    useAsTitle: 'title',
+    listSearchableFields: ['fullTitle', 'title', 'slug'],
+    useAsTitle: 'fullTitle',
   },
   fields: [
     {
@@ -87,9 +91,16 @@ export const Pages: CollectionConfig = {
     {
       type: 'row',
       fields: [
-        withFieldWidth(getEditorialField(editorialFields, 'categories'), '50%'),
+        withFieldWidth(getEditorialField(editorialFields, 'category'), '50%'),
         withFieldWidth(getEditorialField(editorialFields, 'tags'), '50%'),
       ],
+    },
+    {
+      name: 'fullTitle',
+      type: 'text',
+      admin: { hidden: true, readOnly: true },
+      index: true,
+      label: 'Pełna ścieżka',
     },
     getEditorialField(editorialFields, 'heroImage'),
     {
@@ -116,12 +127,13 @@ export const Pages: CollectionConfig = {
       index: true,
       unique: true,
     },
+    ...createHierarchyDisplayFields('pages'),
   ],
   hooks: {
     afterChange: [syncContentListingAfterChange],
     afterDelete: [removeContentListingAfterDelete],
-    beforeChange: [populateListingExcerptOnPublish, setPublishedAt],
-    beforeValidate: [validateMediaBlocks, validatePageStructure],
+    beforeChange: [populateHierarchyFullTitle, populateListingExcerptOnPublish, setPublishedAt],
+    beforeValidate: [validateMediaBlocks, validatePageStructure, validateHierarchy],
   },
   labels: {
     plural: 'Strony',

@@ -34,7 +34,7 @@ export const ContentListingItems: CollectionConfig = {
     { name: 'eventStartAt', type: 'date', index: true },
     { name: 'eventEndAt', type: 'date', index: true },
     { name: 'heroImage', type: 'upload', relationTo: 'media' },
-    { name: 'categories', type: 'relationship', hasMany: true, relationTo: 'categories' },
+    { name: 'category', type: 'relationship', relationTo: 'categories' },
     { name: 'tags', type: 'relationship', hasMany: true, relationTo: 'tags' },
     { name: 'parentPage', type: 'relationship', index: true, relationTo: 'pages' },
     { name: 'eventCycle', type: 'relationship', index: true, relationTo: 'event-cycles' },

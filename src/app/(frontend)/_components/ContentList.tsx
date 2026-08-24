@@ -52,7 +52,7 @@ export function ContentList({ emptyMessage, items, view }: ContentListProperties
             </h2>
             {view !== 'compact' && item.excerpt ? <p>{item.excerpt}</p> : null}
             {view !== 'compact' ? (
-              <TaxonomyLinks categories={item.categories} tags={item.tags} />
+              <TaxonomyLinks category={item.category} tags={item.tags} />
             ) : null}
           </div>
         </article>

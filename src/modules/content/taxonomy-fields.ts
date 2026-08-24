@@ -3,13 +3,12 @@ import type { Field } from 'payload'
 export function createTaxonomyFields(): Field[] {
   return [
     {
-      name: 'categories',
+      name: 'category',
       type: 'relationship',
       admin: {
         placeholder: '<brak>',
       },
-      hasMany: true,
-      label: 'Kategorie',
+      label: 'Kategoria',
       relationTo: 'categories',
     },
     {
@@ -25,7 +24,7 @@ export function createTaxonomyFields(): Field[] {
   ]
 }
 
-export function createRelatedContentJoinFields(taxonomyField: 'categories' | 'tags'): Field[] {
+export function createRelatedContentJoinFields(taxonomyField: 'category' | 'tags'): Field[] {
   return [
     {
       name: 'relatedPages',

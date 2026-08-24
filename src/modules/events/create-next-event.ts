@@ -55,7 +55,10 @@ async function handler(req: PayloadRequest): Promise<Response> {
         author: typeof source.author === 'object' ? source.author.id : source.author,
         capacity: source.capacity,
         capacityMode: source.capacityMode,
-        categories: source.categories?.map((item) => (typeof item === 'object' ? item.id : item)),
+        category:
+          source.category && typeof source.category === 'object'
+            ? source.category.id
+            : source.category,
         endAt,
         eventStatus: 'scheduled' as const,
         excerpt: source.excerpt,

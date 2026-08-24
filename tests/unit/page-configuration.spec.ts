@@ -5,6 +5,11 @@ import { Categories } from '@/collections/Categories'
 import { Pages } from '@/collections/Pages'
 import { Posts } from '@/collections/Posts'
 import { Tags } from '@/collections/Tags'
+import {
+  populateHierarchyFullTitle,
+  preventDeletingCategoryWithChildren,
+  validateHierarchy,
+} from '@/modules/content/hierarchy'
 import { validatePageStructure } from '@/modules/content/page-validation'
 
 function findField(fields: typeof Categories.fields, name: string) {
@@ -89,7 +94,8 @@ describe('page configuration', () => {
   it('keeps the agreed field order in Pages', () => {
     expect(describeFieldOrder(Pages.fields)).toEqual([
       ['title', 'parent'],
-      ['categories', 'tags'],
+      ['category', 'tags'],
+      'fullTitle',
       'heroImage',
       'listingExcerpt',
       'layout',
@@ -98,6 +104,8 @@ describe('page configuration', () => {
       'author',
       'publishedAt',
       'systemKey',
+      'breadcrumbs',
+      'hierarchyPath',
     ])
   })
 
@@ -105,7 +113,7 @@ describe('page configuration', () => {
     expect(describeFieldOrder(Posts.fields)).toEqual([
       'title',
       'slug',
-      ['categories', 'tags'],
+      ['category', 'tags'],
       'heroImage',
       'excerpt',
       ['relatedEvents', 'relatedEventCycles'],
@@ -117,17 +125,28 @@ describe('page configuration', () => {
   })
 
   it('keeps the agreed field order in Categories and Tags', () => {
-    for (const collection of [Categories, Tags]) {
-      expect(describeFieldOrder(collection.fields)).toEqual([
-        'name',
-        'slug',
-        'description',
-        'relatedPages',
-        'relatedPosts',
-        'relatedEvents',
-        'relatedEventCycles',
-      ])
-    }
+    expect(describeFieldOrder(Categories.fields)).toEqual([
+      'name',
+      'slug',
+      'description',
+      'parent',
+      'fullTitle',
+      'relatedPages',
+      'relatedPosts',
+      'relatedEvents',
+      'relatedEventCycles',
+      'breadcrumbs',
+      'hierarchyPath',
+    ])
+    expect(describeFieldOrder(Tags.fields)).toEqual([
+      'name',
+      'slug',
+      'description',
+      'relatedPages',
+      'relatedPosts',
+      'relatedEvents',
+      'relatedEventCycles',
+    ])
   })
 
   it('places taxonomy URLs in the sidebar and uses the related-content renderer', () => {
@@ -148,6 +167,23 @@ describe('page configuration', () => {
             Field: '/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin',
           },
         },
+      })
+    }
+  })
+
+  it('hides plugin breadcrumbs and shows the readable hierarchy path in the sidebar', () => {
+    for (const collection of [Pages, Categories]) {
+      expect(findField(collection.fields, 'breadcrumbs')).toMatchObject({
+        admin: { hidden: true, readOnly: true },
+        type: 'array',
+      })
+      expect(findField(collection.fields, 'hierarchyPath')).toMatchObject({
+        admin: {
+          components: { Field: '/components/admin/HierarchyPath#HierarchyPath' },
+          position: 'sidebar',
+        },
+        label: 'Ścieżka nawigacji',
+        type: 'ui',
       })
     }
   })
@@ -191,13 +227,38 @@ describe('page configuration', () => {
 
   it('rejects a cycle in page parents', async () => {
     await expect(
-      validatePageStructure({
+      validateHierarchy({
+        collection: { slug: 'pages' },
         data: { parent: 2, slug: 'dziecko' },
         originalDoc: { id: 1 },
         req: {
           context: {},
           payload: {
             findByID: async () => ({ id: 2, parent: 1 }),
+          },
+        },
+      } as never),
+    ).rejects.toMatchObject({ status: 400 })
+  })
+
+  it('builds the administrative title from the complete breadcrumb path', () => {
+    expect(
+      populateHierarchyFullTitle({
+        data: {
+          breadcrumbs: [{ label: 'Gry' }, { label: 'RPG' }, { label: 'Warhammer' }],
+          name: 'Warhammer',
+        },
+      }),
+    ).toMatchObject({ fullTitle: 'Gry › RPG › Warhammer' })
+  })
+
+  it('prevents deleting a category that still has children', async () => {
+    await expect(
+      preventDeletingCategoryWithChildren({
+        id: 1,
+        req: {
+          payload: {
+            count: async () => ({ totalDocs: 1 }),
           },
         },
       } as never),

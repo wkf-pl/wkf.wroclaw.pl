@@ -73,7 +73,7 @@ export const Events: CollectionConfig = {
     {
       type: 'row',
       fields: [
-        withFieldWidth(getEditorialField(editorialFields, 'categories'), '50%'),
+        withFieldWidth(getEditorialField(editorialFields, 'category'), '50%'),
         withFieldWidth(getEditorialField(editorialFields, 'tags'), '50%'),
       ],
     },

@@ -47,7 +47,7 @@ export const Posts: CollectionConfig = {
     {
       type: 'row',
       fields: [
-        getEditorialField(editorialFields, 'categories'),
+        getEditorialField(editorialFields, 'category'),
         getEditorialField(editorialFields, 'tags'),
       ],
     },
