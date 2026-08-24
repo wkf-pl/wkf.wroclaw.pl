@@ -38,6 +38,19 @@
   margin-right: 0;
 }
 
+.nav__link-icon {
+  width: 18px;
+  height: 18px;
+  margin-inline-end: 8px;
+  flex: 0 0 18px;
+  color: var(--wkf-related-link-color);
+}
+
+.nav a.nav__link:hover .nav__link-icon,
+.nav a.nav__link:focus-visible .nav__link-icon {
+  color: var(--wkf-related-link-hover-color);
+}
+
 .wkf-user-menu__trigger {
   min-width: 0;
   max-width: min(260px, 34vw);
@@ -201,6 +214,200 @@
 
     &::before {
       content: 'Brak';
+    }
+  }
+}
+
+// Payload's native classes identify most actions. Project-owned controls use
+// the matching wkf-action-* class.
+@mixin wkf-action-color($color, $hover-color, $contrast: #2e3436, $hover-contrast: $contrast) {
+  --wkf-action-color: #{$color};
+  --wkf-action-hover-color: #{$hover-color};
+
+  &:not(.btn):not(.pill) {
+    color: var(--wkf-action-color);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--wkf-action-hover-color);
+    }
+  }
+
+  &.btn,
+  .btn {
+    --color: var(--wkf-action-color);
+    --hover-color: var(--wkf-action-hover-color);
+  }
+
+  &.btn--style-secondary,
+  .btn--style-secondary {
+    --btn-border: 1px solid var(--wkf-action-color);
+    --hover-btn-border: 1px solid var(--wkf-action-hover-color);
+  }
+
+  &.btn--style-primary,
+  &.btn--style-pill,
+  &.btn--withPopup,
+  .btn--style-primary,
+  .btn--style-pill {
+    --color: #{$contrast};
+    --bg-color: var(--wkf-action-color);
+    --hover-color: #{$hover-contrast};
+    --hover-bg: var(--wkf-action-hover-color);
+    --btn-border: 1px solid var(--wkf-action-color);
+    --hover-btn-border: 1px solid var(--wkf-action-hover-color);
+  }
+
+  &.pill,
+  .pill {
+    border: 1px solid var(--wkf-action-color);
+    background: var(--wkf-action-color);
+    color: #{$contrast};
+
+    &:hover,
+    &:focus-visible {
+      border-color: var(--wkf-action-hover-color);
+      background: var(--wkf-action-hover-color);
+      color: #{$hover-contrast};
+    }
+  }
+}
+
+:is(
+  .wkf-action-add,
+  #action-create,
+  .array-field__add-row,
+  .blocks-field__drawer-toggler,
+  .list-create-new-doc__create-new-button,
+  .list-header__create-new-button,
+  .no-results__actions .btn,
+  .relationship-add-new__add-button,
+  .upload__createNewToggler
+) {
+  @include wkf-action-color(#3465a4, #204a87, #fff);
+}
+
+:is(.wkf-action-save, #action-save, #action-save-draft, .save-draft) {
+  @include wkf-action-color(#73d216, #4e9a06);
+}
+
+:is(
+  .wkf-action-select,
+  .upload__listToggler,
+  .drawer .list-controls .pill--has-action,
+  .drawer .collection-list__list-selection-actions .pill--has-action
+) {
+  @include wkf-action-color(#75507b, #5c3566, #fff);
+}
+
+:is(
+  .wkf-action-delete,
+  #force-unlock,
+  #action-permanently-delete,
+  #empty-trash-button,
+  #delete-preset,
+  .delete-documents__toggle,
+  .schedule-publish__delete,
+  .array-actions__remove,
+  .upload__remove,
+  .upload-relationship-details__remove,
+  .payload-settings > div:last-child > .btn,
+  .delete-document #confirm-action,
+  .confirmation-modal:has(.delete-documents__checkbox) #confirm-action
+) {
+  @include wkf-action-color(#ef2929, #cc0000, #fff);
+}
+
+.schedule-publish__delete {
+  border-color: var(--wkf-action-color);
+  color: var(--wkf-action-color);
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--wkf-action-hover-color);
+    color: var(--wkf-action-hover-color);
+  }
+}
+
+.field-type.relationship {
+  :is(.multi-value-remove, .clear-indicator) {
+    color: #ef2929;
+
+    .stroke {
+      stroke-width: 2px;
+    }
+
+    &:hover,
+    &:focus-visible {
+      color: #cc0000;
+    }
+  }
+
+  :is(
+    .relationship--multi-value-label__drawer-toggler,
+    .relationship--single-value__drawer-toggler
+  ) {
+    color: var(--wkf-related-link-color);
+
+    .icon--edit {
+      display: none;
+    }
+
+    &::after {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+      background-color: currentColor;
+      content: '';
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M16 10.6667V14.6667C16 15.4031 15.4031 16 14.6667 16H5.3333C4.5969 16 4 15.4031 4 14.6667V5.3333C4 4.5969 4.5969 4 5.3333 4H9.3333M16 4L10 10M16 4H12M16 4V8' fill='none' stroke='black' stroke-linecap='square'/%3E%3C/svg%3E")
+        center / contain no-repeat;
+    }
+
+    &:hover,
+    &:focus-visible {
+      color: var(--wkf-related-link-hover-color);
+    }
+  }
+
+  .relationship-add-new__add-button {
+    .icon--plus .stroke {
+      stroke-width: 2px;
+    }
+  }
+}
+
+.date-time-picker__clear-button {
+  color: #ef2929;
+
+  .icon--x .stroke {
+    stroke: currentColor;
+    stroke-width: 2px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: #cc0000;
+  }
+}
+
+html[data-theme='light'] {
+  --wkf-related-link-color: #3465a4;
+  --wkf-related-link-hover-color: #204a87;
+}
+
+html[data-theme='dark'] {
+  --wkf-related-link-color: #729fcf;
+  --wkf-related-link-hover-color: #729fcf;
+}
+
+:is(.wkf-hierarchy-path, .table) {
+  a,
+  .default-cell__first-cell {
+    color: var(--wkf-related-link-color);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--wkf-related-link-hover-color);
     }
   }
 }

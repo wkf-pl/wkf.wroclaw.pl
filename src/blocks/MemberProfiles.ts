@@ -7,6 +7,12 @@ export const MemberProfilesBlock: Block = {
       Label: '/components/admin/ContentBlockLabel#MemberProfilesBlockLabel',
     },
     disableBlockName: true,
+    images: {
+      thumbnail: {
+        alt: 'Schematyczna ikona dwóch kart profili osób',
+        url: '/assets/block-thumbnails/member-profiles.png',
+      },
+    },
   },
   fields: [
     {

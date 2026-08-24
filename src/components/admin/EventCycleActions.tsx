@@ -37,7 +37,13 @@ export function EventCycleActions() {
   }
 
   return (
-    <Button buttonStyle="secondary" disabled={isCreating} onClick={createEvent} size="small">
+    <Button
+      buttonStyle="secondary"
+      className="wkf-action-add"
+      disabled={isCreating}
+      onClick={createEvent}
+      size="medium"
+    >
       {isCreating ? 'Tworzenie…' : 'Dodaj kolejne Wydarzenie'}
     </Button>
   )

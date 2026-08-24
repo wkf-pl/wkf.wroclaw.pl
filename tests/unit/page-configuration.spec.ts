@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { AttachmentsBlock, MediaGalleryBlock } from '@/blocks/MediaListing'
+import { MemberProfilesBlock } from '@/blocks/MemberProfiles'
+import { RichTextBlock } from '@/blocks/RichText'
 import { ListingBlock, validateListingSources, validateParentPage } from '@/blocks/Listing'
 import { Categories } from '@/collections/Categories'
 import { Pages } from '@/collections/Pages'
@@ -33,6 +36,37 @@ function describeFieldOrder(fields: typeof Pages.fields): (string | string[])[] 
 }
 
 describe('page configuration', () => {
+  it('uses semantic SVG thumbnails for every content block', () => {
+    expect([
+      RichTextBlock.admin?.images?.thumbnail,
+      ListingBlock.admin?.images?.thumbnail,
+      MediaGalleryBlock.admin?.images?.thumbnail,
+      AttachmentsBlock.admin?.images?.thumbnail,
+      MemberProfilesBlock.admin?.images?.thumbnail,
+    ]).toEqual([
+      {
+        alt: 'Schematyczna ikona dokumentu z tekstem i piórem',
+        url: '/assets/block-thumbnails/rich-text.png',
+      },
+      {
+        alt: 'Schematyczna ikona uporządkowanych kart i filtra',
+        url: '/assets/block-thumbnails/listing.png',
+      },
+      {
+        alt: 'Schematyczna ikona siatki zdjęć',
+        url: '/assets/block-thumbnails/media-gallery.png',
+      },
+      {
+        alt: 'Schematyczna ikona dokumentów połączonych spinaczem',
+        url: '/assets/block-thumbnails/attachments.png',
+      },
+      {
+        alt: 'Schematyczna ikona dwóch kart profili osób',
+        url: '/assets/block-thumbnails/member-profiles.png',
+      },
+    ])
+  })
+
   it('uses the custom grammatically correct create label', () => {
     expect(Pages.admin?.components?.edit?.beforeDocumentControls).toContain(
       '/components/admin/PageCreateLabel#PageCreateLabel',

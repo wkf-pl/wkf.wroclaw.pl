@@ -42,7 +42,13 @@ export function EventActions() {
   }
 
   return (
-    <Button buttonStyle="secondary" disabled={isCreating} onClick={createNextEvent} size="small">
+    <Button
+      buttonStyle="secondary"
+      className="wkf-action-add"
+      disabled={isCreating}
+      onClick={createNextEvent}
+      size="medium"
+    >
       {isCreating ? 'Tworzenie…' : 'Dodaj następne'}
     </Button>
   )
