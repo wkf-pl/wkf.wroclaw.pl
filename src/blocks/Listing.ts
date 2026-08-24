@@ -40,6 +40,12 @@ export const ListingBlock: Block = {
       Label: '/components/admin/ContentBlockLabel#ListingBlockLabel',
     },
     disableBlockName: true,
+    images: {
+      thumbnail: {
+        alt: 'Schematyczna ikona uporządkowanych kart i filtra',
+        url: '/assets/block-thumbnails/listing.png',
+      },
+    },
   },
   fields: [
     {

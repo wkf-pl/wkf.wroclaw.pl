@@ -188,6 +188,12 @@ export const MediaGalleryBlock: Block = {
       Label: '/components/admin/ContentBlockLabel#MediaGalleryBlockLabel',
     },
     disableBlockName: true,
+    images: {
+      thumbnail: {
+        alt: 'Schematyczna ikona siatki zdjęć',
+        url: '/assets/block-thumbnails/media-gallery.png',
+      },
+    },
   },
   fields: createMediaListingFields('grid', true),
   interfaceName: 'MediaGalleryBlock',
@@ -204,6 +210,12 @@ export const AttachmentsBlock: Block = {
       Label: '/components/admin/ContentBlockLabel#AttachmentsBlockLabel',
     },
     disableBlockName: true,
+    images: {
+      thumbnail: {
+        alt: 'Schematyczna ikona dokumentów połączonych spinaczem',
+        url: '/assets/block-thumbnails/attachments.png',
+      },
+    },
   },
   fields: createMediaListingFields('list', false),
   interfaceName: 'AttachmentsBlock',

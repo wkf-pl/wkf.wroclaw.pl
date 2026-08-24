@@ -13,6 +13,8 @@ import React, { Fragment } from 'react'
 import type { User } from '@/payload-types'
 import { userHasRole } from '@/modules/membership/user-roles'
 
+import { AdminNavIcon } from './AdminNavIcon'
+
 const baseClass = 'nav'
 
 export function AdminNavClient({
@@ -52,6 +54,7 @@ export function AdminNavClient({
                 isExact={pathname === href}
                 key={index}
                 label={getTranslation(entityLabel, i18n)}
+                iconName={slug}
               />
             )
           })}
@@ -63,6 +66,7 @@ export function AdminNavClient({
           id="nav-account"
           isActive={isActivePath(pathname, formatAdminURL({ adminRoute, path: accountRoute }))}
           isExact={pathname === formatAdminURL({ adminRoute, path: accountRoute })}
+          iconName="account"
           label="Konto"
         />
         {hasMemberRole ? (
@@ -71,6 +75,7 @@ export function AdminNavClient({
             id="nav-profile"
             isActive={isActivePath(pathname, formatAdminURL({ adminRoute, path: '/profile' }))}
             isExact={pathname === formatAdminURL({ adminRoute, path: '/profile' })}
+            iconName="profile"
             label="Wizytówka"
           />
         ) : null}
@@ -82,12 +87,14 @@ export function AdminNavClient({
 function AdminNavLink({
   href,
   id,
+  iconName,
   isActive,
   isExact,
   label,
 }: {
   href: string
   id: string
+  iconName?: string
   isActive: boolean
   isExact: boolean
   label: string
@@ -95,6 +102,7 @@ function AdminNavLink({
   const content = (
     <>
       {isActive && <div className={`${baseClass}__link-indicator`} />}
+      {iconName ? <AdminNavIcon name={iconName} /> : null}
       <span className={`${baseClass}__link-label`}>{label}</span>
     </>
   )

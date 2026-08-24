@@ -7,6 +7,12 @@ export const RichTextBlock: Block = {
       Label: '/components/admin/ContentBlockLabel#RichTextBlockLabel',
     },
     disableBlockName: true,
+    images: {
+      thumbnail: {
+        alt: 'Schematyczna ikona dokumentu z tekstem i piórem',
+        url: '/assets/block-thumbnails/rich-text.png',
+      },
+    },
   },
   fields: [
     {
