@@ -1,7 +1,28 @@
 import { expect, test } from '@playwright/test'
+import { getPayload, type Payload } from 'payload'
 
+import config from '@/payload.config'
+
+import {
+  createPublishedDocumentFixture,
+  deletePublishedDocumentFixture,
+} from '../helpers/documentFixture'
 import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
+
+const documentFixtureName = 'e2e-rich-text-link-document'
+let payload: Payload
+
+test.beforeAll(async () => {
+  payload = await getPayload({ config })
+  await createPublishedDocumentFixture(payload, documentFixtureName)
+})
+
+test.afterAll(async () => {
+  if (payload) {
+    await deletePublishedDocumentFixture(payload, documentFixtureName)
+  }
+})
 
 test('renders dynamic labels for post content blocks', async ({ page }) => {
   await login({ page, user: editorTestUser })

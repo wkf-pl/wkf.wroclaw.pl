@@ -55,5 +55,7 @@ test('renders Cycle tabs, generated URL and grammatical creation labels', async 
   await expect(page.getByRole('button', { name: 'Dodaj następne' })).toHaveCount(0)
 
   await page.goto('/admin/collections/partners')
-  await expect(page.getByRole('link', { name: 'Dodaj Partnera', exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: 'Dodaj Partnera', exact: true }).first(),
+  ).toBeVisible()
 })

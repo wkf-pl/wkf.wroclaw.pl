@@ -5,6 +5,7 @@ import {
   createRichTextLinkFields,
   getRichTextLinkTechnicalValues,
   getRichTextLinkVisibleValues,
+  isRichTextLinkFieldVisible,
   resolveRichTextInternalLink,
 } from '@/modules/content/rich-text-links'
 
@@ -28,6 +29,13 @@ function createInternalLink(
 }
 
 describe('rich text internal links', () => {
+  it('shows only fields belonging to the selected target', () => {
+    expect(isRichTextLinkFieldVisible('document', 'document')).toBe(true)
+    expect(isRichTextLinkFieldVisible('page', 'document')).toBe(false)
+    expect(isRichTextLinkFieldVisible('customScheme', 'custom')).toBe(true)
+    expect(isRichTextLinkFieldVisible('customAddress', 'document')).toBe(false)
+  })
+
   it('uses the shared target selector without labels or partner links', () => {
     const fields = createRichTextLinkFields([{ name: 'text', required: true, type: 'text' }])
     const targetRow = fields.find((field) => field.type === 'row')

@@ -8,6 +8,8 @@ import { getRelationshipId } from '@/lib/relationships'
 import {
   getRichTextLinkTechnicalValues,
   getRichTextLinkVisibleValues,
+  isRichTextLinkFieldVisible,
+  richTextLinkConditionalFieldNames,
   type RichTextLinkTechnicalValues,
 } from '@/modules/content/rich-text-links'
 
@@ -106,6 +108,26 @@ export function RichTextLinkSync(properties: UIFieldClientProps) {
         dispatchFields({ formState: hydratedFields, type: 'UPDATE_MANY' })
         return
       }
+    }
+
+    const currentFields = getFields()
+    const conditionalFieldState = richTextLinkConditionalFieldNames.reduce<FormState>(
+      (formState, fieldName) => {
+        const fieldPath = siblingPath(fieldName)
+        const fieldState = currentFields[fieldPath]
+        const passesCondition = isRichTextLinkFieldVisible(fieldName, targetType)
+
+        if (fieldState && fieldState.passesCondition !== passesCondition) {
+          formState[fieldPath] = { ...fieldState, passesCondition }
+        }
+
+        return formState
+      },
+      {},
+    )
+
+    if (Object.keys(conditionalFieldState).length > 0) {
+      dispatchFields({ formState: conditionalFieldState, type: 'UPDATE_MANY' })
     }
 
     const technicalValues = getRichTextLinkTechnicalValues({

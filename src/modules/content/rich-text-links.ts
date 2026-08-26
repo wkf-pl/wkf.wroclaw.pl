@@ -57,6 +57,29 @@ export type RichTextLinkTechnicalValues = {
   url: string | undefined
 }
 
+export const richTextLinkConditionalFieldNames = [
+  'eventCycle',
+  'document',
+  'category',
+  'page',
+  'tag',
+  'post',
+  'event',
+  'customScheme',
+  'customAddress',
+] as const
+
+export function isRichTextLinkFieldVisible(
+  fieldName: (typeof richTextLinkConditionalFieldNames)[number],
+  targetType: unknown,
+): boolean {
+  if (fieldName === 'customScheme' || fieldName === 'customAddress') {
+    return targetType === 'custom'
+  }
+
+  return fieldName === targetType
+}
+
 type RichTextLinkStoredTechnicalValues = {
   doc?: null | {
     relationTo?: unknown
