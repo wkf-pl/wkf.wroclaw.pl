@@ -22,6 +22,19 @@ export const MemberProfilesBlock: Block = {
       maxLength: 160,
     },
     {
+      name: 'view',
+      type: 'select',
+      admin: { isClearable: false },
+      defaultValue: 'grid',
+      label: 'Widok',
+      options: [
+        { label: 'Karta', value: 'card' },
+        { label: 'Lista', value: 'list' },
+        { label: 'Siatka', value: 'grid' },
+      ],
+      required: true,
+    },
+    {
       name: 'entries',
       type: 'array',
       admin: {

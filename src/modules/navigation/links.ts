@@ -1,11 +1,13 @@
 import type {
   Category,
+  Document,
   Event,
   EventCycle,
   Media,
   Navigation,
   Page,
   Partner,
+  Post,
   Tag,
 } from '@/payload-types'
 import { buildCustomTarget, isCustomScheme } from './custom-target'
@@ -18,11 +20,13 @@ type LinkTarget = Pick<
   | 'category'
   | 'customAddress'
   | 'customScheme'
+  | 'document'
   | 'event'
   | 'eventCycle'
   | 'openInNewTab'
   | 'page'
   | 'partner'
+  | 'post'
   | 'tag'
   | 'targetType'
 >
@@ -54,6 +58,12 @@ export function resolveLink(item: LinkTarget): ResolvedLink | null {
   } else if (item.targetType === 'partner') {
     const partner = getPublishedDocument(item.partner)
     href = partner ? `/partners/${partner.slug}` : undefined
+  } else if (item.targetType === 'document') {
+    const document = getPublishedDocument(item.document)
+    href = document ? `/dokumenty/${document.slug}` : undefined
+  } else if (item.targetType === 'post') {
+    const post = getPublishedDocument(item.post)
+    href = post ? `/blog/${post.slug}` : undefined
   } else {
     href = isCustomScheme(item.customScheme)
       ? (buildCustomTarget(item.customScheme, item.customAddress) ?? undefined)
@@ -67,7 +77,7 @@ export function resolveLink(item: LinkTarget): ResolvedLink | null {
   return item.openInNewTab ? { href, rel: 'noopener noreferrer', target: '_blank' } : { href }
 }
 
-function getPublishedDocument<T extends Event | EventCycle | Partner>(
+function getPublishedDocument<T extends Document | Event | EventCycle | Partner | Post>(
   value: null | number | T | undefined,
 ): T | null {
   return value && typeof value === 'object' && value._status === 'published' && value.slug

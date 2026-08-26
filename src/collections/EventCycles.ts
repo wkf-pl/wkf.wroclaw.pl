@@ -46,7 +46,7 @@ const eventCycleSlugField: Field = {
   },
   hooks: { beforeValidate: [populateSlug] },
   index: true,
-  label: 'Adres URL',
+  label: 'Slug',
   required: true,
   unique: true,
 }
@@ -78,13 +78,6 @@ export const EventCycles: CollectionConfig = {
           label: 'Opis cyklu',
           fields: [
             getEditorialField(editorialFields, 'title'),
-            {
-              type: 'row',
-              fields: [
-                getEditorialField(editorialFields, 'category'),
-                getEditorialField(editorialFields, 'tags'),
-              ],
-            },
             getEditorialField(editorialFields, 'heroImage'),
             { name: 'tagline', type: 'text', label: 'Hasło reklamowe', maxLength: 180 },
             {
@@ -111,7 +104,7 @@ export const EventCycles: CollectionConfig = {
                 { name: 'tagline', type: 'text', label: 'Hasło reklamowe', maxLength: 180 },
                 { name: 'excerpt', type: 'textarea', label: 'Streszczenie', maxLength: 500 },
                 createContentLayoutField('Treści'),
-                { type: 'row', fields: createTaxonomyFields() },
+                { type: 'row', fields: createTaxonomyFields({ position: 'main' }) },
                 {
                   type: 'row',
                   fields: [
@@ -160,8 +153,9 @@ export const EventCycles: CollectionConfig = {
       ],
     },
     eventCycleSlugField,
+    getEditorialField(editorialFields, 'category'),
+    getEditorialField(editorialFields, 'tags'),
     getEditorialField(editorialFields, 'author'),
-    getEditorialField(editorialFields, 'publishedAt'),
     {
       name: 'calendarFeedKey',
       type: 'text',
@@ -169,6 +163,7 @@ export const EventCycles: CollectionConfig = {
       index: true,
       unique: true,
     },
+    getEditorialField(editorialFields, 'publishedAt'),
   ],
   hooks: {
     afterChange: [syncContentListingAfterChange],

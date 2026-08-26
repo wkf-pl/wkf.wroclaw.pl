@@ -1,12 +1,14 @@
 import { RscEntryLexicalCell as RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { RscEntryLexicalField as RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { LexicalDiffComponent as LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
+import { LinkFeatureClient as LinkFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+import { CustomAddressField as CustomAddressField_62e9eb14ca92d7097b00888098bd948f } from '../../../components/admin/CustomAddressField'
+import { RichTextLinkSync as RichTextLinkSync_36e252f92da8d4bc2d2f5f1cf5eda83c } from '../../../components/admin/RichTextLinkSync'
 import { InlineToolbarFeatureClient as InlineToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { HorizontalRuleFeatureClient as HorizontalRuleFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { UploadFeatureClient as UploadFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { BlockquoteFeatureClient as BlockquoteFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { RelationshipFeatureClient as RelationshipFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
-import { LinkFeatureClient as LinkFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ChecklistFeatureClient as ChecklistFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { OrderedListFeatureClient as OrderedListFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { UnorderedListFeatureClient as UnorderedListFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
@@ -25,18 +27,19 @@ import { RichTextBlockLabel as RichTextBlockLabel_d53c993bb109710411f82eaaf564ee
 import { ListingParentPageField as ListingParentPageField_064fe10c7d0092bdda4e6b763de3624c } from '../../../components/admin/ListingParentPageField'
 import { ListingBlockLabel as ListingBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { MediaGalleryBlockLabel as MediaGalleryBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
+import { DocumentEntryRowLabel as DocumentEntryRowLabel_7df88ed2249a8684b8a631fb72da10d5 } from '../../../components/admin/DocumentEntryRowLabel'
+import { DocumentsBlockLabel as DocumentsBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { AttachmentsBlockLabel as AttachmentsBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { MemberProfileEntryRowLabel as MemberProfileEntryRowLabel_d89d5b210a246731bf987576398d455f } from '../../../components/admin/MemberProfileEntryRowLabel'
 import { MemberProfilesBlockLabel as MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
+import { HierarchyPath as HierarchyPath_6311b6033928ec6e076fdd24567b1bb0 } from '../../../components/admin/HierarchyPath'
 import { UserRelationshipCell as UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
 import { UserRelationshipField as UserRelationshipField_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
-import { HierarchyPath as HierarchyPath_6311b6033928ec6e076fdd24567b1bb0 } from '../../../components/admin/HierarchyPath'
 import { PageCreateLabel as PageCreateLabel_0ea542d15a7bc53da30cd446a6eac5d4 } from '../../../components/admin/PageCreateLabel'
 import { BlurValidatedTextField as BlurValidatedTextField_78245b472a4cd124366becfa8638282c } from '../../../components/admin/BlurValidatedTextField'
 import { GoogleMapEmbedField as GoogleMapEmbedField_857e9fb129ac6aae3aa32a9ad70ddcd1 } from '../../../components/admin/GoogleMapEmbedField'
 import { EventOrganizerRowLabel as EventOrganizerRowLabel_9e59ac5c1cbd76776990b737e017eef3 } from '../../../components/admin/EventRelationshipRowLabel'
 import { EventPartnerRowLabel as EventPartnerRowLabel_9e59ac5c1cbd76776990b737e017eef3 } from '../../../components/admin/EventRelationshipRowLabel'
-import { CustomAddressField as CustomAddressField_62e9eb14ca92d7097b00888098bd948f } from '../../../components/admin/CustomAddressField'
 import { EventLinkRowLabel as EventLinkRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { EventCreateLabel as EventCreateLabel_9321488c4e8960e8bd87c29c2a32b741 } from '../../../components/admin/CollectionLabels'
 import { EventCycleDefaultsApplier as EventCycleDefaultsApplier_cc9b53b3b0ac5687279686608ed384da } from '../../../components/admin/EventCycleDefaultsApplier'
@@ -77,12 +80,14 @@ export const importMap = {
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalCell": RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalField": RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#LexicalDiffComponent": LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e,
+  "@payloadcms/richtext-lexical/client#LinkFeatureClient": LinkFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+  "/components/admin/CustomAddressField#CustomAddressField": CustomAddressField_62e9eb14ca92d7097b00888098bd948f,
+  "/components/admin/RichTextLinkSync#RichTextLinkSync": RichTextLinkSync_36e252f92da8d4bc2d2f5f1cf5eda83c,
   "@payloadcms/richtext-lexical/client#InlineToolbarFeatureClient": InlineToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#HorizontalRuleFeatureClient": HorizontalRuleFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#UploadFeatureClient": UploadFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#BlockquoteFeatureClient": BlockquoteFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#RelationshipFeatureClient": RelationshipFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
-  "@payloadcms/richtext-lexical/client#LinkFeatureClient": LinkFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ChecklistFeatureClient": ChecklistFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#OrderedListFeatureClient": OrderedListFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#UnorderedListFeatureClient": UnorderedListFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
@@ -101,18 +106,19 @@ export const importMap = {
   "/components/admin/ListingParentPageField#ListingParentPageField": ListingParentPageField_064fe10c7d0092bdda4e6b763de3624c,
   "/components/admin/ContentBlockLabel#ListingBlockLabel": ListingBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ContentBlockLabel#MediaGalleryBlockLabel": MediaGalleryBlockLabel_d53c993bb109710411f82eaaf564eeff,
+  "/components/admin/DocumentEntryRowLabel#DocumentEntryRowLabel": DocumentEntryRowLabel_7df88ed2249a8684b8a631fb72da10d5,
+  "/components/admin/ContentBlockLabel#DocumentsBlockLabel": DocumentsBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ContentBlockLabel#AttachmentsBlockLabel": AttachmentsBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/MemberProfileEntryRowLabel#MemberProfileEntryRowLabel": MemberProfileEntryRowLabel_d89d5b210a246731bf987576398d455f,
   "/components/admin/ContentBlockLabel#MemberProfilesBlockLabel": MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff,
+  "/components/admin/HierarchyPath#HierarchyPath": HierarchyPath_6311b6033928ec6e076fdd24567b1bb0,
   "/components/admin/UserIdentity#UserRelationshipCell": UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53,
   "/components/admin/UserIdentity#UserRelationshipField": UserRelationshipField_0af2ec3c6a63521c7b2eedb66024da53,
-  "/components/admin/HierarchyPath#HierarchyPath": HierarchyPath_6311b6033928ec6e076fdd24567b1bb0,
   "/components/admin/PageCreateLabel#PageCreateLabel": PageCreateLabel_0ea542d15a7bc53da30cd446a6eac5d4,
   "/components/admin/BlurValidatedTextField#BlurValidatedTextField": BlurValidatedTextField_78245b472a4cd124366becfa8638282c,
   "/components/admin/GoogleMapEmbedField#GoogleMapEmbedField": GoogleMapEmbedField_857e9fb129ac6aae3aa32a9ad70ddcd1,
   "/components/admin/EventRelationshipRowLabel#EventOrganizerRowLabel": EventOrganizerRowLabel_9e59ac5c1cbd76776990b737e017eef3,
   "/components/admin/EventRelationshipRowLabel#EventPartnerRowLabel": EventPartnerRowLabel_9e59ac5c1cbd76776990b737e017eef3,
-  "/components/admin/CustomAddressField#CustomAddressField": CustomAddressField_62e9eb14ca92d7097b00888098bd948f,
   "/components/admin/DynamicRowLabel#EventLinkRowLabel": EventLinkRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/CollectionLabels#EventCreateLabel": EventCreateLabel_9321488c4e8960e8bd87c29c2a32b741,
   "/components/admin/EventCycleDefaultsApplier#EventCycleDefaultsApplier": EventCycleDefaultsApplier_cc9b53b3b0ac5687279686608ed384da,

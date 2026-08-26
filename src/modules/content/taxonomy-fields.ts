@@ -1,11 +1,20 @@
 import type { Field } from 'payload'
 
-export function createTaxonomyFields(): Field[] {
+type TaxonomyFieldsOptions = {
+  position?: 'main' | 'sidebar'
+}
+
+export function createTaxonomyFields({
+  position = 'sidebar',
+}: TaxonomyFieldsOptions = {}): Field[] {
+  const adminPosition = position === 'sidebar' ? { position: 'sidebar' as const } : {}
+
   return [
     {
       name: 'category',
       type: 'relationship',
       admin: {
+        ...adminPosition,
         placeholder: '<brak>',
       },
       label: 'Kategoria',
@@ -15,6 +24,7 @@ export function createTaxonomyFields(): Field[] {
       name: 'tags',
       type: 'relationship',
       admin: {
+        ...adminPosition,
         placeholder: '<brak>',
       },
       hasMany: true,
@@ -76,6 +86,19 @@ export function createRelatedContentJoinFields(taxonomyField: 'category' | 'tags
       collection: 'event-cycles',
       defaultLimit: 20,
       label: 'Powiązane cykle wydarzeń',
+      on: taxonomyField,
+    },
+    {
+      name: 'relatedDocuments',
+      type: 'join',
+      admin: {
+        components: {
+          Field: '/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin',
+        },
+      },
+      collection: 'documents',
+      defaultLimit: 20,
+      label: 'Powiązane dokumenty',
       on: taxonomyField,
     },
   ]

@@ -860,15 +860,75 @@ body:has(> .homePage) .siteHeader {
   margin-inline: auto;
 }
 
+.documentsBlock {
+  width: min(70rem, 100%);
+  margin-inline: auto;
+  display: grid;
+  gap: 1.25rem;
+}
+
 .documentListItem {
-  padding: 1.5rem;
+  overflow: hidden;
   border: 1px solid rgb(243 163 19 / 42%);
   border-radius: 0.75rem;
   background: rgb(5 31 47 / 72%);
 }
 
+.documentListItemContent {
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+}
+
+.documentList-cards .documentListItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(7rem, 14vw, 9rem);
+}
+
+.documentPdfLink {
+  display: grid;
+  min-height: 10rem;
+  margin: 1.25rem 1.25rem 1.25rem 0;
+  place-items: center;
+  border: 1px solid rgb(243 163 19 / 48%);
+  border-radius: 0.65rem;
+  color: var(--gold-light);
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.documentPdfLink:hover,
+.documentPdfLink:focus-visible {
+  border-color: var(--gold-light);
+  background: rgb(243 163 19 / 12%);
+  color: var(--ivory);
+}
+
+.documentPdfLink svg {
+  width: min(5.5rem, 75%);
+  height: auto;
+}
+
+.documentListItemMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0;
+  color: #9faab2;
+  font-size: 0.9rem;
+}
+
+.documentListItemMeta span {
+  color: var(--gold-light);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .documentListItem h2 {
-  margin: 0 0 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
 }
 
 .documentListItem h2 a {
@@ -876,9 +936,39 @@ body:has(> .homePage) .siteHeader {
   text-decoration: none;
 }
 
-.documentListItem > p:last-child {
+.documentListItemContent > p:last-child:not(.documentListItemMeta) {
   color: var(--muted);
   line-height: 1.6;
+}
+
+.documentList-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(70rem, 100%);
+}
+
+.documentList-grid .documentListItemContent {
+  padding: 1.25rem;
+}
+
+.documentList-grid .documentListItem h2 {
+  font-size: 1.5rem;
+}
+
+.documentList-list {
+  gap: 0.75rem;
+}
+
+.documentList-list .documentListItemContent {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.documentList-list .documentListItem h2 {
+  margin: 0;
+  font-size: 1.25rem;
 }
 
 .documentPagination {
@@ -1274,7 +1364,8 @@ a.attachmentItem:hover {
     grid-column: 1 / -1;
   }
 
-  .contentList-grid {
+  .contentList-grid,
+  .documentList-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1364,8 +1455,19 @@ a.attachmentItem:hover {
 
   .contentCard,
   .contentList-grid,
-  .contentList-compact .contentCardContent {
+  .contentList-compact .contentCardContent,
+  .documentList-grid,
+  .documentList-list .documentListItemContent {
     grid-template-columns: 1fr;
+  }
+
+  .documentList-cards .documentListItem {
+    grid-template-columns: minmax(0, 1fr) 6.5rem;
+  }
+
+  .documentPdfLink {
+    min-height: 8rem;
+    margin: 1rem 1rem 1rem 0;
   }
 
   .mediaList-grid,
@@ -1454,11 +1556,53 @@ a.attachmentItem:hover {
   gap: 1.4rem;
 }
 
+.memberGrid.memberGrid-card,
+.memberGrid.memberGrid-list {
+  grid-template-columns: 1fr;
+}
+
+.memberGrid-card .memberCard {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+}
+
+.memberGrid-card .memberCardImage {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.memberGrid-card .memberCardBody {
+  align-self: center;
+  padding: clamp(1.25rem, 4vw, 2rem);
+}
+
+.memberGrid-list {
+  gap: 0.75rem;
+}
+
+.memberGrid-list .memberCard {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: center;
+}
+
+.memberGrid-list .memberCardBody {
+  padding: 0.85rem 1rem;
+}
+
+.memberGrid-list .memberCardBody h3 {
+  font-size: 1.15rem;
+}
+
+.memberGrid-list :is(.memberCardSummary, .memberCardInterests) {
+  display: none;
+}
+
 .memberCard {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--gold) 52%, transparent);
   border-radius: 0.75rem;
-  background: color-mix(in srgb, var(--navy-light) 82%, black);
+  background: color-mix(in srgb, var(--navy) 82%, black);
   box-shadow: 0 0.7rem 1.6rem rgb(0 0 0 / 18%);
 }
 
@@ -1843,6 +1987,15 @@ a.attachmentItem:hover {
 @media (width <= 48rem) {
   .memberGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .memberGrid-card .memberCard {
+    grid-template-columns: 1fr;
+  }
+
+  .memberGrid-card .memberCardImage {
+    height: auto;
+    aspect-ratio: 2 / 1;
   }
 
   .memberProfileHeader {

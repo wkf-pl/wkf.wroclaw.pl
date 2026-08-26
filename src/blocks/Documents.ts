@@ -1,52 +1,63 @@
-import type { Block, Field, Validate } from 'payload'
+import type { Block, Validate } from 'payload'
 
-type MediaSelectionSiblingData = {
+type DocumentSelectionSiblingData = {
   selectionMode?: unknown
 }
 
-type ManualMediaItem = {
-  media?: unknown
+type ManualDocumentItem = {
+  document?: unknown
 }
 
-export const validateManualMediaItems: Validate<unknown, unknown, MediaSelectionSiblingData> = (
-  value,
-  { siblingData },
-) => {
+export const validateManualDocumentItems: Validate<
+  unknown,
+  unknown,
+  DocumentSelectionSiblingData
+> = (value, { siblingData }) => {
   if (siblingData.selectionMode !== 'manual') {
     return true
   }
 
   if (!Array.isArray(value) || value.length === 0) {
-    return 'Wybierz co najmniej jeden plik.'
+    return 'Wybierz co najmniej jeden dokument.'
   }
 
-  const mediaIds = value
+  const documentIds = value
     .map((item) => {
-      if (!item || typeof item !== 'object' || !('media' in item)) {
+      if (!item || typeof item !== 'object' || !('document' in item)) {
         return null
       }
 
-      const media = (item as ManualMediaItem).media
-      if (typeof media === 'number' || typeof media === 'string') {
-        return String(media)
+      const document = (item as ManualDocumentItem).document
+      if (typeof document === 'number' || typeof document === 'string') {
+        return String(document)
       }
 
-      return media && typeof media === 'object' && 'id' in media
-        ? String((media as { id: unknown }).id)
+      return document && typeof document === 'object' && 'id' in document
+        ? String((document as { id: unknown }).id)
         : null
     })
     .filter((id): id is string => id !== null)
 
-  return new Set(mediaIds).size === mediaIds.length
+  return new Set(documentIds).size === documentIds.length
     ? true
-    : 'Każdy plik może zostać wybrany tylko raz.'
+    : 'Każdy dokument może zostać wybrany tylko raz.'
 }
 
-function createMediaListingFields(
-  defaultView: 'cards' | 'grid' | 'list',
-  imagesOnly: boolean,
-): Field[] {
-  return [
+export const DocumentsBlock: Block = {
+  slug: 'documents',
+  admin: {
+    components: {
+      Label: '/components/admin/ContentBlockLabel#DocumentsBlockLabel',
+    },
+    disableBlockName: true,
+    images: {
+      thumbnail: {
+        alt: 'Schematyczna ikona listy dokumentów',
+        url: '/assets/block-thumbnails/documents.png',
+      },
+    },
+  },
+  fields: [
     {
       name: 'heading',
       type: 'text',
@@ -68,25 +79,28 @@ function createMediaListingFields(
       name: 'items',
       type: 'array',
       admin: {
+        components: {
+          RowLabel: '/components/admin/DocumentEntryRowLabel#DocumentEntryRowLabel',
+        },
         condition: (_data, siblingData) => siblingData.selectionMode === 'manual',
         initCollapsed: false,
       },
       fields: [
         {
-          name: 'media',
-          type: 'upload',
-          filterOptions: imagesOnly ? { mimeType: { like: 'image/%' } } : undefined,
-          label: 'Plik',
-          relationTo: 'media',
+          name: 'document',
+          type: 'relationship',
+          filterOptions: { _status: { equals: 'published' } },
+          label: 'Dokument',
+          relationTo: 'documents',
           required: true,
         },
       ],
-      label: 'Pliki',
+      label: 'Dokumenty',
       labels: {
-        plural: 'Pliki',
-        singular: 'Plik',
+        plural: 'Dokumenty',
+        singular: 'Dokument',
       },
-      validate: validateManualMediaItems,
+      validate: validateManualDocumentItems,
     },
     {
       type: 'row',
@@ -131,8 +145,8 @@ function createMediaListingFields(
           options: [
             { label: 'Najnowsze', value: 'newest' },
             { label: 'Najstarsze', value: 'oldest' },
-            { label: 'Nazwa A–Z', value: 'nameAscending' },
-            { label: 'Nazwa Z–A', value: 'nameDescending' },
+            { label: 'Tytuł A–Z', value: 'titleAscending' },
+            { label: 'Tytuł Z–A', value: 'titleDescending' },
           ],
           required: true,
         },
@@ -140,11 +154,11 @@ function createMediaListingFields(
           name: 'view',
           type: 'select',
           admin: { isClearable: false, width: '50%' },
-          defaultValue: defaultView,
+          defaultValue: 'list',
           label: 'Widok',
           options: [
             { label: 'Karty', value: 'cards' },
-            { label: 'Lista', value: 'list' },
+            { label: 'Lista kompaktowa', value: 'list' },
             { label: 'Siatka', value: 'grid' },
           ],
           required: true,
@@ -181,49 +195,10 @@ function createMediaListingFields(
       },
       label: 'Komunikat pustego wyniku',
     },
-  ]
-}
-
-export const MediaGalleryBlock: Block = {
-  slug: 'mediaGallery',
-  admin: {
-    components: {
-      Label: '/components/admin/ContentBlockLabel#MediaGalleryBlockLabel',
-    },
-    disableBlockName: true,
-    images: {
-      thumbnail: {
-        alt: 'Schematyczna ikona siatki zdjęć',
-        url: '/assets/block-thumbnails/media-gallery.png',
-      },
-    },
-  },
-  fields: createMediaListingFields('grid', true),
-  interfaceName: 'MediaGalleryBlock',
+  ],
+  interfaceName: 'DocumentsBlock',
   labels: {
-    plural: 'Galerie mediów',
-    singular: 'Galeria mediów',
-  },
-}
-
-export const AttachmentsBlock: Block = {
-  slug: 'attachments',
-  admin: {
-    components: {
-      Label: '/components/admin/ContentBlockLabel#AttachmentsBlockLabel',
-    },
-    disableBlockName: true,
-    images: {
-      thumbnail: {
-        alt: 'Schematyczna ikona dokumentów połączonych spinaczem',
-        url: '/assets/block-thumbnails/attachments.png',
-      },
-    },
-  },
-  fields: createMediaListingFields('list', false),
-  interfaceName: 'AttachmentsBlock',
-  labels: {
-    plural: 'Załączniki',
-    singular: 'Załączniki',
+    plural: 'Dokumenty',
+    singular: 'Dokumenty',
   },
 }

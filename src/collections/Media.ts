@@ -94,32 +94,27 @@ export const Media: CollectionConfig = {
       label: 'Opis',
     },
     {
-      type: 'row',
-      fields: [
-        {
-          name: 'category',
-          type: 'relationship',
-          admin: {
-            components: { Cell: '/components/admin/MediaTableCells#TaxonomyCell' },
-            placeholder: '<brak>',
-            width: '50%',
-          },
-          label: 'Kategoria',
-          relationTo: 'categories',
-        },
-        {
-          name: 'tags',
-          type: 'relationship',
-          admin: {
-            components: { Cell: '/components/admin/MediaTableCells#TaxonomyCell' },
-            placeholder: '<brak>',
-            width: '50%',
-          },
-          hasMany: true,
-          label: 'Tagi',
-          relationTo: 'tags',
-        },
-      ],
+      name: 'category',
+      type: 'relationship',
+      admin: {
+        components: { Cell: '/components/admin/MediaTableCells#TaxonomyCell' },
+        placeholder: '<brak>',
+        position: 'sidebar',
+      },
+      label: 'Kategoria',
+      relationTo: 'categories',
+    },
+    {
+      name: 'tags',
+      type: 'relationship',
+      admin: {
+        components: { Cell: '/components/admin/MediaTableCells#TaxonomyCell' },
+        placeholder: '<brak>',
+        position: 'sidebar',
+      },
+      hasMany: true,
+      label: 'Tagi',
+      relationTo: 'tags',
     },
     {
       name: 'uploadedBy',

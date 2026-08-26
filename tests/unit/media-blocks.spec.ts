@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { Field } from 'payload'
 
 import {
   AttachmentsBlock,
@@ -8,6 +9,18 @@ import {
 import { Media } from '@/collections/Media'
 import { Pages } from '@/collections/Pages'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
+
+function flattenFields(fields: Field[]): Field[] {
+  return fields.flatMap((field) => {
+    if (field.type === 'tabs') {
+      return [field, ...field.tabs.flatMap((tab) => flattenFields(tab.fields))]
+    }
+    if ('fields' in field && Array.isArray(field.fields)) {
+      return [field, ...flattenFields(field.fields)]
+    }
+    return [field]
+  })
+}
 
 function getNamedField(name: string) {
   const field = MediaGalleryBlock.fields.find(
@@ -45,7 +58,7 @@ describe('media blocks', () => {
       'emptyMessage',
     ])
 
-    const layoutField = Pages.fields.find(
+    const layoutField = flattenFields(Pages.fields).find(
       (field) => 'name' in field && field.name === 'layout' && field.type === 'blocks',
     )
     expect(layoutField).toMatchObject({
@@ -58,8 +71,15 @@ describe('media blocks', () => {
 
   it('shows source-specific controls and restricts gallery choices to images', () => {
     const items = getNamedField('items')
+    const emptyMessage = getNamedField('emptyMessage')
     expect(items.admin?.condition?.({}, { selectionMode: 'manual' }, {} as never)).toBe(true)
     expect(items.admin?.condition?.({}, { selectionMode: 'filters' }, {} as never)).toBe(false)
+    expect(emptyMessage.admin?.condition?.({}, { selectionMode: 'filters' }, {} as never)).toBe(
+      true,
+    )
+    expect(emptyMessage.admin?.condition?.({}, { selectionMode: 'manual' }, {} as never)).toBe(
+      false,
+    )
 
     if (items.type !== 'array') {
       throw new Error('Expected items to be an array field.')

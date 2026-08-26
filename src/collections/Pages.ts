@@ -82,42 +82,50 @@ export const Pages: CollectionConfig = {
   },
   fields: [
     {
-      type: 'row',
-      fields: [
-        withFieldWidth(getEditorialField(editorialFields, 'title'), '50%'),
-        withFieldWidth(pageParentField, '50%'),
+      type: 'tabs',
+      tabs: [
+        {
+          label: 'Treść',
+          fields: [
+            {
+              type: 'row',
+              fields: [
+                withFieldWidth(getEditorialField(editorialFields, 'title'), '50%'),
+                withFieldWidth(pageParentField, '50%'),
+              ],
+            },
+            {
+              name: 'fullTitle',
+              type: 'text',
+              admin: { hidden: true, readOnly: true },
+              index: true,
+              label: 'Pełna ścieżka',
+            },
+            getEditorialField(editorialFields, 'heroImage'),
+            {
+              name: 'listingExcerpt',
+              type: 'textarea',
+              admin: {
+                description:
+                  'Opcjonalny opis karty. Bez niego użyty zostanie początek pierwszego bloku treści.',
+              },
+              label: 'Streszczenie',
+              maxLength: 500,
+            },
+            createContentLayoutField('Treści'),
+          ],
+        },
+        {
+          label: 'SEO',
+          fields: [getEditorialField(editorialFields, 'seo')],
+        },
       ],
     },
-    {
-      type: 'row',
-      fields: [
-        withFieldWidth(getEditorialField(editorialFields, 'category'), '50%'),
-        withFieldWidth(getEditorialField(editorialFields, 'tags'), '50%'),
-      ],
-    },
-    {
-      name: 'fullTitle',
-      type: 'text',
-      admin: { hidden: true, readOnly: true },
-      index: true,
-      label: 'Pełna ścieżka',
-    },
-    getEditorialField(editorialFields, 'heroImage'),
-    {
-      name: 'listingExcerpt',
-      type: 'textarea',
-      admin: {
-        description:
-          'Opcjonalny opis karty. Bez niego użyty zostanie początek pierwszego bloku treści.',
-      },
-      label: 'Streszczenie',
-      maxLength: 500,
-    },
-    createContentLayoutField('Treści'),
-    getEditorialField(editorialFields, 'seo'),
     getEditorialField(editorialFields, 'slug'),
+    ...createHierarchyDisplayFields('pages'),
+    getEditorialField(editorialFields, 'category'),
+    getEditorialField(editorialFields, 'tags'),
     getEditorialField(editorialFields, 'author'),
-    getEditorialField(editorialFields, 'publishedAt'),
     {
       name: 'systemKey',
       type: 'text',
@@ -127,7 +135,7 @@ export const Pages: CollectionConfig = {
       index: true,
       unique: true,
     },
-    ...createHierarchyDisplayFields('pages'),
+    getEditorialField(editorialFields, 'publishedAt'),
   ],
   hooks: {
     afterChange: [syncContentListingAfterChange],

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Category, Media, Page, Tag } from '@/payload-types'
+import type { Category, Document, Media, Page, Post, Tag } from '@/payload-types'
 import { ClubSections } from '@/collections/ClubSections'
 import { Navigation } from '@/globals/Navigation'
 import {
@@ -48,6 +48,45 @@ function createPage(overrides: Partial<Page> = {}): Page {
 }
 
 describe('navigation links', () => {
+  it('places the custom address first and each destination beside the selector', () => {
+    const fields = createLinkFields()
+    const targetRow = fields.find((field) => field.type === 'row')
+
+    if (!targetRow || targetRow.type !== 'row') {
+      throw new Error('Missing link target row.')
+    }
+
+    const targetType = targetRow.fields.find(
+      (field) => 'name' in field && field.name === 'targetType',
+    )
+    expect(targetType).toMatchObject({
+      admin: { isClearable: false, width: '50%' },
+      options: [
+        { label: 'Własny adres', value: 'custom' },
+        { label: 'Cykl wydarzeń', value: 'eventCycle' },
+        { label: 'Dokument', value: 'document' },
+        { label: 'Kategoria', value: 'category' },
+        { label: 'Partner', value: 'partner' },
+        { label: 'Strona', value: 'page' },
+        { label: 'Tag', value: 'tag' },
+        { label: 'Wpis', value: 'post' },
+        { label: 'Wydarzenie', value: 'event' },
+      ],
+      type: 'select',
+    })
+
+    expect(
+      targetRow.fields
+        .filter((field) => 'name' in field && field.name !== 'targetType')
+        .map((field) => ('name' in field ? field.name : '')),
+    ).toEqual(['eventCycle', 'document', 'category', 'partner', 'page', 'tag', 'post', 'event'])
+    expect(
+      targetRow.fields
+        .filter((field) => 'name' in field && field.name !== 'targetType')
+        .every((field) => field.admin?.width === '50%'),
+    ).toBe(true)
+  })
+
   it('does not allow clearing a selected custom URL scheme', () => {
     const customSchemeField = createLinkFields()
       .flatMap((field) => ('fields' in field ? field.fields : [field]))
@@ -197,6 +236,24 @@ describe('navigation links', () => {
       href: '/category/aktualnosci',
     })
     expect(resolveLink({ tag, targetType: 'tag' })).toEqual({ href: '/tag/wkf' })
+  })
+
+  it('resolves published document and post targets', () => {
+    const document = {
+      _status: 'published',
+      id: 1,
+      slug: 'regulamin-klubu',
+    } as Document
+    const post = {
+      _status: 'published',
+      id: 2,
+      slug: 'nowy-wpis',
+    } as Post
+
+    expect(resolveLink({ document, targetType: 'document' })).toEqual({
+      href: '/dokumenty/regulamin-klubu',
+    })
+    expect(resolveLink({ post, targetType: 'post' })).toEqual({ href: '/blog/nowy-wpis' })
   })
 
   it('recognizes only populated system or media icons', () => {

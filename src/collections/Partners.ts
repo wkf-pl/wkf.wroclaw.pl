@@ -41,32 +41,42 @@ export const Partners: CollectionConfig = {
     useAsTitle: 'name',
   },
   fields: [
-    { name: 'name', type: 'text', label: 'Nazwa', required: true },
-    getEditorialField(editorialFields, 'heroImage'),
     {
-      name: 'excerpt',
-      type: 'textarea',
-      label: 'Streszczenie',
-      maxLength: 500,
-      required: true,
+      type: 'tabs',
+      tabs: [
+        {
+          label: 'Treść',
+          fields: [
+            { name: 'name', type: 'text', label: 'Nazwa', required: true },
+            getEditorialField(editorialFields, 'heroImage'),
+            {
+              name: 'excerpt',
+              type: 'textarea',
+              label: 'Streszczenie',
+              maxLength: 500,
+              required: true,
+            },
+            {
+              name: 'website',
+              type: 'text',
+              label: 'Strona WWW',
+              validate: (value: unknown) => {
+                if (!value) return true
+                try {
+                  return typeof value === 'string' && new URL(value).protocol === 'https:'
+                    ? true
+                    : 'Adres musi używać protokołu HTTPS.'
+                } catch {
+                  return 'Podaj poprawny adres HTTPS.'
+                }
+              },
+            },
+            createContentLayoutField('Treści'),
+          ],
+        },
+        { label: 'SEO', fields: [getEditorialField(editorialFields, 'seo')] },
+      ],
     },
-    {
-      name: 'website',
-      type: 'text',
-      label: 'Strona WWW',
-      validate: (value: unknown) => {
-        if (!value) return true
-        try {
-          return typeof value === 'string' && new URL(value).protocol === 'https:'
-            ? true
-            : 'Adres musi używać protokołu HTTPS.'
-        } catch {
-          return 'Podaj poprawny adres HTTPS.'
-        }
-      },
-    },
-    createContentLayoutField('Treści'),
-    getEditorialField(editorialFields, 'seo'),
     {
       name: 'slug',
       type: 'text',
@@ -76,7 +86,7 @@ export const Partners: CollectionConfig = {
       },
       hooks: { beforeValidate: [populateSlugFromName] },
       index: true,
-      label: 'Adres URL',
+      label: 'Slug',
       required: true,
       unique: true,
     },

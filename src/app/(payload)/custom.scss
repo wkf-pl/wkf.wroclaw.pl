@@ -96,8 +96,7 @@
 }
 
 .wkf-profile-sidebar-field,
-.wkf-profile-usage,
-.wkf-hierarchy-path {
+.wkf-profile-usage {
   padding: 18px;
   border: 1px solid var(--theme-elevation-150);
   border-radius: var(--style-radius-s);
@@ -105,6 +104,8 @@
 }
 
 .wkf-hierarchy-path {
+  padding: 0;
+
   p {
     margin: 0;
   }
@@ -122,6 +123,16 @@
     margin-left: 6px;
     color: var(--theme-elevation-500);
     content: '›';
+  }
+}
+
+.document-fields__sidebar-fields > .render-fields {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--base) * 1.5);
+
+  > .field-type {
+    margin-bottom: 0;
   }
 }
 

@@ -2,12 +2,15 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
-import type { Document, Role, User } from '@/payload-types'
+import type { Category, Document, Role, Tag, User } from '@/payload-types'
 import { publicRequestContext } from '@/modules/content/public-access'
+import { findDocumentListing } from '@/modules/documents/document-listing'
 
 import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/integration-author'
 
 const testSlugs = ['integration-public-document', 'integration-role-document']
+const testCategorySlug = 'integration-documents-category'
+const testTagSlug = 'integration-documents-tag'
 const testPDF = Buffer.from(
   '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\nxref\n0 1\n0000000000 65535 f\n%%EOF\n',
 )
@@ -18,6 +21,8 @@ let memberRole: Role
 let userRole: Role
 let publicDocument: Document
 let roleDocument: Document
+let documentCategory: Category
+let documentTag: Tag
 
 function createAuthenticatedUser(id: number, role: Role): User {
   return {
@@ -67,8 +72,31 @@ beforeAll(async () => {
   payload = await getPayload({ config })
   await cleanupTestDocuments()
 
+  await payload.delete({
+    collection: 'categories',
+    overrideAccess: true,
+    where: { slug: { equals: testCategorySlug } },
+  })
+  await payload.delete({
+    collection: 'tags',
+    overrideAccess: true,
+    where: { slug: { equals: testTagSlug } },
+  })
+
   author = await createIntegrationAuthor(payload, 'documents')
   ;[memberRole, userRole] = await Promise.all([findRole('member'), findRole('user')])
+  ;[documentCategory, documentTag] = await Promise.all([
+    payload.create({
+      collection: 'categories',
+      data: { name: 'Integration documents category', slug: testCategorySlug },
+      overrideAccess: true,
+    }),
+    payload.create({
+      collection: 'tags',
+      data: { name: 'Integration documents tag', slug: testTagSlug },
+      overrideAccess: true,
+    }),
+  ])
 
   const [publicFile, roleFile] = await Promise.all([
     payload.create({
@@ -101,12 +129,14 @@ beforeAll(async () => {
       data: {
         _status: 'published',
         author: author.id,
+        category: documentCategory.id,
         documentDate: '2026-08-14T00:00:00.000Z',
         documentNumber: 'INTEGRATION-PUBLIC/2026',
         documentType: 'resolution',
         primaryFile: publicFile.id,
         slug: testSlugs[0],
         summary: 'Public document integration test.',
+        tags: [documentTag.id],
         title: 'Integration public document',
       },
       overrideAccess: true,
@@ -131,6 +161,8 @@ beforeAll(async () => {
 afterAll(async () => {
   if (!payload) return
   await cleanupTestDocuments()
+  await payload.delete({ collection: 'categories', id: documentCategory.id, overrideAccess: true })
+  await payload.delete({ collection: 'tags', id: documentTag.id, overrideAccess: true })
   await deleteIntegrationAuthor(payload, author)
 })
 
@@ -147,6 +179,29 @@ describe('document website access integration', () => {
     expect(result.docs.map(({ id }) => id).sort()).toEqual(
       [publicDocument.id, roleDocument.id].sort(),
     )
+  })
+
+  it('filters the Documents block by taxonomy and preserves manual order', async () => {
+    const filteredResult = await findDocumentListing({
+      categoryId: documentCategory.id,
+      page: 1,
+      pageSize: 10,
+      pagination: false,
+      selectionMode: 'filters',
+      sort: 'newest',
+      tagId: documentTag.id,
+    })
+    expect(filteredResult.items.map(({ id }) => id)).toEqual([publicDocument.id])
+
+    const manualResult = await findDocumentListing({
+      manualDocuments: [roleDocument.id, publicDocument.id],
+      page: 1,
+      pageSize: 10,
+      pagination: false,
+      selectionMode: 'manual',
+      sort: 'newest',
+    })
+    expect(manualResult.items.map(({ id }) => id)).toEqual([roleDocument.id, publicDocument.id])
   })
 
   it('keeps public results independent from the signed-in role without granting CMS access', async () => {

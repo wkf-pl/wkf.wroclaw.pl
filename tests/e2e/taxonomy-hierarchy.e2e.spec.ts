@@ -192,10 +192,11 @@ test('uses one category selector and full hierarchy paths in admin relationships
     'href',
     `/admin/collections/categories/${categories[0].id}`,
   )
-  await expect(categoryPath.getByRole('link', { name: 'E2E Warhammer' })).toHaveAttribute(
-    'href',
-    `/admin/collections/categories/${categories[2].id}`,
+  await expect(categoryPath.getByText('E2E Warhammer', { exact: true })).toHaveJSProperty(
+    'tagName',
+    'STRONG',
   )
+  await expect(categoryPath.getByRole('link', { name: 'E2E Warhammer' })).toHaveCount(0)
   await expect(page.getByText('Breadcrumbs', { exact: true })).toHaveCount(0)
 
   await page.goto(`/admin/collections/pages/${pages[2].id}`)
@@ -205,10 +206,25 @@ test('uses one category selector and full hierarchy paths in admin relationships
     'href',
     `/admin/collections/pages/${pages[0].id}`,
   )
-  await expect(pagePath.getByRole('link', { name: 'E2E Komisja' })).toHaveAttribute(
-    'href',
-    `/admin/collections/pages/${pages[2].id}`,
+  await expect(pagePath.getByText('E2E Komisja', { exact: true })).toHaveJSProperty(
+    'tagName',
+    'STRONG',
   )
+  await expect(pagePath.getByRole('link', { name: 'E2E Komisja' })).toHaveCount(0)
+  const sidebarFields = page.locator('.document-fields__sidebar-fields > .render-fields')
+  await expect(sidebarFields).toHaveCSS('display', 'flex')
+  const smallestSidebarGap = await sidebarFields.evaluate((element) => {
+    const visibleChildren = [...element.children]
+      .map((child) => child.getBoundingClientRect())
+      .filter((rectangle) => rectangle.height > 0 && rectangle.width > 0)
+    const gaps = visibleChildren.slice(1).map((rectangle, index) => {
+      const previousRectangle = visibleChildren[index]
+      return rectangle.top - previousRectangle.bottom
+    })
+
+    return Math.min(...gaps)
+  })
+  expect(smallestSidebarGap).toBeGreaterThanOrEqual(20)
   await expect(page.getByText('Breadcrumbs', { exact: true })).toHaveCount(0)
 })
 

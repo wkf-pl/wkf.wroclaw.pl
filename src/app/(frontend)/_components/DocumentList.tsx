@@ -1,7 +1,8 @@
 import Link from 'next/link'
 
 import { documentTypeOptions, getDocumentTypeLabel } from '@/modules/documents/document-types'
-import type { Document } from '@/payload-types'
+import type { Document, DocumentFile } from '@/payload-types'
+import type { DocumentListingView } from '@/modules/documents/document-listing'
 
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric',
@@ -50,27 +51,7 @@ export function DocumentList({
         <button type="submit">Filtruj</button>
       </form>
 
-      {documents.length ? (
-        <div className="documentList">
-          {documents.map((document) => (
-            <article className="documentListItem" key={document.id}>
-              <p className="eyebrow">
-                {getDocumentTypeLabel(document.documentType)}
-                {document.documentNumber ? ` ${document.documentNumber}` : ''}
-              </p>
-              <h2>
-                <Link href={`/dokumenty/${document.slug}`}>{document.title}</Link>
-              </h2>
-              <time dateTime={document.documentDate}>
-                {dateFormatter.format(new Date(document.documentDate))}
-              </time>
-              <p>{document.summary}</p>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <p className="emptyState">Brak dokumentów spełniających wybrane kryteria.</p>
-      )}
+      <DocumentItems documents={documents} />
 
       {totalPages > 1 ? (
         <nav aria-label="Strony dokumentów" className="documentPagination">
@@ -87,6 +68,79 @@ export function DocumentList({
       ) : null}
     </>
   )
+}
+
+export function DocumentItems({
+  documents,
+  emptyMessage = 'Brak dokumentów spełniających wybrane kryteria.',
+  view = 'cards',
+}: {
+  documents: Document[]
+  emptyMessage?: null | string
+  view?: DocumentListingView
+}) {
+  return documents.length ? (
+    <div className={`documentList documentList-${view}`}>
+      {documents.map((document) => (
+        <article className="documentListItem" key={document.id}>
+          <div className="documentListItemContent">
+            <p className="documentListItemMeta">
+              <span>
+                {getDocumentTypeLabel(document.documentType)}
+                {document.documentNumber ? ` ${document.documentNumber}` : ''}
+              </span>
+              <time dateTime={document.documentDate}>
+                {dateFormatter.format(new Date(document.documentDate))}
+              </time>
+            </p>
+            <h2>
+              <Link href={`/dokumenty/${document.slug}`}>{document.title}</Link>
+            </h2>
+            {view !== 'list' ? <p>{document.summary}</p> : null}
+          </div>
+          {view === 'cards' ? <DocumentPdfLink document={document} /> : null}
+        </article>
+      ))}
+    </div>
+  ) : (
+    <p className="emptyState">{emptyMessage || 'Nie ma dokumentów.'}</p>
+  )
+}
+
+function DocumentPdfLink({ document }: { document: Document }) {
+  const primaryFile = getPopulatedDocumentFile(document.primaryFile)
+
+  if (!primaryFile) return null
+
+  return (
+    <a
+      aria-label={`Otwórz główny plik PDF dokumentu: ${document.title}`}
+      className="documentPdfLink"
+      href={`/dokumenty/${document.slug}/plik/${primaryFile.id}`}
+      rel="noreferrer"
+      target="_blank"
+    >
+      <svg aria-hidden="true" viewBox="0 0 80 96">
+        <path d="M12 2h38l18 18v74H12z" fill="none" stroke="currentColor" strokeWidth="4" />
+        <path d="M50 2v20h18" fill="none" stroke="currentColor" strokeWidth="4" />
+        <text
+          fill="currentColor"
+          fontFamily="Arial, sans-serif"
+          fontSize="18"
+          fontWeight="700"
+          textAnchor="middle"
+          x="40"
+          y="65"
+        >
+          PDF
+        </text>
+      </svg>
+    </a>
+  )
+}
+
+function getPopulatedDocumentFile(value: DocumentFile | number): DocumentFile | null {
+  return typeof value === 'object' ? value : null
 }
 
 function buildPageURL(page: number, type?: string, year?: number): string {

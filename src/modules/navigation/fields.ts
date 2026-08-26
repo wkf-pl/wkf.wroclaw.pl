@@ -83,95 +83,140 @@ function validateTarget(
 
 export function createLinkFields({
   compactDatabaseNames = false,
-}: { compactDatabaseNames?: boolean } = {}): Field[] {
+  includeLabel = true,
+  includePartner = true,
+  openInNewTabFieldName = 'openInNewTab',
+}: {
+  compactDatabaseNames?: boolean
+  includeLabel?: boolean
+  includePartner?: boolean
+  openInNewTabFieldName?: 'newTab' | 'openInNewTab'
+} = {}): Field[] {
   const databaseName = (name: string): string | undefined =>
     compactDatabaseNames ? name : undefined
 
   return [
+    ...(includeLabel
+      ? ([
+          {
+            name: 'label',
+            type: 'text',
+            label: 'Etykieta',
+            required: true,
+          },
+        ] satisfies Field[])
+      : []),
     {
-      name: 'label',
-      type: 'text',
-      label: 'Etykieta',
-      required: true,
-    },
-    {
-      name: 'targetType',
-      type: 'radio',
-      dbName: databaseName('target'),
-      defaultValue: 'custom',
-      label: 'Cel odnośnika',
-      options: [
-        { label: 'Strona', value: 'page' },
-        { label: 'Kategoria', value: 'category' },
-        { label: 'Tag', value: 'tag' },
-        { label: 'Wydarzenie', value: 'event' },
-        { label: 'Cykl wydarzeń', value: 'eventCycle' },
-        { label: 'Partner', value: 'partner' },
-        { label: 'Własny adres', value: 'custom' },
+      type: 'row',
+      fields: [
+        {
+          name: 'targetType',
+          type: 'select',
+          admin: { isClearable: false, width: '50%' },
+          dbName: databaseName('target'),
+          defaultValue: 'custom',
+          label: 'Cel odnośnika',
+          options: [
+            { label: 'Własny adres', value: 'custom' },
+            { label: 'Cykl wydarzeń', value: 'eventCycle' },
+            { label: 'Dokument', value: 'document' },
+            { label: 'Kategoria', value: 'category' },
+            ...(includePartner ? [{ label: 'Partner', value: 'partner' }] : []),
+            { label: 'Strona', value: 'page' },
+            { label: 'Tag', value: 'tag' },
+            { label: 'Wpis', value: 'post' },
+            { label: 'Wydarzenie', value: 'event' },
+          ],
+          required: true,
+        },
+        {
+          name: 'eventCycle',
+          type: 'relationship',
+          relationTo: 'event-cycles',
+          label: 'Cykl wydarzeń',
+          admin: { condition: isTarget('eventCycle'), width: '50%' },
+          filterOptions: { _status: { equals: 'published' } },
+          validate: validateTarget('eventCycle', 'Wybierz cykl docelowy.'),
+        },
+        {
+          name: 'document',
+          type: 'relationship',
+          relationTo: 'documents',
+          label: 'Dokument',
+          admin: { condition: isTarget('document'), width: '50%' },
+          filterOptions: { _status: { equals: 'published' } },
+          validate: validateTarget('document', 'Wybierz dokument docelowy.'),
+        },
+        {
+          name: 'category',
+          type: 'relationship',
+          admin: {
+            condition: isCategoryTarget,
+            placeholder: '<brak>',
+            width: '50%',
+          },
+          label: 'Kategoria',
+          relationTo: 'categories',
+          validate: validateCategoryTarget,
+        },
+        ...(includePartner
+          ? ([
+              {
+                name: 'partner',
+                type: 'relationship',
+                relationTo: 'partners',
+                label: 'Partner',
+                admin: { condition: isTarget('partner'), width: '50%' },
+                filterOptions: { _status: { equals: 'published' } },
+                validate: validateTarget('partner', 'Wybierz Partnera docelowego.'),
+              },
+            ] satisfies Field[])
+          : []),
+        {
+          name: 'page',
+          type: 'relationship',
+          admin: {
+            condition: isPageTarget,
+            width: '50%',
+          },
+          filterOptions: {
+            _status: { equals: 'published' },
+          },
+          label: 'Strona',
+          relationTo: 'pages',
+          validate: validatePageTarget,
+        },
+        {
+          name: 'tag',
+          type: 'relationship',
+          admin: {
+            condition: isTagTarget,
+            placeholder: '<brak>',
+            width: '50%',
+          },
+          label: 'Tag',
+          relationTo: 'tags',
+          validate: validateTagTarget,
+        },
+        {
+          name: 'post',
+          type: 'relationship',
+          relationTo: 'posts',
+          label: 'Wpis',
+          admin: { condition: isTarget('post'), width: '50%' },
+          filterOptions: { _status: { equals: 'published' } },
+          validate: validateTarget('post', 'Wybierz wpis docelowy.'),
+        },
+        {
+          name: 'event',
+          type: 'relationship',
+          relationTo: 'events',
+          label: 'Wydarzenie',
+          admin: { condition: isTarget('event'), width: '50%' },
+          filterOptions: { _status: { equals: 'published' } },
+          validate: validateTarget('event', 'Wybierz wydarzenie docelowe.'),
+        },
       ],
-      required: true,
-    },
-    {
-      name: 'event',
-      type: 'relationship',
-      relationTo: 'events',
-      label: 'Wydarzenie',
-      admin: { condition: isTarget('event') },
-      filterOptions: { _status: { equals: 'published' } },
-      validate: validateTarget('event', 'Wybierz wydarzenie docelowe.'),
-    },
-    {
-      name: 'eventCycle',
-      type: 'relationship',
-      relationTo: 'event-cycles',
-      label: 'Cykl wydarzeń',
-      admin: { condition: isTarget('eventCycle') },
-      filterOptions: { _status: { equals: 'published' } },
-      validate: validateTarget('eventCycle', 'Wybierz cykl docelowy.'),
-    },
-    {
-      name: 'partner',
-      type: 'relationship',
-      relationTo: 'partners',
-      label: 'Partner',
-      admin: { condition: isTarget('partner') },
-      filterOptions: { _status: { equals: 'published' } },
-      validate: validateTarget('partner', 'Wybierz Partnera docelowego.'),
-    },
-    {
-      name: 'page',
-      type: 'relationship',
-      admin: {
-        condition: isPageTarget,
-      },
-      filterOptions: {
-        _status: { equals: 'published' },
-      },
-      label: 'Strona',
-      relationTo: 'pages',
-      validate: validatePageTarget,
-    },
-    {
-      name: 'category',
-      type: 'relationship',
-      admin: {
-        condition: isCategoryTarget,
-        placeholder: '<brak>',
-      },
-      label: 'Kategoria',
-      relationTo: 'categories',
-      validate: validateCategoryTarget,
-    },
-    {
-      name: 'tag',
-      type: 'relationship',
-      admin: {
-        condition: isTagTarget,
-        placeholder: '<brak>',
-      },
-      label: 'Tag',
-      relationTo: 'tags',
-      validate: validateTagTarget,
     },
     {
       type: 'row',
@@ -216,7 +261,7 @@ export function createLinkFields({
       ],
     },
     {
-      name: 'openInNewTab',
+      name: openInNewTabFieldName,
       type: 'checkbox',
       defaultValue: false,
       label: 'Otwórz w nowej karcie',

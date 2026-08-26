@@ -1,6 +1,7 @@
 import { APIError, type CollectionConfig } from 'payload'
 
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
+import { createTaxonomyFields } from '@/modules/content/taxonomy-fields'
 import { populateSlug } from '@/modules/content/slug'
 import { documentTypeOptions } from '@/modules/documents/document-types'
 import { readDocuments } from '@/modules/documents/document-access'
@@ -23,6 +24,8 @@ const updateDocuments = createRolePermissionAccess({
   operation: 'update',
   resource: 'documents',
 })
+
+const taxonomyFields = createTaxonomyFields()
 
 function getSelectedFileIds(data: Record<string, unknown>): (number | string)[] {
   const idsByValue = new Map<string, number | string>()
@@ -77,7 +80,7 @@ export const Documents: CollectionConfig = {
         beforeValidate: [populateSlug],
       },
       index: true,
-      label: 'Adres URL',
+      label: 'Slug',
       required: true,
       unique: true,
     },
@@ -137,6 +140,7 @@ export const Documents: CollectionConfig = {
       label: 'Dodatkowe załączniki PDF',
       relationTo: 'document-files',
     },
+    ...taxonomyFields,
     {
       name: 'author',
       type: 'relationship',

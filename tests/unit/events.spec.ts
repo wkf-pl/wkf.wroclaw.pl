@@ -1,3 +1,4 @@
+import type { Field } from 'payload'
 import { describe, expect, it } from 'vitest'
 
 import type { Event } from '@/payload-types'
@@ -18,6 +19,18 @@ import {
   validateGoogleMapsEmbed,
 } from '@/modules/events/map-embed'
 import { formatEventDate } from '@/modules/events/presentation'
+
+function flattenFields(fields: Field[]): Field[] {
+  return fields.flatMap((field) => {
+    if (field.type === 'tabs') {
+      return [field, ...field.tabs.flatMap((tab) => flattenFields(tab.fields))]
+    }
+    if ('fields' in field && Array.isArray(field.fields)) {
+      return [field, ...flattenFields(field.fields)]
+    }
+    return [field]
+  })
+}
 
 function eventFixture(overrides: Partial<Event> = {}): Event {
   return {
@@ -43,7 +56,7 @@ function eventFixture(overrides: Partial<Event> = {}): Event {
 
 describe('events model', () => {
   it('keeps participation as the only audience-related Event field', () => {
-    const row = Events.fields.find(
+    const row = flattenFields(Events.fields).find(
       (field) =>
         field.type === 'row' &&
         field.fields.some((item) => 'name' in item && item.name === 'participation'),
@@ -77,10 +90,34 @@ describe('events model', () => {
     )
   })
 
+  it('keeps the main Cycle taxonomy in the sidebar and nested Event defaults in the form', () => {
+    const categoryFields = EventCycles.fields.flatMap((field) => {
+      if ('name' in field && field.name === 'category') return [field]
+      if (field.type !== 'tabs') return []
+      return field.tabs.flatMap((tab) =>
+        tab.fields.flatMap((tabField) => {
+          if (tabField.type !== 'group') return []
+          return tabField.fields.flatMap((groupField) =>
+            groupField.type === 'row'
+              ? groupField.fields.filter(
+                  (rowField) => 'name' in rowField && rowField.name === 'category',
+                )
+              : [],
+          )
+        }),
+      )
+    })
+
+    expect(categoryFields).toHaveLength(2)
+    expect(categoryFields.filter((field) => field.admin?.position === 'sidebar')).toHaveLength(1)
+    expect(categoryFields.filter((field) => field.admin?.position !== 'sidebar')).toHaveLength(1)
+  })
+
   it('uses expanded relationship rows, grammatical add labels and shared link targets', () => {
-    const organizers = Events.fields.find((field) => 'name' in field && field.name === 'organizers')
-    const partners = Events.fields.find((field) => 'name' in field && field.name === 'partners')
-    const links = Events.fields.find((field) => 'name' in field && field.name === 'externalLinks')
+    const fields = flattenFields(Events.fields)
+    const organizers = fields.find((field) => 'name' in field && field.name === 'organizers')
+    const partners = fields.find((field) => 'name' in field && field.name === 'partners')
+    const links = fields.find((field) => 'name' in field && field.name === 'externalLinks')
 
     expect(organizers).toMatchObject({
       admin: {
@@ -102,16 +139,28 @@ describe('events model', () => {
     })
     expect(links).toMatchObject({ admin: { initCollapsed: false }, label: 'Linki' })
     if (!links || links.type !== 'array') throw new Error('Missing Event links')
-    expect(links.fields.map((field) => ('name' in field ? field.name : null))).toEqual([
+    expect(
+      links.fields.map((field) =>
+        field.type === 'row'
+          ? field.fields.map((rowField) => ('name' in rowField ? rowField.name : null))
+          : 'name' in field
+            ? field.name
+            : null,
+      ),
+    ).toEqual([
       'label',
-      'targetType',
-      'event',
-      'eventCycle',
-      'partner',
-      'page',
-      'category',
-      'tag',
-      null,
+      [
+        'targetType',
+        'eventCycle',
+        'document',
+        'category',
+        'partner',
+        'page',
+        'tag',
+        'post',
+        'event',
+      ],
+      ['customScheme', 'customAddress'],
       'openInNewTab',
     ])
   })

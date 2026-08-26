@@ -11,7 +11,25 @@ const indexedCollections: TaxonomizableCollectionSlug[] = [
   'event-cycles',
 ]
 
-export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
+async function findPublishedDocumentIDs(
+  db: MigrateUpArgs['db'],
+  collection: TaxonomizableCollectionSlug,
+  lastDocumentID: number,
+): Promise<number[]> {
+  const query =
+    collection === 'pages'
+      ? sql`SELECT "id" FROM "pages" WHERE "id" > ${lastDocumentID} AND "_status" = 'published' ORDER BY "id" LIMIT ${batchSize}`
+      : collection === 'posts'
+        ? sql`SELECT "id" FROM "posts" WHERE "id" > ${lastDocumentID} AND "_status" = 'published' ORDER BY "id" LIMIT ${batchSize}`
+        : collection === 'events'
+          ? sql`SELECT "id" FROM "events" WHERE "id" > ${lastDocumentID} AND "_status" = 'published' ORDER BY "id" LIMIT ${batchSize}`
+          : sql`SELECT "id" FROM "event_cycles" WHERE "id" > ${lastDocumentID} AND "_status" = 'published' ORDER BY "id" LIMIT ${batchSize}`
+  const result = await db.execute(query)
+
+  return result.rows.map((row) => (row as { id: number }).id)
+}
+
+export async function up({ db, payload: _payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
     DO $$
     DECLARE
@@ -450,25 +468,14 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   for (const collection of indexedCollections) {
     let lastDocumentID = 0
     while (true) {
-      const documents = await payload.find({
-        collection,
-        depth: 0,
-        draft: false,
-        limit: batchSize,
-        overrideAccess: true,
-        req,
-        sort: 'id',
-        where: {
-          and: [{ id: { greater_than: lastDocumentID } }, { _status: { equals: 'published' } }],
-        },
-      })
+      const documentIDs = await findPublishedDocumentIDs(db, collection, lastDocumentID)
 
-      for (const document of documents.docs) {
-        lastDocumentID = document.id
-        await syncContentListingItem(req, collection, document.id)
+      for (const documentID of documentIDs) {
+        lastDocumentID = documentID
+        await syncContentListingItem(req, collection, documentID)
       }
 
-      if (documents.docs.length < batchSize) break
+      if (documentIDs.length < batchSize) break
     }
   }
 }

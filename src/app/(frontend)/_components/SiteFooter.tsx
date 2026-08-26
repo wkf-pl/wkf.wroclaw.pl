@@ -1,7 +1,7 @@
-import { RichText } from '@payloadcms/richtext-lexical/react'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 
+import { CmsRichText } from '@/components/CmsRichText'
 import type { Navigation, SiteSetting } from '@/payload-types'
 import { hasRenderableIcon, resolveLink } from '@/modules/navigation/links'
 
@@ -39,7 +39,7 @@ export function SiteFooter({
             Klub Fantastyki
           </strong>
           {siteSettings.copyrightText ? (
-            <RichText className="footerCopyright" data={siteSettings.copyrightText} />
+            <CmsRichText className="footerCopyright" data={siteSettings.copyrightText} />
           ) : null}
         </div>
         {socialItems?.length ? (

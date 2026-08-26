@@ -34,7 +34,7 @@ export function createEditorialFields({
         beforeValidate: [populateSlug],
       },
       index: true,
-      label: 'Adres URL',
+      label: 'Slug',
       required: true,
       unique: true,
       validate: reserveApplicationSlugs ? validatePageSlug : undefined,

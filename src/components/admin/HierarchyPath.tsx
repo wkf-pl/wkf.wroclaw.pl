@@ -25,10 +25,13 @@ export function HierarchyPath({ collectionSlug, data }: UIFieldServerProps) {
             {labelledBreadcrumbs.map((breadcrumb, index) => {
               const documentID = getRelationshipId(breadcrumb.doc)
               const label = breadcrumb.label.trim()
+              const isCurrentDocument = index === labelledBreadcrumbs.length - 1
 
               return (
                 <li key={`${documentID ?? label}-${index}`}>
-                  {documentID === undefined ? (
+                  {isCurrentDocument ? (
+                    <strong>{label}</strong>
+                  ) : documentID === undefined ? (
                     label
                   ) : (
                     <a href={`/admin/collections/${collectionSlug}/${documentID}`}>{label}</a>

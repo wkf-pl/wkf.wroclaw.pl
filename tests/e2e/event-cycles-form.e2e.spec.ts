@@ -16,7 +16,7 @@ test('renders Cycle tabs, generated URL and grammatical creation labels', async 
   await page
     .getByRole('textbox', { name: 'Streszczenie *' })
     .pressSequentially('Pełne streszczenie Cyklu')
-  await expect(page.getByRole('textbox', { name: 'Adres URL *' })).toHaveValue('testowy-cykl-lodz')
+  await expect(page.getByRole('textbox', { name: 'Slug *' })).toHaveValue('testowy-cykl-lodz')
 
   await page.getByRole('button', { name: 'Domyślne dane Wydarzenia' }).click()
   await expect(page.locator('#field-eventDefaults__title')).toHaveValue('Testowy Cykl Łódź')
@@ -56,8 +56,6 @@ test('renders Cycle tabs, generated URL and grammatical creation labels', async 
 
   await page.goto('/admin/collections/partners')
   await expect(
-    page.getByRole('link', { name: 'Dodaj Partnera', exact: true }).filter({
-      hasText: 'Dodaj Partnera',
-    }),
+    page.getByRole('link', { name: 'Dodaj Partnera', exact: true }).first(),
   ).toBeVisible()
 })

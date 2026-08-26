@@ -22,6 +22,8 @@ import * as migration_20260821_092652_content_listing_index from './20260821_092
 import * as migration_20260823_001526_simplify_public_access from './20260823_001526_simplify_public_access'
 import * as migration_20260823_103700_remove_orphan_document_versions from './20260823_103700_remove_orphan_document_versions'
 import * as migration_20260823_232129 from './20260823_232129'
+import * as migration_20260824_203157 from './20260824_203157'
+import * as migration_20260826_101435_member_profile_views from './20260826_101435_member_profile_views'
 
 export const migrations = [
   {
@@ -143,5 +145,15 @@ export const migrations = [
     up: migration_20260823_232129.up,
     down: migration_20260823_232129.down,
     name: '20260823_232129',
+  },
+  {
+    up: migration_20260824_203157.up,
+    down: migration_20260824_203157.down,
+    name: '20260824_203157',
+  },
+  {
+    up: migration_20260826_101435_member_profile_views.up,
+    down: migration_20260826_101435_member_profile_views.down,
+    name: '20260826_101435_member_profile_views',
   },
 ]

@@ -1,7 +1,7 @@
-import { RichText } from '@payloadcms/richtext-lexical/react'
 import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 
+import { CmsRichText } from '@/components/CmsRichText'
 import type { Event, EventCycle, ListingBlock, Page, Partner, Post, User } from '@/payload-types'
 import { getRelationshipId } from '@/lib/relationships'
 import {
@@ -14,6 +14,7 @@ import { CmsImage } from './CmsImage'
 import { ContentList } from './ContentList'
 import { ContentPagination, createPaginatedURL, getRequestedPage } from './ContentPagination'
 import { HierarchyBreadcrumbs } from './HierarchyBreadcrumbs'
+import { DocumentBlockSection } from './DocumentBlockSection'
 import { MemberProfilesSection } from './MemberProfilesSection'
 import { MediaBlockSection } from './MediaBlockSection'
 import { TaxonomyLinks } from './TaxonomyLinks'
@@ -105,7 +106,7 @@ async function PageBlock({
   searchParams: Record<string, string | string[] | undefined>
 }) {
   if (block.blockType === 'richText') {
-    return <RichText className="richText" data={block.content} />
+    return <CmsRichText className="richText" data={block.content} />
   }
 
   if (block.blockType === 'memberProfiles') {
@@ -115,6 +116,17 @@ async function PageBlock({
   if (block.blockType === 'mediaGallery' || block.blockType === 'attachments') {
     return (
       <MediaBlockSection
+        block={block}
+        blockIndex={blockIndex}
+        pathname={pathname}
+        searchParams={searchParams}
+      />
+    )
+  }
+
+  if (block.blockType === 'documents') {
+    return (
+      <DocumentBlockSection
         block={block}
         blockIndex={blockIndex}
         pathname={pathname}
