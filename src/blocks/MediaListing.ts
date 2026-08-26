@@ -176,6 +176,9 @@ function createMediaListingFields(
     {
       name: 'emptyMessage',
       type: 'text',
+      admin: {
+        condition: (_data, siblingData) => siblingData.selectionMode === 'filters',
+      },
       label: 'Komunikat pustego wyniku',
     },
   ]

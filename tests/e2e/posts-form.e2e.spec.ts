@@ -44,3 +44,43 @@ test('renders the customized page create form', async ({ page }) => {
   await expect(page.locator('#field-layout')).toContainText('Dodaj blok treści')
   await expect(page.locator('#field-layout [contenteditable="true"]')).toBeEditable()
 })
+
+test('uses the shared target selector when editing a rich text link', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto('/admin/collections/posts/create')
+
+  const editor = page.locator('#field-layout [contenteditable="true"]').first()
+  await editor.fill('Odnośnik testowy')
+  await editor.selectText()
+  await page.locator('[data-button-key="link"]').click()
+
+  const drawer = page.locator('.lexical-link-edit-drawer')
+  const targetField = drawer.locator('#field-targetType')
+  await expect(page.getByRole('heading', { name: 'Edytuj Link' })).toBeVisible()
+  await expect(targetField).toBeVisible()
+  await expect(drawer.locator('#field-linkType')).toBeHidden()
+  await expect(drawer.locator('#field-doc')).toBeHidden()
+
+  await targetField.getByRole('combobox').click()
+  const options = page.locator('.rs__menu [role="option"]')
+  await expect(options.first()).toHaveText('Własny adres')
+  await options.filter({ hasText: 'Dokument' }).click()
+
+  const documentField = drawer.locator('#field-document')
+  await expect(documentField).toBeVisible()
+  await expect(drawer.getByText('Otwórz w nowej karcie', { exact: true })).toBeVisible()
+
+  await documentField.getByRole('combobox').click()
+  const documentOption = page.locator('.rs__menu [role="option"]').first()
+  const documentLabel = (await documentOption.textContent())?.trim()
+  expect(documentLabel).toBeTruthy()
+  await documentOption.click()
+  await expect(drawer.locator('#field-doc')).toHaveValue('[object Object]')
+  await drawer.getByRole('button', { name: 'Zapisz zmiany' }).click()
+  await expect(drawer).toBeHidden()
+
+  await page.locator('.link-edit').click()
+
+  await expect(targetField.locator('.rs__single-value')).toHaveText('Dokument')
+  await expect(documentField.locator('.rs__single-value')).toContainText(documentLabel ?? '')
+})

@@ -79,6 +79,9 @@ export const DocumentsBlock: Block = {
       name: 'items',
       type: 'array',
       admin: {
+        components: {
+          RowLabel: '/components/admin/DocumentEntryRowLabel#DocumentEntryRowLabel',
+        },
         condition: (_data, siblingData) => siblingData.selectionMode === 'manual',
         initCollapsed: false,
       },
@@ -187,6 +190,9 @@ export const DocumentsBlock: Block = {
     {
       name: 'emptyMessage',
       type: 'text',
+      admin: {
+        condition: (_data, siblingData) => siblingData.selectionMode === 'filters',
+      },
       label: 'Komunikat pustego wyniku',
     },
   ],

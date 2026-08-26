@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { RichText } from '@payloadcms/richtext-lexical/react'
 
+import { CmsRichText } from '@/components/CmsRichText'
 import { getPublicSiteSettings } from '@/modules/content/public-content'
 import {
   findPublicMemberProfileBySlug,
@@ -68,13 +68,13 @@ export default async function MemberPage({ params }: MemberPageProperties) {
         {about && extractMemberProfileText(about) ? (
           <section className="memberProfileSection">
             <h2>O mnie</h2>
-            <RichText data={about} />
+            <CmsRichText data={about} />
           </section>
         ) : null}
         {clubActivities && extractMemberProfileText(clubActivities) ? (
           <section className="memberProfileSection">
             <h2>Aktywności klubowe</h2>
-            <RichText data={clubActivities} />
+            <CmsRichText data={clubActivities} />
           </section>
         ) : null}
         {profile.interests ? (

@@ -72,7 +72,7 @@ export const Categories: CollectionConfig = {
         beforeValidate: [populateSlugFromName],
       },
       index: true,
-      label: 'Adres URL',
+      label: 'Slug',
       required: true,
       unique: true,
     },

@@ -1,6 +1,6 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
-import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { lexicalEditor, LinkFeature } from '@payloadcms/richtext-lexical'
 import { pl } from '@payloadcms/translations/languages/pl'
 import path from 'path'
 import { buildConfig } from 'payload'
@@ -32,6 +32,11 @@ import { Navigation, SiteSettings } from './globals'
 import { getOptionalEnvironmentVariable, getRequiredEnvironmentVariable } from './lib/env'
 import { createStoragePlugins } from './storage/create-storage-plugins'
 import { generateHierarchyLabel, generateHierarchyURL } from './modules/content/hierarchy'
+import {
+  createRichTextLinkFields,
+  resolveRichTextInternalLink,
+  richTextInternalLinkCollections,
+} from './modules/content/rich-text-links'
 
 const fileName = fileURLToPath(import.meta.url)
 const directoryName = path.dirname(fileName)
@@ -120,7 +125,16 @@ export default buildConfig({
   globals: [SiteSettings, Navigation],
   cors: [...trustedOrigins],
   csrf: [...trustedOrigins],
-  editor: lexicalEditor(),
+  editor: lexicalEditor({
+    features: ({ defaultFeatures }) => [
+      ...defaultFeatures,
+      LinkFeature({
+        enabledCollections: [...richTextInternalLinkCollections],
+        fields: ({ defaultFields }) => createRichTextLinkFields(defaultFields),
+        internalDocToHref: resolveRichTextInternalLink,
+      }),
+    ],
+  }),
   email: createEmailAdapter(),
   i18n: {
     fallbackLanguage: 'pl',

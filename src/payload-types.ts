@@ -271,8 +271,6 @@ export interface Page {
   id: number;
   title: string;
   parent?: (number | null) | Page;
-  category?: (number | null) | Category;
-  tags?: (number | Tag)[] | null;
   fullTitle?: string | null;
   heroImage?: (number | null) | Media;
   /**
@@ -297,12 +295,6 @@ export interface Page {
    * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
    */
   slug: string;
-  author: number | User;
-  /**
-   * Ustawiana automatycznie przy pierwszej publikacji.
-   */
-  publishedAt?: string | null;
-  systemKey?: string | null;
   breadcrumbs?:
     | {
         doc?: (number | null) | Page;
@@ -311,9 +303,63 @@ export interface Page {
         id?: string | null;
       }[]
     | null;
+  category?: (number | null) | Category;
+  tags?: (number | Tag)[] | null;
+  author: number | User;
+  systemKey?: string | null;
+  /**
+   * Ustawiana automatycznie przy pierwszej publikacji.
+   */
+  publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RichTextBlock".
+ */
+export interface RichTextBlock {
+  content: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'richText';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ListingBlock".
+ */
+export interface ListingBlock {
+  heading?: string | null;
+  sources: ('pages' | 'posts' | 'events' | 'event-cycles')[];
+  parentPage?: (number | null) | Page;
+  category?: (number | null) | Category;
+  tag?: (number | null) | Tag;
+  sort: 'newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending';
+  view: 'cards' | 'compact' | 'grid';
+  eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
+  eventCycle?: (number | null) | EventCycle;
+  pageSize: number;
+  pagination?: boolean | null;
+  parentFilter: 'none' | 'current' | 'specific';
+  emptyMessage?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'listing';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -362,12 +408,6 @@ export interface Tag {
 export interface Post {
   id: number;
   title: string;
-  /**
-   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
-   */
-  slug: string;
-  category?: (number | null) | Category;
-  tags?: (number | Tag)[] | null;
   heroImage?: (number | null) | Media;
   /**
    * Krótkie wprowadzenie wyświetlane na listach wpisów.
@@ -378,11 +418,6 @@ export interface Post {
   layout: (
     RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
   )[];
-  author: number | User;
-  /**
-   * Ustawiana automatycznie przy pierwszej publikacji.
-   */
-  publishedAt?: string | null;
   seo?: {
     /**
      * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
@@ -394,6 +429,17 @@ export interface Post {
      */
     image?: (number | null) | Media;
   };
+  /**
+   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
+   */
+  slug: string;
+  category?: (number | null) | Category;
+  tags?: (number | Tag)[] | null;
+  author: number | User;
+  /**
+   * Ustawiana automatycznie przy pierwszej publikacji.
+   */
+  publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -406,8 +452,6 @@ export interface Event {
   id: number;
   cycle?: (number | null) | EventCycle;
   title: string;
-  category?: (number | null) | Category;
-  tags?: (number | Tag)[] | null;
   heroImage?: (number | null) | Media;
   tagline?: string | null;
   excerpt: string;
@@ -454,7 +498,7 @@ export interface Event {
   externalLinks?:
     | {
         label: string;
-        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+        targetType: 'custom' | 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
         category?: (number | null) | Category;
@@ -487,17 +531,19 @@ export interface Event {
    * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
    */
   slug: string;
+  category?: (number | null) | Category;
+  tags?: (number | Tag)[] | null;
   author: number | User;
-  /**
-   * Ustawiana automatycznie przy pierwszej publikacji.
-   */
-  publishedAt?: string | null;
   defaultsAppliedCycle?: (number | null) | EventCycle;
   previousStartAt?: string | null;
   publishedStartAt?: string | null;
   calendarUID?: string | null;
   calendarRevision: number;
   calendarFingerprint?: string | null;
+  /**
+   * Ustawiana automatycznie przy pierwszej publikacji.
+   */
+  publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -509,8 +555,6 @@ export interface Event {
 export interface EventCycle {
   id: number;
   title: string;
-  category?: (number | null) | Category;
-  tags?: (number | Tag)[] | null;
   heroImage?: (number | null) | Media;
   tagline?: string | null;
   excerpt: string;
@@ -580,7 +624,7 @@ export interface EventCycle {
     externalLinks?:
       | {
           label: string;
-          targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+          targetType: 'custom' | 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'post' | 'event';
           eventCycle?: (number | null) | EventCycle;
           document?: (number | null) | Document;
           category?: (number | null) | Category;
@@ -603,61 +647,17 @@ export interface EventCycle {
    * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
    */
   slug: string;
+  category?: (number | null) | Category;
+  tags?: (number | Tag)[] | null;
   author: number | User;
+  calendarFeedKey?: string | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
   publishedAt?: string | null;
-  calendarFeedKey?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "RichTextBlock".
- */
-export interface RichTextBlock {
-  content: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'richText';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ListingBlock".
- */
-export interface ListingBlock {
-  heading?: string | null;
-  sources: ('pages' | 'posts' | 'events' | 'event-cycles')[];
-  parentPage?: (number | null) | Page;
-  category?: (number | null) | Category;
-  tag?: (number | null) | Tag;
-  sort: 'newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending';
-  view: 'cards' | 'compact' | 'grid';
-  eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
-  eventCycle?: (number | null) | EventCycle;
-  pageSize: number;
-  pagination?: boolean | null;
-  parentFilter: 'none' | 'current' | 'specific';
-  emptyMessage?: string | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'listing';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -725,8 +725,6 @@ export interface Document {
   documentNumber?: string | null;
   documentDate: string;
   summary: string;
-  category?: (number | null) | Category;
-  tags?: (number | Tag)[] | null;
   content?: {
     root: {
       type: string;
@@ -744,6 +742,8 @@ export interface Document {
   } | null;
   primaryFile: number | DocumentFile;
   attachments?: (number | DocumentFile)[] | null;
+  category?: (number | null) | Category;
+  tags?: (number | Tag)[] | null;
   author: number | User;
   publishedAt?: string | null;
   updatedAt: string;
@@ -879,6 +879,7 @@ export interface AttachmentsBlock {
  */
 export interface MemberProfilesBlock {
   heading?: string | null;
+  view: 'card' | 'list' | 'grid';
   entries: {
     profile: number | MemberProfile;
     /**
@@ -1066,15 +1067,11 @@ export interface ClubSection {
   id: number;
   name: string;
   backgroundImage?: (number | null) | Media;
-  /**
-   * Niższa liczba oznacza wcześniejszą pozycję.
-   */
-  displayOrder: number;
   destinationPage?: (number | null) | Page;
   menuItems?:
     | {
         label: string;
-        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+        targetType: 'custom' | 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
         category?: (number | null) | Category;
@@ -1117,6 +1114,10 @@ export interface ClubSection {
    * Identyfikator techniczny tworzony automatycznie z nazwy.
    */
   slug: string;
+  /**
+   * Niższa liczba oznacza wcześniejszą pozycję.
+   */
+  displayOrder: number;
   publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -1275,8 +1276,6 @@ export interface ContentListingItemsSelect<T extends boolean = true> {
 export interface PagesSelect<T extends boolean = true> {
   title?: T;
   parent?: T;
-  category?: T;
-  tags?: T;
   fullTitle?: T;
   heroImage?: T;
   listingExcerpt?: T;
@@ -1298,9 +1297,6 @@ export interface PagesSelect<T extends boolean = true> {
         image?: T;
       };
   slug?: T;
-  author?: T;
-  publishedAt?: T;
-  systemKey?: T;
   breadcrumbs?:
     | T
     | {
@@ -1309,6 +1305,11 @@ export interface PagesSelect<T extends boolean = true> {
         label?: T;
         id?: T;
       };
+  category?: T;
+  tags?: T;
+  author?: T;
+  systemKey?: T;
+  publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1418,6 +1419,7 @@ export interface AttachmentsBlockSelect<T extends boolean = true> {
  */
 export interface MemberProfilesBlockSelect<T extends boolean = true> {
   heading?: T;
+  view?: T;
   entries?:
     | T
     | {
@@ -1434,9 +1436,6 @@ export interface MemberProfilesBlockSelect<T extends boolean = true> {
  */
 export interface PostsSelect<T extends boolean = true> {
   title?: T;
-  slug?: T;
-  category?: T;
-  tags?: T;
   heroImage?: T;
   excerpt?: T;
   relatedEvents?: T;
@@ -1451,8 +1450,6 @@ export interface PostsSelect<T extends boolean = true> {
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
       };
-  author?: T;
-  publishedAt?: T;
   seo?:
     | T
     | {
@@ -1460,6 +1457,11 @@ export interface PostsSelect<T extends boolean = true> {
         description?: T;
         image?: T;
       };
+  slug?: T;
+  category?: T;
+  tags?: T;
+  author?: T;
+  publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1471,8 +1473,6 @@ export interface PostsSelect<T extends boolean = true> {
 export interface EventsSelect<T extends boolean = true> {
   cycle?: T;
   title?: T;
-  category?: T;
-  tags?: T;
   heroImage?: T;
   tagline?: T;
   excerpt?: T;
@@ -1548,14 +1548,16 @@ export interface EventsSelect<T extends boolean = true> {
         image?: T;
       };
   slug?: T;
+  category?: T;
+  tags?: T;
   author?: T;
-  publishedAt?: T;
   defaultsAppliedCycle?: T;
   previousStartAt?: T;
   publishedStartAt?: T;
   calendarUID?: T;
   calendarRevision?: T;
   calendarFingerprint?: T;
+  publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1566,8 +1568,6 @@ export interface EventsSelect<T extends boolean = true> {
  */
 export interface EventCyclesSelect<T extends boolean = true> {
   title?: T;
-  category?: T;
-  tags?: T;
   heroImage?: T;
   tagline?: T;
   excerpt?: T;
@@ -1662,9 +1662,11 @@ export interface EventCyclesSelect<T extends boolean = true> {
             };
       };
   slug?: T;
+  category?: T;
+  tags?: T;
   author?: T;
-  publishedAt?: T;
   calendarFeedKey?: T;
+  publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1844,11 +1846,11 @@ export interface DocumentsSelect<T extends boolean = true> {
   documentNumber?: T;
   documentDate?: T;
   summary?: T;
-  category?: T;
-  tags?: T;
   content?: T;
   primaryFile?: T;
   attachments?: T;
+  category?: T;
+  tags?: T;
   author?: T;
   publishedAt?: T;
   updatedAt?: T;
@@ -1895,7 +1897,6 @@ export interface PartnersSelect<T extends boolean = true> {
 export interface ClubSectionsSelect<T extends boolean = true> {
   name?: T;
   backgroundImage?: T;
-  displayOrder?: T;
   destinationPage?: T;
   menuItems?:
     | T
@@ -1919,6 +1920,7 @@ export interface ClubSectionsSelect<T extends boolean = true> {
         id?: T;
       };
   slug?: T;
+  displayOrder?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2057,7 +2059,7 @@ export interface Navigation {
     | {
         appearance: 'link' | 'icon' | 'button';
         label: string;
-        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+        targetType: 'custom' | 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
         category?: (number | null) | Category;
@@ -2099,7 +2101,7 @@ export interface Navigation {
   heroItems?:
     | {
         label: string;
-        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+        targetType: 'custom' | 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
         category?: (number | null) | Category;
@@ -2120,7 +2122,7 @@ export interface Navigation {
   socialItems?:
     | {
         label: string;
-        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+        targetType: 'custom' | 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
         category?: (number | null) | Category;
@@ -2166,7 +2168,7 @@ export interface Navigation {
           | {
               label: string;
               targetType:
-                'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+                'custom' | 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'post' | 'event';
               eventCycle?: (number | null) | EventCycle;
               document?: (number | null) | Document;
               category?: (number | null) | Category;

@@ -63,17 +63,6 @@ export const ClubSections: CollectionConfig = {
               relationTo: 'media',
             },
             {
-              name: 'displayOrder',
-              type: 'number',
-              admin: {
-                description: 'Niższa liczba oznacza wcześniejszą pozycję.',
-                position: 'sidebar',
-              },
-              defaultValue: 0,
-              label: 'Kolejność',
-              required: true,
-            },
-            {
               name: 'destinationPage',
               type: 'relationship',
               filterOptions: { _status: { equals: 'published' } },
@@ -114,6 +103,17 @@ export const ClubSections: CollectionConfig = {
       label: 'Slug',
       required: true,
       unique: true,
+    },
+    {
+      name: 'displayOrder',
+      type: 'number',
+      admin: {
+        description: 'Niższa liczba oznacza wcześniejszą pozycję.',
+        position: 'sidebar',
+      },
+      defaultValue: 0,
+      label: 'Kolejność',
+      required: true,
     },
     {
       name: 'publishedAt',

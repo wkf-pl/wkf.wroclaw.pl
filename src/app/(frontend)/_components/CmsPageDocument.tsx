@@ -1,7 +1,7 @@
-import { RichText } from '@payloadcms/richtext-lexical/react'
 import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 
+import { CmsRichText } from '@/components/CmsRichText'
 import type { Event, EventCycle, ListingBlock, Page, Partner, Post, User } from '@/payload-types'
 import { getRelationshipId } from '@/lib/relationships'
 import {
@@ -106,7 +106,7 @@ async function PageBlock({
   searchParams: Record<string, string | string[] | undefined>
 }) {
   if (block.blockType === 'richText') {
-    return <RichText className="richText" data={block.content} />
+    return <CmsRichText className="richText" data={block.content} />
   }
 
   if (block.blockType === 'memberProfiles') {

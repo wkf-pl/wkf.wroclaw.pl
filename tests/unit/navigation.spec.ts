@@ -48,7 +48,7 @@ function createPage(overrides: Partial<Page> = {}): Page {
 }
 
 describe('navigation links', () => {
-  it('uses an alphabetical target select and places each destination beside it', () => {
+  it('places the custom address first and each destination beside the selector', () => {
     const fields = createLinkFields()
     const targetRow = fields.find((field) => field.type === 'row')
 
@@ -62,13 +62,13 @@ describe('navigation links', () => {
     expect(targetType).toMatchObject({
       admin: { isClearable: false, width: '50%' },
       options: [
+        { label: 'Własny adres', value: 'custom' },
         { label: 'Cykl wydarzeń', value: 'eventCycle' },
         { label: 'Dokument', value: 'document' },
         { label: 'Kategoria', value: 'category' },
         { label: 'Partner', value: 'partner' },
         { label: 'Strona', value: 'page' },
         { label: 'Tag', value: 'tag' },
-        { label: 'Własny adres', value: 'custom' },
         { label: 'Wpis', value: 'post' },
         { label: 'Wydarzenie', value: 'event' },
       ],

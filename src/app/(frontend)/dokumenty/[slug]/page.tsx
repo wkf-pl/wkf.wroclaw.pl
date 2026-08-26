@@ -1,7 +1,7 @@
-import { RichText } from '@payloadcms/richtext-lexical/react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
+import { CmsRichText } from '@/components/CmsRichText'
 import { getDocumentTypeLabel } from '@/modules/documents/document-types'
 import { findPublishedDocumentBySlug } from '@/modules/documents/public-documents'
 import type { DocumentFile } from '@/payload-types'
@@ -60,7 +60,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ slug:
           </p>
         </header>
 
-        {document.content ? <RichText className="richText" data={document.content} /> : null}
+        {document.content ? <CmsRichText className="richText" data={document.content} /> : null}
 
         <section aria-labelledby="document-files-heading" className="attachments">
           <h2 id="document-files-heading">Pliki</h2>

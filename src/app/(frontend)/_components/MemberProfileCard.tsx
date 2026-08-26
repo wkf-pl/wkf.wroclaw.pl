@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import type { MemberProfile } from '@/payload-types'
-import { getMemberProfileImageURL } from '@/modules/members/public-members'
+import { getMemberProfileImageURL } from '@/modules/members/member-profile-image'
 import { extractMemberProfileText } from '@/modules/members/rich-text'
 
 type MemberProfileCardProperties = {

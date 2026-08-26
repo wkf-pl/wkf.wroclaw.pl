@@ -83,17 +83,29 @@ function validateTarget(
 
 export function createLinkFields({
   compactDatabaseNames = false,
-}: { compactDatabaseNames?: boolean } = {}): Field[] {
+  includeLabel = true,
+  includePartner = true,
+  openInNewTabFieldName = 'openInNewTab',
+}: {
+  compactDatabaseNames?: boolean
+  includeLabel?: boolean
+  includePartner?: boolean
+  openInNewTabFieldName?: 'newTab' | 'openInNewTab'
+} = {}): Field[] {
   const databaseName = (name: string): string | undefined =>
     compactDatabaseNames ? name : undefined
 
   return [
-    {
-      name: 'label',
-      type: 'text',
-      label: 'Etykieta',
-      required: true,
-    },
+    ...(includeLabel
+      ? ([
+          {
+            name: 'label',
+            type: 'text',
+            label: 'Etykieta',
+            required: true,
+          },
+        ] satisfies Field[])
+      : []),
     {
       type: 'row',
       fields: [
@@ -105,13 +117,13 @@ export function createLinkFields({
           defaultValue: 'custom',
           label: 'Cel odnośnika',
           options: [
+            { label: 'Własny adres', value: 'custom' },
             { label: 'Cykl wydarzeń', value: 'eventCycle' },
             { label: 'Dokument', value: 'document' },
             { label: 'Kategoria', value: 'category' },
-            { label: 'Partner', value: 'partner' },
+            ...(includePartner ? [{ label: 'Partner', value: 'partner' }] : []),
             { label: 'Strona', value: 'page' },
             { label: 'Tag', value: 'tag' },
-            { label: 'Własny adres', value: 'custom' },
             { label: 'Wpis', value: 'post' },
             { label: 'Wydarzenie', value: 'event' },
           ],
@@ -147,15 +159,19 @@ export function createLinkFields({
           relationTo: 'categories',
           validate: validateCategoryTarget,
         },
-        {
-          name: 'partner',
-          type: 'relationship',
-          relationTo: 'partners',
-          label: 'Partner',
-          admin: { condition: isTarget('partner'), width: '50%' },
-          filterOptions: { _status: { equals: 'published' } },
-          validate: validateTarget('partner', 'Wybierz Partnera docelowego.'),
-        },
+        ...(includePartner
+          ? ([
+              {
+                name: 'partner',
+                type: 'relationship',
+                relationTo: 'partners',
+                label: 'Partner',
+                admin: { condition: isTarget('partner'), width: '50%' },
+                filterOptions: { _status: { equals: 'published' } },
+                validate: validateTarget('partner', 'Wybierz Partnera docelowego.'),
+              },
+            ] satisfies Field[])
+          : []),
         {
           name: 'page',
           type: 'relationship',
@@ -245,7 +261,7 @@ export function createLinkFields({
       ],
     },
     {
-      name: 'openInNewTab',
+      name: openInNewTabFieldName,
       type: 'checkbox',
       defaultValue: false,
       label: 'Otwórz w nowej karcie',

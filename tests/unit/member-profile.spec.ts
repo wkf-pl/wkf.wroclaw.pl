@@ -1,10 +1,13 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 
 import { describe, expect, it } from 'vitest'
 
 import { MemberProfileImages } from '@/collections/MemberProfileImages'
 import { MemberProfiles } from '@/collections/MemberProfiles'
+import { MemberProfilesSection } from '@/app/(frontend)/_components/MemberProfilesSection'
 import {
   createBaseProfileSlug,
   normalizeContactAddress,
@@ -14,6 +17,7 @@ import {
 } from '@/modules/members/member-profile'
 import { getMemberProfileImageURL } from '@/modules/members/member-profile-image'
 import { createRichTextDocument, extractMemberProfileText } from '@/modules/members/rich-text'
+import type { MemberProfile, MemberProfilesBlock as MemberProfilesBlockType } from '@/payload-types'
 
 function findNamedField(fields: typeof MemberProfiles.fields, name: string) {
   for (const field of fields) {
@@ -116,5 +120,32 @@ describe('member profile validation', () => {
     expect(existsSync(resolve(process.cwd(), 'public/assets/member-profile-placeholder.svg'))).toBe(
       true,
     )
+  })
+
+  it('renders embedded profiles as a card, list or grid', () => {
+    const profile = {
+      _status: 'published',
+      createdAt: '2026-08-26T00:00:00.000Z',
+      id: 1,
+      owner: 1,
+      photo: null,
+      publicName: 'Alicja Testowa',
+      slug: 'alicja-testowa',
+      updatedAt: '2026-08-26T00:00:00.000Z',
+    } as MemberProfile
+    const renderView = (view: 'card' | 'grid' | 'list') =>
+      renderToStaticMarkup(
+        createElement(MemberProfilesSection, {
+          block: {
+            blockType: 'memberProfiles',
+            entries: [{ profile }],
+            view,
+          } as MemberProfilesBlockType,
+        }),
+      )
+
+    expect(renderView('card')).toContain('memberGrid-card')
+    expect(renderView('list')).toContain('memberGrid-list')
+    expect(renderView('grid')).toContain('memberGrid-grid')
   })
 })

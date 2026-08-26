@@ -152,6 +152,7 @@ test.beforeAll(async () => {
           blockType: 'memberProfiles',
           entries: [{ contextLabel: 'Prezes Zarządu', profile: ownerProfile.id }],
           heading: 'Władze testowe',
+          view: 'grid',
         },
       ],
       slug: 'integration-member-profiles-e2e',
@@ -204,6 +205,7 @@ test('renders an embedded profile with its contextual label instead of the club 
   await expect(page.getByText('Prezes Zarządu')).toBeVisible()
   await expect(page.getByText('Opiekunka nowych klubowiczów')).toHaveCount(0)
   await expect(page.getByRole('link', { exact: true, name: 'Alicja Bez Zdjęcia' })).toBeVisible()
+  await expect(page.locator('.memberGrid-grid')).toBeVisible()
 })
 
 test('invalidates the cached public profile after a Payload update', async ({ page }) => {

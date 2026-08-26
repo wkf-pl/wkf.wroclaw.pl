@@ -12,10 +12,12 @@ export function MemberProfilesSection({ block }: { block: MemberProfilesBlockTyp
     return null
   }
 
+  const view = block.view ?? 'grid'
+
   return (
     <section className="memberProfilesBlock">
       {block.heading ? <h2>{block.heading}</h2> : null}
-      <div className="memberGrid">
+      <div className={`memberGrid memberGrid-${view}`}>
         {entries.map((entry) => (
           <MemberProfileCard
             contextLabel={entry.contextLabel}

@@ -1,3 +1,4 @@
+import type { CollectionConfig, Field } from 'payload'
 import { describe, expect, it } from 'vitest'
 
 import { AttachmentsBlock, MediaGalleryBlock } from '@/blocks/MediaListing'
@@ -6,7 +7,12 @@ import { MemberProfilesBlock } from '@/blocks/MemberProfiles'
 import { RichTextBlock } from '@/blocks/RichText'
 import { ListingBlock, validateListingSources, validateParentPage } from '@/blocks/Listing'
 import { Categories } from '@/collections/Categories'
+import { Documents } from '@/collections/Documents'
+import { EventCycles } from '@/collections/EventCycles'
+import { Events } from '@/collections/Events'
+import { Media } from '@/collections/Media'
 import { Pages } from '@/collections/Pages'
+import { Partners } from '@/collections/Partners'
 import { Posts } from '@/collections/Posts'
 import { Tags } from '@/collections/Tags'
 import {
@@ -17,13 +23,41 @@ import {
 import { validatePageStructure } from '@/modules/content/page-validation'
 
 function findField(fields: typeof Categories.fields, name: string) {
-  const field = fields.find((candidate) => 'name' in candidate && candidate.name === name)
+  const field = flattenFields(fields).find(
+    (candidate) => 'name' in candidate && candidate.name === name,
+  )
 
   if (!field) {
     throw new Error(`Missing field: ${name}`)
   }
 
   return field
+}
+
+function flattenFields(fields: Field[]): Field[] {
+  return fields.flatMap((field) => {
+    if (field.type === 'tabs') {
+      return [field, ...field.tabs.flatMap((tab) => flattenFields(tab.fields))]
+    }
+
+    if ('fields' in field && Array.isArray(field.fields)) {
+      return [field, ...flattenFields(field.fields)]
+    }
+
+    return [field]
+  })
+}
+
+function sidebarFieldNames(collection: CollectionConfig): string[] {
+  return flattenFields(collection.fields).flatMap((field) =>
+    'name' in field && field.admin?.position === 'sidebar' ? [field.name] : [],
+  )
+}
+
+function tabLabels(collection: CollectionConfig): (false | string | undefined)[] {
+  const tabs = collection.fields.find((field) => field.type === 'tabs')
+  if (!tabs || tabs.type !== 'tabs') throw new Error(`Missing tabs in ${collection.slug}`)
+  return tabs.tabs.map((tab) => (typeof tab.label === 'string' ? tab.label : undefined))
 }
 
 function describeFieldOrder(fields: typeof Pages.fields): (string | string[])[] {
@@ -73,6 +107,25 @@ describe('page configuration', () => {
     ])
   })
 
+  it('offers card, list and grid views for embedded member profiles', () => {
+    const viewField = MemberProfilesBlock.fields.find(
+      (field) => 'name' in field && field.name === 'view',
+    )
+
+    expect(viewField).toMatchObject({
+      admin: { isClearable: false },
+      defaultValue: 'grid',
+      label: 'Widok',
+      options: [
+        { label: 'Karta', value: 'card' },
+        { label: 'Lista', value: 'list' },
+        { label: 'Siatka', value: 'grid' },
+      ],
+      required: true,
+      type: 'select',
+    })
+  })
+
   it('uses the custom grammatically correct create label', () => {
     expect(Pages.admin?.components?.edit?.beforeDocumentControls).toContain(
       '/components/admin/PageCreateLabel#PageCreateLabel',
@@ -80,13 +133,9 @@ describe('page configuration', () => {
   })
 
   it('uses the intended create-form labels, placeholder, and empty rich text value', () => {
-    const parentField = Pages.fields
-      .flatMap((field) => ('fields' in field ? field.fields : [field]))
-      .find((field) => 'name' in field && field.name === 'parent')
-    const excerptField = Pages.fields.find(
-      (field) => 'name' in field && field.name === 'listingExcerpt',
-    )
-    const layoutField = Pages.fields.find((field) => 'name' in field && field.name === 'layout')
+    const parentField = findField(Pages.fields, 'parent')
+    const excerptField = findField(Pages.fields, 'listingExcerpt')
+    const layoutField = findField(Pages.fields, 'layout')
 
     expect(parentField).toMatchObject({ admin: { placeholder: '<brak>' } })
     expect(excerptField).toMatchObject({ label: 'Streszczenie' })
@@ -131,37 +180,39 @@ describe('page configuration', () => {
     expect(parentPageField).toMatchObject({ label: 'Strona nadrzędna', type: 'relationship' })
   })
 
-  it('keeps the agreed field order in Pages', () => {
-    expect(describeFieldOrder(Pages.fields)).toEqual([
-      ['title', 'parent'],
-      ['category', 'tags'],
-      'fullTitle',
-      'heroImage',
-      'listingExcerpt',
-      'layout',
-      'seo',
-      'slug',
-      'author',
-      'publishedAt',
-      'systemKey',
-      'breadcrumbs',
-      'hierarchyPath',
-    ])
+  it('puts SEO in a separate tab in every SEO-enabled collection', () => {
+    for (const collection of [Pages, Posts, Events, EventCycles, Partners]) {
+      expect(tabLabels(collection)).toContain('SEO')
+    }
   })
 
-  it('keeps the agreed field order in Posts', () => {
-    expect(describeFieldOrder(Posts.fields)).toEqual([
-      'title',
+  it('uses the requested sidebar field order', () => {
+    expect(sidebarFieldNames(Pages)).toEqual([
       'slug',
-      ['category', 'tags'],
-      'heroImage',
-      'excerpt',
-      ['relatedEvents', 'relatedEventCycles'],
-      'layout',
+      'hierarchyPath',
+      'category',
+      'tags',
       'author',
       'publishedAt',
-      'seo',
     ])
+    expect(sidebarFieldNames(Posts)).toEqual(['slug', 'category', 'tags', 'author', 'publishedAt'])
+    expect(sidebarFieldNames(Events)).toEqual(['slug', 'category', 'tags', 'author', 'publishedAt'])
+    expect(sidebarFieldNames(EventCycles)).toEqual([
+      'slug',
+      'category',
+      'tags',
+      'author',
+      'publishedAt',
+    ])
+    expect(sidebarFieldNames(Documents)).toEqual([
+      'slug',
+      'category',
+      'tags',
+      'author',
+      'publishedAt',
+    ])
+    expect(sidebarFieldNames(Media)).toEqual(['category', 'tags', 'uploadedBy'])
+    expect(sidebarFieldNames(Partners)).toEqual(['slug', 'author', 'publishedAt'])
   })
 
   it('keeps the agreed field order in Categories and Tags', () => {

@@ -7,6 +7,19 @@ import { DocumentsBlock, validateManualDocumentItems } from '@/blocks/Documents'
 import { Documents } from '@/collections/Documents'
 import { Pages } from '@/collections/Pages'
 import type { Document } from '@/payload-types'
+import type { Field } from 'payload'
+
+function flattenFields(fields: Field[]): Field[] {
+  return fields.flatMap((field) => {
+    if (field.type === 'tabs') {
+      return [field, ...field.tabs.flatMap((tab) => flattenFields(tab.fields))]
+    }
+    if ('fields' in field && Array.isArray(field.fields)) {
+      return [field, ...flattenFields(field.fields)]
+    }
+    return [field]
+  })
+}
 
 function describeFieldOrder(): (string | string[])[] {
   return DocumentsBlock.fields.map((field) => {
@@ -46,8 +59,27 @@ describe('documents block', () => {
       alt: 'Schematyczna ikona listy dokumentów',
       url: '/assets/block-thumbnails/documents.png',
     })
+    const itemsField = DocumentsBlock.fields.find(
+      (field) => 'name' in field && field.name === 'items',
+    )
+    const emptyMessageField = DocumentsBlock.fields.find(
+      (field) => 'name' in field && field.name === 'emptyMessage',
+    )
+    expect(itemsField).toMatchObject({
+      admin: {
+        components: {
+          RowLabel: '/components/admin/DocumentEntryRowLabel#DocumentEntryRowLabel',
+        },
+      },
+    })
+    expect(
+      emptyMessageField?.admin?.condition?.({}, { selectionMode: 'filters' }, {} as never),
+    ).toBe(true)
+    expect(
+      emptyMessageField?.admin?.condition?.({}, { selectionMode: 'manual' }, {} as never),
+    ).toBe(false)
 
-    const layout = Pages.fields.find(
+    const layout = flattenFields(Pages.fields).find(
       (field) => 'name' in field && field.name === 'layout' && field.type === 'blocks',
     )
     expect(layout).toMatchObject({
@@ -81,6 +113,10 @@ describe('documents block', () => {
       slug: 'uchwala-testowa',
       summary: 'Opis widoczny w szczegółowych widokach.',
       title: 'Uchwała testowa',
+      primaryFile: {
+        id: 17,
+        label: 'Uchwała PDF',
+      },
     } as Document
 
     const renderView = (view: 'cards' | 'grid' | 'list') =>
@@ -92,9 +128,14 @@ describe('documents block', () => {
 
     expect(cardsMarkup).toContain('documentList-cards')
     expect(cardsMarkup).toContain(document.summary)
+    expect(cardsMarkup).toContain('documentPdfLink')
+    expect(cardsMarkup).toContain('/dokumenty/uchwala-testowa/plik/17')
+    expect(cardsMarkup).toContain('target="_blank"')
     expect(gridMarkup).toContain('documentList-grid')
     expect(gridMarkup).toContain(document.summary)
+    expect(gridMarkup).not.toContain('documentPdfLink')
     expect(listMarkup).toContain('documentList-list')
     expect(listMarkup).not.toContain(document.summary)
+    expect(listMarkup).not.toContain('documentPdfLink')
   })
 })

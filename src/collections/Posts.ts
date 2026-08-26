@@ -42,42 +42,47 @@ export const Posts: CollectionConfig = {
   },
   defaultSort: '-publishedAt',
   fields: [
-    getEditorialField(editorialFields, 'title'),
+    {
+      type: 'tabs',
+      tabs: [
+        {
+          label: 'Treść',
+          fields: [
+            getEditorialField(editorialFields, 'title'),
+            getEditorialField(editorialFields, 'heroImage'),
+            getEditorialField(editorialFields, 'excerpt'),
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'relatedEvents',
+                  type: 'relationship',
+                  admin: { placeholder: '<brak>', width: '50%' },
+                  hasMany: true,
+                  label: 'Powiązane wydarzenia',
+                  relationTo: 'events',
+                },
+                {
+                  name: 'relatedEventCycles',
+                  type: 'relationship',
+                  admin: { placeholder: '<brak>', width: '50%' },
+                  hasMany: true,
+                  label: 'Powiązane cykle',
+                  relationTo: 'event-cycles',
+                },
+              ],
+            },
+            createContentLayoutField('Treści'),
+          ],
+        },
+        { label: 'SEO', fields: [getEditorialField(editorialFields, 'seo')] },
+      ],
+    },
     getEditorialField(editorialFields, 'slug'),
-    {
-      type: 'row',
-      fields: [
-        getEditorialField(editorialFields, 'category'),
-        getEditorialField(editorialFields, 'tags'),
-      ],
-    },
-    getEditorialField(editorialFields, 'heroImage'),
-    getEditorialField(editorialFields, 'excerpt'),
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'relatedEvents',
-          type: 'relationship',
-          admin: { placeholder: '<brak>', width: '50%' },
-          hasMany: true,
-          label: 'Powiązane wydarzenia',
-          relationTo: 'events',
-        },
-        {
-          name: 'relatedEventCycles',
-          type: 'relationship',
-          admin: { placeholder: '<brak>', width: '50%' },
-          hasMany: true,
-          label: 'Powiązane cykle',
-          relationTo: 'event-cycles',
-        },
-      ],
-    },
-    createContentLayoutField('Treści'),
+    getEditorialField(editorialFields, 'category'),
+    getEditorialField(editorialFields, 'tags'),
     getEditorialField(editorialFields, 'author'),
     getEditorialField(editorialFields, 'publishedAt'),
-    getEditorialField(editorialFields, 'seo'),
   ],
   hooks: {
     afterChange: [syncContentListingAfterChange],
