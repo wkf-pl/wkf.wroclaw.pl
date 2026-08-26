@@ -2,6 +2,7 @@ import type { Field } from 'payload'
 
 import {
   AttachmentsBlock,
+  DocumentsBlock,
   ListingBlock,
   MediaGalleryBlock,
   MemberProfilesBlock,
@@ -37,7 +38,14 @@ export function createContentLayoutField(label: string): Field {
     admin: {
       initCollapsed: false,
     },
-    blocks: [RichTextBlock, ListingBlock, MediaGalleryBlock, AttachmentsBlock, MemberProfilesBlock],
+    blocks: [
+      RichTextBlock,
+      ListingBlock,
+      MediaGalleryBlock,
+      DocumentsBlock,
+      AttachmentsBlock,
+      MemberProfilesBlock,
+    ],
     defaultValue: [
       {
         blockType: 'richText',

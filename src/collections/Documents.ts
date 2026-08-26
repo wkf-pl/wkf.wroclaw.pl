@@ -1,6 +1,8 @@
 import { APIError, type CollectionConfig } from 'payload'
 
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
+import { createTaxonomyFields } from '@/modules/content/taxonomy-fields'
+import { withFieldWidth } from '@/modules/content/editorial-fields'
 import { populateSlug } from '@/modules/content/slug'
 import { documentTypeOptions } from '@/modules/documents/document-types'
 import { readDocuments } from '@/modules/documents/document-access'
@@ -23,6 +25,8 @@ const updateDocuments = createRolePermissionAccess({
   operation: 'update',
   resource: 'documents',
 })
+
+const taxonomyFields = createTaxonomyFields().map((field) => withFieldWidth(field, '50%'))
 
 function getSelectedFileIds(data: Record<string, unknown>): (number | string)[] {
   const idsByValue = new Map<string, number | string>()
@@ -117,6 +121,10 @@ export const Documents: CollectionConfig = {
       label: 'Streszczenie',
       maxLength: 500,
       required: true,
+    },
+    {
+      type: 'row',
+      fields: taxonomyFields,
     },
     {
       name: 'content',

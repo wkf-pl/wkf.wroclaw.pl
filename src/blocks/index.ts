@@ -1,4 +1,5 @@
 export { ListingBlock } from './Listing'
+export { DocumentsBlock } from './Documents'
 export { AttachmentsBlock, MediaGalleryBlock } from './MediaListing'
 export { MemberProfilesBlock } from './MemberProfiles'
 export { RichTextBlock } from './RichText'

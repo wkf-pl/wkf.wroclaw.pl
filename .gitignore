@@ -40,3 +40,5 @@ yarn-error.log*
 
 pr.md
 commit.txt
+/tmp
+/output

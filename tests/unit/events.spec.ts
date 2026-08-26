@@ -102,16 +102,28 @@ describe('events model', () => {
     })
     expect(links).toMatchObject({ admin: { initCollapsed: false }, label: 'Linki' })
     if (!links || links.type !== 'array') throw new Error('Missing Event links')
-    expect(links.fields.map((field) => ('name' in field ? field.name : null))).toEqual([
+    expect(
+      links.fields.map((field) =>
+        field.type === 'row'
+          ? field.fields.map((rowField) => ('name' in rowField ? rowField.name : null))
+          : 'name' in field
+            ? field.name
+            : null,
+      ),
+    ).toEqual([
       'label',
-      'targetType',
-      'event',
-      'eventCycle',
-      'partner',
-      'page',
-      'category',
-      'tag',
-      null,
+      [
+        'targetType',
+        'eventCycle',
+        'document',
+        'category',
+        'partner',
+        'page',
+        'tag',
+        'post',
+        'event',
+      ],
+      ['customScheme', 'customAddress'],
       'openInNewTab',
     ])
   })

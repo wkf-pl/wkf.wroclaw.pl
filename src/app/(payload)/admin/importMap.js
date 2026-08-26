@@ -25,6 +25,7 @@ import { RichTextBlockLabel as RichTextBlockLabel_d53c993bb109710411f82eaaf564ee
 import { ListingParentPageField as ListingParentPageField_064fe10c7d0092bdda4e6b763de3624c } from '../../../components/admin/ListingParentPageField'
 import { ListingBlockLabel as ListingBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { MediaGalleryBlockLabel as MediaGalleryBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
+import { DocumentsBlockLabel as DocumentsBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { AttachmentsBlockLabel as AttachmentsBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { MemberProfileEntryRowLabel as MemberProfileEntryRowLabel_d89d5b210a246731bf987576398d455f } from '../../../components/admin/MemberProfileEntryRowLabel'
 import { MemberProfilesBlockLabel as MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
@@ -101,6 +102,7 @@ export const importMap = {
   "/components/admin/ListingParentPageField#ListingParentPageField": ListingParentPageField_064fe10c7d0092bdda4e6b763de3624c,
   "/components/admin/ContentBlockLabel#ListingBlockLabel": ListingBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ContentBlockLabel#MediaGalleryBlockLabel": MediaGalleryBlockLabel_d53c993bb109710411f82eaaf564eeff,
+  "/components/admin/ContentBlockLabel#DocumentsBlockLabel": DocumentsBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ContentBlockLabel#AttachmentsBlockLabel": AttachmentsBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/MemberProfileEntryRowLabel#MemberProfileEntryRowLabel": MemberProfileEntryRowLabel_d89d5b210a246731bf987576398d455f,
   "/components/admin/ContentBlockLabel#MemberProfilesBlockLabel": MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff,

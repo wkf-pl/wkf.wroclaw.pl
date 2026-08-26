@@ -860,15 +860,43 @@ body:has(> .homePage) .siteHeader {
   margin-inline: auto;
 }
 
+.documentsBlock {
+  width: min(70rem, 100%);
+  margin-inline: auto;
+  display: grid;
+  gap: 1.25rem;
+}
+
 .documentListItem {
-  padding: 1.5rem;
+  overflow: hidden;
   border: 1px solid rgb(243 163 19 / 42%);
   border-radius: 0.75rem;
   background: rgb(5 31 47 / 72%);
 }
 
+.documentListItemContent {
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+}
+
+.documentListItemMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0;
+  color: #9faab2;
+  font-size: 0.9rem;
+}
+
+.documentListItemMeta span {
+  color: var(--gold-light);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .documentListItem h2 {
-  margin: 0 0 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
 }
 
 .documentListItem h2 a {
@@ -876,9 +904,39 @@ body:has(> .homePage) .siteHeader {
   text-decoration: none;
 }
 
-.documentListItem > p:last-child {
+.documentListItemContent > p:last-child:not(.documentListItemMeta) {
   color: var(--muted);
   line-height: 1.6;
+}
+
+.documentList-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(70rem, 100%);
+}
+
+.documentList-grid .documentListItemContent {
+  padding: 1.25rem;
+}
+
+.documentList-grid .documentListItem h2 {
+  font-size: 1.5rem;
+}
+
+.documentList-list {
+  gap: 0.75rem;
+}
+
+.documentList-list .documentListItemContent {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.documentList-list .documentListItem h2 {
+  margin: 0;
+  font-size: 1.25rem;
 }
 
 .documentPagination {
@@ -1274,7 +1332,8 @@ a.attachmentItem:hover {
     grid-column: 1 / -1;
   }
 
-  .contentList-grid {
+  .contentList-grid,
+  .documentList-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1364,7 +1423,9 @@ a.attachmentItem:hover {
 
   .contentCard,
   .contentList-grid,
-  .contentList-compact .contentCardContent {
+  .contentList-compact .contentCardContent,
+  .documentList-grid,
+  .documentList-list .documentListItemContent {
     grid-template-columns: 1fr;
   }
 

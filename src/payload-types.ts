@@ -94,12 +94,14 @@ export interface Config {
       relatedPosts: 'posts';
       relatedEvents: 'events';
       relatedEventCycles: 'event-cycles';
+      relatedDocuments: 'documents';
     };
     tags: {
       relatedPages: 'pages';
       relatedPosts: 'posts';
       relatedEvents: 'events';
       relatedEventCycles: 'event-cycles';
+      relatedDocuments: 'documents';
     };
   };
   collectionsSelect: {
@@ -245,6 +247,11 @@ export interface Category {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  relatedDocuments?: {
+    docs?: (number | Document)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   breadcrumbs?:
     | {
         doc?: (number | null) | Category;
@@ -272,7 +279,9 @@ export interface Page {
    * Opcjonalny opis karty. Bez niego użyty zostanie początek pierwszego bloku treści.
    */
   listingExcerpt?: string | null;
-  layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
+  layout: (
+    RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
+  )[];
   seo?: {
     /**
      * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
@@ -338,6 +347,11 @@ export interface Tag {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  relatedDocuments?: {
+    docs?: (number | Document)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -361,7 +375,9 @@ export interface Post {
   excerpt: string;
   relatedEvents?: (number | Event)[] | null;
   relatedEventCycles?: (number | EventCycle)[] | null;
-  layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
+  layout: (
+    RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
+  )[];
   author: number | User;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
@@ -395,7 +411,9 @@ export interface Event {
   heroImage?: (number | null) | Media;
   tagline?: string | null;
   excerpt: string;
-  layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
+  layout: (
+    RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
+  )[];
   timeMode: 'timed' | 'allDay';
   eventStatus: 'scheduled' | 'cancelled' | 'postponed' | 'rescheduled';
   startAt: string;
@@ -436,13 +454,15 @@ export interface Event {
   externalLinks?:
     | {
         label: string;
-        targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
-        event?: (number | null) | Event;
+        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
-        category?: (number | null) | Category;
         tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
         customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
         /**
          * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
@@ -494,7 +514,9 @@ export interface EventCycle {
   heroImage?: (number | null) | Media;
   tagline?: string | null;
   excerpt: string;
-  layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
+  layout: (
+    RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
+  )[];
   seo?: {
     /**
      * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
@@ -511,7 +533,9 @@ export interface EventCycle {
     heroImage?: (number | null) | Media;
     tagline?: string | null;
     excerpt?: string | null;
-    layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
+    layout: (
+      RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
+    )[];
     category?: (number | null) | Category;
     tags?: (number | Tag)[] | null;
     defaultTimeMode?: ('timed' | 'allDay') | null;
@@ -556,13 +580,15 @@ export interface EventCycle {
     externalLinks?:
       | {
           label: string;
-          targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
-          event?: (number | null) | Event;
+          targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
           eventCycle?: (number | null) | EventCycle;
+          document?: (number | null) | Document;
+          category?: (number | null) | Category;
           partner?: (number | null) | Partner;
           page?: (number | null) | Page;
-          category?: (number | null) | Category;
           tag?: (number | null) | Tag;
+          post?: (number | null) | Post;
+          event?: (number | null) | Event;
           customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
           /**
            * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
@@ -656,6 +682,172 @@ export interface MediaGalleryBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'mediaGallery';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "DocumentsBlock".
+ */
+export interface DocumentsBlock {
+  heading?: string | null;
+  selectionMode: 'manual' | 'filters';
+  items?:
+    | {
+        document: number | Document;
+        id?: string | null;
+      }[]
+    | null;
+  category?: (number | null) | Category;
+  tag?: (number | null) | Tag;
+  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
+  view: 'cards' | 'list' | 'grid';
+  pageSize: number;
+  pagination?: boolean | null;
+  emptyMessage?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'documents';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "documents".
+ */
+export interface Document {
+  id: number;
+  title: string;
+  /**
+   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
+   */
+  slug: string;
+  documentType: 'resolution' | 'statute' | 'regulations' | 'minutes' | 'report' | 'agreement' | 'license' | 'other';
+  /**
+   * Na przykład 3/2026. Pole jest wymagane dla uchwał.
+   */
+  documentNumber?: string | null;
+  documentDate: string;
+  summary: string;
+  category?: (number | null) | Category;
+  tags?: (number | Tag)[] | null;
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  primaryFile: number | DocumentFile;
+  attachments?: (number | DocumentFile)[] | null;
+  author: number | User;
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "document-files".
+ */
+export interface DocumentFile {
+  id: number;
+  /**
+   * Czytelna nazwa wyświetlana przy odnośniku do pliku.
+   */
+  label: string;
+  document?: (number | null) | Document;
+  uploadedBy?: (number | null) | User;
+  prefix?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: number;
+  displayName: string;
+  roles: (number | Role)[];
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "roles".
+ */
+export interface Role {
+  id: number;
+  name: string;
+  description?: string | null;
+  key: string;
+  isSystem?: boolean | null;
+  /**
+   * Uprawnienia wielu ról sumują się. Dwa ograniczenia zaznaczone dla jednej operacji obowiązują jednocześnie.
+   */
+  permissions?:
+    | {
+        resource:
+          | 'users'
+          | 'media'
+          | 'member-profiles'
+          | 'member-profile-images'
+          | 'pages'
+          | 'posts'
+          | 'events'
+          | 'event-cycles'
+          | 'partners'
+          | 'documents'
+          | 'club-sections'
+          | 'categories'
+          | 'tags'
+          | 'navigation'
+          | 'site-settings';
+        readAllowed?: boolean | null;
+        readOwn?: boolean | null;
+        readPublished?: boolean | null;
+        canCreate?: boolean | null;
+        updateAllowed?: boolean | null;
+        updateOwn?: boolean | null;
+        updatePublished?: boolean | null;
+        deleteAllowed?: boolean | null;
+        deleteOwn?: boolean | null;
+        deletePublished?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -792,80 +984,6 @@ export interface MemberProfile {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
- */
-export interface User {
-  id: number;
-  displayName: string;
-  roles: (number | Role)[];
-  updatedAt: string;
-  createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'users';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "roles".
- */
-export interface Role {
-  id: number;
-  name: string;
-  description?: string | null;
-  key: string;
-  isSystem?: boolean | null;
-  /**
-   * Uprawnienia wielu ról sumują się. Dwa ograniczenia zaznaczone dla jednej operacji obowiązują jednocześnie.
-   */
-  permissions?:
-    | {
-        resource:
-          | 'users'
-          | 'media'
-          | 'member-profiles'
-          | 'member-profile-images'
-          | 'pages'
-          | 'posts'
-          | 'events'
-          | 'event-cycles'
-          | 'partners'
-          | 'documents'
-          | 'club-sections'
-          | 'categories'
-          | 'tags'
-          | 'navigation'
-          | 'site-settings';
-        readAllowed?: boolean | null;
-        readOwn?: boolean | null;
-        readPublished?: boolean | null;
-        canCreate?: boolean | null;
-        updateAllowed?: boolean | null;
-        updateOwn?: boolean | null;
-        updatePublished?: boolean | null;
-        deleteAllowed?: boolean | null;
-        deleteOwn?: boolean | null;
-        deletePublished?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "member-profile-images".
  */
 export interface MemberProfileImage {
@@ -913,7 +1031,9 @@ export interface Partner {
   heroImage?: (number | null) | Media;
   excerpt: string;
   website?: string | null;
-  layout: (RichTextBlock | ListingBlock | MediaGalleryBlock | AttachmentsBlock | MemberProfilesBlock)[];
+  layout: (
+    RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
+  )[];
   seo?: {
     /**
      * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
@@ -940,72 +1060,6 @@ export interface Partner {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "document-files".
- */
-export interface DocumentFile {
-  id: number;
-  /**
-   * Czytelna nazwa wyświetlana przy odnośniku do pliku.
-   */
-  label: string;
-  document?: (number | null) | Document;
-  uploadedBy?: (number | null) | User;
-  prefix?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "documents".
- */
-export interface Document {
-  id: number;
-  title: string;
-  /**
-   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
-   */
-  slug: string;
-  documentType: 'resolution' | 'statute' | 'regulations' | 'minutes' | 'report' | 'agreement' | 'license' | 'other';
-  /**
-   * Na przykład 3/2026. Pole jest wymagane dla uchwał.
-   */
-  documentNumber?: string | null;
-  documentDate: string;
-  summary: string;
-  content?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  primaryFile: number | DocumentFile;
-  attachments?: (number | DocumentFile)[] | null;
-  author: number | User;
-  publishedAt?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "club-sections".
  */
 export interface ClubSection {
@@ -1020,13 +1074,15 @@ export interface ClubSection {
   menuItems?:
     | {
         label: string;
-        targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
-        event?: (number | null) | Event;
+        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
-        category?: (number | null) | Category;
         tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
         customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
         /**
          * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
@@ -1230,6 +1286,7 @@ export interface PagesSelect<T extends boolean = true> {
         richText?: T | RichTextBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
       };
@@ -1311,6 +1368,29 @@ export interface MediaGalleryBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "DocumentsBlock_select".
+ */
+export interface DocumentsBlockSelect<T extends boolean = true> {
+  heading?: T;
+  selectionMode?: T;
+  items?:
+    | T
+    | {
+        document?: T;
+        id?: T;
+      };
+  category?: T;
+  tag?: T;
+  sort?: T;
+  view?: T;
+  pageSize?: T;
+  pagination?: T;
+  emptyMessage?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "AttachmentsBlock_select".
  */
 export interface AttachmentsBlockSelect<T extends boolean = true> {
@@ -1367,6 +1447,7 @@ export interface PostsSelect<T extends boolean = true> {
         richText?: T | RichTextBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
       };
@@ -1401,6 +1482,7 @@ export interface EventsSelect<T extends boolean = true> {
         richText?: T | RichTextBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
       };
@@ -1445,12 +1527,14 @@ export interface EventsSelect<T extends boolean = true> {
     | {
         label?: T;
         targetType?: T;
-        event?: T;
         eventCycle?: T;
+        document?: T;
+        category?: T;
         partner?: T;
         page?: T;
-        category?: T;
         tag?: T;
+        post?: T;
+        event?: T;
         customScheme?: T;
         customAddress?: T;
         openInNewTab?: T;
@@ -1493,6 +1577,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
         richText?: T | RichTextBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
       };
@@ -1516,6 +1601,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
               richText?: T | RichTextBlockSelect<T>;
               listing?: T | ListingBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
+              documents?: T | DocumentsBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
               memberProfiles?: T | MemberProfilesBlockSelect<T>;
             };
@@ -1561,12 +1647,14 @@ export interface EventCyclesSelect<T extends boolean = true> {
           | {
               label?: T;
               targetType?: T;
-              event?: T;
               eventCycle?: T;
+              document?: T;
+              category?: T;
               partner?: T;
               page?: T;
-              category?: T;
               tag?: T;
+              post?: T;
+              event?: T;
               customScheme?: T;
               customAddress?: T;
               openInNewTab?: T;
@@ -1595,6 +1683,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   relatedPosts?: T;
   relatedEvents?: T;
   relatedEventCycles?: T;
+  relatedDocuments?: T;
   breadcrumbs?:
     | T
     | {
@@ -1618,6 +1707,7 @@ export interface TagsSelect<T extends boolean = true> {
   relatedPosts?: T;
   relatedEvents?: T;
   relatedEventCycles?: T;
+  relatedDocuments?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1754,6 +1844,8 @@ export interface DocumentsSelect<T extends boolean = true> {
   documentNumber?: T;
   documentDate?: T;
   summary?: T;
+  category?: T;
+  tags?: T;
   content?: T;
   primaryFile?: T;
   attachments?: T;
@@ -1778,6 +1870,7 @@ export interface PartnersSelect<T extends boolean = true> {
         richText?: T | RichTextBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
       };
@@ -1809,12 +1902,14 @@ export interface ClubSectionsSelect<T extends boolean = true> {
     | {
         label?: T;
         targetType?: T;
-        event?: T;
         eventCycle?: T;
+        document?: T;
+        category?: T;
         partner?: T;
         page?: T;
-        category?: T;
         tag?: T;
+        post?: T;
+        event?: T;
         customScheme?: T;
         customAddress?: T;
         openInNewTab?: T;
@@ -1962,13 +2057,15 @@ export interface Navigation {
     | {
         appearance: 'link' | 'icon' | 'button';
         label: string;
-        targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
-        event?: (number | null) | Event;
+        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
-        category?: (number | null) | Category;
         tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
         customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
         /**
          * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
@@ -2002,13 +2099,15 @@ export interface Navigation {
   heroItems?:
     | {
         label: string;
-        targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
-        event?: (number | null) | Event;
+        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
-        category?: (number | null) | Category;
         tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
         customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
         /**
          * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
@@ -2021,13 +2120,15 @@ export interface Navigation {
   socialItems?:
     | {
         label: string;
-        targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
-        event?: (number | null) | Event;
+        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
-        category?: (number | null) | Category;
         tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
         customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
         /**
          * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
@@ -2064,13 +2165,16 @@ export interface Navigation {
         items?:
           | {
               label: string;
-              targetType: 'page' | 'category' | 'tag' | 'event' | 'eventCycle' | 'partner' | 'custom';
-              event?: (number | null) | Event;
+              targetType:
+                'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
               eventCycle?: (number | null) | EventCycle;
+              document?: (number | null) | Document;
+              category?: (number | null) | Category;
               partner?: (number | null) | Partner;
               page?: (number | null) | Page;
-              category?: (number | null) | Category;
               tag?: (number | null) | Tag;
+              post?: (number | null) | Post;
+              event?: (number | null) | Event;
               customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
               /**
                * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
@@ -2114,12 +2218,14 @@ export interface NavigationSelect<T extends boolean = true> {
         appearance?: T;
         label?: T;
         targetType?: T;
-        event?: T;
         eventCycle?: T;
+        document?: T;
+        category?: T;
         partner?: T;
         page?: T;
-        category?: T;
         tag?: T;
+        post?: T;
+        event?: T;
         customScheme?: T;
         customAddress?: T;
         openInNewTab?: T;
@@ -2133,12 +2239,14 @@ export interface NavigationSelect<T extends boolean = true> {
     | {
         label?: T;
         targetType?: T;
-        event?: T;
         eventCycle?: T;
+        document?: T;
+        category?: T;
         partner?: T;
         page?: T;
-        category?: T;
         tag?: T;
+        post?: T;
+        event?: T;
         customScheme?: T;
         customAddress?: T;
         openInNewTab?: T;
@@ -2149,12 +2257,14 @@ export interface NavigationSelect<T extends boolean = true> {
     | {
         label?: T;
         targetType?: T;
-        event?: T;
         eventCycle?: T;
+        document?: T;
+        category?: T;
         partner?: T;
         page?: T;
-        category?: T;
         tag?: T;
+        post?: T;
+        event?: T;
         customScheme?: T;
         customAddress?: T;
         openInNewTab?: T;
@@ -2172,12 +2282,14 @@ export interface NavigationSelect<T extends boolean = true> {
           | {
               label?: T;
               targetType?: T;
-              event?: T;
               eventCycle?: T;
+              document?: T;
+              category?: T;
               partner?: T;
               page?: T;
-              category?: T;
               tag?: T;
+              post?: T;
+              event?: T;
               customScheme?: T;
               customAddress?: T;
               openInNewTab?: T;

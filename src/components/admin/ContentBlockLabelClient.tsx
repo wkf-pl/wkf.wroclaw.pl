@@ -137,6 +137,14 @@ export function AttachmentsBlockLabelClient() {
   )
 }
 
+export function DocumentsBlockLabelClient() {
+  const { data } = useRowLabel<HeadingBlockData>()
+
+  return (
+    <BlockLabel prefix="Dokumenty" value={typeof data.heading === 'string' ? data.heading : ''} />
+  )
+}
+
 export function MemberProfilesBlockLabelClient() {
   const { data } = useRowLabel<HeadingBlockData>()
 

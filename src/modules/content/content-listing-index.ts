@@ -7,6 +7,24 @@ import type { TaxonomizableCollectionSlug, TaxonomizableDocument } from './conte
 
 export const contentListingSyncContextKey = 'skipContentListingSync'
 
+const contentListingSourceSelect = {
+  category: true,
+  createdAt: true,
+  cycle: true,
+  endAt: true,
+  excerpt: true,
+  heroImage: true,
+  id: true,
+  listingExcerpt: true,
+  parent: true,
+  publishedAt: true,
+  slug: true,
+  startAt: true,
+  tags: true,
+  title: true,
+  updatedAt: true,
+} as const
+
 function relationshipID(value: null | number | { id: number } | undefined): number | undefined {
   return typeof value === 'number'
     ? value
@@ -65,6 +83,7 @@ export async function syncContentListingItem(
       overrideAccess: true,
       pagination: false,
       req,
+      select: contentListingSourceSelect,
       where: { and: [{ id: { equals: documentID } }, { _status: { equals: 'published' } }] },
     }),
     req.payload.find({

@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import { documentTypeOptions, getDocumentTypeLabel } from '@/modules/documents/document-types'
 import type { Document } from '@/payload-types'
+import type { DocumentListingView } from '@/modules/documents/document-listing'
 
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric',
@@ -50,27 +51,7 @@ export function DocumentList({
         <button type="submit">Filtruj</button>
       </form>
 
-      {documents.length ? (
-        <div className="documentList">
-          {documents.map((document) => (
-            <article className="documentListItem" key={document.id}>
-              <p className="eyebrow">
-                {getDocumentTypeLabel(document.documentType)}
-                {document.documentNumber ? ` ${document.documentNumber}` : ''}
-              </p>
-              <h2>
-                <Link href={`/dokumenty/${document.slug}`}>{document.title}</Link>
-              </h2>
-              <time dateTime={document.documentDate}>
-                {dateFormatter.format(new Date(document.documentDate))}
-              </time>
-              <p>{document.summary}</p>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <p className="emptyState">Brak dokumentów spełniających wybrane kryteria.</p>
-      )}
+      <DocumentItems documents={documents} />
 
       {totalPages > 1 ? (
         <nav aria-label="Strony dokumentów" className="documentPagination">
@@ -86,6 +67,42 @@ export function DocumentList({
         </nav>
       ) : null}
     </>
+  )
+}
+
+export function DocumentItems({
+  documents,
+  emptyMessage = 'Brak dokumentów spełniających wybrane kryteria.',
+  view = 'cards',
+}: {
+  documents: Document[]
+  emptyMessage?: null | string
+  view?: DocumentListingView
+}) {
+  return documents.length ? (
+    <div className={`documentList documentList-${view}`}>
+      {documents.map((document) => (
+        <article className="documentListItem" key={document.id}>
+          <div className="documentListItemContent">
+            <p className="documentListItemMeta">
+              <span>
+                {getDocumentTypeLabel(document.documentType)}
+                {document.documentNumber ? ` ${document.documentNumber}` : ''}
+              </span>
+              <time dateTime={document.documentDate}>
+                {dateFormatter.format(new Date(document.documentDate))}
+              </time>
+            </p>
+            <h2>
+              <Link href={`/dokumenty/${document.slug}`}>{document.title}</Link>
+            </h2>
+            {view !== 'list' ? <p>{document.summary}</p> : null}
+          </div>
+        </article>
+      ))}
+    </div>
+  ) : (
+    <p className="emptyState">{emptyMessage || 'Nie ma dokumentów.'}</p>
   )
 }
 

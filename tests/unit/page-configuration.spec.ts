@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { AttachmentsBlock, MediaGalleryBlock } from '@/blocks/MediaListing'
+import { DocumentsBlock } from '@/blocks/Documents'
 import { MemberProfilesBlock } from '@/blocks/MemberProfiles'
 import { RichTextBlock } from '@/blocks/RichText'
 import { ListingBlock, validateListingSources, validateParentPage } from '@/blocks/Listing'
@@ -41,6 +42,7 @@ describe('page configuration', () => {
       RichTextBlock.admin?.images?.thumbnail,
       ListingBlock.admin?.images?.thumbnail,
       MediaGalleryBlock.admin?.images?.thumbnail,
+      DocumentsBlock.admin?.images?.thumbnail,
       AttachmentsBlock.admin?.images?.thumbnail,
       MemberProfilesBlock.admin?.images?.thumbnail,
     ]).toEqual([
@@ -55,6 +57,10 @@ describe('page configuration', () => {
       {
         alt: 'Schematyczna ikona siatki zdjęć',
         url: '/assets/block-thumbnails/media-gallery.png',
+      },
+      {
+        alt: 'Schematyczna ikona listy dokumentów',
+        url: '/assets/block-thumbnails/documents.png',
       },
       {
         alt: 'Schematyczna ikona dokumentów połączonych spinaczem',
@@ -169,6 +175,7 @@ describe('page configuration', () => {
       'relatedPosts',
       'relatedEvents',
       'relatedEventCycles',
+      'relatedDocuments',
       'breadcrumbs',
       'hierarchyPath',
     ])
@@ -180,6 +187,7 @@ describe('page configuration', () => {
       'relatedPosts',
       'relatedEvents',
       'relatedEventCycles',
+      'relatedDocuments',
     ])
   })
 

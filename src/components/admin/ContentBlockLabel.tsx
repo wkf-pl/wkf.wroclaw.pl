@@ -1,5 +1,6 @@
 import {
   AttachmentsBlockLabelClient,
+  DocumentsBlockLabelClient,
   ListingBlockLabelClient,
   MediaGalleryBlockLabelClient,
   MemberProfilesBlockLabelClient,
@@ -53,6 +54,10 @@ export function MediaGalleryBlockLabel() {
 
 export function AttachmentsBlockLabel() {
   return <AttachmentsBlockLabelClient />
+}
+
+export function DocumentsBlockLabel() {
+  return <DocumentsBlockLabelClient />
 }
 
 export function MemberProfilesBlockLabel() {
