@@ -75,6 +75,7 @@ module storage './storage.bicep' = {
   name: 'storage'
   params: {
     accountName: storageAccountName
+    enableStagingCheckpoints: environmentName == 'staging'
     location: location
     tags: tags
   }

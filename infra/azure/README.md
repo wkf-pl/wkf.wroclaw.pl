@@ -108,11 +108,44 @@ Workflow stagingowy:
    także blokadę indeksowania w `/robots.txt`,
 9. zapisuje digest w podsumowaniu workflowu.
 
+Deployment stagingu oraz operacje na checkpointach danych współdzielą grupę współbieżności
+`staging-operations`. GitHub wykona je kolejno i nie przerwie rozpoczętej operacji nowszym
+uruchomieniem.
+
 Jeżeli migracja lub testy HTTP nie powiodą się, skrypt uruchamia `migrate:down` tylko wtedy, gdy
 wcześniej zakończył `migrate`, dezaktywuje inne rewizje i przywraca zapisany punkt rollbacku.
 Aktywnej już rewizji nie próbuje ponownie aktywować. Gdy wycofanie bazy się nie powiedzie,
 poprzednia rewizja celowo pozostaje nieaktywna, aby nie uruchomić starego kodu na niezgodnym
 schemacie.
+
+## Checkpointy danych stagingu
+
+Workflow `Manage staging data` jest dostępny wyłącznie jako ręczne **Run workflow** w GitHub
+Actions. Obsługuje dwie operacje:
+
+- `backup` tworzy nazwany checkpoint całej bazy PostgreSQL i wszystkich aktualnych blobów z
+  kontenera `media`,
+- `restore` odtwarza wskazany checkpoint; wymaga podania dokładnej wartości `RESTORE` w polu
+  potwierdzenia.
+
+Nazwa checkpointu musi mieć od 3 do 63 małych liter, cyfr lub łączników, na przykład
+`beta-start`. Istniejący checkpoint nie jest nadpisywany. Przed każdą operacją aplikacja przechodzi
+w tryb maintenance, aby baza i Media przedstawiały ten sam stan. Plik bazy jest weryfikowany przez
+`pg_restore --list` i sumę SHA-256, a manifest zapisuje czas, obraz, SHA wdrożonego kodu i liczbę
+blobów Media.
+
+Przed właściwym odtworzeniem workflow tworzy checkpoint ratunkowy `rescue-<czas>`. Następnie
+odtwarza bazę i Media, uruchamia aktualny job `payload migrate` oraz `migrate:status`, aktywuje
+zapisaną rewizję i sprawdza `/health`, `/`, `/admin` oraz `/robots.txt`. Jeśli błąd wystąpi po
+rozpoczęciu destrukcyjnego odtwarzania, staging pozostaje w maintenance; nie uruchamiamy aplikacji
+na częściowo odtworzonej lub niezgodnej bazie. Ponowienie `restore` odzyskuje wtedy ostatnią rewizję
+nawet wtedy, gdy żadna rewizja nie jest aktywna. Tymczasowa reguła PostgreSQL dopuszczająca
+wyłącznie adres IP runnera jest usuwana również po błędzie.
+
+Konto Storage stagingu ma włączone wersjonowanie blobów oraz 14-dniowe soft delete dla blobów i
+kontenerów. Checkpointy ratunkowe są automatycznie usuwane po 14 dniach; nazwane checkpointy
+pozostają do ręcznego usunięcia. Te mechanizmy chronią pliki Media, których nie obejmuje kopia
+PostgreSQL.
 
 `deploy-production.yml` jest uruchamiany ręcznie. Przyjmuje digest zatwierdzonego obrazu i pełny
 SHA źródłowy raportowane przez staging, sprawdza obecność obrazu w ACR, automatycznie klasyfikuje

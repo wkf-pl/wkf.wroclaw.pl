@@ -79,6 +79,12 @@ Definicje Bicep znajdują się w `infra/azure/`. Staging i produkcja mają osobn
 
 Workflow stagingu buduje obraz tylko raz i publikuje jego digest. Produkcja wymaga ręcznego podania digestu sprawdzonego na stagingu. Na obu środowiskach migracje wykonuje osobny Azure Container Apps Job przed przełączeniem obrazu aplikacji.
 
+### Checkpointy danych stagingu
+
+Ręczny workflow GitHub Actions **Manage staging data** tworzy i odtwarza nazwane checkpointy bazy PostgreSQL oraz kontenera Media. Uruchom go przez **Actions → Manage staging data → Run workflow**, wybierając `backup` albo `restore`. Odtworzenie wymaga wpisania `RESTORE`, automatycznie zapisuje stan sprzed operacji i uruchamia wszystkie późniejsze migracje Payload przed ponownym udostępnieniem stagingu.
+
+Checkpointy i deploymenty stagingu używają wspólnej blokady, dlatego nie mogą zmieniać środowiska równocześnie. Szczegółową procedurę oraz zachowanie w razie błędu opisuje [dokumentacja infrastruktury Azure](infra/azure/README.md#checkpointy-danych-stagingu).
+
 Szczegółowa konfiguracja Azure i wymagane ustawienia GitHub są opisane w `infra/azure/README.md`.
 
 ## Dokumentacja
