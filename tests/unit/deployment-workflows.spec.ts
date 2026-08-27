@@ -60,6 +60,34 @@ describe('deployment workflows', () => {
     expect(applicationTemplate).toContain("name: 'DEPLOYED_SOURCE_SHA'")
   })
 
+  it('serializes staging deployments and protected data operations', () => {
+    const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
+    const stagingDataWorkflow = readFileSync('.github/workflows/manage-staging-data.yml', 'utf8')
+    const stagingDataScript = readFileSync('scripts/manage-staging-data.sh', 'utf8')
+    const storageTemplate = readFileSync('infra/azure/modules/storage.bicep', 'utf8')
+
+    expect(stagingWorkflow).toContain('group: staging-operations')
+    expect(stagingDataWorkflow).toContain('group: staging-operations')
+    expect(stagingDataWorkflow).toMatch(/^  workflow_dispatch:/m)
+    expect(stagingDataWorkflow).not.toMatch(/^  push:/m)
+    expect(stagingDataWorkflow).toContain('environment: staging')
+    expect(stagingDataWorkflow).toContain('RESTORE_CONFIRMATION')
+    expect(stagingDataScript).toContain('restore_confirmation" != "RESTORE"')
+    expect(stagingDataScript).toContain('create_checkpoint "$rescue_checkpoint_name"')
+    expect(stagingDataScript).toContain('destructive_restore_started=true')
+    expect(stagingDataScript).toContain('run_payload_job migrate')
+    expect(stagingDataScript).toContain('run_payload_job migrate:status')
+    expect(stagingDataScript).toContain('No active revision found; restore will recover')
+    expect(stagingDataScript).toContain('GRANT ALL ON SCHEMA public')
+    expect(stagingDataScript).toContain('Restore failed after destructive work started')
+    expect(stagingDataScript).toContain(
+      `--query "properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value"`,
+    )
+    expect(storageTemplate).toContain('isVersioningEnabled: enableStagingCheckpoints')
+    expect(storageTemplate).toContain('containerDeleteRetentionPolicy')
+    expect(storageTemplate).toContain('deleteRetentionPolicy')
+  })
+
   it('copies only production dependencies into the runtime image', () => {
     const dockerfile = readFileSync('Dockerfile', 'utf8')
 

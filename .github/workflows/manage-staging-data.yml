@@ -1,0 +1,55 @@
+name: Manage staging data
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Create or restore a staging checkpoint
+        options:
+          - backup
+          - restore
+        required: true
+        type: choice
+      checkpoint_name:
+        description: Checkpoint name, for example beta-start
+        required: true
+        type: string
+      restore_confirmation:
+        description: Enter RESTORE when restoring; leave empty for backup
+        required: false
+        type: string
+
+concurrency:
+  group: staging-operations
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  manage-staging-data:
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+
+      - name: Install Container Apps CLI extension
+        run: az extension add --name containerapp --upgrade
+
+      - name: Manage staging checkpoint
+        env:
+          CHECKPOINT_NAME: ${{ inputs.checkpoint_name }}
+          OPERATION: ${{ inputs.operation }}
+          RESTORE_CONFIRMATION: ${{ inputs.restore_confirmation }}
+        run: bash scripts/manage-staging-data.sh "$OPERATION" "$CHECKPOINT_NAME" "$RESTORE_CONFIRMATION"
