@@ -54,7 +54,7 @@ export const Categories: CollectionConfig = {
     listSearchableFields: ['fullTitle', 'name', 'slug'],
     useAsTitle: 'fullTitle',
     pagination: {
-      limits: [10, 25, 50]
+      limits: [10, 25, 50],
     },
   },
   fields: [

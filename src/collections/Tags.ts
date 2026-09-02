@@ -31,7 +31,7 @@ export const Tags: CollectionConfig = {
     listSearchableFields: ['name', 'slug'],
     useAsTitle: 'name',
     pagination: {
-      limits: [10, 25, 50]
+      limits: [10, 25, 50],
     },
   },
   fields: [

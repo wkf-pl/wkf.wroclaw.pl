@@ -42,7 +42,7 @@ export const Media: CollectionConfig = {
     group: 'Treści',
     listSearchableFields: ['filename', 'description'],
     pagination: {
-      limits: [10, 25, 50]
+      limits: [10, 25, 50],
     },
   },
   fields: [

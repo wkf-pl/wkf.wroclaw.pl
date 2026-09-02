@@ -54,7 +54,7 @@ export const Events: CollectionConfig = {
     listSearchableFields: ['title', 'cycle', 'slug', 'excerpt'],
     useAsTitle: 'title',
     pagination: {
-      limits: [10, 25, 50]
+      limits: [10, 25, 50],
     },
   },
   defaultSort: 'startAt',

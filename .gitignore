@@ -19,7 +19,7 @@
 /.next/
 /.next-container/
 /.next-host/
-/.next-e2e-ci/
+/.next-e2e-*/
 /out/
 *.tsbuildinfo
 next-env.d.ts

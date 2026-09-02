@@ -40,7 +40,7 @@ export const Posts: CollectionConfig = {
     listSearchableFields: ['title', 'slug', 'excerpt'],
     useAsTitle: 'title',
     pagination: {
-      limits: [10, 25, 50]
+      limits: [10, 25, 50],
     },
   },
   defaultSort: '-publishedAt',

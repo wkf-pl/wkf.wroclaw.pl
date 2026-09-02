@@ -40,7 +40,7 @@ export const Partners: CollectionConfig = {
     listSearchableFields: ['name', 'slug', 'excerpt'],
     useAsTitle: 'name',
     pagination: {
-      limits: [10, 25, 50]
+      limits: [10, 25, 50],
     },
   },
   fields: [

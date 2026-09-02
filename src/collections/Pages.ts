@@ -80,7 +80,7 @@ export const Pages: CollectionConfig = {
     listSearchableFields: ['fullTitle', 'title', 'slug', 'listingExcerpt'],
     useAsTitle: 'fullTitle',
     pagination: {
-      limits: [10, 25, 50]
+      limits: [10, 25, 50],
     },
   },
   defaultSort: 'fullTitle',
