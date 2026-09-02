@@ -20,6 +20,9 @@ describe('admin action colors', () => {
     expect(adminStyles).toContain('#action-save')
     expect(adminStyles).toContain('.upload__listToggler')
     expect(adminStyles).toContain('.array-actions__remove')
+    expect(adminStyles).toMatch(
+      /\.array-field__add-row[\s\S]*?color: #3465a4[\s\S]*?\.icon--plus \.stroke[\s\S]*?stroke: currentColor/,
+    )
   })
 
   it('styles destructive account actions as red outlined buttons', () => {

@@ -28,7 +28,7 @@ import {
   Users,
 } from './collections'
 import { createEmailAdapter } from './email/create-email-adapter'
-import { Navigation, SiteSettings } from './globals'
+import { Footer, HomepageHero, HomepageSections, Navigation, SiteSettings } from './globals'
 import { getOptionalEnvironmentVariable, getRequiredEnvironmentVariable } from './lib/env'
 import { createStoragePlugins } from './storage/create-storage-plugins'
 import { generateHierarchyLabel, generateHierarchyURL } from './modules/content/hierarchy'
@@ -53,7 +53,9 @@ const polishAdminLanguage = {
       createNewLabel: 'Dodaj {{label}}',
       email: 'Adres e-mail',
       emailAddress: 'Adres e-mail',
+      noLabel: '<brak>',
       payloadSettings: 'Ustawienia panelu',
+      searchBy: 'Szukaj według: {{label}}',
     },
     fields: {
       ...pl.translations.fields,
@@ -122,7 +124,7 @@ export default buildConfig({
     Users,
     Roles,
   ],
-  globals: [SiteSettings, Navigation],
+  globals: [SiteSettings, Navigation, HomepageHero, HomepageSections, Footer],
   cors: [...trustedOrigins],
   csrf: [...trustedOrigins],
   editor: lexicalEditor({

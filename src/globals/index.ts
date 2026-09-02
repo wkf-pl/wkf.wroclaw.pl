@@ -1,2 +1,5 @@
+export { Footer } from './Footer'
+export { HomepageHero } from './HomepageHero'
+export { HomepageSections } from './HomepageSections'
 export { Navigation } from './Navigation'
 export { SiteSettings } from './SiteSettings'

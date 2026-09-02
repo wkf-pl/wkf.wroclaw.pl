@@ -1,7 +1,14 @@
 'use client'
 
-import { FieldLabel, ReactSelect, useConfig, useField, usePayloadAPI } from '@payloadcms/ui'
-import type { RelationshipFieldClientProps } from 'payload'
+import {
+  FieldLabel,
+  ReactSelect,
+  useConfig,
+  useField,
+  useForm,
+  usePayloadAPI,
+} from '@payloadcms/ui'
+import type { FormState, RelationshipFieldClientProps } from 'payload'
 import { formatAdminURL } from 'payload/shared'
 import { useMemo } from 'react'
 
@@ -51,20 +58,20 @@ function getPages(data: unknown): PageOption[] {
 }
 
 export function ListingParentPageField(properties: RelationshipFieldClientProps) {
-  const parentFilterPath = getParentFilterPath(properties.path)
-  const { value: parentPageID, setValue: setParentPageID } = useField<number | string | null>({
+  const { path: parentPagePath, value: parentPageID } = useField<number | string | null>({
     potentiallyStalePath: properties.path,
   })
-  const { value: parentFilter, setValue: setParentFilter } = useField<ParentFilter>({
-    potentiallyStalePath: parentFilterPath,
+  const parentFilterPath = getParentFilterPath(parentPagePath)
+  const { value: parentFilter } = useField<ParentFilter>({
+    path: parentFilterPath,
   })
+  const { dispatchFields, getFields, setModified } = useForm()
   const {
     config: {
       routes: { api: apiRoute },
-      serverURL,
     },
   } = useConfig()
-  const pagesURL = formatAdminURL({ apiRoute, path: '/pages', serverURL })
+  const pagesURL = formatAdminURL({ apiRoute, path: '/pages' })
   const [{ data, isLoading }] = usePayloadAPI(pagesURL, {
     initialParams: {
       depth: 0,
@@ -89,6 +96,28 @@ export function ListingParentPageField(properties: RelationshipFieldClientProps)
   )
   const selectedOption = getSelectedOption(options, parentFilter, parentPageID)
 
+  function updateParentSelection(
+    nextParentFilter: ParentFilter,
+    nextParentPageID: null | number | string,
+  ) {
+    const fields = getFields()
+    const formState: FormState = {
+      [parentFilterPath]: {
+        ...fields[parentFilterPath],
+        isModified: true,
+        value: nextParentFilter,
+      },
+      [parentPagePath]: {
+        ...fields[parentPagePath],
+        isModified: true,
+        value: nextParentPageID,
+      },
+    }
+
+    dispatchFields({ formState, type: 'UPDATE_MANY' })
+    setModified(true)
+  }
+
   function handleChange(option: unknown) {
     if (Array.isArray(option) || !option || typeof option !== 'object') {
       return
@@ -97,8 +126,7 @@ export function ListingParentPageField(properties: RelationshipFieldClientProps)
     const value = 'value' in option && typeof option.value === 'string' ? option.value : ''
 
     if (value === 'none' || value === 'current') {
-      setParentFilter(value)
-      setParentPageID(null)
+      updateParentSelection(value, null)
       return
     }
 
@@ -108,16 +136,15 @@ export function ListingParentPageField(properties: RelationshipFieldClientProps)
       return
     }
 
-    setParentFilter('specific')
-    setParentPageID(selectedPage.id)
+    updateParentSelection('specific', selectedPage.id)
   }
 
   return (
     <div className="field-type">
-      <FieldLabel label={properties.field.label} path={properties.path} />
+      <FieldLabel label={properties.field.label} path={parentPagePath} />
       <ReactSelect
         disabled={properties.readOnly}
-        inputId={properties.path}
+        inputId={parentPagePath}
         isLoading={isLoading}
         isSearchable
         onChange={handleChange}

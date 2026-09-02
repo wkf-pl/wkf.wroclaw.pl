@@ -3,7 +3,16 @@ import { getPayload } from 'payload'
 
 import config from '@payload-config'
 
-import type { Category, ClubSection, Navigation, Post, SiteSetting, Tag } from '@/payload-types'
+import type {
+  Category,
+  Footer,
+  HomepageHero,
+  HomepageSection,
+  Navigation,
+  Post,
+  SiteSetting,
+  Tag,
+} from '@/payload-types'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import { publicRequestContext } from '@/modules/content/public-access'
 
@@ -53,6 +62,57 @@ const getPublicNavigationCached = cachePublicData(
 
 export const getPublicNavigation = cache(getPublicNavigationCached)
 
+const getPublicHomepageHeroCached = cachePublicData(
+  'public-homepage-hero',
+  async (): Promise<HomepageHero> => {
+    const payload = await getPayload({ config })
+    return payload.findGlobal({
+      slug: 'homepage-hero',
+      context: publicRequestContext,
+      depth: 2,
+      overrideAccess: false,
+      user: null,
+    })
+  },
+  { revalidate: 300, tags: [publicCacheTags.navigation, publicCacheTags.homepage] },
+)
+
+export const getPublicHomepageHero = cache(getPublicHomepageHeroCached)
+
+const getPublicHomepageSectionsCached = cachePublicData(
+  'public-homepage-sections',
+  async (): Promise<HomepageSection> => {
+    const payload = await getPayload({ config })
+    return payload.findGlobal({
+      slug: 'homepage-sections',
+      context: publicRequestContext,
+      depth: 2,
+      overrideAccess: false,
+      user: null,
+    })
+  },
+  { revalidate: 300, tags: [publicCacheTags.siteSettings, publicCacheTags.homepage] },
+)
+
+export const getPublicHomepageSections = cache(getPublicHomepageSectionsCached)
+
+const getPublicFooterCached = cachePublicData(
+  'public-footer',
+  async (): Promise<Footer> => {
+    const payload = await getPayload({ config })
+    return payload.findGlobal({
+      slug: 'footer',
+      context: publicRequestContext,
+      depth: 2,
+      overrideAccess: false,
+      user: null,
+    })
+  },
+  { revalidate: 300, tags: [publicCacheTags.navigation] },
+)
+
+export const getPublicFooter = cache(getPublicFooterCached)
+
 const getPublicSiteSettingsCached = cachePublicData(
   'public-site-settings',
   async (): Promise<SiteSetting> => {
@@ -69,31 +129,6 @@ const getPublicSiteSettingsCached = cachePublicData(
 )
 
 export const getPublicSiteSettings = cache(getPublicSiteSettingsCached)
-
-const findPublishedClubSectionsCached = cachePublicData(
-  'published-club-sections',
-  async (): Promise<ClubSection[]> => {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'club-sections',
-      context: publicRequestContext,
-      depth: 2,
-      draft: false,
-      limit: 100,
-      overrideAccess: false,
-      sort: ['displayOrder', 'name'],
-      user: null,
-      where: {
-        _status: { equals: 'published' },
-      },
-    })
-
-    return result.docs
-  },
-  { revalidate: 300, tags: [publicCacheTags.homepage] },
-)
-
-export const findPublishedClubSections = cache(findPublishedClubSectionsCached)
 
 const findPublishedPostBySlugCached = cachePublicData(
   'published-post-by-slug',

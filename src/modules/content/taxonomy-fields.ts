@@ -43,6 +43,7 @@ export function createRelatedContentJoinFields(taxonomyField: 'category' | 'tags
         components: {
           Field: '/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin',
         },
+        defaultColumns: ['fullTitle', 'slug', '_status', 'publishedAt', 'updatedAt'],
       },
       collection: 'pages',
       defaultLimit: 20,
@@ -56,6 +57,7 @@ export function createRelatedContentJoinFields(taxonomyField: 'category' | 'tags
         components: {
           Field: '/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin',
         },
+        defaultColumns: ['title', 'slug', '_status', 'publishedAt', 'updatedAt'],
       },
       collection: 'posts',
       defaultLimit: 20,
@@ -69,6 +71,7 @@ export function createRelatedContentJoinFields(taxonomyField: 'category' | 'tags
         components: {
           Field: '/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin',
         },
+        defaultColumns: ['title', 'cycle', 'startAt', 'eventStatus', '_status'],
       },
       collection: 'events',
       defaultLimit: 20,
@@ -82,6 +85,7 @@ export function createRelatedContentJoinFields(taxonomyField: 'category' | 'tags
         components: {
           Field: '/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin',
         },
+        defaultColumns: ['title', 'slug', '_status', 'publishedAt'],
       },
       collection: 'event-cycles',
       defaultLimit: 20,
@@ -95,6 +99,7 @@ export function createRelatedContentJoinFields(taxonomyField: 'category' | 'tags
         components: {
           Field: '/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin',
         },
+        defaultColumns: ['title', 'documentType', 'documentNumber', 'documentDate', '_status'],
       },
       collection: 'documents',
       defaultLimit: 20,

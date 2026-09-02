@@ -26,10 +26,13 @@ export const Tags: CollectionConfig = {
     update: updateTags,
   },
   admin: {
-    defaultColumns: ['name', 'slug', 'updatedAt'],
+    defaultColumns: ['name', 'slug', 'description', 'updatedAt'],
     group: 'Treści',
     listSearchableFields: ['name', 'slug'],
     useAsTitle: 'name',
+    pagination: {
+      limits: [10, 25, 50],
+    },
   },
   fields: [
     {

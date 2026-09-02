@@ -35,10 +35,13 @@ export const Posts: CollectionConfig = {
     update: updatePosts,
   },
   admin: {
-    defaultColumns: ['title', 'slug', '_status', 'publishedAt', 'updatedAt'],
+    defaultColumns: ['title', 'slug', 'category', 'tags', '_status', 'publishedAt', 'updatedAt'],
     group: 'Treści',
     listSearchableFields: ['title', 'slug', 'excerpt'],
     useAsTitle: 'title',
+    pagination: {
+      limits: [10, 25, 50],
+    },
   },
   defaultSort: '-publishedAt',
   fields: [

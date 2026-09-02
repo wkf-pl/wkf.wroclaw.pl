@@ -1,30 +1,37 @@
-import Image from 'next/image'
 import Link from 'next/link'
 
-import type { Navigation } from '@/payload-types'
+import type { Navigation, SiteSetting } from '@/payload-types'
+import { getMediaURL } from '@/modules/media/media-url'
 import { hasRenderableIcon, resolveLink } from '@/modules/navigation/links'
 
 import { MenuIcon } from './MenuIcon'
-export function SiteHeader({ navigation }: { navigation: Navigation }) {
+
+export function SiteHeader({
+  navigation,
+  siteSettings,
+}: {
+  navigation: Navigation
+  siteSettings: SiteSetting
+}) {
   const items = navigation.headerItems?.flatMap((item) => {
     const link = resolveLink(item)
     return link && (item.appearance !== 'icon' || hasRenderableIcon(item)) ? [{ item, link }] : []
   })
+  const logoURL = getMediaURL(navigation.logo) ?? '/assets/logo-color.webp'
+  const logoAlternativeText =
+    navigation.logo && typeof navigation.logo === 'object' ? navigation.logo.alt : ''
 
   return (
     <div className="siteHeaderShell">
       <header className="siteHeader">
         <Link
-          aria-label="Wrocławski Klub Fantastyki — strona główna"
+          aria-label={`${siteSettings.siteName} — strona główna`}
           className="siteBrand"
           href="/"
         >
-          <Image alt="" height={76} priority src="/assets/logo-color.webp" width={76} />
-          <span>
-            Wrocławski
-            <br />
-            Klub Fantastyki
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element -- CMS media can use a runtime-configured Azure host. */}
+          <img alt={logoAlternativeText} height="76" src={logoURL} width="76" />
+          <span>{siteSettings.siteName}</span>
         </Link>
         {items?.length ? (
           <nav aria-label="Główna nawigacja">

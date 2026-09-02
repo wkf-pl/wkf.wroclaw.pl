@@ -24,6 +24,8 @@ import * as migration_20260823_103700_remove_orphan_document_versions from './20
 import * as migration_20260823_232129 from './20260823_232129'
 import * as migration_20260824_203157 from './20260824_203157'
 import * as migration_20260826_101435_member_profile_views from './20260826_101435_member_profile_views'
+import * as migration_20260901_172430 from './20260901_172430'
+import * as migration_20260901_181553_homepage_groups_and_default_logo from './20260901_181553_homepage_groups_and_default_logo'
 
 export const migrations = [
   {
@@ -155,5 +157,15 @@ export const migrations = [
     up: migration_20260826_101435_member_profile_views.up,
     down: migration_20260826_101435_member_profile_views.down,
     name: '20260826_101435_member_profile_views',
+  },
+  {
+    up: migration_20260901_172430.up,
+    down: migration_20260901_172430.down,
+    name: '20260901_172430',
+  },
+  {
+    up: migration_20260901_181553_homepage_groups_and_default_logo.up,
+    down: migration_20260901_181553_homepage_groups_and_default_logo.down,
+    name: '20260901_181553_homepage_groups_and_default_logo',
   },
 ]

@@ -133,10 +133,16 @@ export interface Config {
   globals: {
     'site-settings': SiteSetting;
     navigation: Navigation;
+    'homepage-hero': HomepageHero;
+    'homepage-sections': HomepageSection;
+    footer: Footer;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     navigation: NavigationSelect<false> | NavigationSelect<true>;
+    'homepage-hero': HomepageHeroSelect<false> | HomepageHeroSelect<true>;
+    'homepage-sections': HomepageSectionsSelect<false> | HomepageSectionsSelect<true>;
+    footer: FooterSelect<false> | FooterSelect<true>;
   };
   locale: null;
   widgets: {
@@ -713,17 +719,17 @@ export interface DocumentsBlock {
  */
 export interface Document {
   id: number;
-  title: string;
-  /**
-   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
-   */
-  slug: string;
   documentType: 'resolution' | 'statute' | 'regulations' | 'minutes' | 'report' | 'agreement' | 'license' | 'other';
   /**
    * Na przykład 3/2026. Pole jest wymagane dla uchwał.
    */
   documentNumber?: string | null;
   documentDate: string;
+  title: string;
+  /**
+   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
+   */
+  slug: string;
   summary: string;
   content?: {
     root: {
@@ -1840,11 +1846,11 @@ export interface DocumentFilesSelect<T extends boolean = true> {
  * via the `definition` "documents_select".
  */
 export interface DocumentsSelect<T extends boolean = true> {
-  title?: T;
-  slug?: T;
   documentType?: T;
   documentNumber?: T;
   documentDate?: T;
+  title?: T;
+  slug?: T;
   summary?: T;
   content?: T;
   primaryFile?: T;
@@ -2027,25 +2033,6 @@ export interface SiteSetting {
   siteName: string;
   siteDescription?: string | null;
   contactEmail?: string | null;
-  heroImage?: (number | null) | Media;
-  homepageEventWindowWeeks?: number | null;
-  homepageEventSlideLimit?: number | null;
-  homepagePostCount?: ('2' | '5' | '8') | null;
-  copyrightText?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2055,10 +2042,11 @@ export interface SiteSetting {
  */
 export interface Navigation {
   id: number;
+  logo?: (number | null) | Media;
   headerItems?:
     | {
-        appearance: 'link' | 'icon' | 'button';
         label: string;
+        appearance: 'link' | 'icon' | 'button';
         targetType: 'custom' | 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
@@ -2098,7 +2086,47 @@ export interface Navigation {
         id?: string | null;
       }[]
     | null;
-  heroItems?:
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "homepage-hero".
+ */
+export interface HomepageHero {
+  id: number;
+  image?: (number | null) | Media;
+  title: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  items?:
     | {
         label: string;
         targetType: 'custom' | 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'post' | 'event';
@@ -2119,6 +2147,127 @@ export interface Navigation {
         id?: string | null;
       }[]
     | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "homepage-sections".
+ */
+export interface HomepageSection {
+  id: number;
+  eventsTitle: string;
+  eventsContent?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  eventWindowWeeks?: number | null;
+  eventSlideLimit?: number | null;
+  newsTitle: string;
+  postCount?: ('2' | '5' | '8') | null;
+  sectionsTitle?: string | null;
+  groups?:
+    | {
+        name: string;
+        backgroundImage?: (number | null) | Media;
+        destinationPage?: (number | null) | Page;
+        menuItems?:
+          | {
+              label: string;
+              targetType:
+                'custom' | 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'post' | 'event';
+              eventCycle?: (number | null) | EventCycle;
+              document?: (number | null) | Document;
+              category?: (number | null) | Category;
+              partner?: (number | null) | Partner;
+              page?: (number | null) | Page;
+              tag?: (number | null) | Tag;
+              post?: (number | null) | Post;
+              event?: (number | null) | Event;
+              customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+              /**
+               * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+               */
+              customAddress?: string | null;
+              openInNewTab?: boolean | null;
+              iconSource?: ('system' | 'media') | null;
+              systemIcon?:
+                | (
+                    | 'time'
+                    | 'discord'
+                    | 'mail'
+                    | 'facebook'
+                    | 'star'
+                    | 'instagram'
+                    | 'calendar'
+                    | 'collection'
+                    | 'dice'
+                    | 'book'
+                    | 'location'
+                    | 'pawn'
+                    | 'review'
+                    | 'slack'
+                    | 'users'
+                  )
+                | null;
+              customIcon?: (number | null) | Media;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer".
+ */
+export interface Footer {
+  id: number;
+  copyright?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  contactHeading?: string | null;
   socialItems?:
     | {
         label: string;
@@ -2161,7 +2310,7 @@ export interface Navigation {
         id?: string | null;
       }[]
     | null;
-  footerColumns?:
+  columns?:
     | {
         title: string;
         items?:
@@ -2200,11 +2349,6 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   siteName?: T;
   siteDescription?: T;
   contactEmail?: T;
-  heroImage?: T;
-  homepageEventWindowWeeks?: T;
-  homepageEventSlideLimit?: T;
-  homepagePostCount?: T;
-  copyrightText?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -2214,11 +2358,12 @@ export interface SiteSettingsSelect<T extends boolean = true> {
  * via the `definition` "navigation_select".
  */
 export interface NavigationSelect<T extends boolean = true> {
+  logo?: T;
   headerItems?:
     | T
     | {
-        appearance?: T;
         label?: T;
+        appearance?: T;
         targetType?: T;
         eventCycle?: T;
         document?: T;
@@ -2236,7 +2381,19 @@ export interface NavigationSelect<T extends boolean = true> {
         customIcon?: T;
         id?: T;
       };
-  heroItems?:
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "homepage-hero_select".
+ */
+export interface HomepageHeroSelect<T extends boolean = true> {
+  image?: T;
+  title?: T;
+  content?: T;
+  items?:
     | T
     | {
         label?: T;
@@ -2254,6 +2411,63 @@ export interface NavigationSelect<T extends boolean = true> {
         openInNewTab?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "homepage-sections_select".
+ */
+export interface HomepageSectionsSelect<T extends boolean = true> {
+  eventsTitle?: T;
+  eventsContent?: T;
+  eventWindowWeeks?: T;
+  eventSlideLimit?: T;
+  newsTitle?: T;
+  postCount?: T;
+  sectionsTitle?: T;
+  groups?:
+    | T
+    | {
+        name?: T;
+        backgroundImage?: T;
+        destinationPage?: T;
+        menuItems?:
+          | T
+          | {
+              label?: T;
+              targetType?: T;
+              eventCycle?: T;
+              document?: T;
+              category?: T;
+              partner?: T;
+              page?: T;
+              tag?: T;
+              post?: T;
+              event?: T;
+              customScheme?: T;
+              customAddress?: T;
+              openInNewTab?: T;
+              iconSource?: T;
+              systemIcon?: T;
+              customIcon?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer_select".
+ */
+export interface FooterSelect<T extends boolean = true> {
+  copyright?: T;
+  content?: T;
+  contactHeading?: T;
   socialItems?:
     | T
     | {
@@ -2275,7 +2489,7 @@ export interface NavigationSelect<T extends boolean = true> {
         customIcon?: T;
         id?: T;
       };
-  footerColumns?:
+  columns?:
     | T
     | {
         title?: T;

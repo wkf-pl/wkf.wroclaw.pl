@@ -93,12 +93,12 @@ export const permissionResources = {
   navigation: {
     global: 'navigation',
     kind: 'global',
-    label: 'Menu strony',
+    label: 'Nagłówek, Hero i Stopka',
   },
   'site-settings': {
     global: 'site-settings',
     kind: 'global',
-    label: 'Ustawienia strony',
+    label: 'Strona główna',
   },
 } as const satisfies Record<string, PermissionResourceDefinition>
 

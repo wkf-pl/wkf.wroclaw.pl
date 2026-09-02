@@ -14,6 +14,7 @@ export function GoogleMapEmbed({
       loading="lazy"
       referrerPolicy="no-referrer-when-downgrade"
       src={src}
+      style={{ border: 0, height: '100%', width: '100%' }}
       title={title}
     />
   )

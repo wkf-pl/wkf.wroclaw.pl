@@ -16,7 +16,7 @@ export function GoogleMapEmbedField(properties: TextFieldClientProps) {
   return (
     <BlurValidatedTextInput properties={properties} validateValue={validateGoogleMapsEmbed}>
       {embedSource ? (
-        <div style={{ aspectRatio: '16 / 9', marginTop: '1rem', maxWidth: '48rem' }}>
+        <div style={{ aspectRatio: '16 / 9', marginTop: '1rem', width: '100%' }}>
           <GoogleMapEmbed src={embedSource} title="Podgląd mapy wydarzenia" />
         </div>
       ) : null}

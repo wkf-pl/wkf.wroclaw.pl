@@ -35,12 +35,15 @@ export const Media: CollectionConfig = {
       'width',
       'height',
       'url',
-      'thumbnailURL',
       'category',
       'tags',
       'uploadedBy',
     ],
     group: 'Treści',
+    listSearchableFields: ['filename', 'description'],
+    pagination: {
+      limits: [10, 25, 50],
+    },
   },
   fields: [
     {

@@ -49,10 +49,13 @@ export const Categories: CollectionConfig = {
     update: updateCategories,
   },
   admin: {
-    defaultColumns: ['fullTitle', 'slug', 'updatedAt'],
+    defaultColumns: ['fullTitle', 'description', 'slug', 'updatedAt'],
     group: 'Treści',
     listSearchableFields: ['fullTitle', 'name', 'slug'],
     useAsTitle: 'fullTitle',
+    pagination: {
+      limits: [10, 25, 50],
+    },
   },
   fields: [
     {

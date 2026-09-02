@@ -75,12 +75,13 @@ export function RichTextLinkSync(properties: UIFieldClientProps) {
   const { value: document } = useField<unknown>({
     path: siblingPath('document'),
   })
-  const { setValue: setLinkType, value: linkType } = useField<'custom' | 'internal'>({
+  const { value: linkType } = useField<'custom' | 'internal'>({
     path: siblingPath('linkType'),
   })
-  const { setValue: setDocumentReference, value: documentReference } =
-    useField<LexicalDocumentReference>({ path: siblingPath('doc') })
-  const { setValue: setURL, value: url } = useField<null | string>({
+  const { value: documentReference } = useField<LexicalDocumentReference>({
+    path: siblingPath('doc'),
+  })
+  const { value: url } = useField<null | string>({
     path: siblingPath('url'),
   })
   const initializedVisibleFields = useRef(false)
@@ -111,7 +112,7 @@ export function RichTextLinkSync(properties: UIFieldClientProps) {
     }
 
     const currentFields = getFields()
-    const conditionalFieldState = richTextLinkConditionalFieldNames.reduce<FormState>(
+    const nextFieldState = richTextLinkConditionalFieldNames.reduce<FormState>(
       (formState, fieldName) => {
         const fieldPath = siblingPath(fieldName)
         const fieldState = currentFields[fieldPath]
@@ -125,10 +126,6 @@ export function RichTextLinkSync(properties: UIFieldClientProps) {
       },
       {},
     )
-
-    if (Object.keys(conditionalFieldState).length > 0) {
-      dispatchFields({ formState: conditionalFieldState, type: 'UPDATE_MANY' })
-    }
 
     const technicalValues = getRichTextLinkTechnicalValues({
       category,
@@ -145,15 +142,31 @@ export function RichTextLinkSync(properties: UIFieldClientProps) {
     })
 
     if (linkType !== technicalValues.linkType) {
-      setLinkType(technicalValues.linkType)
+      const fieldPath = siblingPath('linkType')
+      nextFieldState[fieldPath] = {
+        ...currentFields[fieldPath],
+        value: technicalValues.linkType,
+      }
     }
 
     if (!referencesMatch(documentReference, technicalValues.doc)) {
-      setDocumentReference(technicalValues.doc)
+      const fieldPath = siblingPath('doc')
+      nextFieldState[fieldPath] = {
+        ...currentFields[fieldPath],
+        value: technicalValues.doc,
+      }
     }
 
     if ((url ?? undefined) !== technicalValues.url) {
-      setURL(technicalValues.url ?? null)
+      const fieldPath = siblingPath('url')
+      nextFieldState[fieldPath] = {
+        ...currentFields[fieldPath],
+        value: technicalValues.url ?? null,
+      }
+    }
+
+    if (Object.keys(nextFieldState).length > 0) {
+      dispatchFields({ formState: nextFieldState, type: 'UPDATE_MANY' })
     }
   }, [
     category,
@@ -169,9 +182,6 @@ export function RichTextLinkSync(properties: UIFieldClientProps) {
     page,
     post,
     getFields,
-    setDocumentReference,
-    setLinkType,
-    setURL,
     siblingPath,
     tag,
     targetType,

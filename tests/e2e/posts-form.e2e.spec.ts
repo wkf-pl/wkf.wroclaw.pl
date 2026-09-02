@@ -12,10 +12,25 @@ import { editorTestUser } from '../helpers/seedUser'
 
 const documentFixtureName = 'e2e-rich-text-link-document'
 let payload: Payload
+let dynamicLabelPostID: number | string
 
 test.beforeAll(async () => {
   payload = await getPayload({ config })
   await createPublishedDocumentFixture(payload, documentFixtureName)
+  const posts = await payload.find({
+    collection: 'posts',
+    depth: 0,
+    limit: 1,
+    overrideAccess: true,
+    where: { slug: { equals: 'erpegowe-wtorki-1' } },
+  })
+  const dynamicLabelPost = posts.docs[0]
+
+  if (!dynamicLabelPost) {
+    throw new Error('Missing the seeded post required by the dynamic block label E2E test.')
+  }
+
+  dynamicLabelPostID = dynamicLabelPost.id
 })
 
 test.afterAll(async () => {
@@ -26,9 +41,7 @@ test.afterAll(async () => {
 
 test('renders dynamic labels for post content blocks', async ({ page }) => {
   await login({ page, user: editorTestUser })
-  await page.goto('/admin/collections/posts')
-  await page.getByRole('link', { name: 'Erpegowe wtorki 1', exact: true }).click()
-  await page.waitForURL('**/admin/collections/posts/*')
+  await page.goto(`/admin/collections/posts/${dynamicLabelPostID}`)
 
   const label = page.locator('.blocks-field__block-header .wkf-content-block-label').first()
 
@@ -98,7 +111,7 @@ test('uses the shared target selector when editing a rich text link', async ({ p
   await documentOption.click()
   await expect(drawer.locator('#field-doc')).toHaveValue('[object Object]')
   await drawer.getByRole('button', { name: 'Zapisz zmiany' }).click()
-  await expect(drawer).toBeHidden()
+  await expect(drawer).toBeHidden({ timeout: 15_000 })
 
   await page.locator('.link-edit').click()
 

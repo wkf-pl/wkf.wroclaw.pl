@@ -97,6 +97,7 @@ body:has(> .homePage) .siteHeader {
 }
 
 .siteBrand span {
+  max-width: 11rem;
   font-size: clamp(1.1rem, 2vw, 1.55rem);
   font-weight: 700;
   line-height: 1.05;
@@ -209,15 +210,38 @@ body:has(> .homePage) .siteHeader {
   padding: 11.75rem 0 2.5rem;
 }
 
-.heroContent h1 {
+.heroTitle {
+  margin-bottom: 1.5rem;
   font-size: clamp(3.3rem, 4vw, 5rem);
   font-weight: 700;
   text-wrap: balance;
   text-shadow: 0 3px 22px rgb(0 0 0 / 65%);
 }
 
-.heroContent h1 span {
+.heroTitle em,
+.heroTitle strong {
   color: var(--gold);
+}
+
+.heroDescription {
+  max-width: 42rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  text-shadow: 0 2px 14px rgb(0 0 0 / 70%);
+}
+
+.heroDescription > :last-child,
+.homeSectionContent > :last-child {
+  margin-bottom: 0;
+}
+
+.homeSectionContent {
+  width: min(52rem, 100%);
+  margin: 0 auto 1.5rem;
+  color: var(--muted);
+  line-height: 1.6;
+  text-align: center;
 }
 
 .heroTabs {
@@ -593,14 +617,16 @@ body:has(> .homePage) .siteHeader {
   align-items: center;
 }
 
-.footerCopyright {
+.footerCopyright,
+.footerContent {
   grid-column: 2;
   color: var(--muted);
   font-size: 0.875rem;
   line-height: 1.5;
 }
 
-.footerCopyright > :last-child {
+.footerCopyright > :last-child,
+.footerContent > :last-child {
   margin-bottom: 0;
 }
 
@@ -613,6 +639,17 @@ body:has(> .homePage) .siteHeader {
 .footerBrand > strong {
   font-size: 1.65rem;
   line-height: 1.05;
+}
+
+.footerContact {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.footerContact > strong {
+  color: var(--gold-light);
+  font-size: 1.05rem;
 }
 
 .socialLinks {
@@ -1411,7 +1448,7 @@ a.attachmentItem:hover {
     padding-top: 10.2rem;
   }
 
-  .heroContent h1 {
+  .heroTitle {
     margin-bottom: 3.5rem;
   }
 
@@ -1504,7 +1541,7 @@ a.attachmentItem:hover {
     font-size: 0.9rem;
   }
 
-  .heroContent h1 {
+  .heroTitle {
     font-size: clamp(2.8rem, 14vw, 4rem);
   }
 

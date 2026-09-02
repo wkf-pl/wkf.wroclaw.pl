@@ -298,6 +298,19 @@
   @include wkf-action-color(#3465a4, #204a87, #fff);
 }
 
+.array-field__add-row {
+  color: #3465a4;
+
+  .icon--plus .stroke {
+    stroke: currentColor;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: #204a87;
+  }
+}
+
 :is(.wkf-action-save, #action-save, #action-save-draft, .save-draft) {
   @include wkf-action-color(#73d216, #4e9a06);
 }

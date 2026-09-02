@@ -2,7 +2,11 @@ import type { Metadata } from 'next'
 import { Roboto_Slab } from 'next/font/google'
 import type { ReactNode } from 'react'
 
-import { getPublicNavigation, getPublicSiteSettings } from '@/modules/content/public-content'
+import {
+  getPublicFooter,
+  getPublicNavigation,
+  getPublicSiteSettings,
+} from '@/modules/content/public-content'
 
 import { SiteFooter } from './_components/SiteFooter'
 import { SiteHeader } from './_components/SiteHeader'
@@ -17,19 +21,25 @@ const robotoSlab = Roboto_Slab({
   variable: '--font-roboto-slab',
 })
 
-export const metadata: Metadata = {
-  description: 'Serwis Wrocławskiego Klubu Fantastyki',
-  icons: {
-    apple: '/assets/apple-touch-icon.png',
-    icon: [
-      { sizes: '16x16', type: 'image/png', url: '/assets/favicon-16.png' },
-      { sizes: '32x32', type: 'image/png', url: '/assets/favicon-32.png' },
-    ],
-  },
-  title: {
-    default: 'Wrocławski Klub Fantastyki',
-    template: '%s | Wrocławski Klub Fantastyki',
-  },
+const icons: Metadata['icons'] = {
+  apple: '/assets/apple-touch-icon.png',
+  icon: [
+    { sizes: '16x16', type: 'image/png', url: '/assets/favicon-16.png' },
+    { sizes: '32x32', type: 'image/png', url: '/assets/favicon-32.png' },
+  ],
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const siteSettings = await getPublicSiteSettings()
+
+  return {
+    description: siteSettings.siteDescription || undefined,
+    icons,
+    title: {
+      default: siteSettings.siteName,
+      template: `%s | ${siteSettings.siteName}`,
+    },
+  }
 }
 
 type FrontendLayoutProperties = {
@@ -37,7 +47,8 @@ type FrontendLayoutProperties = {
 }
 
 export default async function FrontendLayout({ children }: FrontendLayoutProperties) {
-  const [navigation, siteSettings] = await Promise.all([
+  const [footer, navigation, siteSettings] = await Promise.all([
+    getPublicFooter(),
     getPublicNavigation(),
     getPublicSiteSettings(),
   ])
@@ -45,9 +56,9 @@ export default async function FrontendLayout({ children }: FrontendLayoutPropert
   return (
     <html lang="pl">
       <body className={robotoSlab.variable}>
-        <SiteHeader navigation={navigation} />
+        <SiteHeader navigation={navigation} siteSettings={siteSettings} />
         {children}
-        <SiteFooter navigation={navigation} siteSettings={siteSettings} />
+        <SiteFooter footer={footer} navigation={navigation} siteSettings={siteSettings} />
       </body>
     </html>
   )
