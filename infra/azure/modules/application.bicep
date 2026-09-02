@@ -16,7 +16,13 @@ param entraClientSecret string = ''
 param entraTenantId string = ''
 param imageReference string
 param location string
+
+@minValue(1)
+@maxValue(1)
 param maximumReplicas int
+
+@minValue(0)
+@maxValue(1)
 param minimumReplicas int
 
 @secure()
@@ -182,7 +188,7 @@ resource application 'Microsoft.App/containerApps@2024-03-01' = {
             {
               type: 'Liveness'
               httpGet: {
-                path: '/health'
+                path: '/api/health/live'
                 port: 3000
                 scheme: 'HTTP'
               }
@@ -194,7 +200,7 @@ resource application 'Microsoft.App/containerApps@2024-03-01' = {
             {
               type: 'Readiness'
               httpGet: {
-                path: '/health'
+                path: '/api/health'
                 port: 3000
                 scheme: 'HTTP'
               }
@@ -224,7 +230,8 @@ resource authentication 'Microsoft.App/containerApps/authConfigs@2024-03-01' = i
   properties: {
     globalValidation: {
       excludedPaths: [
-        '/health'
+        '/api/health'
+        '/api/health/live'
       ]
       redirectToProvider: 'azureactivedirectory'
       unauthenticatedClientAction: 'AllowAnonymous'

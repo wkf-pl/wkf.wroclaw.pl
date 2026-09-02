@@ -35,8 +35,24 @@ param postgresSkuTier string
 param postgresStorageSizeGB int = 32
 param postgresBackupRetentionDays int = 7
 
+@minValue(0)
 param minimumReplicas int = 0
+
+@minValue(1)
+@maxValue(1)
+@description('Hard cost guardrail. This application currently supports at most one replica.')
 param maximumReplicas int = 1
+
+@minValue(1)
+@description('Monthly resource-group budget in the subscription billing currency.')
+param monthlyBudgetAmount int
+
+@description('First day of the initial monthly budget period.')
+param budgetStartDate string = utcNow('yyyy-MM-01')
+
+@minValue(1)
+@description('Sustained CPU threshold in nanocores. The default is 80% of the 0.5 vCPU application limit.')
+param cpuAlertThresholdNanocores int = 400000000
 
 param customDomainName string = ''
 param customDomainCertificateId string = ''
@@ -78,6 +94,7 @@ module environment './modules/environment.bicep' = {
     imageReference: imageReference
     location: location
     maximumReplicas: maximumReplicas
+    monthlyBudgetAmount: monthlyBudgetAmount
     minimumReplicas: minimumReplicas
     payloadSecret: payloadSecret
     postgresAdministratorLogin: postgresAdministratorLogin
@@ -99,6 +116,8 @@ module environment './modules/environment.bicep' = {
     smtpSkipVerify: smtpSkipVerify
     smtpUser: smtpUser
     sourceSha: sourceSha
+    budgetStartDate: budgetStartDate
+    cpuAlertThresholdNanocores: cpuAlertThresholdNanocores
     tags: {
       application: 'wkf-online'
       environment: environmentName

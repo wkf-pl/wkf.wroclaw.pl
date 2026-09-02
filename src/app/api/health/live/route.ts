@@ -1,0 +1,12 @@
+export const dynamic = 'force-dynamic'
+
+export function GET(): Response {
+  return Response.json(
+    { status: 'live' },
+    {
+      headers: {
+        'Cache-Control': 'no-store',
+      },
+    },
+  )
+}

@@ -7,8 +7,9 @@ param postgresAdministratorPassword = readEnvironmentVariable('POSTGRES_ADMIN_PA
 param postgresSkuName = 'Standard_B2s'
 param postgresSkuTier = 'Burstable'
 param postgresBackupRetentionDays = 14
-param minimumReplicas = 0
+param minimumReplicas = 1
 param maximumReplicas = 1
+param monthlyBudgetAmount = 100
 param customDomainName = 'wkf.wroclaw.pl'
 
 param smtpHost = readEnvironmentVariable('SMTP_HOST')

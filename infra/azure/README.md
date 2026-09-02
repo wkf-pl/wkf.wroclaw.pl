@@ -103,9 +103,9 @@ Workflow stagingowy:
 6. po zmianach migracji tworzy kopię PostgreSQL, wchodzi w maintenance i uruchamia job migracyjny,
 7. przełącza aplikację na nowy obraz; bez migracji pozostawia bezprzerwowe przełączenie trybowi
    pojedynczej rewizji Container Apps,
-8. przez maksymalnie 10 minut sprawdza readiness oraz odpowiedzi HTTP dla `/`, `/admin` i
-   `/health`, a na stagingu
-   także blokadę indeksowania w `/robots.txt`,
+8. przez maksymalnie 10 minut sprawdza readiness w `/api/health`, liveness w
+   `/api/health/live` oraz odpowiedzi HTTP dla `/` i `/admin`, a na stagingu także blokadę
+   indeksowania w `/robots.txt`,
 9. zapisuje digest w podsumowaniu workflowu.
 
 Deployment stagingu oraz operacje na checkpointach danych współdzielą grupę współbieżności
@@ -136,7 +136,8 @@ blobów Media.
 
 Przed właściwym odtworzeniem workflow tworzy checkpoint ratunkowy `rescue-<czas>`. Następnie
 odtwarza bazę i Media, uruchamia aktualny job `payload migrate` oraz `migrate:status`, aktywuje
-zapisaną rewizję i sprawdza `/health`, `/`, `/admin` oraz `/robots.txt`. Jeśli błąd wystąpi po
+zapisaną rewizję i sprawdza `/api/health`, `/api/health/live`, `/`, `/admin` oraz `/robots.txt`.
+Jeśli błąd wystąpi po
 rozpoczęciu destrukcyjnego odtwarzania, staging pozostaje w maintenance; nie uruchamiamy aplikacji
 na częściowo odtworzonej lub niezgodnej bazie. Ponowienie `restore` odzyskuje wtedy ostatnią rewizję
 nawet wtedy, gdy żadna rewizja nie jest aktywna. Tymczasowa reguła PostgreSQL dopuszczająca

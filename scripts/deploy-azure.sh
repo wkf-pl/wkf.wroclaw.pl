@@ -228,8 +228,14 @@ fi
 
 if [[ "$provision_infrastructure" == "true" ]]; then
   if [[ "$application_exists" == "true" ]]; then
-    infrastructure_image_reference="$previous_image_reference"
-    infrastructure_source_sha="$previous_source_sha"
+    if [[ "$run_migrations" == "true" ]]; then
+      infrastructure_image_reference="$previous_image_reference"
+      infrastructure_source_sha="$previous_source_sha"
+    else
+      infrastructure_image_reference="$target_image_reference"
+      infrastructure_source_sha="$source_sha"
+      application_update_started=true
+    fi
     deploy_application=true
   else
     infrastructure_image_reference="$target_image_reference"
@@ -332,9 +338,15 @@ health_check_attempt=0
 
 while ((SECONDS < health_deadline)); do
   health_check_attempt=$((health_check_attempt + 1))
-  health_status="$(read_http_status '/health')"
+  health_status="$(read_http_status '/api/health')"
 
   if [[ "$health_status" == "200" ]]; then
+    liveness_status="$(read_http_status '/api/health/live')"
+  else
+    liveness_status="skipped"
+  fi
+
+  if [[ "$liveness_status" == "200" ]]; then
     root_status="$(read_http_status '/')"
     admin_status="$(read_http_status '/admin')"
   else
@@ -342,10 +354,10 @@ while ((SECONDS < health_deadline)); do
     admin_status="skipped"
   fi
 
-  echo "Deployment check ${health_check_attempt}: /health=${health_status:-000} /=${root_status:-000} /admin=${admin_status:-000}"
+  echo "Deployment check ${health_check_attempt}: /api/health=${health_status:-000} /api/health/live=${liveness_status:-000} /=${root_status:-000} /admin=${admin_status:-000}"
 
   health_check_succeeded=false
-  if [[ "$health_status" == "200" && "$root_status" == "200" && "$admin_status" == "200" ]]; then
+  if [[ "$health_status" == "200" && "$liveness_status" == "200" && "$root_status" == "200" && "$admin_status" == "200" ]]; then
     health_check_succeeded=true
 
     if [[ "$target_environment" == "staging" ]]; then
