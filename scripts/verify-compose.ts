@@ -93,10 +93,16 @@ async function deleteCreatedResources(): Promise<void> {
 }
 
 async function verifyComposeStack(): Promise<void> {
-  const healthResponse = await requestJSON(`${applicationURL}/health`)
+  const healthResponse = await requestJSON(`${applicationURL}/api/health`)
 
   if (getRequiredString(healthResponse, 'status') !== 'ok') {
     throw new Error('Application health endpoint did not return status ok')
+  }
+
+  const livenessResponse = await requestJSON(`${applicationURL}/api/health/live`)
+
+  if (getRequiredString(livenessResponse, 'status') !== 'live') {
+    throw new Error('Application liveness endpoint did not return status live')
   }
 
   for (const route of ['/', '/admin']) {

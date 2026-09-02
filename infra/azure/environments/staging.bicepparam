@@ -9,6 +9,7 @@ param postgresSkuTier = 'Burstable'
 param postgresBackupRetentionDays = 7
 param minimumReplicas = 0
 param maximumReplicas = 1
+param monthlyBudgetAmount = 50
 
 param smtpHost = '127.0.0.1'
 param smtpUser = ''

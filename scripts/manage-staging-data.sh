@@ -528,10 +528,18 @@ run_payload_job() {
 wait_for_application() {
   local deadline=$((SECONDS + health_timeout_seconds))
   local health_status
+  local liveness_status
 
   while ((SECONDS < deadline)); do
-    health_status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$application_url/health" || true)"
+    health_status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$application_url/api/health" || true)"
     if [[ "$health_status" == "200" ]]; then
+      liveness_status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$application_url/api/health/live" || true)"
+      if [[ "$liveness_status" != "200" ]]; then
+        echo "Staging liveness endpoint returned $liveness_status after data operation." >&2
+        sleep 10
+        continue
+      fi
+
       for route in / /admin /robots.txt; do
         local route_status
         route_status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$application_url$route" || true)"

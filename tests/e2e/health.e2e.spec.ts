@@ -1,8 +1,15 @@
 import { expect, test } from '@playwright/test'
 
-test('exposes a health endpoint', async ({ request }) => {
-  const response = await request.get('/health')
+test('exposes readiness and liveness endpoints', async ({ request }) => {
+  const readinessResponse = await request.get('/api/health')
 
-  expect(response.ok()).toBe(true)
-  await expect(response.json()).resolves.toEqual({ status: 'ok' })
+  expect(readinessResponse.ok()).toBe(true)
+  expect(readinessResponse.headers()['cache-control']).toBe('no-store')
+  await expect(readinessResponse.json()).resolves.toEqual({ status: 'ok' })
+
+  const livenessResponse = await request.get('/api/health/live')
+
+  expect(livenessResponse.ok()).toBe(true)
+  expect(livenessResponse.headers()['cache-control']).toBe('no-store')
+  await expect(livenessResponse.json()).resolves.toEqual({ status: 'live' })
 })

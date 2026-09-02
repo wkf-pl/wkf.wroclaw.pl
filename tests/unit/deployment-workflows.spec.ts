@@ -57,6 +57,13 @@ describe('deployment workflows', () => {
     expect(deploymentScript).toContain('DEPLOYMENT_HEALTH_TIMEOUT_SECONDS:-600')
     expect(deploymentScript).toContain('No migration changes detected')
     expect(deploymentScript).toContain('restore_previous_revision')
+    expect(deploymentScript).toContain('infrastructure_image_reference="$target_image_reference"')
+    expect(deploymentScript).toMatch(
+      /infrastructure_image_reference="\$target_image_reference"[\s\S]*application_update_started=true/,
+    )
+    expect(deploymentScript).toMatch(
+      /if \[\[ "\$run_migrations" == "true" \]\]; then[\s\S]*infrastructure_image_reference="\$previous_image_reference"/,
+    )
     expect(applicationTemplate).toContain("name: 'DEPLOYED_SOURCE_SHA'")
   })
 
@@ -96,14 +103,59 @@ describe('deployment workflows', () => {
     expect(dockerfile).toContain('COPY --from=production-dependencies')
   })
 
-  it('keeps the local Next data cache on a single scale-to-zero replica', () => {
+  it('never starts a Next development server during staging or production operations', () => {
+    const deploymentFiles = [
+      '.github/workflows/deploy-staging.yml',
+      '.github/workflows/deploy-staging-on-master.yml',
+      '.github/workflows/deploy-production.yml',
+      '.github/workflows/manage-staging-data.yml',
+      'scripts/deploy-azure.sh',
+      'scripts/manage-staging-data.sh',
+    ]
+
+    for (const deploymentFile of deploymentFiles) {
+      const content = readFileSync(deploymentFile, 'utf8')
+      expect(content).not.toMatch(/\bnext dev\b|\bpnpm dev(?::container)?\b/)
+    }
+
+    const runtimeImage = readFileSync('Dockerfile', 'utf8').split('FROM base AS runner')[1]
+    expect(runtimeImage).toBeDefined()
+    expect(runtimeImage).not.toMatch(/\bnext dev\b|\bpnpm dev(?::container)?\b/)
+    expect(runtimeImage).toContain('CMD ["node", "server.js"]')
+  })
+
+  it('checks readiness before liveness after deployments and staging data operations', () => {
+    const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
+    const stagingDataScript = readFileSync('scripts/manage-staging-data.sh', 'utf8')
+
+    for (const content of [deploymentScript, stagingDataScript]) {
+      expect(content.indexOf('/api/health')).toBeGreaterThanOrEqual(0)
+      expect(content.indexOf('/api/health/live')).toBeGreaterThan(content.indexOf('/api/health'))
+    }
+  })
+
+  it('keeps each environment within its availability and resource limits', () => {
     const mainTemplate = readFileSync('infra/azure/main.bicep', 'utf8')
+    const applicationTemplate = readFileSync('infra/azure/modules/application.bicep', 'utf8')
+    const environmentTemplate = readFileSync('infra/azure/modules/environment.bicep', 'utf8')
     const stagingParameters = readFileSync('infra/azure/environments/staging.bicepparam', 'utf8')
     const productionParameters = readFileSync('infra/azure/environments/prod.bicepparam', 'utf8')
 
-    for (const content of [mainTemplate, stagingParameters, productionParameters]) {
-      expect(content).toMatch(/param minimumReplicas(?: int)? = 0/)
-      expect(content).toMatch(/param maximumReplicas(?: int)? = 1/)
-    }
+    expect(mainTemplate).toMatch(/@maxValue\(1\)[\s\S]*param maximumReplicas int = 1/)
+    expect(environmentTemplate).toMatch(/@maxValue\(1\)[\s\S]*param maximumReplicas int/)
+    expect(applicationTemplate).toMatch(/@maxValue\(1\)[\s\S]*param maximumReplicas int/)
+    expect(stagingParameters).toMatch(/param minimumReplicas = 0/)
+    expect(stagingParameters).toMatch(/param maximumReplicas = 1/)
+    expect(productionParameters).toMatch(/param minimumReplicas = 1/)
+    expect(productionParameters).toMatch(/param maximumReplicas = 1/)
+    expect(applicationTemplate).toContain("cpu: json('0.5')")
+    expect(applicationTemplate).toContain("memory: '1Gi'")
+    expect(applicationTemplate).toMatch(
+      /type: 'Liveness'[\s\S]*path: '\/api\/health\/live'[\s\S]*periodSeconds: 30[\s\S]*failureThreshold: 3/,
+    )
+    expect(applicationTemplate).toMatch(
+      /type: 'Readiness'[\s\S]*path: '\/api\/health'[\s\S]*periodSeconds: 10/,
+    )
+    expect(applicationTemplate).not.toMatch(/^\s*'\/health'\s*$/m)
   })
 })

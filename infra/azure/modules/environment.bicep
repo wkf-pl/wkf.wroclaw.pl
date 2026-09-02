@@ -12,7 +12,14 @@ param entraTenantId string
 param environmentName string
 param imageReference string
 param location string
+
+@minValue(1)
+@maxValue(1)
 param maximumReplicas int
+param monthlyBudgetAmount int
+
+@minValue(0)
+@maxValue(1)
 param minimumReplicas int
 
 @secure()
@@ -43,6 +50,8 @@ param smtpSecure bool
 param smtpSkipVerify bool
 param smtpUser string
 param sourceSha string
+param budgetStartDate string
+param cpuAlertThresholdNanocores int
 param tags object
 
 var applicationName = '${resourcePrefix}-${environmentName}'
@@ -147,6 +156,24 @@ module application './application.bicep' = if (deployApplication) {
     storageConnectionString: storage.outputs.connectionString
     tags: tags
   }
+}
+
+module costGuardrails './cost-guardrails.bicep' = if (deployApplication) {
+  name: 'cost-guardrails'
+  params: {
+    applicationId: resourceId('Microsoft.App/containerApps', applicationName)
+    applicationName: applicationName
+    budgetStartDate: budgetStartDate
+    cpuAlertThresholdNanocores: cpuAlertThresholdNanocores
+    environmentName: environmentName
+    location: location
+    monthlyBudgetAmount: monthlyBudgetAmount
+    resourcePrefix: resourcePrefix
+    tags: tags
+  }
+  dependsOn: [
+    application
+  ]
 }
 
 module migrationJob './migration-job.bicep' = {

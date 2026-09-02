@@ -142,14 +142,28 @@ describe('integration test environment', () => {
 
   it('keeps host and container Next build artifacts separate', () => {
     const composeConfiguration = readFileSync('compose.yml', 'utf8')
+    const developmentServerScript = readFileSync('scripts/run-development-server.sh', 'utf8')
+    const temporaryPreviewScript = readFileSync('scripts/run-temporary-preview.sh', 'utf8')
     const eslintConfiguration = readFileSync('eslint.config.mjs', 'utf8')
+    const nextConfiguration = readFileSync('next.config.ts', 'utf8')
     const packageConfiguration = readFileSync('package.json', 'utf8')
+    const packageScripts = JSON.parse(packageConfiguration).scripts as Record<string, string>
 
-    expect(packageConfiguration).toContain(
-      '"dev": "cross-env NODE_ENV=development NEXT_DIST_DIR=.next-host',
-    )
-    expect(packageConfiguration).toContain(
-      '"dev:container": "cross-env NODE_ENV=development NEXT_DIST_DIR=.next-container',
+    expect(packageScripts.dev).toBe('bash scripts/run-development-server.sh')
+    expect(packageScripts['dev:container']).toContain('NEXT_DIST_DIR=.next-container')
+    expect(developmentServerScript).toContain('WKF_ALLOW_NEXT_DEV')
+    expect(developmentServerScript).toContain('NEXT_DIST_DIR:-.next-host')
+    expect(temporaryPreviewScript).toContain('if [[ "${1:-}" == "--" ]]')
+    expect(temporaryPreviewScript).toContain('volta run --node 22.17.0 pnpm dev\n')
+    expect(temporaryPreviewScript).not.toContain('pnpm dev --\n')
+    expect(temporaryPreviewScript).toContain('NEXT_DIST_DIR="$preview_directory_relative"')
+    expect(temporaryPreviewScript).not.toContain('NEXT_DIST_DIR="$preview_directory"')
+    expect(temporaryPreviewScript).toContain('NEXT_TSCONFIG_PATH=')
+    expect(temporaryPreviewScript).toContain('printf \'{"extends":"../tsconfig.json"}')
+    expect(temporaryPreviewScript).toContain('remove_preview_tsconfig')
+    expect(temporaryPreviewScript).toContain('preview_process_group_is_running')
+    expect(nextConfiguration).toContain(
+      "tsconfigPath: process.env.NEXT_TSCONFIG_PATH || 'tsconfig.json'",
     )
     expect(packageConfiguration).toContain(
       '"build": "cross-env NODE_ENV=production NEXT_DIST_DIR=.next-host',
@@ -157,6 +171,7 @@ describe('integration test environment', () => {
     expect(packageConfiguration).toContain('"build:container": "cross-env NODE_ENV=production')
     expect(composeConfiguration).toContain('command: ./scripts/start-development-container.sh')
     expect(composeConfiguration).toContain('NODE_ENV: development')
+    expect(composeConfiguration).toContain("WKF_ALLOW_NEXT_DEV: '1'")
     expect(composeConfiguration).toContain('app_next:/app/.next-container')
     expect(eslintConfiguration).toContain("'.next*/**'")
   })
