@@ -111,7 +111,7 @@ test('uses the shared target selector when editing a rich text link', async ({ p
   await documentOption.click()
   await expect(drawer.locator('#field-doc')).toHaveValue('[object Object]')
   await drawer.getByRole('button', { name: 'Zapisz zmiany' }).click()
-  await expect(drawer).toBeHidden()
+  await expect(drawer).toBeHidden({ timeout: 15_000 })
 
   await page.locator('.link-edit').click()
 

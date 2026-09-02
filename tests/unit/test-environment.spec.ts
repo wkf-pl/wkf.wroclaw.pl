@@ -126,9 +126,18 @@ describe('integration test environment', () => {
     expect(continuousIntegrationWorkflow).toMatch(/^  end-to-end:\n/m)
     expect(continuousIntegrationWorkflow).toMatch(/^  validate-container:\n/m)
     expect(continuousIntegrationWorkflow).not.toContain('needs:')
-    expect(continuousIntegrationWorkflow).toContain('shard: [1, 2]')
-    expect(continuousIntegrationWorkflow).toContain('PLAYWRIGHT_SHARD: ${{ matrix.shard }}/2')
+    expect(continuousIntegrationWorkflow).toContain('shard: [1, 2, 3, 4]')
+    expect(continuousIntegrationWorkflow).toContain('PLAYWRIGHT_SHARD: ${{ matrix.shard }}/4')
     expect(continuousIntegrationWorkflow).toContain('playwright-diagnostics-${{ matrix.shard }}')
+  })
+
+  it('cancels superseded CI runs for the same pull request', () => {
+    const continuousIntegrationWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+
+    expect(continuousIntegrationWorkflow).toContain(
+      'group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}',
+    )
+    expect(continuousIntegrationWorkflow).toContain('cancel-in-progress: true')
   })
 
   it('keeps host and container Next build artifacts separate', () => {
