@@ -17,6 +17,7 @@ import {
   populateHierarchyFullTitle,
   validateHierarchy,
 } from '@/modules/content/hierarchy'
+import {createDraftPreviewURL} from '@/modules/content/draft-preview'
 import { validatePageStructure } from '@/modules/content/page-validation'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
@@ -73,6 +74,7 @@ export const Pages: CollectionConfig = {
     components: {
       edit: {
         beforeDocumentControls: ['/components/admin/PageCreateLabel#PageCreateLabel'],
+        PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
       },
     },
     defaultColumns: ['fullTitle', 'slug', '_status', 'publishedAt', 'updatedAt'],
@@ -82,6 +84,7 @@ export const Pages: CollectionConfig = {
     pagination: {
       limits: [10, 25, 50],
     },
+    preview: (document) => createDraftPreviewURL('pages', document),
   },
   defaultSort: 'fullTitle',
   fields: [

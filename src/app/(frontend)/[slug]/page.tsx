@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { createContentMetadata } from '@/modules/content/content-metadata'
-import { findPublishedPageBySlug } from '@/modules/content/public-content'
+import {findPageForRequest} from '@/modules/content/preview-content'
 
 import { CmsPageDocument } from '../_components/CmsPageDocument'
+import {DraftPreviewBanner} from '../_components/DraftPreviewBanner'
 
 type PageProperties = {
   params: Promise<{ slug: string }>
@@ -13,7 +14,7 @@ type PageProperties = {
 
 export async function generateMetadata({ params }: PageProperties): Promise<Metadata> {
   const { slug } = await params
-  const page = await findPublishedPageBySlug(slug)
+    const {document: page} = await findPageForRequest(slug)
 
   return page ? createContentMetadata(page) : {}
 }
@@ -21,13 +22,18 @@ export async function generateMetadata({ params }: PageProperties): Promise<Meta
 export default async function StaticPage({ params, searchParams }: PageProperties) {
   const { slug } = await params
   const resolvedSearchParams = await searchParams
-  const page = await findPublishedPageBySlug(slug)
+    const {document: page, isDraftPreview} = await findPageForRequest(slug)
 
   if (!page) {
     notFound()
   }
 
+    const pathname = `/${slug}`
+
   return (
-    <CmsPageDocument document={page} pathname={`/${slug}`} searchParams={resolvedSearchParams} />
+      <>
+          {isDraftPreview ? <DraftPreviewBanner pathname={pathname}/> : null}
+          <CmsPageDocument document={page} pathname={pathname} searchParams={resolvedSearchParams}/>
+      </>
   )
 }
