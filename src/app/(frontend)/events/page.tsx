@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import {findPageForRequest} from '@/modules/content/preview-content'
+import { findPageForRequest } from '@/modules/content/preview-content'
 import { findCurrentAndUpcomingEvents, findPastEvents } from '@/modules/events/public-events'
 
 import { CmsPageDocument } from '../_components/CmsPageDocument'
 import { ContentPagination } from '../_components/ContentPagination'
-import {DraftPreviewBanner} from '../_components/DraftPreviewBanner'
+import { DraftPreviewBanner } from '../_components/DraftPreviewBanner'
 import { EventList } from '../_components/EventList'
 
 export const metadata: Metadata = { title: 'Wydarzenia' }
@@ -18,8 +18,8 @@ export default async function EventsPage({
 }) {
   const parameters = await searchParams
   const page = Math.max(1, Number.parseInt(parameters.page || '1', 10) || 1)
-    const [{document: systemPage, isDraftPreview}, upcoming, archive] = await Promise.all([
-        findPageForRequest('events'),
+  const [{ document: systemPage, isDraftPreview }, upcoming, archive] = await Promise.all([
+    findPageForRequest('events'),
     findCurrentAndUpcomingEvents(),
     findPastEvents(page),
   ])
@@ -29,7 +29,7 @@ export default async function EventsPage({
 
   return (
     <>
-        {isDraftPreview ? <DraftPreviewBanner pathname="/events"/> : null}
+      {isDraftPreview ? <DraftPreviewBanner pathname="/events" /> : null}
       {introduction}
       <main className="contentShell eventsIndex">
         <section>

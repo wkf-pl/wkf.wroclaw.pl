@@ -34,30 +34,30 @@ a {
 }
 
 .draftPreviewBanner {
-    position: sticky;
-    z-index: 20;
-    top: 0;
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    justify-content: center;
-    padding: 0.7rem 1rem;
-    border-bottom: 1px solid var(--gold);
-    background: var(--gold);
-    color: var(--background-deep);
-    font-weight: 700;
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--gold);
+  background: var(--gold);
+  color: var(--background-deep);
+  font-weight: 700;
 }
 
 .draftPreviewBanner a {
-    padding: 0.25rem 0.55rem;
-    border: 1px solid currentcolor;
-    border-radius: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid currentcolor;
+  border-radius: 0.3rem;
 }
 
 .draftPreviewBanner a:hover,
 .draftPreviewBanner a:focus-visible {
-    background: var(--background-deep);
-    color: var(--ivory);
+  background: var(--background-deep);
+  color: var(--ivory);
 }
 
 h1,

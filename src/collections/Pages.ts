@@ -17,7 +17,7 @@ import {
   populateHierarchyFullTitle,
   validateHierarchy,
 } from '@/modules/content/hierarchy'
-import {createDraftPreviewURL} from '@/modules/content/draft-preview'
+import { createDraftPreviewURL } from '@/modules/content/draft-preview'
 import { validatePageStructure } from '@/modules/content/page-validation'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'

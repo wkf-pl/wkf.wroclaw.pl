@@ -7,7 +7,7 @@ import {
 } from '@/modules/content/content-listing-index'
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
-import {createDraftPreviewURL} from '@/modules/content/draft-preview'
+import { createDraftPreviewURL } from '@/modules/content/draft-preview'
 import { publishedPublicAccess } from '@/modules/content/public-access'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
@@ -36,11 +36,11 @@ export const Posts: CollectionConfig = {
     update: updatePosts,
   },
   admin: {
-      components: {
-          edit: {
-              PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
-          },
+    components: {
+      edit: {
+        PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
       },
+    },
     defaultColumns: ['title', 'slug', 'category', 'tags', '_status', 'publishedAt', 'updatedAt'],
     group: 'Treści',
     listSearchableFields: ['title', 'slug', 'excerpt'],
@@ -48,7 +48,7 @@ export const Posts: CollectionConfig = {
     pagination: {
       limits: [10, 25, 50],
     },
-      preview: (document) => createDraftPreviewURL('posts', document),
+    preview: (document) => createDraftPreviewURL('posts', document),
   },
   defaultSort: '-publishedAt',
   fields: [
