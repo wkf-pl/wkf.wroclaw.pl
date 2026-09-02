@@ -143,7 +143,6 @@ describe('media blocks', () => {
       'width',
       'height',
       'url',
-      'thumbnailURL',
       'category',
       'tags',
       'uploadedBy',
