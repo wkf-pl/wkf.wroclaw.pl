@@ -1,11 +1,11 @@
 import Link from 'next/link'
 
-import type { ClubSection, Post } from '@/payload-types'
+import { CmsRichText } from '@/components/CmsRichText'
+import type { HomepageSection, Post } from '@/payload-types'
 import {
-  findPublishedClubSections,
   findPublishedPosts,
-  getPublicNavigation,
-  getPublicSiteSettings,
+  getPublicHomepageHero,
+  getPublicHomepageSections,
 } from '@/modules/content/public-content'
 import { hasRenderableIcon, resolveLink, resolvePageLink } from '@/modules/navigation/links'
 import { findHomepageEvents } from '@/modules/events/public-events'
@@ -14,6 +14,7 @@ import { CmsImage } from './_components/CmsImage'
 import { Icon } from './_components/Icon'
 import { MenuIcon } from './_components/MenuIcon'
 import { EventCarousel } from './_components/EventCarousel'
+import { HomepageHero } from './_components/HomepageHero'
 
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric',
@@ -62,10 +63,10 @@ function SmallNewsCard({ post }: { post: Post }) {
   )
 }
 
-function NewsSection({ posts }: { posts: Post[] }) {
+function NewsSection({ posts, title }: { posts: Post[]; title: string }) {
   return (
     <section aria-labelledby="news-heading" className="homeSection homeNews">
-      <SectionHeading id="news-heading">Aktualności</SectionHeading>
+      <SectionHeading id="news-heading">{title}</SectionHeading>
 
       <div className="newsGrid">
         {posts.map((post) => (
@@ -85,7 +86,9 @@ function NewsSection({ posts }: { posts: Post[] }) {
   )
 }
 
-function SectionCard({ section }: { section: ClubSection }) {
+type HomepageGroup = NonNullable<HomepageSection['groups']>[number]
+
+function SectionCard({ section }: { section: HomepageGroup }) {
   const titleLink = resolvePageLink(section.destinationPage)
   const menuItems = section.menuItems?.flatMap((item) => {
     const link = resolveLink(item)
@@ -128,14 +131,18 @@ function SectionCard({ section }: { section: ClubSection }) {
   )
 }
 
-function Sections({ sections }: { sections: ClubSection[] }) {
+function Sections({ sections, title }: { sections: HomepageGroup[]; title?: null | string }) {
   if (sections.length === 0) {
     return null
   }
 
   return (
-    <section aria-labelledby="sections-heading" className="homeSection clubSections">
-      <SectionHeading id="sections-heading">Sekcje</SectionHeading>
+    <section
+      aria-label={title ? undefined : 'Sekcje klubowe'}
+      aria-labelledby={title ? 'sections-heading' : undefined}
+      className="homeSection clubSections"
+    >
+      {title ? <SectionHeading id="sections-heading">{title}</SectionHeading> : null}
       <div className="sectionCards">
         {sections.map((section) => (
           <SectionCard key={section.id} section={section} />
@@ -146,57 +153,28 @@ function Sections({ sections }: { sections: ClubSection[] }) {
 }
 
 export default async function HomePage() {
-  const [posts, sections, navigation, siteSettings] = await Promise.all([
+  const [posts, hero, homepageSections] = await Promise.all([
     findPublishedPosts(),
-    findPublishedClubSections(),
-    getPublicNavigation(),
-    getPublicSiteSettings(),
+    getPublicHomepageHero(),
+    getPublicHomepageSections(),
   ])
-  const eventWindowWeeks = siteSettings.homepageEventWindowWeeks ?? 4
-  const eventSlideLimit = siteSettings.homepageEventSlideLimit ?? 6
+  const eventWindowWeeks = homepageSections.eventWindowWeeks ?? 4
+  const eventSlideLimit = homepageSections.eventSlideLimit ?? 6
   const events = await findHomepageEvents(eventWindowWeeks, eventSlideLimit)
-  const postCount = Number.parseInt(siteSettings.homepagePostCount ?? '2', 10)
-  const heroItems = navigation.heroItems?.flatMap((item) => {
-    const link = resolveLink(item)
-    return link ? [{ item, link }] : []
-  })
+  const postCount = Number.parseInt(homepageSections.postCount ?? '2', 10)
+  const sections = homepageSections.groups ?? []
 
   return (
     <main className="homePage">
-      <section className="homeHero">
-        {siteSettings.heroImage &&
-        typeof siteSettings.heroImage === 'object' &&
-        siteSettings.heroImage.url ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element -- CMS media can use a runtime-configured Azure host. */}
-            <img alt="" className="homeHeroImage" src={siteSettings.heroImage.url} />
-            <span aria-hidden="true" className="homeHeroImageShade" />
-          </>
-        ) : null}
-        <div className="homeShell">
-          <div className="heroContent">
-            <h1>
-              Witaj w klubie
-              <br />
-              ludzi z <span>wyobraźnią</span>
-            </h1>
-            {heroItems?.length ? (
-              <nav aria-label="Obszary klubu" className="heroTabs">
-                {heroItems.map(({ item, link }) => (
-                  <Link key={item.id} {...link}>
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            ) : null}
-          </div>
-        </div>
-      </section>
+      <HomepageHero hero={hero} />
 
       <div className="homeShell">
         {events.length ? (
           <section aria-labelledby="events-heading" className="homeSection homeEvents">
-            <SectionHeading id="events-heading">Wydarzenia</SectionHeading>
+            <SectionHeading id="events-heading">{homepageSections.eventsTitle}</SectionHeading>
+            {homepageSections.eventsContent ? (
+              <CmsRichText className="homeSectionContent" data={homepageSections.eventsContent} />
+            ) : null}
             <EventCarousel events={events} />
             <div className="homeEventLinks">
               <Link href="/events">Wszystkie wydarzenia</Link>
@@ -204,8 +182,8 @@ export default async function HomePage() {
             </div>
           </section>
         ) : null}
-        <NewsSection posts={posts.slice(0, postCount)} />
-        <Sections sections={sections} />
+        <NewsSection posts={posts.slice(0, postCount)} title={homepageSections.newsTitle} />
+        <Sections sections={sections} title={homepageSections.sectionsTitle} />
       </div>
     </main>
   )

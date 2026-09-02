@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+
 import type { CollectionConfig, Field } from 'payload'
 import { describe, expect, it } from 'vitest'
 
@@ -259,9 +261,35 @@ describe('page configuration', () => {
           components: {
             Field: '/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin',
           },
+          defaultColumns: ['title', 'slug', '_status', 'publishedAt', 'updatedAt'],
         },
       })
+
+      for (const fieldName of [
+        'relatedPages',
+        'relatedPosts',
+        'relatedEvents',
+        'relatedEventCycles',
+        'relatedDocuments',
+      ]) {
+        const relatedField = findField(collection.fields, fieldName)
+
+        expect(relatedField.type).toBe('join')
+        if (relatedField.type !== 'join') throw new Error(`Expected ${fieldName} to be a join`)
+
+        expect(relatedField.admin?.defaultColumns).not.toContain('category')
+        expect(relatedField.admin?.defaultColumns).not.toContain('tags')
+      }
     }
+  })
+
+  it('loads Listing parent-page choices from the current admin origin', () => {
+    const component = readFileSync('src/components/admin/ListingParentPageField.tsx', 'utf8')
+
+    expect(component).toContain("formatAdminURL({ apiRoute, path: '/pages' })")
+    expect(component).not.toMatch(/formatAdminURL\(\{[^}]*serverURL[^}]*\}\)/s)
+    expect(component).toContain('path: parentFilterPath')
+    expect(component).toContain("dispatchFields({ formState, type: 'UPDATE_MANY' })")
   })
 
   it('hides plugin breadcrumbs and shows the readable hierarchy path in the sidebar', () => {

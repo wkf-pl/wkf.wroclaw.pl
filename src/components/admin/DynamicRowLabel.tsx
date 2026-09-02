@@ -40,7 +40,11 @@ function useRowValue(fieldName: string): string {
 }
 
 export function NavigationItemRowLabel() {
-  return <DynamicLabel prefix="Pozycja menu" value={useRowValue('label')} />
+  return <DynamicLabel prefix="Pozycja" value={useRowValue('label')} />
+}
+
+export function HomepageGroupRowLabel() {
+  return <DynamicLabel prefix="Grupa" value={useRowValue('name')} />
 }
 
 export function SocialItemRowLabel() {

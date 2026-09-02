@@ -20,7 +20,15 @@ const visibleCollectionSlugs = [
   'users',
 ]
 
-const additionalNavigationIcons = ['site-settings', 'navigation', 'account', 'profile']
+const additionalNavigationIcons = [
+  'site-settings',
+  'navigation',
+  'homepage-hero',
+  'homepage-sections',
+  'footer',
+  'account',
+  'profile',
+]
 
 describe('admin navigation icons', () => {
   it.each(visibleCollectionSlugs)('renders a decorative line icon for %s', (slug) => {

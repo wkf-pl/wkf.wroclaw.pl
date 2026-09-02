@@ -11,7 +11,7 @@ import { AdminNavClient } from './AdminNavClient'
 import { AdminNavHamburger, AdminNavWrapper } from './AdminNavChrome'
 
 const baseClass = 'nav'
-const desiredGroupOrder = ['Treści', 'Klubowe', 'Ustawienia strony', 'Administracja']
+const desiredGroupOrder = ['Treści', 'Klubowe', 'Strona główna', 'Administracja']
 
 export type AdminNavProperties = {
   req?: PayloadRequest

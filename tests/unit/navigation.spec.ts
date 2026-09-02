@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Category, Document, Media, Page, Post, Tag } from '@/payload-types'
-import { ClubSections } from '@/collections/ClubSections'
-import { Navigation } from '@/globals/Navigation'
+import { Footer, HomepageHero, HomepageSections, Navigation } from '@/globals'
 import {
   createLinkFields,
   isCategoryTarget,
@@ -22,15 +21,29 @@ import {
 import { getCustomIconURL, hasRenderableIcon, resolveLink } from '@/modules/navigation/links'
 
 function findArrayField(fields: typeof Navigation.fields, name: string) {
+  const result = findField(fields, name)
+  if (result) return result
+
+  throw new Error(`Missing array field: ${name}`)
+}
+
+function findField(
+  fields: typeof Navigation.fields,
+  name: string,
+): (typeof fields)[number] | undefined {
   for (const field of fields) {
-    if (field.type !== 'tabs') continue
-    for (const tab of field.tabs) {
-      const result = tab.fields.find((tabField) => 'name' in tabField && tabField.name === name)
+    if ('name' in field && field.name === name) return field
+    if (field.type === 'tabs') {
+      for (const tab of field.tabs) {
+        const result = findField(tab.fields, name)
+        if (result) return result
+      }
+    }
+    if ('fields' in field && Array.isArray(field.fields)) {
+      const result = findField(field.fields, name)
       if (result) return result
     }
   }
-
-  throw new Error(`Missing array field: ${name}`)
 }
 
 function createPage(overrides: Partial<Page> = {}): Page {
@@ -99,15 +112,15 @@ describe('navigation links', () => {
 
   it('uses the requested add-button labels for navigation arrays', () => {
     expect(findArrayField(Navigation.fields, 'headerItems')).toMatchObject({
-      labels: { singular: 'pozycję menu w nagłówku' },
+      labels: { singular: 'pozycję' },
     })
-    expect(findArrayField(Navigation.fields, 'heroItems')).toMatchObject({
+    expect(findArrayField(HomepageHero.fields, 'items')).toMatchObject({
       labels: { singular: 'pozycję menu w sekcji Hero' },
     })
-    expect(findArrayField(Navigation.fields, 'socialItems')).toMatchObject({
+    expect(findArrayField(Footer.fields, 'socialItems')).toMatchObject({
       labels: { singular: 'medium społecznościowe' },
     })
-    expect(findArrayField(Navigation.fields, 'footerColumns')).toMatchObject({
+    expect(findArrayField(Footer.fields, 'columns')).toMatchObject({
       labels: { singular: 'kolumnę menu w stopce' },
     })
   })
@@ -120,21 +133,21 @@ describe('navigation links', () => {
         },
       },
     })
-    expect(findArrayField(Navigation.fields, 'heroItems')).toMatchObject({
+    expect(findArrayField(HomepageHero.fields, 'items')).toMatchObject({
       admin: {
         components: {
           RowLabel: '/components/admin/DynamicRowLabel#NavigationItemRowLabel',
         },
       },
     })
-    expect(findArrayField(Navigation.fields, 'socialItems')).toMatchObject({
+    expect(findArrayField(Footer.fields, 'socialItems')).toMatchObject({
       admin: {
         components: {
           RowLabel: '/components/admin/DynamicRowLabel#SocialItemRowLabel',
         },
       },
     })
-    expect(findArrayField(Navigation.fields, 'footerColumns')).toMatchObject({
+    expect(findArrayField(Footer.fields, 'columns')).toMatchObject({
       admin: {
         components: {
           RowLabel: '/components/admin/DynamicRowLabel#FooterColumnRowLabel',
@@ -142,11 +155,7 @@ describe('navigation links', () => {
       },
     })
 
-    const menuItems = ClubSections.fields
-      .filter((field) => field.type === 'tabs')
-      .flatMap((field) => field.tabs)
-      .flatMap((tab) => tab.fields)
-      .find((field) => 'name' in field && field.name === 'menuItems')
+    const menuItems = findArrayField(HomepageSections.fields, 'menuItems')
     expect(menuItems).toMatchObject({
       admin: {
         components: {
@@ -154,6 +163,21 @@ describe('navigation links', () => {
         },
       },
     })
+  })
+
+  it('places the header label and appearance beside each other', () => {
+    const headerItems = findArrayField(Navigation.fields, 'headerItems')
+    if (headerItems.type !== 'array') throw new Error('Missing header items array.')
+
+    const firstRow = headerItems.fields.find((field) => field.type === 'row')
+    if (!firstRow || firstRow.type !== 'row') throw new Error('Missing header item row.')
+
+    expect(
+      firstRow.fields.map((field) => ('name' in field ? [field.name, field.admin?.width] : [])),
+    ).toEqual([
+      ['label', '50%'],
+      ['appearance', '50%'],
+    ])
   })
 
   it('lists system icons alphabetically by their admin labels', () => {

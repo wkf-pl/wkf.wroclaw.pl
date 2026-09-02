@@ -21,130 +21,63 @@ export const Navigation: GlobalConfig = {
     update: updateNavigation,
   },
   admin: {
-    group: 'Ustawienia strony',
+    group: 'Strona główna',
   },
   fields: [
     {
-      type: 'tabs',
-      tabs: [
+      name: 'logo',
+      type: 'upload',
+      filterOptions: { mimeType: { contains: 'image/' } },
+      label: 'Logo',
+      relationTo: 'media',
+    },
+    {
+      name: 'headerItems',
+      type: 'array',
+      admin: {
+        components: {
+          RowLabel: '/components/admin/DynamicRowLabel#NavigationItemRowLabel',
+        },
+      },
+      fields: [
         {
-          label: 'Nagłówek',
+          type: 'row',
           fields: [
             {
-              name: 'headerItems',
-              type: 'array',
+              name: 'label',
+              type: 'text',
+              admin: { width: '50%' },
+              label: 'Etykieta',
+              required: true,
+            },
+            {
+              name: 'appearance',
+              type: 'select',
               admin: {
-                components: {
-                  RowLabel: '/components/admin/DynamicRowLabel#NavigationItemRowLabel',
-                },
+                isClearable: false,
+                width: '50%',
               },
-              fields: [
-                {
-                  name: 'appearance',
-                  type: 'select',
-                  admin: {
-                    isClearable: false,
-                  },
-                  defaultValue: 'link',
-                  label: 'Wygląd',
-                  options: [
-                    { label: 'Link', value: 'link' },
-                    { label: 'Ikona', value: 'icon' },
-                    { label: 'Przycisk', value: 'button' },
-                  ],
-                  required: true,
-                },
-                ...createLinkFields(),
-                ...createIconFields({ showWhenAppearanceIcon: true }),
+              defaultValue: 'link',
+              label: 'Wygląd',
+              options: [
+                { label: 'Link', value: 'link' },
+                { label: 'Ikona', value: 'icon' },
+                { label: 'Przycisk', value: 'button' },
               ],
-              label: 'Elementy nagłówka',
-              labels: {
-                plural: 'Pozycje menu w nagłówku',
-                singular: 'pozycję menu w nagłówku',
-              },
+              required: true,
             },
           ],
         },
-        {
-          label: 'Hero',
-          fields: [
-            {
-              name: 'heroItems',
-              type: 'array',
-              admin: {
-                components: {
-                  RowLabel: '/components/admin/DynamicRowLabel#NavigationItemRowLabel',
-                },
-              },
-              fields: createLinkFields(),
-              label: 'Elementy Hero',
-              labels: {
-                plural: 'Pozycje menu w sekcji Hero',
-                singular: 'pozycję menu w sekcji Hero',
-              },
-            },
-          ],
-        },
-        {
-          label: 'Stopka',
-          fields: [
-            {
-              name: 'socialItems',
-              type: 'array',
-              admin: {
-                components: {
-                  RowLabel: '/components/admin/DynamicRowLabel#SocialItemRowLabel',
-                },
-              },
-              fields: [...createLinkFields(), ...createIconFields({ required: true })],
-              label: 'Media społecznościowe',
-              labels: {
-                plural: 'Media społecznościowe',
-                singular: 'medium społecznościowe',
-              },
-            },
-            {
-              name: 'footerColumns',
-              type: 'array',
-              admin: {
-                components: {
-                  RowLabel: '/components/admin/DynamicRowLabel#FooterColumnRowLabel',
-                },
-              },
-              fields: [
-                {
-                  name: 'title',
-                  type: 'text',
-                  label: 'Tytuł kolumny',
-                  required: true,
-                },
-                {
-                  name: 'items',
-                  type: 'array',
-                  admin: {
-                    components: {
-                      RowLabel: '/components/admin/DynamicRowLabel#FooterColumnItemRowLabel',
-                    },
-                  },
-                  fields: createLinkFields(),
-                  label: 'Odnośniki',
-                  labels: {
-                    plural: 'Pozycje menu',
-                    singular: 'pozycję menu',
-                  },
-                },
-              ],
-              label: 'Kolumny linków',
-              labels: {
-                plural: 'Kolumny menu w stopce',
-                singular: 'kolumnę menu w stopce',
-              },
-            },
-          ],
-        },
+        ...createLinkFields({ includeLabel: false }),
+        ...createIconFields({ showWhenAppearanceIcon: true }),
       ],
+      label: 'Elementy nagłówka',
+      labels: {
+        plural: 'Pozycje menu w nagłówku',
+        singular: 'pozycję',
+      },
     },
   ],
   hooks: { afterChange: [invalidateNavigationAfterChange] },
-  label: 'Menu',
+  label: 'Nagłówek',
 }

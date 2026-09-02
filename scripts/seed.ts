@@ -5,7 +5,7 @@ import { getPayload } from 'payload'
 
 import config from '../src/payload.config'
 import type {
-  ClubSection,
+  HomepageSection,
   Media,
   Navigation,
   Page,
@@ -174,6 +174,31 @@ async function findOrCreateMedia(seedPost: SeedPost, author: User): Promise<Medi
   })
 }
 
+async function findOrCreateSiteLogo(author: User): Promise<Media> {
+  const existingMedia = await payload.find({
+    collection: 'media',
+    depth: 0,
+    limit: 1,
+    overrideAccess: true,
+    pagination: false,
+    where: { filename: { equals: 'logo-color.webp' } },
+  })
+
+  if (existingMedia.docs[0]) {
+    return existingMedia.docs[0]
+  }
+
+  return payload.create({
+    collection: 'media',
+    data: {
+      alt: 'Logo Wrocławskiego Klubu Fantastyki',
+      uploadedBy: author.id,
+    },
+    filePath: path.resolve('public/assets/logo-color.webp'),
+    overrideAccess: true,
+  })
+}
+
 async function ensurePost(seedPost: SeedPost, author: User, media: Media): Promise<void> {
   const existingPosts = await payload.find({
     collection: 'posts',
@@ -299,55 +324,12 @@ async function ensureBlogPage(author: User): Promise<Page> {
   })
 }
 
-async function ensureClubSection({
-  backgroundImage,
-  displayOrder,
-  name,
-  status,
-}: {
-  backgroundImage?: Media
-  displayOrder: number
-  name: string
-  status: NonNullable<ClubSection['_status']>
-}): Promise<void> {
-  const slug = name.toLocaleLowerCase('pl')
-  const existingSections = await payload.find({
-    collection: 'club-sections',
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-    pagination: false,
-    where: { slug: { equals: slug } },
-  })
-
-  if (existingSections.docs[0]) {
-    return
-  }
-
-  await payload.create({
-    collection: 'club-sections',
-    data: {
-      _status: status,
-      backgroundImage: backgroundImage?.id,
-      displayOrder,
-      name,
-      slug,
-    },
-    draft: status === 'draft',
-    overrideAccess: true,
-  })
-}
-
-async function ensureNavigation(aboutPage: Page, blogPage: Page): Promise<void> {
+async function ensureNavigation(aboutPage: Page, blogPage: Page, logo: Media): Promise<void> {
   const navigation = await payload.findGlobal({
     slug: 'navigation',
     depth: 0,
     overrideAccess: true,
   })
-
-  if (navigation.headerItems?.length) {
-    return
-  }
 
   const headerItems: NonNullable<Navigation['headerItems']> = [
     {
@@ -366,7 +348,35 @@ async function ensureNavigation(aboutPage: Page, blogPage: Page): Promise<void> 
 
   await payload.updateGlobal({
     slug: 'navigation',
-    data: { headerItems },
+    data: {
+      headerItems: navigation.headerItems?.length ? navigation.headerItems : headerItems,
+      logo: navigation.logo || logo.id,
+    },
+    overrideAccess: true,
+  })
+}
+
+async function ensureHomepageGroups(backgroundImage?: Media): Promise<void> {
+  const homepageSections = await payload.findGlobal({
+    slug: 'homepage-sections',
+    depth: 0,
+    overrideAccess: true,
+  })
+
+  if (homepageSections.groups?.length) {
+    return
+  }
+
+  await payload.updateGlobal({
+    slug: 'homepage-sections',
+    data: {
+      groups: [
+        {
+          backgroundImage: backgroundImage?.id,
+          name: 'RPG',
+        },
+      ],
+    } satisfies Partial<HomepageSection>,
     overrideAccess: true,
   })
 }
@@ -386,18 +396,9 @@ try {
 
   const aboutPage = await ensureAboutPage(author)
   const blogPage = await ensureBlogPage(author)
-  await ensureNavigation(aboutPage, blogPage)
-  await ensureClubSection({
-    backgroundImage: rpgBackgroundImage,
-    displayOrder: 10,
-    name: 'RPG',
-    status: 'published',
-  })
-  await ensureClubSection({
-    displayOrder: 20,
-    name: 'LARP',
-    status: 'draft',
-  })
+  const siteLogo = await findOrCreateSiteLogo(author)
+  await ensureNavigation(aboutPage, blogPage, siteLogo)
+  await ensureHomepageGroups(rpgBackgroundImage)
 
   await payload.updateGlobal({
     slug: 'site-settings',
@@ -407,7 +408,15 @@ try {
     },
   })
 
-  payload.logger.info('Seed completed: site settings, navigation, pages, posts and club sections')
+  await payload.updateGlobal({
+    slug: 'footer',
+    data: {
+      copyright: createLexicalDocument(['© 2026 Wrocławski Klub Fantastyki']),
+    },
+    overrideAccess: true,
+  })
+
+  payload.logger.info('Seed completed: homepage settings, navigation, pages, posts and groups')
 } finally {
   await payload.destroy()
 }

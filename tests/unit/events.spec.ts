@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs'
+
 import type { Field } from 'payload'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 import type { Event } from '@/payload-types'
@@ -18,6 +22,7 @@ import {
   normalizeGoogleMapsEmbedField,
   validateGoogleMapsEmbed,
 } from '@/modules/events/map-embed'
+import { GoogleMapEmbed } from '@/components/maps/GoogleMapEmbed'
 import { formatEventDate } from '@/modules/events/presentation'
 
 function flattenFields(fields: Field[]): Field[] {
@@ -257,6 +262,18 @@ describe('events model', () => {
 })
 
 describe('Google Maps embed sanitization', () => {
+  it('fills the complete map preview container in the admin form', () => {
+    const markup = renderToStaticMarkup(
+      createElement(GoogleMapEmbed, { src: 'https://www.google.com/maps/embed?pb=test' }),
+    )
+    const adminField = readFileSync('src/components/admin/GoogleMapEmbedField.tsx', 'utf8')
+
+    expect(markup).toContain('width:100%')
+    expect(markup).toContain('height:100%')
+    expect(adminField).toContain("width: '100%'")
+    expect(adminField).not.toContain('maxWidth')
+  })
+
   it('extracts a permitted iframe source', () => {
     expect(
       normalizeGoogleMapsEmbed('<iframe src="https://www.google.com/maps/embed?pb=test"></iframe>'),

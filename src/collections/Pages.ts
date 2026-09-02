@@ -77,9 +77,13 @@ export const Pages: CollectionConfig = {
     },
     defaultColumns: ['fullTitle', 'slug', '_status', 'publishedAt', 'updatedAt'],
     group: 'Treści',
-    listSearchableFields: ['fullTitle', 'title', 'slug'],
+    listSearchableFields: ['fullTitle', 'title', 'slug', 'listingExcerpt'],
     useAsTitle: 'fullTitle',
+    pagination: {
+      limits: [10, 25, 50]
+    },
   },
+  defaultSort: 'fullTitle',
   fields: [
     {
       type: 'tabs',

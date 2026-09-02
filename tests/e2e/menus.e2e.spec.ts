@@ -1,15 +1,25 @@
 import { expect, test } from '@playwright/test'
-import { getPayload, type Payload } from 'payload'
+import { getPayload } from 'payload'
 import sharp from 'sharp'
 
 import config from '../../src/payload.config.js'
-import type { ClubSection, Media, Navigation, SiteSetting } from '../../src/payload-types.js'
+import type {
+  Footer,
+  HomepageHero,
+  HomepageSection,
+  Media,
+  Navigation,
+  SiteSetting,
+} from '../../src/payload-types.js'
 
 import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
 let originalNavigation: Navigation
 let originalSiteSettings: SiteSetting
+let originalHomepageHero: HomepageHero
+let originalHomepageSections: HomepageSection
+let originalFooter: Footer
 let heroMedia: Media
 
 test.beforeAll(async ({ browser }) => {
@@ -21,6 +31,21 @@ test.beforeAll(async ({ browser }) => {
   })
   originalSiteSettings = await payload.findGlobal({
     slug: 'site-settings',
+    depth: 0,
+    overrideAccess: true,
+  })
+  originalHomepageHero = await payload.findGlobal({
+    slug: 'homepage-hero',
+    depth: 0,
+    overrideAccess: true,
+  })
+  originalHomepageSections = await payload.findGlobal({
+    slug: 'homepage-sections',
+    depth: 0,
+    overrideAccess: true,
+  })
+  originalFooter = await payload.findGlobal({
+    slug: 'footer',
     depth: 0,
     overrideAccess: true,
   })
@@ -55,35 +80,38 @@ test.beforeAll(async ({ browser }) => {
   })
   const page = await browser.newPage()
   await login({ page, user: editorTestUser })
-  await deleteTestClubSections(page, payload)
-  await createTestClubSection(page, {
-    _status: 'published',
-    displayOrder: 1,
-    menuItems: [
+  await updateGlobal(page, 'site-settings', { siteName: 'E2E Klub Fantastyki' })
+  await updateGlobal(page, 'navigation', {
+    ...createTestNavigation(aboutPage.id),
+    logo: originalNavigation.logo,
+  })
+  await updateGlobal(page, 'homepage-hero', {
+    image: heroMedia.id,
+    items: createTestHeroItems(),
+    title: createRichText('E2E Hero', 2),
+  })
+  await updateGlobal(page, 'homepage-sections', {
+    eventsTitle: 'E2E Wydarzenia',
+    groups: [
       {
-        iconSource: 'system',
-        label: 'Sesje',
-        systemIcon: 'dice',
-        targetType: 'custom',
-        customAddress: 'blog',
-        customScheme: 'path',
+        backgroundImage: heroMedia.id,
+        menuItems: [
+          {
+            customAddress: 'blog',
+            customScheme: 'path',
+            iconSource: 'system',
+            label: 'Sesje',
+            systemIcon: 'dice',
+            targetType: 'custom',
+          },
+        ],
+        name: 'E2E RPG',
       },
     ],
-    name: 'E2E RPG',
-    slug: 'e2e-rpg',
+    newsTitle: 'E2E Aktualności',
+    sectionsTitle: 'E2E Sekcje',
   })
-  await createTestClubSection(
-    page,
-    {
-      _status: 'draft',
-      displayOrder: 2,
-      name: 'E2E LARP',
-      slug: 'e2e-larp',
-    },
-    true,
-  )
-  await updateGlobal(page, 'site-settings', { heroImage: heroMedia.id })
-  await updateGlobal(page, 'navigation', createTestNavigation(aboutPage.id))
+  await updateGlobal(page, 'footer', createTestFooter(aboutPage.id))
   await page.close()
 })
 
@@ -91,28 +119,57 @@ test.afterAll(async ({ browser }) => {
   const payload = await getPayload({ config })
   const page = await browser.newPage()
   await login({ page, user: editorTestUser })
-  await updateGlobal(page, 'site-settings', { heroImage: originalSiteSettings.heroImage })
+  await updateGlobal(page, 'site-settings', {
+    contactEmail: originalSiteSettings.contactEmail,
+    siteDescription: originalSiteSettings.siteDescription,
+    siteName: originalSiteSettings.siteName,
+  })
   await updateGlobal(page, 'navigation', {
-    footerColumns: originalNavigation.footerColumns,
     headerItems: originalNavigation.headerItems,
-    heroItems: originalNavigation.heroItems,
-    socialItems: originalNavigation.socialItems,
+    logo: originalNavigation.logo,
+  })
+  await updateGlobal(page, 'homepage-hero', {
+    content: originalHomepageHero.content,
+    image: originalHomepageHero.image,
+    items: originalHomepageHero.items,
+    title: originalHomepageHero.title,
+  })
+  await updateGlobal(page, 'homepage-sections', {
+    eventSlideLimit: originalHomepageSections.eventSlideLimit,
+    eventsContent: originalHomepageSections.eventsContent,
+    eventsTitle: originalHomepageSections.eventsTitle,
+    eventWindowWeeks: originalHomepageSections.eventWindowWeeks,
+    groups: originalHomepageSections.groups,
+    newsTitle: originalHomepageSections.newsTitle,
+    postCount: originalHomepageSections.postCount,
+    sectionsTitle: originalHomepageSections.sectionsTitle,
+  })
+  await updateGlobal(page, 'footer', {
+    columns: originalFooter.columns,
+    contactHeading: originalFooter.contactHeading,
+    content: originalFooter.content,
+    copyright: originalFooter.copyright,
+    socialItems: originalFooter.socialItems,
   })
 
   await payload.delete({ collection: 'media', id: heroMedia.id, overrideAccess: true })
-  await deleteTestClubSections(page, payload)
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'E2E RPG' })).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'E2E LARP' })).toHaveCount(0)
   await page.close()
 })
 
-test('renders editable menus and only published club sections on the home page', async ({
-  page,
-}) => {
+test('renders editable menus and configured groups on the home page', async ({ page }) => {
   await page.goto('/')
 
   await expect(page.locator('.homeHeroImage')).toHaveAttribute('src', /e2e-home-hero\.png/)
+  await expect(page.locator('.siteBrand img')).toHaveAttribute('src', /logo-color\.webp/)
+  await expect(
+    page.getByRole('link', { name: /E2E Klub Fantastyki — strona główna/ }),
+  ).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'E2E Hero' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'E2E Aktualności' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'E2E Sekcje' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Główna nawigacja' })).toContainText(
     'Aktualności',
   )
@@ -149,59 +206,8 @@ test('keeps the global header and footer on blog and CMS pages', async ({ page }
   }
 })
 
-type TestClubSection = Pick<ClubSection, '_status' | 'displayOrder' | 'name' | 'slug'> &
-  Partial<Pick<ClubSection, 'menuItems'>>
-
-async function createTestClubSection(
-  page: import('@playwright/test').Page,
-  data: TestClubSection,
-  draft = false,
-): Promise<void> {
-  const result = await page.evaluate(
-    async ({ data, draft }) => {
-      const response = await fetch(`/api/club-sections${draft ? '?draft=true' : ''}`, {
-        body: JSON.stringify(data),
-        headers: { 'content-type': 'application/json' },
-        method: 'POST',
-      })
-      return { body: await response.text(), ok: response.ok }
-    },
-    { data, draft },
-  )
-
-  expect(result.ok, result.body).toBe(true)
-}
-
-async function deleteTestClubSections(
-  page: import('@playwright/test').Page,
-  payload: Payload,
-): Promise<void> {
-  const sections = await payload.find({
-    collection: 'club-sections',
-    depth: 0,
-    overrideAccess: true,
-    pagination: false,
-    where: { slug: { in: ['e2e-rpg', 'e2e-larp'] } },
-  })
-
-  for (const section of sections.docs) {
-    const result = await page.evaluate(async (sectionID) => {
-      const response = await fetch(`/api/club-sections/${sectionID}`, { method: 'DELETE' })
-      return { body: await response.text(), ok: response.ok }
-    }, section.id)
-
-    expect(result.ok, result.body).toBe(true)
-  }
-}
-
 function createTestNavigation(aboutPageID: number): Partial<Navigation> {
   return {
-    footerColumns: [
-      {
-        items: [{ label: 'O nas', page: aboutPageID, targetType: 'page' }],
-        title: 'Nawigacja',
-      },
-    ],
     headerItems: [
       {
         appearance: 'link',
@@ -226,14 +232,29 @@ function createTestNavigation(aboutPageID: number): Partial<Navigation> {
         targetType: 'page',
       },
     ],
-    heroItems: [
+  }
+}
+
+function createTestHeroItems(): NonNullable<HomepageHero['items']> {
+  return [
+    {
+      customAddress: 'blog',
+      customScheme: 'path',
+      label: 'Gry RPG',
+      targetType: 'custom',
+    },
+  ]
+}
+
+function createTestFooter(aboutPageID: number): Partial<Footer> {
+  return {
+    columns: [
       {
-        customAddress: 'blog',
-        customScheme: 'path',
-        label: 'Gry RPG',
-        targetType: 'custom',
+        items: [{ label: 'O nas', page: aboutPageID, targetType: 'page' }],
+        title: 'Nawigacja',
       },
     ],
+    contactHeading: 'E2E Kontakt',
     socialItems: [
       {
         customAddress: 'slack.example.invalid',
@@ -249,8 +270,13 @@ function createTestNavigation(aboutPageID: number): Partial<Navigation> {
 
 async function updateGlobal(
   page: import('@playwright/test').Page,
-  slug: 'navigation' | 'site-settings',
-  data: Partial<Navigation> | Partial<SiteSetting>,
+  slug: 'footer' | 'homepage-hero' | 'homepage-sections' | 'navigation' | 'site-settings',
+  data:
+    | Partial<Footer>
+    | Partial<HomepageHero>
+    | Partial<HomepageSection>
+    | Partial<Navigation>
+    | Partial<SiteSetting>,
 ): Promise<void> {
   const result = await page.evaluate(
     async ({ data, slug }) => {
@@ -265,4 +291,38 @@ async function updateGlobal(
   )
 
   expect(result.ok, result.body).toBe(true)
+}
+
+function createRichText(text: string, format = 0): HomepageHero['title'] {
+  return {
+    root: {
+      children: [
+        {
+          children: [
+            {
+              detail: 0,
+              format,
+              mode: 'normal',
+              style: '',
+              text,
+              type: 'text',
+              version: 1,
+            },
+          ],
+          direction: 'ltr',
+          format: '',
+          indent: 0,
+          textFormat: 0,
+          textStyle: '',
+          type: 'paragraph',
+          version: 1,
+        },
+      ],
+      direction: 'ltr',
+      format: '',
+      indent: 0,
+      type: 'root',
+      version: 1,
+    },
+  }
 }

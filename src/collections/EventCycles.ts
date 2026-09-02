@@ -64,10 +64,13 @@ export const EventCycles: CollectionConfig = {
         ],
       },
     },
-    defaultColumns: ['title', 'slug', '_status', 'publishedAt'],
+    defaultColumns: ['title', 'slug', 'category', 'tags', '_status', 'publishedAt'],
     group: 'Treści',
     listSearchableFields: ['title', 'slug', 'excerpt'],
     useAsTitle: 'title',
+    pagination: {
+      limits: [10, 25, 50]
+    },
   },
   endpoints: [createEventFromCycleEndpoint],
   fields: [

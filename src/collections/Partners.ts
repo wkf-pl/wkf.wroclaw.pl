@@ -39,6 +39,9 @@ export const Partners: CollectionConfig = {
     group: 'Klubowe',
     listSearchableFields: ['name', 'slug', 'excerpt'],
     useAsTitle: 'name',
+    pagination: {
+      limits: [10, 25, 50]
+    },
   },
   fields: [
     {

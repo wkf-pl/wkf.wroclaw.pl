@@ -39,6 +39,7 @@ export const ClubSections: CollectionConfig = {
   admin: {
     defaultColumns: ['name', 'displayOrder', '_status', 'updatedAt'],
     group: 'Klubowe',
+    hidden: true,
     listSearchableFields: ['name', 'slug'],
     useAsTitle: 'name',
   },
