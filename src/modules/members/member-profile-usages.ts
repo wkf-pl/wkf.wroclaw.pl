@@ -54,6 +54,8 @@ const resolvePageBlocks: MemberProfileUsageResolver = async ({ id, payload }) =>
     },
     sort: 'title',
     where: {
+      // Payload stores leaf blocks from top-level layouts and column layouts in the same
+      // block table. The internal path differs, but this relationship path covers both.
       'layout.entries.profile': {
         equals: id,
       },

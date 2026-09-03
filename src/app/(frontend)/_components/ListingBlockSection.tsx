@@ -1,39 +1,47 @@
 import { redirect } from 'next/navigation'
 
-import type { DocumentsBlock } from '@/payload-types'
+import type { Event, EventCycle, ListingBlock, Page, Partner, Post } from '@/payload-types'
 import { getRelationshipId } from '@/lib/relationships'
 import { createBlockParameterSuffix } from '@/modules/content/block-parameter-name'
 import {
-  findDocumentListing,
-  type DocumentListingSort,
-  type DocumentListingView,
-} from '@/modules/documents/document-listing'
+  findPublicContent,
+  type TaxonomizableCollectionSlug,
+} from '@/modules/content/content-listing'
 
+import { ContentList } from './ContentList'
 import { ContentPagination, createPaginatedURL, getRequestedPage } from './ContentPagination'
-import { DocumentItems } from './DocumentList'
 
-export async function DocumentBlockSection({
+type ContentDocument = Event | EventCycle | Page | Partner | Post
+
+export async function ListingBlockSection({
   block,
   blockPath,
+  document,
   pathname,
   searchParams,
 }: {
-  block: DocumentsBlock
+  block: ListingBlock
   blockPath: string
+  document: ContentDocument
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
 }) {
   const parameterSuffix = createBlockParameterSuffix(block.id, blockPath)
-  const parameterName = `documents_${parameterSuffix}`
+  const parameterName = `listing_${parameterSuffix}`
   const requestedPage = block.pagination ? getRequestedPage(searchParams[parameterName]) : 1
-  const result = await findDocumentListing({
+  const parentId = getListingParentId(block, document)
+  const result = await findPublicContent({
     categoryId: getRelationshipId(block.category),
-    manualDocuments: getManualDocuments(block),
+    eventCycleId:
+      getRelationshipId(block.eventCycle) ??
+      ('calendarFeedKey' in document ? document.id : undefined),
+    eventTimeFilter: block.eventTimeFilter ?? 'all',
     page: requestedPage,
     pageSize: block.pageSize,
     pagination: Boolean(block.pagination),
-    selectionMode: block.selectionMode,
-    sort: block.sort as DocumentListingSort,
+    parentId,
+    sort: block.sort,
+    sources: block.sources as TaxonomizableCollectionSlug[],
     tagId: getRelationshipId(block.tag),
   })
 
@@ -42,13 +50,9 @@ export async function DocumentBlockSection({
   }
 
   return (
-    <section className="documentsBlock">
+    <section className="listingBlock">
       {block.heading ? <h2 className="listingBlockHeading">{block.heading}</h2> : null}
-      <DocumentItems
-        documents={result.items}
-        emptyMessage={block.emptyMessage}
-        view={block.view as DocumentListingView}
-      />
+      <ContentList emptyMessage={block.emptyMessage} items={result.items} view={block.view} />
       {block.pagination ? (
         <ContentPagination
           currentPage={result.page}
@@ -62,6 +66,13 @@ export async function DocumentBlockSection({
   )
 }
 
-function getManualDocuments(block: DocumentsBlock) {
-  return block.items?.map((item) => item.document) ?? []
+function getListingParentId(
+  block: ListingBlock,
+  document: Pick<ContentDocument, 'id'>,
+): number | undefined {
+  if (block.parentFilter === 'current') {
+    return document.id
+  }
+
+  return block.parentFilter === 'specific' ? getRelationshipId(block.parentPage) : undefined
 }

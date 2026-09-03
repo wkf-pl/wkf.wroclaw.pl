@@ -197,10 +197,21 @@ describe('member profiles integration', () => {
         author: owner.id,
         layout: [
           {
-            blockType: 'memberProfiles',
-            entries: [{ contextLabel: 'Prezes Zarządu', profile: profile.id }],
-            heading: 'Zarząd',
-            view: 'grid',
+            blockType: 'columnLayout',
+            columns: [
+              {
+                blocks: [
+                  {
+                    blockType: 'memberProfiles',
+                    entries: [{ contextLabel: 'Prezes Zarządu', profile: profile.id }],
+                    heading: 'Zarząd',
+                    view: 'grid',
+                  },
+                ],
+                width: 6,
+              },
+              { blocks: [], width: 6 },
+            ],
           },
         ],
         slug: 'integration-member-profile-usage',

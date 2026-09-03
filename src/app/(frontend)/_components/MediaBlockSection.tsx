@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 
 import type { AttachmentsBlock, Media, MediaGalleryBlock } from '@/payload-types'
 import { getRelationshipId } from '@/lib/relationships'
+import { createBlockParameterSuffix } from '@/modules/content/block-parameter-name'
 import { findPublicMedia, type MediaListingKind } from '@/modules/media/media-listing'
 
 import { AttachmentList } from './AttachmentList'
@@ -10,19 +11,19 @@ import { MediaGallery } from './MediaGallery'
 
 type MediaBlockSectionProperties = {
   block: AttachmentsBlock | MediaGalleryBlock
-  blockIndex: number
+  blockPath: string
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
 }
 
 export async function MediaBlockSection({
   block,
-  blockIndex,
+  blockPath,
   pathname,
   searchParams,
 }: MediaBlockSectionProperties) {
   const kind = block.blockType as MediaListingKind
-  const parameterSuffix = (block.id ?? String(blockIndex + 1)).replace(/[^a-zA-Z0-9_-]/g, '')
+  const parameterSuffix = createBlockParameterSuffix(block.id, blockPath)
   const parameterName = `${kind}_${parameterSuffix}`
   const requestedPage = block.pagination ? getRequestedPage(searchParams[parameterName]) : 1
   const result = await findPublicMedia({

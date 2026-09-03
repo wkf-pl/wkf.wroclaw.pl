@@ -187,4 +187,37 @@ describe('media blocks', () => {
       }),
     )
   })
+
+  it('validates manual galleries nested in columns and Cycle defaults', async () => {
+    const find = vi.fn().mockResolvedValue({ docs: [{ id: 7, mimeType: 'application/pdf' }] })
+
+    await expect(
+      validateMediaBlocks({
+        data: {
+          eventDefaults: {
+            layout: [
+              {
+                blockType: 'columnLayout',
+                columns: [
+                  {
+                    blocks: [
+                      {
+                        blockType: 'mediaGallery',
+                        items: [{ media: 7 }],
+                        selectionMode: 'manual',
+                      },
+                    ],
+                    width: 6,
+                  },
+                  { blocks: [], width: 6 },
+                ],
+              },
+            ],
+          },
+        },
+        req: { payload: { find } },
+      } as never),
+    ).rejects.toMatchObject({ status: 400 })
+    expect(find).toHaveBeenCalledTimes(1)
+  })
 })

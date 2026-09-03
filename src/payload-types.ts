@@ -284,7 +284,13 @@ export interface Page {
    */
   listingExcerpt?: string | null;
   layout: (
-    RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
+    | RichTextBlock
+    | ListingBlock
+    | MediaGalleryBlock
+    | DocumentsBlock
+    | AttachmentsBlock
+    | MemberProfilesBlock
+    | ColumnLayoutBlock
   )[];
   seo?: {
     /**
@@ -422,7 +428,13 @@ export interface Post {
   relatedEvents?: (number | Event)[] | null;
   relatedEventCycles?: (number | EventCycle)[] | null;
   layout: (
-    RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
+    | RichTextBlock
+    | ListingBlock
+    | MediaGalleryBlock
+    | DocumentsBlock
+    | AttachmentsBlock
+    | MemberProfilesBlock
+    | ColumnLayoutBlock
   )[];
   seo?: {
     /**
@@ -462,7 +474,13 @@ export interface Event {
   tagline?: string | null;
   excerpt: string;
   layout: (
-    RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
+    | RichTextBlock
+    | ListingBlock
+    | MediaGalleryBlock
+    | DocumentsBlock
+    | AttachmentsBlock
+    | MemberProfilesBlock
+    | ColumnLayoutBlock
   )[];
   timeMode: 'timed' | 'allDay';
   eventStatus: 'scheduled' | 'cancelled' | 'postponed' | 'rescheduled';
@@ -565,7 +583,13 @@ export interface EventCycle {
   tagline?: string | null;
   excerpt: string;
   layout: (
-    RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
+    | RichTextBlock
+    | ListingBlock
+    | MediaGalleryBlock
+    | DocumentsBlock
+    | AttachmentsBlock
+    | MemberProfilesBlock
+    | ColumnLayoutBlock
   )[];
   seo?: {
     /**
@@ -584,7 +608,13 @@ export interface EventCycle {
     tagline?: string | null;
     excerpt?: string | null;
     layout: (
-      RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
+      | RichTextBlock
+      | ListingBlock
+      | MediaGalleryBlock
+      | DocumentsBlock
+      | AttachmentsBlock
+      | MemberProfilesBlock
+      | ColumnLayoutBlock
     )[];
     category?: (number | null) | Category;
     tags?: (number | Tag)[] | null;
@@ -1030,6 +1060,22 @@ export interface MemberProfileImage {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ColumnLayoutBlock".
+ */
+export interface ColumnLayoutBlock {
+  columns: {
+    width: number;
+    blocks?:
+      | (RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock)[]
+      | null;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'columnLayout';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "partners".
  */
 export interface Partner {
@@ -1039,7 +1085,13 @@ export interface Partner {
   excerpt: string;
   website?: string | null;
   layout: (
-    RichTextBlock | ListingBlock | MediaGalleryBlock | DocumentsBlock | AttachmentsBlock | MemberProfilesBlock
+    | RichTextBlock
+    | ListingBlock
+    | MediaGalleryBlock
+    | DocumentsBlock
+    | AttachmentsBlock
+    | MemberProfilesBlock
+    | ColumnLayoutBlock
   )[];
   seo?: {
     /**
@@ -1294,6 +1346,7 @@ export interface PagesSelect<T extends boolean = true> {
         documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
+        columnLayout?: T | ColumnLayoutBlockSelect<T>;
       };
   seo?:
     | T
@@ -1438,6 +1491,30 @@ export interface MemberProfilesBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ColumnLayoutBlock_select".
+ */
+export interface ColumnLayoutBlockSelect<T extends boolean = true> {
+  columns?:
+    | T
+    | {
+        width?: T;
+        blocks?:
+          | T
+          | {
+              richText?: T | RichTextBlockSelect<T>;
+              listing?: T | ListingBlockSelect<T>;
+              mediaGallery?: T | MediaGalleryBlockSelect<T>;
+              documents?: T | DocumentsBlockSelect<T>;
+              attachments?: T | AttachmentsBlockSelect<T>;
+              memberProfiles?: T | MemberProfilesBlockSelect<T>;
+            };
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts_select".
  */
 export interface PostsSelect<T extends boolean = true> {
@@ -1455,6 +1532,7 @@ export interface PostsSelect<T extends boolean = true> {
         documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
+        columnLayout?: T | ColumnLayoutBlockSelect<T>;
       };
   seo?:
     | T
@@ -1491,6 +1569,7 @@ export interface EventsSelect<T extends boolean = true> {
         documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
+        columnLayout?: T | ColumnLayoutBlockSelect<T>;
       };
   timeMode?: T;
   eventStatus?: T;
@@ -1586,6 +1665,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
         documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
+        columnLayout?: T | ColumnLayoutBlockSelect<T>;
       };
   seo?:
     | T
@@ -1610,6 +1690,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
               documents?: T | DocumentsBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
               memberProfiles?: T | MemberProfilesBlockSelect<T>;
+              columnLayout?: T | ColumnLayoutBlockSelect<T>;
             };
         category?: T;
         tags?: T;
@@ -1881,6 +1962,7 @@ export interface PartnersSelect<T extends boolean = true> {
         documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
+        columnLayout?: T | ColumnLayoutBlockSelect<T>;
       };
   seo?:
     | T
