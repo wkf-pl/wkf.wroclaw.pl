@@ -4,6 +4,7 @@ import type { CollectionConfig, Field } from 'payload'
 import { describe, expect, it } from 'vitest'
 
 import { AttachmentsBlock, MediaGalleryBlock } from '@/blocks/MediaListing'
+import { ColumnLayoutBlock } from '@/blocks/ColumnLayout'
 import { DocumentsBlock } from '@/blocks/Documents'
 import { MemberProfilesBlock } from '@/blocks/MemberProfiles'
 import { RichTextBlock } from '@/blocks/RichText'
@@ -81,6 +82,7 @@ describe('page configuration', () => {
       DocumentsBlock.admin?.images?.thumbnail,
       AttachmentsBlock.admin?.images?.thumbnail,
       MemberProfilesBlock.admin?.images?.thumbnail,
+      ColumnLayoutBlock.admin?.images?.thumbnail,
     ]).toEqual([
       {
         alt: 'Schematyczna ikona dokumentu z tekstem i piórem',
@@ -105,6 +107,10 @@ describe('page configuration', () => {
       {
         alt: 'Schematyczna ikona dwóch kart profili osób',
         url: '/assets/block-thumbnails/member-profiles.png',
+      },
+      {
+        alt: 'Schematyczna ikona układu kolumnowego',
+        url: '/assets/block-thumbnails/column-layout.png',
       },
     ])
   })

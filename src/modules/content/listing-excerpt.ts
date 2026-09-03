@@ -1,5 +1,7 @@
 import type { CollectionBeforeChangeHook } from 'payload'
 
+import { walkContentLeafBlocks } from './walk-content-leaf-blocks'
+
 const listingExcerptMaximumLength = 500
 
 function collectText(value: unknown): string {
@@ -24,11 +26,9 @@ function truncateAtWord(value: string, maximumLength: number): string {
 }
 
 export function extractFirstRichTextParagraph(layout: unknown): string | null {
-  if (!Array.isArray(layout)) return null
-
-  const richTextBlock = layout.find((block): block is Record<string, unknown> =>
-    Boolean(block && typeof block === 'object' && block.blockType === 'richText'),
-  )
+  const richTextBlock = [...walkContentLeafBlocks(layout)].find(
+    ({ block }) => block.blockType === 'richText',
+  )?.block
   if (!richTextBlock) return null
 
   const content = richTextBlock.content

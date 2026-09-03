@@ -1,3 +1,5 @@
+export { ColumnLayoutBlock, validateColumnLayoutColumns } from './ColumnLayout'
+export { contentLeafBlocks } from './contentLeafBlocks'
 export { ListingBlock } from './Listing'
 export { DocumentsBlock } from './Documents'
 export { AttachmentsBlock, MediaGalleryBlock } from './MediaListing'

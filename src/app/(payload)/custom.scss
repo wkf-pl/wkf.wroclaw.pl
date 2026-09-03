@@ -188,6 +188,110 @@
   white-space: nowrap;
 }
 
+.wkf-column-layout-field {
+  display: grid;
+  gap: calc(var(--base) * 2);
+}
+
+.wkf-column-layout-configurator {
+  padding: calc(var(--base) * 1.25);
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-s);
+  background: var(--theme-elevation-50);
+}
+
+.wkf-column-layout-configurator__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--base);
+
+  h3,
+  p {
+    margin: 0;
+  }
+}
+
+.wkf-column-layout-width-sum {
+  margin-top: calc(var(--base) / 4) !important;
+  color: var(--theme-elevation-600);
+}
+
+.wkf-column-layout-width-sum--invalid,
+.wkf-column-layout-validation-message {
+  color: var(--theme-error-500);
+}
+
+.wkf-column-layout-validation-message {
+  margin: calc(var(--base) / 2) 0 0;
+  font-weight: 600;
+}
+
+.wkf-column-layout-widths {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--base);
+  margin-top: var(--base);
+}
+
+.wkf-column-layout-width {
+  min-width: 0;
+  padding: var(--base);
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-s);
+  background: var(--theme-bg);
+
+  h4 {
+    margin: 0 0 calc(var(--base) / 2);
+  }
+}
+
+.wkf-column-layout-width__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--base) / 2);
+  margin-top: calc(var(--base) / 2);
+
+  .btn {
+    padding-inline: calc(var(--base) / 2);
+  }
+}
+
+.wkf-column-layout-move-arrow {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.wkf-column-layout-contents {
+  display: grid;
+  gap: calc(var(--base) * 1.5);
+}
+
+.wkf-column-layout-collapse-actions {
+  justify-content: flex-end;
+}
+
+.wkf-column-layout-content-row {
+  min-width: 0;
+}
+
+.wkf-column-layout-content {
+  min-width: 0;
+
+  &__title {
+    overflow: hidden;
+    margin: 0;
+    font-size: inherit;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .blocks-field {
+    margin-bottom: 0;
+  }
+}
+
 .wkf-taxonomy-related-content {
   margin-top: calc(var(--base) * 3);
   padding-top: calc(var(--base) * 2);

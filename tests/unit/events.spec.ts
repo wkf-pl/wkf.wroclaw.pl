@@ -202,7 +202,20 @@ describe('events model', () => {
             targetType: 'custom',
           },
         ],
-        layout: [{ blockType: 'richText', id: 'block-row' }] as never,
+        layout: [
+          {
+            blockType: 'columnLayout',
+            columns: [
+              {
+                blocks: [{ blockType: 'richText', id: 'nested-block-row' }],
+                id: 'column-row',
+                width: 6,
+              },
+              { blocks: [], id: 'empty-column-row', width: 6 },
+            ],
+            id: 'block-row',
+          },
+        ] as never,
         location: { country: 'Polska' },
         participation: 'public',
         capacityMode: 'unlimited',
@@ -219,7 +232,15 @@ describe('events model', () => {
         targetType: 'custom',
       },
     ])
-    expect(merged.layout).toEqual([{ blockType: 'richText' }])
+    expect(merged.layout).toEqual([
+      {
+        blockType: 'columnLayout',
+        columns: [
+          { blocks: [{ blockType: 'richText' }], width: 6 },
+          { blocks: [], width: 6 },
+        ],
+      },
+    ])
     expect(merged.defaultsAppliedCycle).toBe(7)
   })
 

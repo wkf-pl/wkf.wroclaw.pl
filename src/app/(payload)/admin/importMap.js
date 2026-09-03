@@ -32,6 +32,8 @@ import { DocumentsBlockLabel as DocumentsBlockLabel_d53c993bb109710411f82eaaf564
 import { AttachmentsBlockLabel as AttachmentsBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { MemberProfileEntryRowLabel as MemberProfileEntryRowLabel_d89d5b210a246731bf987576398d455f } from '../../../components/admin/MemberProfileEntryRowLabel'
 import { MemberProfilesBlockLabel as MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
+import { ColumnLayoutField as ColumnLayoutField_22a13d07a182b85ab9ac566ada2dd12f } from '../../../components/admin/ColumnLayoutField'
+import { ColumnLayoutBlockLabel as ColumnLayoutBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { HierarchyPath as HierarchyPath_6311b6033928ec6e076fdd24567b1bb0 } from '../../../components/admin/HierarchyPath'
 import { UserRelationshipCell as UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
 import { UserRelationshipField as UserRelationshipField_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
@@ -114,6 +116,8 @@ export const importMap = {
   "/components/admin/ContentBlockLabel#AttachmentsBlockLabel": AttachmentsBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/MemberProfileEntryRowLabel#MemberProfileEntryRowLabel": MemberProfileEntryRowLabel_d89d5b210a246731bf987576398d455f,
   "/components/admin/ContentBlockLabel#MemberProfilesBlockLabel": MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff,
+  "/components/admin/ColumnLayoutField#ColumnLayoutField": ColumnLayoutField_22a13d07a182b85ab9ac566ada2dd12f,
+  "/components/admin/ContentBlockLabel#ColumnLayoutBlockLabel": ColumnLayoutBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/HierarchyPath#HierarchyPath": HierarchyPath_6311b6033928ec6e076fdd24567b1bb0,
   "/components/admin/UserIdentity#UserRelationshipCell": UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53,
   "/components/admin/UserIdentity#UserRelationshipField": UserRelationshipField_0af2ec3c6a63521c7b2eedb66024da53,

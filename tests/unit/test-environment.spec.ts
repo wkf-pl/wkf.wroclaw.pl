@@ -175,4 +175,14 @@ describe('integration test environment', () => {
     expect(composeConfiguration).toContain('app_next:/app/.next-container')
     expect(eslintConfiguration).toContain("'.next*/**'")
   })
+
+  it('installs bash in the development image used by the container startup command', () => {
+    const dockerfile = readFileSync('Dockerfile', 'utf8')
+    const developmentImage = dockerfile
+      .split('FROM base AS development')[1]
+      ?.split('FROM development AS builder')[0]
+
+    expect(developmentImage).toBeDefined()
+    expect(developmentImage).toContain('apk add --no-cache bash')
+  })
 })

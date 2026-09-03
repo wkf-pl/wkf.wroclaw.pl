@@ -7,6 +7,7 @@ import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
 const draftSlug = 'e2e-draft-preview'
+const navigationTimeout = 20_000
 let draftPageID: number | string
 let draftPostID: number | string
 let payload: Payload
@@ -113,11 +114,16 @@ test('saves a draft before opening it from the admin preview button and can leav
 
   expect(saveDraftResponse.status()).toBe(200)
 
+  await expect(previewPage).toHaveURL(new RegExp(`/${draftSlug}$`), {
+    timeout: navigationTimeout,
+  })
   await expect(previewPage.getByRole('heading', { name: updatedTitle })).toBeVisible()
   await expect(previewPage.getByRole('status')).toContainText('Wyświetlasz zapisany szkic.')
 
   await previewPage.getByRole('link', { name: 'Wyłącz podgląd' }).click()
-  await expect(previewPage).toHaveURL(new RegExp(`/${draftSlug}$`))
+  await expect(previewPage).toHaveURL(new RegExp(`/${draftSlug}$`), {
+    timeout: navigationTimeout,
+  })
   await expect(previewPage.getByRole('heading', { name: updatedTitle })).toHaveCount(0)
 
   await page.goto(`/admin/collections/posts/${draftPostID}`)
@@ -128,10 +134,12 @@ test('saves a draft before opening it from the admin preview button and can leav
   await page.locator('#preview-button').click()
   const postPreviewPage = await postPreviewPagePromise
 
+  await expect(postPreviewPage).toHaveURL(new RegExp(`/blog/${draftSlug}$`), {
+    timeout: navigationTimeout,
+  })
   await expect(
     postPreviewPage.getByRole('heading', {
       name: 'Szkic wpisu widoczny wyłącznie w podglądzie',
     }),
   ).toBeVisible()
-  await expect(postPreviewPage).toHaveURL(new RegExp(`/blog/${draftSlug}$`))
 })

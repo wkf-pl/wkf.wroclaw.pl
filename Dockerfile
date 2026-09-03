@@ -18,6 +18,8 @@ FROM base AS development
 
 ENV NODE_ENV=development
 
+RUN apk add --no-cache bash
+
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 

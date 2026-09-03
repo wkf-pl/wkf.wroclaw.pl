@@ -19,6 +19,10 @@ type HeadingBlockData = {
   heading?: unknown
 }
 
+type ColumnLayoutBlockData = {
+  columns?: Array<{ width?: unknown }>
+}
+
 function getTextFromLexicalValue(value: unknown): string {
   const textParts: string[] = []
 
@@ -151,4 +155,28 @@ export function MemberProfilesBlockLabelClient() {
   return (
     <BlockLabel prefix="Wizytówki" value={typeof data.heading === 'string' ? data.heading : ''} />
   )
+}
+
+export function ColumnLayoutBlockLabelClient() {
+  const { data, path } = useRowLabel<ColumnLayoutBlockData>()
+  const liveWidthEntries = useFormFields(([fields]) =>
+    Object.entries(fields)
+      .flatMap(([fieldPath, field]) => {
+        const match = fieldPath.match(
+          new RegExp(`^${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.columns\\.(\\d+)\\.width$`),
+        )
+        return match && typeof field.value === 'number'
+          ? [{ index: Number(match[1]), width: field.value }]
+          : []
+      })
+      .sort((left, right) => left.index - right.index)
+      .map(({ index, width }) => [index, width] as const),
+  )
+  const rowWidths = Array.isArray(data.columns)
+    ? data.columns.flatMap((column) => (typeof column.width === 'number' ? [column.width] : []))
+    : []
+  const widths = liveWidthEntries.length ? liveWidthEntries.map(([, width]) => width) : rowWidths
+  const value = widths.length ? widths.map((width) => `${width}/12`).join(' + ') : ''
+
+  return <BlockLabel prefix="Układ kolumnowy" value={value} />
 }

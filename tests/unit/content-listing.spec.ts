@@ -88,6 +88,37 @@ describe('content listing', () => {
     expect(excerpt).not.toMatch(/\s$/)
   })
 
+  it('extracts the first rich-text paragraph from columns in reading order', () => {
+    expect(
+      extractFirstRichTextParagraph([
+        {
+          blockType: 'columnLayout',
+          columns: [
+            { blocks: [{ blockType: 'mediaGallery' }], width: 6 },
+            {
+              blocks: [
+                {
+                  blockType: 'richText',
+                  content: {
+                    root: {
+                      children: [
+                        {
+                          children: [{ text: 'Opis wewnątrz prawej kolumny' }],
+                          type: 'paragraph',
+                        },
+                      ],
+                    },
+                  },
+                },
+              ],
+              width: 6,
+            },
+          ],
+        },
+      ]),
+    ).toBe('Opis wewnątrz prawej kolumny')
+  })
+
   it('fills a blank excerpt only when publishing', () => {
     const layout = [
       {
