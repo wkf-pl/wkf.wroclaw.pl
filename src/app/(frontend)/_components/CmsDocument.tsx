@@ -10,10 +10,14 @@ type CmsDocumentProperties = {
 export function CmsDocument({ document, searchParams }: CmsDocumentProperties) {
   return (
     <CmsPageDocument
+      breadcrumbs={[
+        { label: 'Strona główna', url: '/' },
+        { label: 'Aktualności', url: '/blog' },
+        { label: document.title, url: null },
+      ]}
       document={document}
       pathname={`/blog/${document.slug}`}
       searchParams={searchParams}
-      showBlogEyebrow
     />
   )
 }

@@ -120,8 +120,12 @@ export default async function EventCyclePage({ params, searchParams }: Propertie
       <StructuredData value={createEventCycleStructuredData(cycle)} />
       <CmsPageDocument
         afterBlocks={related}
+        breadcrumbs={[
+          { label: 'Strona główna', url: '/' },
+          { label: 'Wydarzenia', url: '/events' },
+          { label: cycle.title, url: null },
+        ]}
         document={cycle}
-        eyebrow="Cykl wydarzeń"
         pathname={`/events/series/${cycle.slug}`}
         searchParams={await searchParams}
       />

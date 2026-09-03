@@ -4,11 +4,14 @@ import { redirect } from 'next/navigation'
 import type { Category, Tag } from '@/payload-types'
 import { findChildCategories } from '@/modules/content/category-hierarchy'
 import { findPublicContent } from '@/modules/content/content-listing'
-import { createCategoryBreadcrumbs } from '@/modules/content/public-hierarchy'
+import {
+  createCategoryBreadcrumbs,
+  type PublicBreadcrumb,
+} from '@/modules/content/public-hierarchy'
 
+import { ContentHero } from './ContentHero'
 import { ContentList } from './ContentList'
 import { ContentPagination, createPaginatedURL, getRequestedPage } from './ContentPagination'
-import { HierarchyBreadcrumbs } from './HierarchyBreadcrumbs'
 
 type TaxonomyContentPageProperties = {
   kind: 'category' | 'tag'
@@ -24,7 +27,7 @@ export async function TaxonomyContentPage({
   const requestedPage = getRequestedPage(searchParams.page)
   const pathname = `/${kind}/${taxonomy.slug}`
   const childCategories = kind === 'category' ? await findChildCategories(taxonomy.id) : []
-  const breadcrumbs = kind === 'category' ? createCategoryBreadcrumbs(taxonomy) : []
+  const categoryBreadcrumbs = kind === 'category' ? createCategoryBreadcrumbs(taxonomy) : []
   const result = await findPublicContent({
     categoryId: kind === 'category' ? taxonomy.id : undefined,
     page: requestedPage,
@@ -39,16 +42,24 @@ export async function TaxonomyContentPage({
     redirect(createPaginatedURL(pathname, searchParams, 'page', result.totalPages))
   }
 
+  const title = `${kind === 'tag' ? '#' : ''}${taxonomy.name}`
+  const taxonomyBreadcrumbs =
+    categoryBreadcrumbs.at(-1)?.label === taxonomy.name
+      ? categoryBreadcrumbs
+      : [...categoryBreadcrumbs, { label: taxonomy.name, url: null }]
+  const heroBreadcrumbs: PublicBreadcrumb[] = [
+    { label: 'Strona główna', url: '/' },
+    ...(kind === 'category' ? taxonomyBreadcrumbs : [{ label: title, url: null }]),
+  ]
+
   return (
-    <main className="contentShell">
-      <header className="listingHeader">
-        <HierarchyBreadcrumbs breadcrumbs={breadcrumbs} />
-        <p className="eyebrow">{kind === 'category' ? 'Kategoria' : 'Tag'}</p>
-        <h1>
-          {kind === 'tag' ? '#' : ''}
-          {taxonomy.name}
-        </h1>
-        {taxonomy.description ? <p>{taxonomy.description}</p> : null}
+    <main className="contentHeroPage">
+      <ContentHero
+        breadcrumbs={heroBreadcrumbs}
+        description={taxonomy.description}
+        eyebrow={kind === 'category' ? 'Kategoria' : 'Tag'}
+        title={title}
+      >
         {childCategories.length ? (
           <nav aria-label="Podkategorie" className="childCategories">
             {childCategories.map((category) => (
@@ -58,15 +69,18 @@ export async function TaxonomyContentPage({
             ))}
           </nav>
         ) : null}
-      </header>
-      <ContentList items={result.items} view="cards" />
-      <ContentPagination
-        currentPage={result.page}
-        parameterName="page"
-        pathname={pathname}
-        searchParams={searchParams}
-        totalPages={result.totalPages}
-      />
+      </ContentHero>
+
+      <div className="contentShell contentPageBody taxonomyPageBody">
+        <ContentList items={result.items} view="cards" />
+        <ContentPagination
+          currentPage={result.page}
+          parameterName="page"
+          pathname={pathname}
+          searchParams={searchParams}
+          totalPages={result.totalPages}
+        />
+      </div>
     </main>
   )
 }

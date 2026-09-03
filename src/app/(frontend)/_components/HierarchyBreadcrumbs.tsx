@@ -3,7 +3,7 @@ import Link from 'next/link'
 import type { PublicBreadcrumb } from '@/modules/content/public-hierarchy'
 
 export function HierarchyBreadcrumbs({ breadcrumbs }: { breadcrumbs: PublicBreadcrumb[] }) {
-  if (breadcrumbs.length < 2) return null
+  if (!breadcrumbs.length) return null
 
   return (
     <nav aria-label="Okruszki" className="hierarchyBreadcrumbs">

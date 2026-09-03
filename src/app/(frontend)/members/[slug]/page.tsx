@@ -10,6 +10,7 @@ import {
 } from '@/modules/members/public-members'
 import { extractMemberProfileText } from '@/modules/members/rich-text'
 
+import { ContentHero } from '../../_components/ContentHero'
 import { ContactChannelIcon } from '../../_components/ContactChannelIcon'
 
 type MemberPageProperties = {
@@ -46,88 +47,91 @@ export default async function MemberPage({ params }: MemberPageProperties) {
   const reportBody = encodeURIComponent(`Zgłaszam treść wizytówki /members/${profile.slug}`)
 
   return (
-    <main className="contentShell memberProfilePage">
-      <article className="memberProfile">
-        <header className="memberProfileHeader">
-          {/* eslint-disable-next-line @next/next/no-img-element -- profile images can use a runtime-configured Azure host. */}
-          <img
-            alt={`Zdjęcie profilowe: ${profile.publicName}`}
-            className="memberProfileImage"
-            height="512"
-            src={getMemberProfileImageURL(profile, 'profile')}
-            width="512"
-          />
-          <div>
-            <h1>{profile.publicName}</h1>
-            {profile.clubFunction ? (
-              <p className="memberContextLabel">{profile.clubFunction}</p>
-            ) : null}
-          </div>
-        </header>
+    <main className="contentHeroPage">
+      <ContentHero
+        breadcrumbs={[
+          { label: 'Strona główna', url: '/' },
+          { label: 'Klubowicze', url: '/members' },
+          { label: profile.publicName, url: null },
+        ]}
+        description={profile.clubFunction}
+        eyebrow="Wizytówka"
+        image={{
+          alt: `Zdjęcie profilowe: ${profile.publicName}`,
+          height: 512,
+          src: getMemberProfileImageURL(profile, 'profile'),
+          variant: 'portrait',
+          width: 512,
+        }}
+        title={profile.publicName}
+      />
 
-        {about && extractMemberProfileText(about) ? (
-          <section className="memberProfileSection">
-            <h2>O mnie</h2>
-            <CmsRichText data={about} />
-          </section>
-        ) : null}
-        {clubActivities && extractMemberProfileText(clubActivities) ? (
-          <section className="memberProfileSection">
-            <h2>Aktywności klubowe</h2>
-            <CmsRichText data={clubActivities} />
-          </section>
-        ) : null}
-        {profile.interests ? (
-          <section className="memberProfileSection">
-            <h2>Zainteresowania</h2>
-            <p>{profile.interests}</p>
-          </section>
-        ) : null}
-        <GameSection heading="Gram w" games={plays} />
-        <GameSection heading="Prowadzę" games={runs} />
+      <div className="contentShell contentPageBody memberProfilePage">
+        <article className="memberProfile">
+          {about && extractMemberProfileText(about) ? (
+            <section className="memberProfileSection">
+              <h2>O mnie</h2>
+              <CmsRichText data={about} />
+            </section>
+          ) : null}
+          {clubActivities && extractMemberProfileText(clubActivities) ? (
+            <section className="memberProfileSection">
+              <h2>Aktywności klubowe</h2>
+              <CmsRichText data={clubActivities} />
+            </section>
+          ) : null}
+          {profile.interests ? (
+            <section className="memberProfileSection">
+              <h2>Zainteresowania</h2>
+              <p>{profile.interests}</p>
+            </section>
+          ) : null}
+          <GameSection heading="Gram w" games={plays} />
+          <GameSection heading="Prowadzę" games={runs} />
 
-        {profile.contactTopics ? (
-          <section className="memberProfileSection">
-            <h2>W jakich sprawach można się ze mną kontaktować?</h2>
-            <p>{profile.contactTopics}</p>
-          </section>
-        ) : null}
+          {profile.contactTopics ? (
+            <section className="memberProfileSection">
+              <h2>W jakich sprawach można się ze mną kontaktować?</h2>
+              <p>{profile.contactTopics}</p>
+            </section>
+          ) : null}
 
-        {profile.contactChannels?.length ? (
-          <section className="memberProfileSection">
-            <h2>Kontakt</h2>
-            <ul className="contactChannels">
-              {profile.contactChannels.map((channel) => {
-                const label = getContactChannelLabel(channel.type)
-                return (
-                  <li key={channel.id ?? `${channel.type}-${channel.url}`}>
-                    <a
-                      aria-label={label}
-                      href={channel.url}
-                      rel={channel.type === 'email' ? undefined : 'nofollow noreferrer noopener'}
-                      target={channel.type === 'email' ? undefined : '_blank'}
-                      title={label}
-                    >
-                      <ContactChannelIcon type={channel.type} />
-                      <span className="srOnly">{label}</span>
-                    </a>
-                  </li>
-                )
-              })}
-            </ul>
-          </section>
-        ) : null}
+          {profile.contactChannels?.length ? (
+            <section className="memberProfileSection">
+              <h2>Kontakt</h2>
+              <ul className="contactChannels">
+                {profile.contactChannels.map((channel) => {
+                  const label = getContactChannelLabel(channel.type)
+                  return (
+                    <li key={channel.id ?? `${channel.type}-${channel.url}`}>
+                      <a
+                        aria-label={label}
+                        href={channel.url}
+                        rel={channel.type === 'email' ? undefined : 'nofollow noreferrer noopener'}
+                        target={channel.type === 'email' ? undefined : '_blank'}
+                        title={label}
+                      >
+                        <ContactChannelIcon type={channel.type} />
+                        <span className="srOnly">{label}</span>
+                      </a>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          ) : null}
 
-        {siteSettings.contactEmail ? (
-          <footer className="memberProfileFooter">
-            <a
-              href={`mailto:${siteSettings.contactEmail}?subject=${reportSubject}&body=${reportBody}`}
-            >
-              Zgłoś treść
-            </a>
-          </footer>
-        ) : null}
-      </article>
+          {siteSettings.contactEmail ? (
+            <footer className="memberProfileFooter">
+              <a
+                href={`mailto:${siteSettings.contactEmail}?subject=${reportSubject}&body=${reportBody}`}
+              >
+                Zgłoś treść
+              </a>
+            </footer>
+          ) : null}
+        </article>
+      </div>
     </main>
   )
 }

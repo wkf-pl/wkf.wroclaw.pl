@@ -82,7 +82,8 @@ h3,
   margin-inline: auto;
 }
 
-body:has(> .homePage) > .siteHeaderShell {
+body:has(> .homePage) > .siteHeaderShell,
+body:has(> .contentHeroPage) > .siteHeaderShell {
   position: absolute;
   z-index: 10;
   right: 0;
@@ -196,7 +197,8 @@ body:has(> .homePage) .siteHeader {
   background: linear-gradient(90deg, rgb(0 13 23 / 50%) 0%, transparent 44%);
 }
 
-.homeHero::before {
+.homeHero::before,
+.contentHero::before {
   position: absolute;
   z-index: 3;
   right: 0;
@@ -214,7 +216,8 @@ body:has(> .homePage) .siteHeader {
   pointer-events: none;
 }
 
-.homeHero::after {
+.homeHero::after,
+.contentHero::after {
   position: absolute;
   z-index: 3;
   bottom: -30px;
@@ -225,6 +228,148 @@ body:has(> .homePage) .siteHeader {
   background: radial-gradient(ellipse at top, rgb(243 163 19 / 30%), transparent 60%);
   content: '';
   pointer-events: none;
+}
+
+.contentHeroPage {
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 50% 0, rgb(15 60 86 / 24%), transparent 35rem),
+    linear-gradient(180deg, #001321, #001827 55%, #00111d);
+}
+
+.contentHero {
+  position: relative;
+  background:
+    linear-gradient(90deg, rgb(0 13 23 / 32%), transparent 46%, rgb(0 13 23 / 12%)),
+    url('/assets/content-hero-night-sky.webp') center top / cover no-repeat,
+    var(--background-deep);
+}
+
+.contentHeroInner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(24rem, 1.05fr);
+  gap: clamp(2.5rem, 6vw, 5rem);
+  align-items: center;
+  width: min(76rem, calc(100% - 3rem));
+  min-height: 34rem;
+  margin-inline: auto;
+  padding: 9.75rem 0 3rem;
+}
+
+.contentHero--withoutImage .contentHeroInner {
+  grid-template-columns: minmax(0, 52rem);
+}
+
+.contentHeroCopy {
+  min-width: 0;
+  text-shadow: 0 3px 18px rgb(0 0 0 / 52%);
+}
+
+.contentHeroBreadcrumbSlot {
+  min-height: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.contentHeroBreadcrumbSlot .hierarchyBreadcrumbs {
+  margin-bottom: 0;
+}
+
+.contentHeroEyebrow {
+  min-height: 1.2em;
+  line-height: 1.2;
+}
+
+.contentHeroCopy .hierarchyBreadcrumbs a,
+.contentHeroEyebrow a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.contentHero h1 {
+  max-width: 14ch;
+  margin-bottom: 1.4rem;
+  font-size: clamp(2.8rem, 5vw, 4.75rem);
+  font-weight: 700;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.contentHeroDescription {
+  max-width: 42rem;
+  margin-bottom: 1.25rem;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  line-height: 1.6;
+}
+
+.contentHeroMedia {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgb(243 163 19 / 82%);
+  border-radius: 0.8rem;
+  background: var(--background-deep);
+  box-shadow:
+    0 1.2rem 3rem rgb(0 0 0 / 36%),
+    0 0 1.8rem rgb(243 163 19 / 10%);
+}
+
+.contentHeroImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.contentHero--portrait .contentHeroMedia {
+  justify-self: end;
+  width: min(22rem, 100%);
+  aspect-ratio: 1;
+}
+
+.contentHeroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  align-items: center;
+  margin: 1.5rem 0 0;
+  color: #bac2c8;
+  font-size: 0.94rem;
+}
+
+.contentHeroMetaItem {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.contentHeroMetaItem + .contentHeroMetaItem::before {
+  margin-right: 0.35rem;
+  color: var(--gold);
+  content: '•';
+}
+
+.contentHeroMetaItem svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--ivory);
+}
+
+.contentHero .taxonomyLinks {
+  margin-block: 1.25rem 0;
+}
+
+.contentHero .taxonomyLinks a,
+.contentHero .childCategories a {
+  background: rgb(0 13 23 / 46%);
+  text-shadow: none;
+}
+
+.contentPageBody {
+  padding-top: clamp(4rem, 8vw, 6.5rem);
 }
 
 .heroContent {
@@ -372,11 +517,15 @@ body:has(> .homePage) .siteHeader {
   transform: scale(1.025);
 }
 
+.newsImageFallback,
+.sectionCardImageFallback {
+  background:
+    url('/assets/placeholder-nebula.webp') center / cover no-repeat,
+    #00111e;
+}
+
 .newsImageFallback {
   display: block;
-  background:
-    radial-gradient(circle at 65% 30%, rgb(243 163 19 / 30%), transparent 12rem),
-    linear-gradient(135deg, #10394d, #00111e);
 }
 
 .textArrowLink {
@@ -514,9 +663,6 @@ body:has(> .homePage) .siteHeader {
 
 .sectionCardImageFallback {
   inset: 0;
-  background:
-    radial-gradient(circle at 70% 25%, rgb(243 163 19 / 18%), transparent 40%),
-    linear-gradient(135deg, var(--panel-soft), var(--background-deep));
 }
 
 .sectionCardShade {
@@ -732,10 +878,20 @@ body:has(> .homePage) .siteHeader {
   padding-bottom: clamp(4rem, 10vw, 8rem);
 }
 
-.listingHeader,
-.cmsDocument {
+.listingHeader {
   width: min(52rem, 100%);
   margin-inline: auto;
+}
+
+.contentPageBody,
+.documentBody,
+.memberProfilePage {
+  width: min(76rem, calc(100% - 3rem));
+  margin-inline: auto;
+}
+
+.cmsDocument {
+  width: 100%;
 }
 
 .listingHeader,
@@ -744,8 +900,7 @@ body:has(> .homePage) .siteHeader {
   padding-bottom: clamp(2rem, 5vw, 4rem);
 }
 
-.listingHeader h1,
-.cmsDocument h1 {
+.listingHeader h1 {
   max-width: 16ch;
   margin-bottom: 1.25rem;
   font-size: clamp(2.7rem, 7vw, 5.5rem);
@@ -773,17 +928,6 @@ body:has(> .homePage) .siteHeader {
 .contentMeta {
   color: #9faab2;
   font-size: 0.9rem;
-}
-
-.heroImage {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: 34rem;
-  margin-bottom: 2.5rem;
-  border: 1px solid rgb(243 163 19 / 48%);
-  border-radius: 0.75rem;
-  object-fit: cover;
 }
 
 .richText {
@@ -871,8 +1015,7 @@ body:has(> .homePage) .siteHeader {
 }
 
 .documentDetail {
-  width: min(52rem, 100%);
-  margin-inline: auto;
+  width: 100%;
 }
 
 .documentFilters {
@@ -1060,14 +1203,6 @@ body:has(> .homePage) .siteHeader {
 
 .cmsPageDocument {
   width: 100%;
-}
-
-.cmsPageDocument > .cmsDocumentHeader,
-.cmsPageDocument > .heroImage,
-.cmsPageDocument > .attachments {
-  display: block;
-  width: min(52rem, 100%);
-  margin-inline: auto;
 }
 
 .pageBlocks {
@@ -1483,6 +1618,11 @@ a.attachmentItem:hover {
 }
 
 @media (width <= 62rem) {
+  .contentHeroInner {
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.9fr);
+    gap: 2.5rem;
+  }
+
   .homeHero {
     min-height: 43rem;
     background-position: 56% top;
@@ -1541,6 +1681,32 @@ a.attachmentItem:hover {
   .siteHeader nav {
     gap: 1.2rem;
     font-size: 0.95rem;
+  }
+
+  .contentHeroInner,
+  .contentHero--withoutImage .contentHeroInner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+    width: min(100% - 2rem, 40rem);
+    min-height: 0;
+    padding: 8.5rem 0 3rem;
+  }
+
+  .contentHero h1 {
+    font-size: clamp(2.55rem, 11vw, 4rem);
+  }
+
+  .contentHeroBreadcrumbSlot {
+    margin-bottom: 1.5rem;
+  }
+
+  .contentHero--portrait .contentHeroMedia {
+    justify-self: center;
+    width: min(19rem, 82vw);
+  }
+
+  .contentHeroMetaItem + .contentHeroMetaItem::before {
+    display: none;
   }
 
   .homeHero {
@@ -1679,8 +1845,7 @@ a.attachmentItem:hover {
   }
 }
 
-.membersPage,
-.memberProfilePage {
+.membersPage {
   padding-block: 2.5rem 4rem;
 }
 
@@ -1689,8 +1854,7 @@ a.attachmentItem:hover {
   margin-bottom: 2rem;
 }
 
-.membersHeader h1,
-.memberProfile h1 {
+.membersHeader h1 {
   margin: 0 0 0.6rem;
 }
 
@@ -1819,11 +1983,17 @@ a.attachmentItem:hover {
   margin-inline: auto;
 }
 
-.pageBlocks > .richText,
 .memberProfilesBlock > h2,
 .memberProfilesBlock > .memberGrid {
   width: min(62rem, 100%);
   margin-inline: auto;
+}
+
+.pageBlocks > *,
+.pageBlocks > :is(.listingBlock, .documentsBlock, .mediaBlock, .memberProfilesBlock) > * {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
 }
 
 .memberProfilesBlock > h2 {
@@ -1833,31 +2003,6 @@ a.attachmentItem:hover {
 .memberProfile {
   max-width: 62rem;
   margin-inline: auto;
-}
-
-.memberProfileHeader {
-  display: grid;
-  grid-template-columns: minmax(11rem, 18rem) 1fr;
-  gap: 2rem;
-  align-items: center;
-  margin-bottom: 2.2rem;
-}
-
-.memberProfileImage {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1;
-  border: 2px solid var(--gold);
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--navy);
-}
-
-.memberProfileHeader p {
-  margin: 0;
-  font-size: 1.08rem;
-  line-height: 1.7;
 }
 
 .memberProfileSection {
@@ -2140,15 +2285,6 @@ a.attachmentItem:hover {
   .memberGrid-card .memberCardImage {
     height: auto;
     aspect-ratio: 2 / 1;
-  }
-
-  .memberProfileHeader {
-    grid-template-columns: 1fr;
-  }
-
-  .memberProfileImage {
-    max-width: 16rem;
-    margin-inline: auto;
   }
 }
 
