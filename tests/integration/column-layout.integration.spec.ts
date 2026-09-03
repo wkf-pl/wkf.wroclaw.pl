@@ -77,12 +77,7 @@ async function cleanup(): Promise<void> {
     overrideAccess: true,
     where: {
       slug: {
-        in: [
-          pageSlug,
-          defaultPageSlug,
-          `${pageSlug}-invalid-2-5`,
-          `${pageSlug}-invalid-2-6`,
-        ],
+        in: [pageSlug, defaultPageSlug, `${pageSlug}-invalid-2-5`, `${pageSlug}-invalid-2-6`],
       },
     },
   })

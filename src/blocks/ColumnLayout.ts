@@ -50,9 +50,7 @@ export function getColumnLayoutValidationError(value: unknown): string | undefin
   }
 
   const widthSum = columns.reduce((sum, column) => sum + Number(column.width), 0)
-  return widthSum === totalColumnWidth
-    ? undefined
-    : 'Szerokości kolumn muszą sumować się do 12.'
+  return widthSum === totalColumnWidth ? undefined : 'Szerokości kolumn muszą sumować się do 12.'
 }
 
 export const validateColumnLayoutColumns: ArrayFieldValidation = (value) =>

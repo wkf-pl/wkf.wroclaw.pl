@@ -175,9 +175,7 @@ export function ColumnLayoutBlockLabelClient() {
   const rowWidths = Array.isArray(data.columns)
     ? data.columns.flatMap((column) => (typeof column.width === 'number' ? [column.width] : []))
     : []
-  const widths = liveWidthEntries.length
-    ? liveWidthEntries.map(([, width]) => width)
-    : rowWidths
+  const widths = liveWidthEntries.length ? liveWidthEntries.map(([, width]) => width) : rowWidths
   const value = widths.length ? widths.map((width) => `${width}/12`).join(' + ') : ''
 
   return <BlockLabel prefix="Układ kolumnowy" value={value} />
