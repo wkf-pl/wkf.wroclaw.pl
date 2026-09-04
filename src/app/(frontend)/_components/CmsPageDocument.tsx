@@ -1,21 +1,30 @@
 import type { ReactNode } from 'react'
 
 import type { Event, EventCycle, Page, Partner, Post, User } from '@/payload-types'
-import { createPageBreadcrumbs } from '@/modules/content/public-hierarchy'
+import { getMediaURL } from '@/modules/media/media-url'
+import { createPageBreadcrumbs, type PublicBreadcrumb } from '@/modules/content/public-hierarchy'
 
-import { CmsImage } from './CmsImage'
+import {
+  ContentHero,
+  ContentHeroCategory,
+  ContentHeroMeta,
+  type ContentHeroImage,
+} from './ContentHero'
 import { ContentLayoutRenderer } from './ContentLayoutRenderer'
-import { HierarchyBreadcrumbs } from './HierarchyBreadcrumbs'
 import { TaxonomyLinks } from './TaxonomyLinks'
 
 type CmsPageDocumentProperties = {
   document: Event | EventCycle | Page | Partner | Post
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
-  showBlogEyebrow?: boolean
   eyebrow?: string
   afterBlocks?: ReactNode
   beforeBlocks?: ReactNode
+  breadcrumbs?: PublicBreadcrumb[]
+  heroDate?: {
+    dateTime: string
+    label: string
+  }
 }
 
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
@@ -28,50 +37,89 @@ export async function CmsPageDocument({
   document,
   pathname,
   searchParams,
-  showBlogEyebrow = false,
   eyebrow,
   afterBlocks,
   beforeBlocks,
+  breadcrumbs: providedBreadcrumbs,
+  heroDate,
 }: CmsPageDocumentProperties) {
   const authorName = getAuthorName(document.author)
   const category = 'category' in document ? document.category : undefined
   const tags = 'tags' in document ? document.tags : undefined
   const title = 'title' in document ? document.title : document.name
-  const breadcrumbs = 'breadcrumbs' in document ? await createPageBreadcrumbs(document) : []
+  const heroEyebrow =
+    'title' in document ? <ContentHeroCategory category={category} /> : eyebrow || 'Partner'
+  const breadcrumbs = await getContentBreadcrumbs(document, providedBreadcrumbs, title)
+  const image = getContentHeroImage(document.heroImage)
+  const date =
+    heroDate ??
+    (document.publishedAt
+      ? {
+          dateTime: document.publishedAt,
+          label: dateFormatter.format(new Date(document.publishedAt)),
+        }
+      : undefined)
+
   return (
-    <main className="contentShell">
+    <main className="contentHeroPage">
       <article className="cmsDocument cmsPageDocument">
-        <header className="cmsDocumentHeader">
-          <HierarchyBreadcrumbs breadcrumbs={breadcrumbs} />
-          {showBlogEyebrow || eyebrow ? <p className="eyebrow">{eyebrow || 'Blog'}</p> : null}
-          <h1>{title}</h1>
-          <TaxonomyLinks category={category} tags={tags} />
-          {document.publishedAt || authorName ? (
-            <p className="contentMeta">
-              {document.publishedAt ? (
-                <time dateTime={document.publishedAt}>
-                  {dateFormatter.format(new Date(document.publishedAt))}
-                </time>
-              ) : null}
-              {document.publishedAt && authorName ? ' · ' : null}
-              {authorName ? `Autor: ${authorName}` : null}
-            </p>
-          ) : null}
-        </header>
+        <ContentHero breadcrumbs={breadcrumbs} eyebrow={heroEyebrow} image={image} title={title}>
+          <TaxonomyLinks tags={tags} />
+          <ContentHeroMeta authorName={authorName} date={date} />
+        </ContentHero>
 
-        <CmsImage className="heroImage" media={document.heroImage} />
+        <div className="contentShell contentPageBody">
+          {beforeBlocks}
 
-        {beforeBlocks}
-
-        <ContentLayoutRenderer
-          document={document}
-          pathname={pathname}
-          searchParams={searchParams}
-        />
-        {afterBlocks}
+          <ContentLayoutRenderer
+            document={document}
+            pathname={pathname}
+            searchParams={searchParams}
+          />
+          {afterBlocks}
+        </div>
       </article>
     </main>
   )
+}
+
+async function getContentBreadcrumbs(
+  document: Event | EventCycle | Page | Partner | Post,
+  providedBreadcrumbs: PublicBreadcrumb[] | undefined,
+  title: string,
+): Promise<PublicBreadcrumb[]> {
+  if (providedBreadcrumbs) {
+    return providedBreadcrumbs
+  }
+
+  if ('breadcrumbs' in document) {
+    const pageBreadcrumbs = await createPageBreadcrumbs(document)
+    if (pageBreadcrumbs.at(-1)?.label === title) {
+      return pageBreadcrumbs
+    }
+    return [...pageBreadcrumbs, { label: title, url: null }]
+  }
+
+  return [
+    { label: 'Strona główna', url: '/' },
+    { label: title, url: null },
+  ]
+}
+
+function getContentHeroImage(
+  media: Event['heroImage'] | EventCycle['heroImage'] | Page['heroImage'],
+): ContentHeroImage | undefined {
+  const src = getMediaURL(media)
+  if (!src || !media || typeof media !== 'object') {
+    return undefined
+  }
+
+  return {
+    alt: media.alt,
+    height: media.height || undefined,
+    src,
+    width: media.width || undefined,
+  }
 }
 
 function getAuthorName(author: null | number | User): null | string {

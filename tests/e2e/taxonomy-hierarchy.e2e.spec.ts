@@ -145,11 +145,12 @@ test('shows category breadcrumbs, direct children and content from descendants',
   await page.goto(`/category/${categorySlugs[1]}`)
 
   const breadcrumbs = page.getByRole('navigation', { name: 'Okruszki' })
+  await expect(breadcrumbs.getByRole('link', { name: 'Strona główna' })).toHaveCount(0)
   await expect(breadcrumbs.getByRole('link', { name: 'E2E Gry' })).toHaveAttribute(
     'href',
     `/category/${categorySlugs[0]}`,
   )
-  await expect(breadcrumbs).toContainText('E2E RPG')
+  await expect(breadcrumbs.getByText('E2E RPG', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('navigation', { name: 'Podkategorie' })).toContainText(
     'E2E Warhammer',
   )
@@ -162,17 +163,14 @@ test('shows published page ancestors as links and unpublished ancestors as text'
   await page.goto(`/${pageSlugs[2]}`)
 
   const breadcrumbs = page.getByRole('navigation', { name: 'Okruszki' })
-  await expect(breadcrumbs.getByRole('link', { name: 'Strona główna' })).toHaveAttribute(
-    'href',
-    '/',
-  )
+  await expect(breadcrumbs.getByRole('link', { name: 'Strona główna' })).toHaveCount(0)
   await expect(breadcrumbs.getByRole('link', { name: 'E2E Klub' })).toHaveAttribute(
     'href',
     `/${pageSlugs[0]}`,
   )
   await expect(breadcrumbs).toContainText('E2E Nieopublikowany zarząd')
   await expect(breadcrumbs.getByRole('link', { name: 'E2E Nieopublikowany zarząd' })).toHaveCount(0)
-  await expect(breadcrumbs).toContainText('E2E Komisja')
+  await expect(breadcrumbs.getByText('E2E Komisja', { exact: true })).toHaveCount(0)
 })
 
 test('uses one category selector and full hierarchy paths in admin relationships', async ({

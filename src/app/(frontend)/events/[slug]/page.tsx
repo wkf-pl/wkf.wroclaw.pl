@@ -190,8 +190,13 @@ export default async function EventPage({ params, searchParams }: Properties) {
       <CmsPageDocument
         afterBlocks={cooperation}
         beforeBlocks={details}
+        breadcrumbs={[
+          { label: 'Strona główna', url: '/' },
+          { label: 'Wydarzenia', url: '/events' },
+          { label: event.title, url: null },
+        ]}
         document={event}
-        eyebrow="Wydarzenie"
+        heroDate={{ dateTime: event.startAt, label: formatEventDate(event) }}
         pathname={`/events/${event.slug}`}
         searchParams={await searchParams}
       />

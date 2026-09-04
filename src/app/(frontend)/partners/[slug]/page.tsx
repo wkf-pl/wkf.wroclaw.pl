@@ -59,6 +59,10 @@ export default async function PartnerPage({ params, searchParams }: Properties) 
       <StructuredData value={createPartnerStructuredData(partner)} />
       <CmsPageDocument
         afterBlocks={related}
+        breadcrumbs={[
+          { label: 'Strona główna', url: '/' },
+          { label: partner.name, url: null },
+        ]}
         document={partner}
         eyebrow="Partner"
         pathname={`/partners/${partner.slug}`}

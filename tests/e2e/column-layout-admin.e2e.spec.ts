@@ -309,8 +309,14 @@ async function openColumnLayoutField(
   page: import('@playwright/test').Page,
 ): Promise<import('@playwright/test').Locator> {
   await page.waitForLoadState('networkidle')
-  await page.locator('#field-layout').getByRole('button', { name: 'Pokaż wszystkie' }).click()
-  const layoutBlock = page.locator('#field-layout .blocks-field__row').first()
+  const layoutField = page.locator('#field-layout')
+  const showAllButton = layoutField
+    .locator(':scope > .blocks-field__header')
+    .getByRole('button', { name: 'Pokaż wszystkie' })
+
+  await expect(showAllButton).toHaveCount(1)
+  await showAllButton.click()
+  const layoutBlock = layoutField.locator('.blocks-field__row').first()
   const field = layoutBlock.locator('.wkf-column-layout-field')
 
   await expect(field).toBeVisible()
