@@ -95,6 +95,29 @@ describe('deployment workflows', () => {
     expect(storageTemplate).toContain('deleteRetentionPolicy')
   })
 
+  it('imports a complete staging checkpoint only after validating and backing up local data', () => {
+    const packageConfiguration = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      scripts: Record<string, string>
+    }
+    const stagingPullScript = readFileSync('scripts/pull-staging-data.sh', 'utf8')
+
+    expect(packageConfiguration.scripts['staging:pull']).toBe('bash scripts/pull-staging-data.sh')
+    expect(stagingPullScript).toContain('import_confirmation" != "IMPORT"')
+    expect(stagingPullScript).toContain('Checkpoint database checksum does not match')
+    expect(stagingPullScript).toContain('validate_downloaded_blobs')
+    expect(stagingPullScript).toContain('git merge-base --is-ancestor')
+    expect(stagingPullScript).toContain('The local Storage connection must point to Azurite')
+    expect(stagingPullScript).toContain('local-before-$rescue_timestamp-$checkpoint_name')
+    expect(stagingPullScript).toContain('Attempting automatic rollback')
+    expect(stagingPullScript).toContain('Local media count mismatch')
+    expect(stagingPullScript).toContain('run --rm --no-deps app pnpm migrate')
+    expect(stagingPullScript).toContain('TRUNCATE TABLE users_sessions, payload_locked_documents')
+    expect(stagingPullScript.indexOf('>"$local_rescue_directory/database.dump"')).toBeLessThan(
+      stagingPullScript.indexOf('destructive_import_started=true'),
+    )
+    expect(stagingPullScript).not.toMatch(/staging_storage blob (?:delete|upload)/)
+  })
+
   it('copies only production dependencies into the runtime image', () => {
     const dockerfile = readFileSync('Dockerfile', 'utf8')
 
@@ -111,6 +134,7 @@ describe('deployment workflows', () => {
       '.github/workflows/manage-staging-data.yml',
       'scripts/deploy-azure.sh',
       'scripts/manage-staging-data.sh',
+      'scripts/pull-staging-data.sh',
     ]
 
     for (const deploymentFile of deploymentFiles) {
