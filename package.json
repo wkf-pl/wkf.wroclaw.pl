@@ -19,6 +19,7 @@
     "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "seed": "cross-env NODE_OPTIONS=\"--no-deprecation --require dotenv/config\" tsx ./scripts/seed.ts",
+    "staging:pull": "bash scripts/pull-staging-data.sh",
     "prepare:integration": "tsx ./scripts/prepare-test-environment.ts",
     "prepare:e2e": "pnpm prepare:integration && cross-env DOTENV_CONFIG_OVERRIDE=true DOTENV_CONFIG_PATH=test.env NODE_OPTIONS=\"--no-deprecation --require dotenv/config\" tsx ./scripts/seed.ts",
     "preview:temporary": "bash scripts/run-temporary-preview.sh",
