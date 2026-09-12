@@ -1,6 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
 import { invalidateNavigationAfterChange } from '@/modules/cache/invalidate-public-data'
+import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 import { createIconFields, createLinkFields } from '@/modules/navigation/fields'
 
@@ -27,7 +28,7 @@ export const Navigation: GlobalConfig = {
     {
       name: 'logo',
       type: 'upload',
-      filterOptions: { mimeType: { contains: 'image/' } },
+      filterOptions: { mimeType: { in: [...webRasterImageMimeTypes] } },
       label: 'Logo',
       relationTo: 'media',
     },

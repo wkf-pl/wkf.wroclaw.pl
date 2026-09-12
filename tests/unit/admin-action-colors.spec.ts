@@ -41,7 +41,7 @@ describe('admin action colors', () => {
       /relationship--single-value__drawer-toggler[\s\S]*?color: var\(--wkf-related-link-color\)/,
     )
     expect(adminStyles).toMatch(/\.icon--edit \{\s+display: none/)
-    expect(adminStyles).toContain('mask: url("data:image/svg+xml')
+    expect(adminStyles).toContain("mask: url('/assets/icons/external-link/small.png')")
     expect(adminStyles).toMatch(
       /:is\(\.multi-value-remove, \.clear-indicator\)[\s\S]*?\.stroke \{\s+stroke-width: 2px/,
     )

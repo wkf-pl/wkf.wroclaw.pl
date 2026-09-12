@@ -1,5 +1,7 @@
 import type { Block, Field, Validate } from 'payload'
 
+import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
+
 type MediaSelectionSiblingData = {
   selectionMode?: unknown
 }
@@ -75,7 +77,9 @@ function createMediaListingFields(
         {
           name: 'media',
           type: 'upload',
-          filterOptions: imagesOnly ? { mimeType: { like: 'image/%' } } : undefined,
+          filterOptions: imagesOnly
+            ? { mimeType: { in: [...webRasterImageMimeTypes] } }
+            : undefined,
           label: 'Plik',
           relationTo: 'media',
           required: true,

@@ -1,32 +1,35 @@
-import * as migration_20260810_194314_cms_content from './20260810_194314_cms_content'
-import * as migration_20260811_173414_roles_permissions from './20260811_173414_roles_permissions'
-import * as migration_20260812_152738 from './20260812_152738'
-import * as migration_20260813_085107 from './20260813_085107'
-import * as migration_20260813_134157_user_display_name_required from './20260813_134157_user_display_name_required'
-import * as migration_20260813_141107_unique_user_display_name from './20260813_141107_unique_user_display_name'
-import * as migration_20260813_153850_slack_system_icon from './20260813_153850_slack_system_icon'
-import * as migration_20260813_203713 from './20260813_203713'
-import * as migration_20260814_103530_documents from './20260814_103530_documents'
-import * as migration_20260814_213808_member_profiles from './20260814_213808_member_profiles'
-import * as migration_20260816_003649 from './20260816_003649'
-import * as migration_20260816_010752_repair_footer_rich_text from './20260816_010752_repair_footer_rich_text'
-import * as migration_20260816_130137_posts_layout from './20260816_130137_posts_layout'
-import * as migration_20260816_150812_media_blocks from './20260816_150812_media_blocks'
-import * as migration_20260816_193058_move_footer_settings_to_site_settings from './20260816_193058_move_footer_settings_to_site_settings'
-import * as migration_20260816_205033_unified_web_permissions from './20260816_205033_unified_web_permissions'
-import * as migration_20260818_151047_events from './20260818_151047_events'
-import * as migration_20260818_151505_event_calendar_tracking from './20260818_151505_event_calendar_tracking'
-import * as migration_20260818_164834_event_cycle_default_title from './20260818_164834_event_cycle_default_title'
-import * as migration_20260818_181938_event_link_targets from './20260818_181938_event_link_targets'
-import * as migration_20260821_092652_content_listing_index from './20260821_092652_content_listing_index'
-import * as migration_20260823_001526_simplify_public_access from './20260823_001526_simplify_public_access'
-import * as migration_20260823_103700_remove_orphan_document_versions from './20260823_103700_remove_orphan_document_versions'
-import * as migration_20260823_232129 from './20260823_232129'
-import * as migration_20260824_203157 from './20260824_203157'
-import * as migration_20260826_101435_member_profile_views from './20260826_101435_member_profile_views'
-import * as migration_20260901_172430 from './20260901_172430'
-import * as migration_20260901_181553_homepage_groups_and_default_logo from './20260901_181553_homepage_groups_and_default_logo'
-import * as migration_20260903_140650_column_layout from './20260903_140650_column_layout'
+import * as migration_20260810_194314_cms_content from './20260810_194314_cms_content';
+import * as migration_20260811_173414_roles_permissions from './20260811_173414_roles_permissions';
+import * as migration_20260812_152738 from './20260812_152738';
+import * as migration_20260813_085107 from './20260813_085107';
+import * as migration_20260813_134157_user_display_name_required from './20260813_134157_user_display_name_required';
+import * as migration_20260813_141107_unique_user_display_name from './20260813_141107_unique_user_display_name';
+import * as migration_20260813_153850_slack_system_icon from './20260813_153850_slack_system_icon';
+import * as migration_20260813_203713 from './20260813_203713';
+import * as migration_20260814_103530_documents from './20260814_103530_documents';
+import * as migration_20260814_213808_member_profiles from './20260814_213808_member_profiles';
+import * as migration_20260816_003649 from './20260816_003649';
+import * as migration_20260816_010752_repair_footer_rich_text from './20260816_010752_repair_footer_rich_text';
+import * as migration_20260816_130137_posts_layout from './20260816_130137_posts_layout';
+import * as migration_20260816_150812_media_blocks from './20260816_150812_media_blocks';
+import * as migration_20260816_193058_move_footer_settings_to_site_settings from './20260816_193058_move_footer_settings_to_site_settings';
+import * as migration_20260816_205033_unified_web_permissions from './20260816_205033_unified_web_permissions';
+import * as migration_20260818_151047_events from './20260818_151047_events';
+import * as migration_20260818_151505_event_calendar_tracking from './20260818_151505_event_calendar_tracking';
+import * as migration_20260818_164834_event_cycle_default_title from './20260818_164834_event_cycle_default_title';
+import * as migration_20260818_181938_event_link_targets from './20260818_181938_event_link_targets';
+import * as migration_20260821_092652_content_listing_index from './20260821_092652_content_listing_index';
+import * as migration_20260823_001526_simplify_public_access from './20260823_001526_simplify_public_access';
+import * as migration_20260823_103700_remove_orphan_document_versions from './20260823_103700_remove_orphan_document_versions';
+import * as migration_20260823_232129 from './20260823_232129';
+import * as migration_20260824_203157 from './20260824_203157';
+import * as migration_20260826_101435_member_profile_views from './20260826_101435_member_profile_views';
+import * as migration_20260901_172430 from './20260901_172430';
+import * as migration_20260901_181553_homepage_groups_and_default_logo from './20260901_181553_homepage_groups_and_default_logo';
+import * as migration_20260903_140650_column_layout from './20260903_140650_column_layout';
+import * as migration_20260911_121201_raster_icon_library from './20260911_121201_raster_icon_library';
+import * as migration_20260911_202457 from './20260911_202457';
+import * as migration_20260911_213315_icon_library_expansion from './20260911_213315_icon_library_expansion';
 
 export const migrations = [
   {
@@ -174,4 +177,19 @@ export const migrations = [
     down: migration_20260903_140650_column_layout.down,
     name: '20260903_140650_column_layout',
   },
-]
+  {
+    up: migration_20260911_121201_raster_icon_library.up,
+    down: migration_20260911_121201_raster_icon_library.down,
+    name: '20260911_121201_raster_icon_library',
+  },
+  {
+    up: migration_20260911_202457.up,
+    down: migration_20260911_202457.down,
+    name: '20260911_202457',
+  },
+  {
+    up: migration_20260911_213315_icon_library_expansion.up,
+    down: migration_20260911_213315_icon_library_expansion.down,
+    name: '20260911_213315_icon_library_expansion'
+  },
+];

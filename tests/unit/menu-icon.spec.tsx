@@ -1,29 +1,22 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-import type { Media } from '@/payload-types'
 import { MenuIcon } from '@/app/(frontend)/_components/MenuIcon'
 
 describe('MenuIcon', () => {
-  it('renders a system SVG icon', () => {
-    const markup = renderToStaticMarkup(<MenuIcon iconSource="system" systemIcon="dice" />)
+  it('renders the medium raster variant as a CSS mask', () => {
+    const markup = renderToStaticMarkup(<MenuIcon iconName="dice" />)
 
-    expect(markup).toContain('<svg')
+    expect(markup).not.toContain('<svg')
     expect(markup).toContain('aria-hidden="true"')
+    expect(markup).toContain('/assets/icons/dice/medium.png')
+    expect(markup).toContain('data-icon-size="medium"')
   })
 
-  it('renders the Slack system icon', () => {
-    const markup = renderToStaticMarkup(<MenuIcon iconSource="system" systemIcon="slack" />)
+  it('renders another named icon with the same component contract', () => {
+    const markup = renderToStaticMarkup(<MenuIcon iconName="slack" />)
 
-    expect(markup).toContain('<svg')
-    expect(markup).toContain('fill="currentColor"')
-  })
-
-  it('renders a decorative custom image from populated media', () => {
-    const media = { id: 1, url: '/api/media/file/custom-icon.svg' } as Media
-    const markup = renderToStaticMarkup(<MenuIcon customIcon={media} iconSource="media" />)
-
-    expect(markup).toContain('src="/api/media/file/custom-icon.svg"')
-    expect(markup).toContain('alt=""')
+    expect(markup).toContain('/assets/icons/slack/medium.png')
+    expect(markup).toContain('data-icon-name="slack"')
   })
 })

@@ -52,11 +52,7 @@ export function SiteFooter({
               <nav aria-label="Media społecznościowe" className="socialLinks">
                 {socialItems.map(({ item, link }) => (
                   <Link aria-label={item.label} key={item.id} {...link}>
-                    <MenuIcon
-                      customIcon={item.customIcon}
-                      iconSource={item.iconSource}
-                      systemIcon={item.systemIcon}
-                    />
+                    <MenuIcon iconName={item.iconName} />
                   </Link>
                 ))}
               </nav>

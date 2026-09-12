@@ -148,10 +148,10 @@ resource migrationJob 'Microsoft.App/jobs@2024-03-01' = {
           name: 'migration'
           image: imageReference
           command: [
-            './node_modules/.bin/payload'
+            'pnpm'
           ]
           args: [
-            'migrate'
+            'migrate:with-media'
           ]
           env: migrationEnvironmentVariables
           resources: {

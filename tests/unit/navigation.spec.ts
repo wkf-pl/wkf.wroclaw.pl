@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Category, Document, Media, Page, Post, Tag } from '@/payload-types'
+import type { Category, Document, Page, Post, Tag } from '@/payload-types'
 import { Footer, HomepageHero, HomepageSections, Navigation } from '@/globals'
 import {
   createLinkFields,
@@ -8,17 +8,15 @@ import {
   isCustomTarget,
   isPageTarget,
   isTagTarget,
-  usesCustomIcon,
+  iconNameOptions,
   usesIconAppearance,
-  usesSystemIcon,
-  systemIconOptions,
 } from '@/modules/navigation/fields'
 import {
   buildCustomTarget,
   parseCustomTarget,
   validateCustomAddressValue,
 } from '@/modules/navigation/custom-target'
-import { getCustomIconURL, hasRenderableIcon, resolveLink } from '@/modules/navigation/links'
+import { hasRenderableIcon, resolveLink } from '@/modules/navigation/links'
 
 function findArrayField(fields: typeof Navigation.fields, name: string) {
   const result = findField(fields, name)
@@ -180,24 +178,13 @@ describe('navigation links', () => {
     ])
   })
 
-  it('lists system icons alphabetically by their admin labels', () => {
-    expect(systemIconOptions.map(({ label }) => label)).toEqual([
-      'Czas',
-      'Discord',
-      'E-mail',
-      'Facebook',
-      'Gwiazda',
-      'Instagram',
-      'Kalendarz',
-      'Kolekcja',
-      'Kość',
-      'Książka',
-      'Lokalizacja',
-      'Pionek',
-      'Recenzja',
-      'Slack',
-      'Użytkownicy',
-    ])
+  it('lists all named icons alphabetically by their admin labels', () => {
+    expect(iconNameOptions).toHaveLength(63)
+    expect(iconNameOptions.map(({ label }) => label)).toEqual(
+      [...iconNameOptions.map(({ label }) => label)].sort((first, second) =>
+        first.localeCompare(second, 'pl'),
+      ),
+    )
   })
 
   it('shows conditional target and icon fields only for the selected variants', () => {
@@ -206,8 +193,6 @@ describe('navigation links', () => {
     expect(isTagTarget(null, { targetType: 'tag' })).toBe(true)
     expect(isCustomTarget(null, { targetType: 'page' })).toBe(false)
     expect(usesIconAppearance(null, { appearance: 'icon' })).toBe(true)
-    expect(usesSystemIcon(null, { iconSource: 'system' })).toBe(true)
-    expect(usesCustomIcon(null, { iconSource: 'media' })).toBe(true)
   })
 
   it.each([
@@ -280,12 +265,9 @@ describe('navigation links', () => {
     expect(resolveLink({ post, targetType: 'post' })).toEqual({ href: '/blog/nowy-wpis' })
   })
 
-  it('recognizes only populated system or media icons', () => {
-    const media = { id: 1, url: '/api/media/file/icon.svg' } as Media
-
-    expect(getCustomIconURL(media)).toBe('/api/media/file/icon.svg')
-    expect(hasRenderableIcon({ iconSource: 'system', systemIcon: 'dice' })).toBe(true)
-    expect(hasRenderableIcon({ customIcon: media, iconSource: 'media' })).toBe(true)
-    expect(hasRenderableIcon({ customIcon: 1, iconSource: 'media' })).toBe(false)
+  it('recognizes only valid named icons', () => {
+    expect(hasRenderableIcon({ iconName: 'dice' })).toBe(true)
+    expect(hasRenderableIcon({ iconName: 'not-in-the-library' })).toBe(false)
+    expect(hasRenderableIcon({ iconName: null })).toBe(false)
   })
 })

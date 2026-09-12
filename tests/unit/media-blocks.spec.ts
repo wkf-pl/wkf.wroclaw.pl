@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
+
+import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
 import type { Field } from 'payload'
 
 import {
@@ -86,7 +88,7 @@ describe('media blocks', () => {
     }
 
     expect(items.fields[0]).toMatchObject({
-      filterOptions: { mimeType: { like: 'image/%' } },
+      filterOptions: { mimeType: { in: [...webRasterImageMimeTypes] } },
       name: 'media',
       type: 'upload',
     })

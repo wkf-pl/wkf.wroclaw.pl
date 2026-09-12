@@ -3,15 +3,14 @@ import type {
   Document,
   Event,
   EventCycle,
-  Media,
   Navigation,
   Page,
   Partner,
   Post,
   Tag,
 } from '@/payload-types'
+import { isSelectableRasterIconName } from '@/modules/icons/icon-registry'
 import { buildCustomTarget, isCustomScheme } from './custom-target'
-import { isSystemIconName } from './icon-names'
 
 export type NavigationItem = NonNullable<Navigation['headerItems']>[number]
 
@@ -96,18 +95,8 @@ export function resolvePageLink(page: null | number | Page | undefined): Resolve
   return publishedPage ? { href: `/${publishedPage.slug}` } : null
 }
 
-export function getCustomIconURL(icon: Media | null | number | undefined): string | null {
-  return icon && typeof icon === 'object' && icon.url ? icon.url : null
-}
-
-export function hasRenderableIcon(item: {
-  customIcon?: Media | null | number
-  iconSource?: 'media' | 'system' | null
-  systemIcon?: null | string
-}): boolean {
-  return item.iconSource === 'media'
-    ? Boolean(getCustomIconURL(item.customIcon))
-    : isSystemIconName(item.systemIcon)
+export function hasRenderableIcon(item: { iconName?: null | string }): boolean {
+  return isSelectableRasterIconName(item.iconName)
 }
 
 function getPublishedPage(page: null | number | Page | undefined): Page | null {

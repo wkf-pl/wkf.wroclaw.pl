@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import { RasterIcon } from '@/components/RasterIcon'
 import { documentTypeOptions, getDocumentTypeLabel } from '@/modules/documents/document-types'
 import type { Document, DocumentFile } from '@/payload-types'
 import type { DocumentListingView } from '@/modules/documents/document-listing'
@@ -120,21 +121,7 @@ function DocumentPdfLink({ document }: { document: Document }) {
       rel="noreferrer"
       target="_blank"
     >
-      <svg aria-hidden="true" viewBox="0 0 80 96">
-        <path d="M12 2h38l18 18v74H12z" fill="none" stroke="currentColor" strokeWidth="4" />
-        <path d="M50 2v20h18" fill="none" stroke="currentColor" strokeWidth="4" />
-        <text
-          fill="currentColor"
-          fontFamily="Arial, sans-serif"
-          fontSize="18"
-          fontWeight="700"
-          textAnchor="middle"
-          x="40"
-          y="65"
-        >
-          PDF
-        </text>
-      </svg>
+      <RasterIcon name="pdf" size="medium" />
     </a>
   )
 }

@@ -122,15 +122,25 @@ wait_for_migration_job() {
 
 run_migration_job() {
   local payload_command="$1"
+  local -a migration_command
+  local -a migration_arguments
   local execution_name
+
+  if [[ "$payload_command" == "migrate" ]]; then
+    migration_command=(pnpm)
+    migration_arguments=(migrate:with-media)
+  else
+    migration_command=(./node_modules/.bin/payload)
+    migration_arguments=("$payload_command")
+  fi
 
   az containerapp job update \
     --name "$migration_job_name" \
     --resource-group "$resource_group_name" \
     --container-name migration \
     --image "$target_image_reference" \
-    --command ./node_modules/.bin/payload \
-    --args "$payload_command" \
+    --command "${migration_command[@]}" \
+    --args "${migration_arguments[@]}" \
     --output none
 
   execution_name="$(az containerapp job start \

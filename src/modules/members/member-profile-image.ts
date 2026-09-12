@@ -7,5 +7,7 @@ export function getMemberProfileImage(profile: MemberProfile): MemberProfileImag
 
 export function getMemberProfileImageURL(profile: MemberProfile, size: 'card' | 'profile'): string {
   const image = getMemberProfileImage(profile)
-  return image?.sizes?.[size]?.url || getMediaURL(image) || '/assets/member-profile-placeholder.svg'
+  return (
+    image?.sizes?.[size]?.url || getMediaURL(image) || '/assets/member-profile-placeholder.webp'
+  )
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import { CmsRichText } from '@/components/CmsRichText'
+import { RasterIcon } from '@/components/RasterIcon'
 import type { HomepageSection, Post } from '@/payload-types'
 import {
   findPublishedPosts,
@@ -11,7 +12,6 @@ import { hasRenderableIcon, resolveLink, resolvePageLink } from '@/modules/navig
 import { findHomepageEvents } from '@/modules/events/public-events'
 
 import { CmsImage } from './_components/CmsImage'
-import { Icon } from './_components/Icon'
 import { MenuIcon } from './_components/MenuIcon'
 import { EventCarousel } from './_components/EventCarousel'
 import { HomepageHero } from './_components/HomepageHero'
@@ -26,11 +26,11 @@ function SectionHeading({ children, id }: { children: string; id: string }) {
     <div className="sectionHeading">
       <span aria-hidden="true" className="sectionHeadingLine" />
       <span aria-hidden="true" className="sectionHeadingMark">
-        <Icon name="dice" />
+        <RasterIcon name="dice" size="medium" />
       </span>
       <h2 id={id}>{children}</h2>
       <span aria-hidden="true" className="sectionHeadingMark">
-        <Icon name="dice" />
+        <RasterIcon name="dice" size="medium" />
       </span>
       <span aria-hidden="true" className="sectionHeadingLine" />
     </div>
@@ -54,7 +54,7 @@ function SmallNewsCard({ post }: { post: Post }) {
         <strong>{post.title}</strong>
         {post.publishedAt ? (
           <time dateTime={post.publishedAt}>
-            <Icon name="calendar" />
+            <RasterIcon name="calendar" size="small" />
             {dateFormatter.format(new Date(post.publishedAt))}
           </time>
         ) : null}
@@ -74,11 +74,11 @@ function NewsSection({ posts, title }: { posts: Post[]; title: string }) {
         ))}
         <Link className="allNewsCard" href="/blog">
           <span aria-hidden="true" className="allNewsIcon">
-            <Icon name="book" />
+            <RasterIcon name="book" size="medium" />
           </span>
           <strong>Wszystkie aktualności</strong>
           <span className="allNewsCallToAction">
-            Przejdź do bloga <Icon name="arrow" />
+            Przejdź do bloga <RasterIcon name="arrow-right" size="medium" />
           </span>
         </Link>
       </div>
@@ -111,15 +111,11 @@ function SectionCard({ section }: { section: HomepageGroup }) {
               <li key={item.id}>
                 <Link {...link}>
                   <span aria-hidden="true" className="menuIcon">
-                    <MenuIcon
-                      customIcon={item.customIcon}
-                      iconSource={item.iconSource}
-                      systemIcon={item.systemIcon}
-                    />
+                    <MenuIcon iconName={item.iconName} />
                   </span>
                   <span>{item.label}</span>
                   <span aria-hidden="true" className="menuArrow">
-                    <Icon name="arrow" />
+                    <RasterIcon name="arrow-right" size="medium" />
                   </span>
                 </Link>
               </li>

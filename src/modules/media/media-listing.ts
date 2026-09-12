@@ -6,6 +6,10 @@ import type { Media } from '@/payload-types'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
+import {
+  isWebRasterImageMimeType,
+  webRasterImageMimeTypes,
+} from '@/modules/media/media-categories'
 
 export type MediaListingKind = 'attachments' | 'mediaGallery'
 export type MediaListingSort = 'nameAscending' | 'nameDescending' | 'newest' | 'oldest'
@@ -133,7 +137,7 @@ const findManualPublicMediaByIDsCached = cachePublicData(
 
     const eligibleMedia =
       options.kind === 'mediaGallery'
-        ? media.filter((item) => item.mimeType?.startsWith('image/'))
+        ? media.filter((item) => isWebRasterImageMimeType(item.mimeType))
         : media
     const totalDocs = eligibleMedia.length
     const totalPages = options.pagination
@@ -200,7 +204,7 @@ function createMediaWhere(
   }
 
   if (options.kind === 'mediaGallery') {
-    conditions.push({ mimeType: { like: 'image/%' } })
+    conditions.push({ mimeType: { in: [...webRasterImageMimeTypes] } })
   }
 
   return conditions.length ? { and: conditions } : {}
@@ -228,7 +232,7 @@ function mapMedia(media: MediaListDocument): PublicMediaListItem {
     filesize: media.filesize ?? null,
     height: media.height ?? null,
     id: media.id,
-    isImage: Boolean(media.mimeType?.startsWith('image/')),
+    isImage: isWebRasterImageMimeType(media.mimeType),
     mimeType: media.mimeType ?? null,
     url: media.url ?? null,
     width: media.width ?? null,

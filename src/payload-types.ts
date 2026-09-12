@@ -1144,27 +1144,73 @@ export interface ClubSection {
          */
         customAddress?: string | null;
         openInNewTab?: boolean | null;
-        iconSource?: ('system' | 'media') | null;
-        systemIcon?:
+        iconName?:
           | (
+              | 'astronaut'
+              | 'bluesky'
+              | 'mace'
               | 'time'
+              | 'dnd5'
               | 'discord'
+              | 'document'
               | 'mail'
               | 'facebook'
+              | 'globe'
               | 'star'
               | 'instagram'
               | 'calendar'
+              | 'gun'
+              | 'cards'
               | 'collection'
+              | 'compass'
+              | 'confetti'
               | 'dice'
+              | 'd10'
+              | 'd12'
+              | 'd20'
+              | 'd4'
+              | 'd6'
+              | 'd8'
               | 'book'
+              | 'fireball'
+              | 'external-link'
+              | 'linkedin'
               | 'location'
+              | 'bow'
+              | 'mage'
+              | 'larp-mask'
+              | 'messenger'
+              | 'sword'
+              | 'image'
+              | 'announcement'
+              | 'partner'
+              | 'pdf'
               | 'pawn'
+              | 'download'
               | 'review'
+              | 'wand'
+              | 'sf'
+              | 'arrows'
               | 'slack'
               | 'users'
+              | 'star-trek'
+              | 'star-wars-empire'
+              | 'star-wars-rebel-alliance'
+              | 'steampunk'
+              | 'home'
+              | 'arrow'
+              | 'arrow-left'
+              | 'arrow-right'
+              | 'stormtrooper'
+              | 'tag'
+              | 'shield'
+              | 'axe'
+              | 'twitch'
+              | 'fighter'
+              | 'event'
+              | 'youtube'
             )
           | null;
-        customIcon?: (number | null) | Media;
         id?: string | null;
       }[]
     | null;
@@ -2002,9 +2048,7 @@ export interface ClubSectionsSelect<T extends boolean = true> {
         customScheme?: T;
         customAddress?: T;
         openInNewTab?: T;
-        iconSource?: T;
-        systemIcon?: T;
-        customIcon?: T;
+        iconName?: T;
         id?: T;
       };
   slug?: T;
@@ -2144,27 +2188,73 @@ export interface Navigation {
          */
         customAddress?: string | null;
         openInNewTab?: boolean | null;
-        iconSource?: ('system' | 'media') | null;
-        systemIcon?:
+        iconName?:
           | (
+              | 'astronaut'
+              | 'bluesky'
+              | 'mace'
               | 'time'
+              | 'dnd5'
               | 'discord'
+              | 'document'
               | 'mail'
               | 'facebook'
+              | 'globe'
               | 'star'
               | 'instagram'
               | 'calendar'
+              | 'gun'
+              | 'cards'
               | 'collection'
+              | 'compass'
+              | 'confetti'
               | 'dice'
+              | 'd10'
+              | 'd12'
+              | 'd20'
+              | 'd4'
+              | 'd6'
+              | 'd8'
               | 'book'
+              | 'fireball'
+              | 'external-link'
+              | 'linkedin'
               | 'location'
+              | 'bow'
+              | 'mage'
+              | 'larp-mask'
+              | 'messenger'
+              | 'sword'
+              | 'image'
+              | 'announcement'
+              | 'partner'
+              | 'pdf'
               | 'pawn'
+              | 'download'
               | 'review'
+              | 'wand'
+              | 'sf'
+              | 'arrows'
               | 'slack'
               | 'users'
+              | 'star-trek'
+              | 'star-wars-empire'
+              | 'star-wars-rebel-alliance'
+              | 'steampunk'
+              | 'home'
+              | 'arrow'
+              | 'arrow-left'
+              | 'arrow-right'
+              | 'stormtrooper'
+              | 'tag'
+              | 'shield'
+              | 'axe'
+              | 'twitch'
+              | 'fighter'
+              | 'event'
+              | 'youtube'
             )
           | null;
-        customIcon?: (number | null) | Media;
         id?: string | null;
       }[]
     | null;
@@ -2283,27 +2373,73 @@ export interface HomepageSection {
                */
               customAddress?: string | null;
               openInNewTab?: boolean | null;
-              iconSource?: ('system' | 'media') | null;
-              systemIcon?:
+              iconName?:
                 | (
+                    | 'astronaut'
+                    | 'bluesky'
+                    | 'mace'
                     | 'time'
+                    | 'dnd5'
                     | 'discord'
+                    | 'document'
                     | 'mail'
                     | 'facebook'
+                    | 'globe'
                     | 'star'
                     | 'instagram'
                     | 'calendar'
+                    | 'gun'
+                    | 'cards'
                     | 'collection'
+                    | 'compass'
+                    | 'confetti'
                     | 'dice'
+                    | 'd10'
+                    | 'd12'
+                    | 'd20'
+                    | 'd4'
+                    | 'd6'
+                    | 'd8'
                     | 'book'
+                    | 'fireball'
+                    | 'external-link'
+                    | 'linkedin'
                     | 'location'
+                    | 'bow'
+                    | 'mage'
+                    | 'larp-mask'
+                    | 'messenger'
+                    | 'sword'
+                    | 'image'
+                    | 'announcement'
+                    | 'partner'
+                    | 'pdf'
                     | 'pawn'
+                    | 'download'
                     | 'review'
+                    | 'wand'
+                    | 'sf'
+                    | 'arrows'
                     | 'slack'
                     | 'users'
+                    | 'star-trek'
+                    | 'star-wars-empire'
+                    | 'star-wars-rebel-alliance'
+                    | 'steampunk'
+                    | 'home'
+                    | 'arrow'
+                    | 'arrow-left'
+                    | 'arrow-right'
+                    | 'stormtrooper'
+                    | 'tag'
+                    | 'shield'
+                    | 'axe'
+                    | 'twitch'
+                    | 'fighter'
+                    | 'event'
+                    | 'youtube'
                   )
                 | null;
-              customIcon?: (number | null) | Media;
               id?: string | null;
             }[]
           | null;
@@ -2368,27 +2504,73 @@ export interface Footer {
          */
         customAddress?: string | null;
         openInNewTab?: boolean | null;
-        iconSource?: ('system' | 'media') | null;
-        systemIcon?:
+        iconName?:
           | (
+              | 'astronaut'
+              | 'bluesky'
+              | 'mace'
               | 'time'
+              | 'dnd5'
               | 'discord'
+              | 'document'
               | 'mail'
               | 'facebook'
+              | 'globe'
               | 'star'
               | 'instagram'
               | 'calendar'
+              | 'gun'
+              | 'cards'
               | 'collection'
+              | 'compass'
+              | 'confetti'
               | 'dice'
+              | 'd10'
+              | 'd12'
+              | 'd20'
+              | 'd4'
+              | 'd6'
+              | 'd8'
               | 'book'
+              | 'fireball'
+              | 'external-link'
+              | 'linkedin'
               | 'location'
+              | 'bow'
+              | 'mage'
+              | 'larp-mask'
+              | 'messenger'
+              | 'sword'
+              | 'image'
+              | 'announcement'
+              | 'partner'
+              | 'pdf'
               | 'pawn'
+              | 'download'
               | 'review'
+              | 'wand'
+              | 'sf'
+              | 'arrows'
               | 'slack'
               | 'users'
+              | 'star-trek'
+              | 'star-wars-empire'
+              | 'star-wars-rebel-alliance'
+              | 'steampunk'
+              | 'home'
+              | 'arrow'
+              | 'arrow-left'
+              | 'arrow-right'
+              | 'stormtrooper'
+              | 'tag'
+              | 'shield'
+              | 'axe'
+              | 'twitch'
+              | 'fighter'
+              | 'event'
+              | 'youtube'
             )
           | null;
-        customIcon?: (number | null) | Media;
         id?: string | null;
       }[]
     | null;
@@ -2458,9 +2640,7 @@ export interface NavigationSelect<T extends boolean = true> {
         customScheme?: T;
         customAddress?: T;
         openInNewTab?: T;
-        iconSource?: T;
-        systemIcon?: T;
-        customIcon?: T;
+        iconName?: T;
         id?: T;
       };
   updatedAt?: T;
@@ -2531,9 +2711,7 @@ export interface HomepageSectionsSelect<T extends boolean = true> {
               customScheme?: T;
               customAddress?: T;
               openInNewTab?: T;
-              iconSource?: T;
-              systemIcon?: T;
-              customIcon?: T;
+              iconName?: T;
               id?: T;
             };
         id?: T;
@@ -2566,9 +2744,7 @@ export interface FooterSelect<T extends boolean = true> {
         customScheme?: T;
         customAddress?: T;
         openInNewTab?: T;
-        iconSource?: T;
-        systemIcon?: T;
-        customIcon?: T;
+        iconName?: T;
         id?: T;
       };
   columns?:

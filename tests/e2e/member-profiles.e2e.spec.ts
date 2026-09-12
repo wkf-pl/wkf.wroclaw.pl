@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import sharp from 'sharp'
 import { expect, test } from '@playwright/test'
 import { getPayload } from 'payload'
@@ -37,6 +39,7 @@ const testEmails = [
 let owner: User
 let ownerProfile: MemberProfile
 let embeddedPage: Page
+const ownerPublicName = `Alicja Bez Zdjęcia ${randomUUID().slice(0, 8)}`
 
 async function findRole(key: string): Promise<Role> {
   const payload = await getPayload({ config })
@@ -100,7 +103,7 @@ test.beforeAll(async () => {
         { type: 'website', url: 'https://example.com/member-profile-e2e' },
       ],
       owner: owner.id,
-      publicName: 'Alicja Bez Zdjęcia',
+      publicName: ownerPublicName,
       slug: 'generated-by-hook',
     },
     draft: false,
@@ -172,19 +175,19 @@ test('renders the catalogue, rich profile, default avatar, AVIF derivative, and 
   await page.goto('/members')
 
   const cards = page.locator('.memberCard')
-  const aliceCard = cards.filter({ hasText: 'Alicja Bez Zdjęcia' })
+  const aliceCard = cards.filter({ hasText: ownerPublicName })
   const borysCard = cards.filter({ hasText: 'Borys AVIF' })
   await expect(aliceCard).toHaveCount(1)
   await expect(borysCard).toHaveCount(1)
   await expect(aliceCard).toContainText('Opiekunka nowych klubowiczów')
   await expect(aliceCard.locator('img')).toHaveAttribute(
     'src',
-    '/assets/member-profile-placeholder.svg',
+    '/assets/member-profile-placeholder.webp',
   )
   await expect(borysCard.locator('img')).toHaveAttribute('src', /\.webp\?prefix=member-profiles/)
 
   await page.goto(`/members/${ownerProfile.slug}`)
-  await expect(page.getByRole('heading', { level: 1, name: 'Alicja Bez Zdjęcia' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: ownerPublicName })).toBeVisible()
   await expect(page.getByText('Organizuję spotkania dla nowych osób')).toBeVisible()
   await expect(page.getByTitle('E-mail')).toHaveAttribute(
     'href',
@@ -204,13 +207,13 @@ test('renders an embedded profile with its contextual label instead of the club 
   await expect(page.getByRole('heading', { level: 2, name: 'Władze testowe' })).toBeVisible()
   await expect(page.getByText('Prezes Zarządu')).toBeVisible()
   await expect(page.getByText('Opiekunka nowych klubowiczów')).toHaveCount(0)
-  await expect(page.getByRole('link', { exact: true, name: 'Alicja Bez Zdjęcia' })).toBeVisible()
+  await expect(page.getByRole('link', { exact: true, name: ownerPublicName })).toBeVisible()
   await expect(page.locator('.memberGrid-grid')).toBeVisible()
 })
 
 test('invalidates the cached public profile after a Payload update', async ({ page }) => {
   await page.goto(`/members/${ownerProfile.slug}`)
-  await expect(page.getByRole('heading', { level: 1, name: 'Alicja Bez Zdjęcia' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: ownerPublicName })).toBeVisible()
 
   await login({ page, user: profileOwnerUser })
   const updateResponse = await updatePublicProfileName(
@@ -225,7 +228,7 @@ test('invalidates the cached public profile after a Payload update', async ({ pa
     page.getByRole('heading', { level: 1, name: 'Alicja Po Aktualizacji Cache' }),
   ).toBeVisible()
 
-  const restoreResponse = await updatePublicProfileName(page, ownerProfile.id, 'Alicja Bez Zdjęcia')
+  const restoreResponse = await updatePublicProfileName(page, ownerProfile.id, ownerPublicName)
   expect(restoreResponse.ok, restoreResponse.body).toBe(true)
 })
 

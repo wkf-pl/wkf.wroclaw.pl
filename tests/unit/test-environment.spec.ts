@@ -19,7 +19,7 @@ describe('integration test environment', () => {
     expect(payloadConfiguration).not.toContain('shouldPushDatabaseSchema')
     expect(composeConfiguration).toContain('command: ./scripts/start-development-container.sh')
     expect(containerStartupScript).toContain(
-      'pnpm exec tsx scripts/prepare-development-migrations.ts\npnpm payload migrate\nexec pnpm dev:container',
+      'pnpm exec tsx scripts/prepare-development-migrations.ts\npnpm migrate:with-media\nexec pnpm dev:container',
     )
   })
 

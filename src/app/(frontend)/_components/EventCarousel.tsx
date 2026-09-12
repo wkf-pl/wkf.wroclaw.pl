@@ -7,7 +7,7 @@ import type { Event } from '@/payload-types'
 import { formatEventDate } from '@/modules/events/presentation'
 
 import { CmsImage } from './CmsImage'
-import { Icon } from './Icon'
+import { RasterIcon } from '@/components/RasterIcon'
 
 export function EventCarousel({ events }: { events: Event[] }) {
   const [activeIndex, setActiveIndex] = useState(0)
@@ -55,14 +55,14 @@ export function EventCarousel({ events }: { events: Event[] }) {
           <p>{event.excerpt}</p>
           <p className="featuredEventFact">
             <span aria-label="Kiedy" className="featuredEventFactIcon" role="img">
-              <Icon name="calendar" />
+              <RasterIcon name="calendar" size="medium" />
             </span>
             <time dateTime={event.startAt}>{formatEventDate(event)}</time>
           </p>
           {event.location?.venueName ? (
             <p className="featuredEventFact">
               <span aria-label="Gdzie" className="featuredEventFactIcon" role="img">
-                <Icon name="location" />
+                <RasterIcon name="location" size="medium" />
               </span>
               {event.location.venueWebsite ? (
                 <a href={event.location.venueWebsite}>{event.location.venueName}</a>
