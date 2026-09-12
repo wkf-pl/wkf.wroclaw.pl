@@ -5,30 +5,31 @@ max_score: 32
 na_heuristics: 7,10
 p0_count: 0
 p1_count: 3
-target_identity: "file:/home/forseti/Kod/wkf.wroclaw.pl/src/app/(frontend)/page.tsx"
-target_fingerprint: "sha256:01538a5b6404494bae796f9cfa69ff8c25008a976ba74858dedb7a53ad62c4de"
+target_identity: 'file:/home/forseti/Kod/wkf.wroclaw.pl/src/app/(frontend)/page.tsx'
+target_fingerprint: 'sha256:01538a5b6404494bae796f9cfa69ff8c25008a976ba74858dedb7a53ad62c4de'
 target_path: /home/forseti/Kod/wkf.wroclaw.pl/src/app/(frontend)/page.tsx
 timestamp: 2026-09-09T22-24-34Z
 slug: src-app-frontend-page-tsx
 ---
+
 # Homepage Critique
 
 Method: dual-agent (A: critique_design_review · B: critique_detector_evidence)
 
 ## Design Health Score
 
-| Nielsen heuristic | Score | Assessment |
-| --- | ---: | --- |
-| 1. Visibility of system status | 2/4 | Event carousel state exists, but the page offers weak feedback about what joining or subscribing will do. |
-| 2. Match between system and the real world | 3/4 | Familiar event, news, location, and calendar language works well. “Sections” and “Our Club” remain vague to a newcomer. |
-| 3. User control and freedom | 2/4 | The core page is easy to scroll and links are recognizable, but the hero presents several peers without a clear primary path. |
-| 4. Consistency and standards | 2/4 | The visual system is coherent, while several destinations and accessible labels do not match their visible purpose. |
-| 5. Error prevention | 1/4 | Placeholder `#top` destinations and a non-functional Join action allow users to make apparently valid choices that go nowhere. |
-| 6. Recognition rather than recall | 2/4 | Event facts and grouped navigation are recognizable, but visitors must infer what WKF is, how it helps initiatives, and how to participate. |
-| 7. Flexibility and efficiency of use | n/a | Not a primary criterion for this persuasive homepage. |
-| 8. Aesthetic and minimalist design | 3/4 | The visual language is distinctive and restrained, though repeated placeholder imagery makes the lower half feel less authored. |
-| 9. Help users recognize, diagnose, and recover from errors | 1/4 | Dead links fail silently and the empty event state removes the entire section instead of explaining what is happening. |
-| 10. Help and documentation | n/a | Not a primary criterion for this persuasive homepage. |
+| Nielsen heuristic                                          | Score | Assessment                                                                                                                                  |
+| ---------------------------------------------------------- | ----: | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Visibility of system status                             |   2/4 | Event carousel state exists, but the page offers weak feedback about what joining or subscribing will do.                                   |
+| 2. Match between system and the real world                 |   3/4 | Familiar event, news, location, and calendar language works well. “Sections” and “Our Club” remain vague to a newcomer.                     |
+| 3. User control and freedom                                |   2/4 | The core page is easy to scroll and links are recognizable, but the hero presents several peers without a clear primary path.               |
+| 4. Consistency and standards                               |   2/4 | The visual system is coherent, while several destinations and accessible labels do not match their visible purpose.                         |
+| 5. Error prevention                                        |   1/4 | Placeholder `#top` destinations and a non-functional Join action allow users to make apparently valid choices that go nowhere.              |
+| 6. Recognition rather than recall                          |   2/4 | Event facts and grouped navigation are recognizable, but visitors must infer what WKF is, how it helps initiatives, and how to participate. |
+| 7. Flexibility and efficiency of use                       |   n/a | Not a primary criterion for this persuasive homepage.                                                                                       |
+| 8. Aesthetic and minimalist design                         |   3/4 | The visual language is distinctive and restrained, though repeated placeholder imagery makes the lower half feel less authored.             |
+| 9. Help users recognize, diagnose, and recover from errors |   1/4 | Dead links fail silently and the empty event state removes the entire section instead of explaining what is happening.                      |
+| 10. Help and documentation                                 |   n/a | Not a primary criterion for this persuasive homepage.                                                                                       |
 
 **Total: 16/32 (50%) — Acceptable, with significant improvements needed.**
 

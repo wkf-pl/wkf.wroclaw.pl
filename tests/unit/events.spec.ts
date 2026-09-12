@@ -285,7 +285,11 @@ describe('events model', () => {
 describe('Google Maps embed sanitization', () => {
   it('fills the complete map preview container in the admin form', () => {
     const markup = renderToStaticMarkup(
-      createElement(GoogleMapEmbed, { src: 'https://www.google.com/maps/embed?pb=test' }),
+      createElement(GoogleMapEmbed, {
+        externalMapURL: 'https://www.google.com/maps/search/?api=1&query=test',
+        requireConsent: false,
+        src: 'https://www.google.com/maps/embed?pb=test',
+      }),
     )
     const adminField = readFileSync('src/components/admin/GoogleMapEmbedField.tsx', 'utf8')
 

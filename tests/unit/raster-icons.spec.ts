@@ -22,11 +22,7 @@ const expectedDimensions = {
 type RasterIconName = Parameters<typeof getRasterIconURL>[0]
 
 async function readVisibleBounds(iconName: RasterIconName, size: (typeof rasterIconSizes)[number]) {
-  const iconPath = resolve(
-    process.cwd(),
-    'public',
-    getRasterIconURL(iconName, size).slice(1),
-  )
+  const iconPath = resolve(process.cwd(), 'public', getRasterIconURL(iconName, size).slice(1))
   const { data, info } = await sharp(iconPath)
     .ensureAlpha()
     .raw()
@@ -97,21 +93,18 @@ describe('raster icon library', () => {
     }
   })
 
-  it('contains only registered icon families and the two supported tiers', () => {
+  it('contains only the two supported tier directories and registered icon files', () => {
     const iconDirectory = resolve(process.cwd(), 'public/assets/icons')
-    const registeredNames = rasterIconDefinitions.map(({ name }) => name).sort()
-    const assetNames = readdirSync(iconDirectory, { withFileTypes: true })
+    const registeredFiles = rasterIconDefinitions.map(({ name }) => `${name}.png`).sort()
+    const assetTiers = readdirSync(iconDirectory, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort()
 
-    expect(assetNames).toEqual(registeredNames)
+    expect(assetTiers).toEqual([...rasterIconSizes].sort())
 
-    for (const iconName of assetNames) {
-      expect(readdirSync(resolve(iconDirectory, iconName)).sort()).toEqual([
-        'medium.png',
-        'small.png',
-      ])
+    for (const tier of assetTiers) {
+      expect(readdirSync(resolve(iconDirectory, tier)).sort()).toEqual(registeredFiles)
     }
   })
 
@@ -180,7 +173,7 @@ describe('raster icon library', () => {
       createElement(RasterIcon, { name: 'calendar', size: 'small' }),
     )
 
-    expect(markup).toContain('/assets/icons/calendar/small.png')
+    expect(markup).toContain('/assets/icons/small/calendar.png')
     expect(markup).toContain('data-icon-size="small"')
     expect(markup).toContain('mask-image:')
     expect(markup).not.toContain('<svg')

@@ -3,14 +3,7 @@ export const rasterIconSizes = ['small', 'medium'] as const
 export type RasterIconSize = (typeof rasterIconSizes)[number]
 
 export type RasterIconCategory =
-  | 'action'
-  | 'community'
-  | 'contact'
-  | 'content'
-  | 'fantasy'
-  | 'games'
-  | 'internal'
-  | 'worlds'
+  'action' | 'community' | 'contact' | 'content' | 'fantasy' | 'games' | 'internal'
 
 type RasterIconDefinition = {
   category: RasterIconCategory
@@ -36,7 +29,7 @@ const selectableRasterIconDefinitions = [
     name: 'arrow-right',
   },
   {
-    category: 'action',
+    category: 'fantasy',
     keywords: ['pocisk', 'kierunek', 'łucznictwo'],
     label: 'Strzała',
     name: 'arrow',
@@ -48,7 +41,7 @@ const selectableRasterIconDefinitions = [
     name: 'arrow-left',
   },
   {
-    category: 'action',
+    category: 'fantasy',
     keywords: ['pociski', 'kierunek', 'łucznictwo'],
     label: 'Skrzyżowane strzały',
     name: 'arrows',
@@ -101,11 +94,16 @@ const selectableRasterIconDefinitions = [
     name: 'dnd5',
   },
   { category: 'games', keywords: ['planszówka', 'szachy'], label: 'Pionek', name: 'pawn' },
-  { category: 'fantasy', keywords: ['larp', 'kostium'], label: 'Maska LARP', name: 'larp-mask' },
+  { category: 'games', keywords: ['larp', 'kostium'], label: 'LARP', name: 'larp' },
   { category: 'fantasy', keywords: ['fantasy', 'broń'], label: 'Miecz', name: 'sword' },
   { category: 'fantasy', keywords: ['broń', 'topór'], label: 'Topór', name: 'axe' },
   { category: 'fantasy', keywords: ['broń', 'łucznictwo'], label: 'Łuk', name: 'bow' },
-  { category: 'fantasy', keywords: ['wojownik', 'postać', 'rpg'], label: 'Wojownik', name: 'fighter' },
+  {
+    category: 'fantasy',
+    keywords: ['wojownik', 'postać', 'rpg'],
+    label: 'Wojownik',
+    name: 'fighter',
+  },
   {
     category: 'fantasy',
     keywords: ['czar', 'magia', 'pocisk'],
@@ -117,34 +115,39 @@ const selectableRasterIconDefinitions = [
   { category: 'fantasy', keywords: ['obrona', 'pancerz'], label: 'Tarcza', name: 'shield' },
   { category: 'fantasy', keywords: ['czar', 'magia'], label: 'Różdżka', name: 'wand' },
   {
-    category: 'worlds',
+    category: 'fantasy',
     keywords: ['kosmos', 'science fiction', 'postać'],
     label: 'Astronauta',
     name: 'astronaut',
   },
-  { category: 'worlds', keywords: ['broń', 'science fiction'], label: 'Karabin', name: 'gun' },
-  { category: 'worlds', keywords: ['science fiction', 'kosmos'], label: 'Science fiction', name: 'sf' },
-  { category: 'worlds', keywords: ['federacja', 'kosmos'], label: 'Star Trek', name: 'star-trek' },
+  { category: 'fantasy', keywords: ['broń', 'science fiction'], label: 'Karabin', name: 'gun' },
   {
-    category: 'worlds',
+    category: 'fantasy',
+    keywords: ['science fiction', 'kosmos'],
+    label: 'Science fiction',
+    name: 'sf',
+  },
+  { category: 'fantasy', keywords: ['federacja', 'kosmos'], label: 'Star Trek', name: 'star-trek' },
+  {
+    category: 'fantasy',
     keywords: ['gwiezdne wojny', 'imperium', 'kosmos'],
     label: 'Star Wars: Imperium',
     name: 'star-wars-empire',
   },
   {
-    category: 'worlds',
+    category: 'fantasy',
     keywords: ['gwiezdne wojny', 'rebelia', 'kosmos'],
     label: 'Star Wars: Rebelia',
     name: 'star-wars-rebel-alliance',
   },
   {
-    category: 'worlds',
+    category: 'fantasy',
     keywords: ['retro', 'technologia', 'fantastyka'],
     label: 'Steampunk',
     name: 'steampunk',
   },
   {
-    category: 'worlds',
+    category: 'fantasy',
     keywords: ['gwiezdne wojny', 'imperium', 'postać'],
     label: 'Szturmowiec',
     name: 'stormtrooper',
@@ -206,15 +209,14 @@ export function isSelectableRasterIconName(value: unknown): value is SelectableR
 }
 
 export function getRasterIconURL(name: RasterIconName, size: RasterIconSize): string {
-  return `/assets/icons/${name}/${size}.png`
+  return `/assets/icons/${size}/${name}.png`
 }
 
 export const rasterIconCategoryLabels: Record<Exclude<RasterIconCategory, 'internal'>, string> = {
   action: 'Akcje i informacje',
   content: 'Treści',
-  games: 'Gry i kości',
-  fantasy: 'Fantasy i przygoda',
-  worlds: 'Światy i konwencje',
+  games: 'Gry',
+  fantasy: 'Fantastyka',
   community: 'Społeczność',
   contact: 'Kontakt',
 }

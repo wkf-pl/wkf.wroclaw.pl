@@ -161,14 +161,8 @@ test.afterAll(async ({ browser }) => {
 test('renders editable menus and configured groups on the home page', async ({ page }) => {
   await page.goto('/')
 
-  await expect(page.locator('.homeHeroImage')).toHaveAttribute(
-    'src',
-    /e2e-home-hero(?:-\d+)?\.png/,
-  )
-  await expect(page.locator('.siteBrand img')).toHaveAttribute(
-    'src',
-    /logo-color(?:-\d+)?\.webp/,
-  )
+  await expect(page.locator('.homeHeroImage')).toHaveAttribute('src', /e2e-home-hero(?:-\d+)?\.png/)
+  await expect(page.locator('.siteBrand img')).toHaveAttribute('src', /logo-color(?:-\d+)?\.webp/)
   await expect(
     page.getByRole('link', { name: /E2E Klub Fantastyki — strona główna/ }),
   ).toBeVisible()

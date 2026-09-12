@@ -9,14 +9,14 @@ describe('MenuIcon', () => {
 
     expect(markup).not.toContain('<svg')
     expect(markup).toContain('aria-hidden="true"')
-    expect(markup).toContain('/assets/icons/dice/medium.png')
+    expect(markup).toContain('/assets/icons/medium/dice.png')
     expect(markup).toContain('data-icon-size="medium"')
   })
 
   it('renders another named icon with the same component contract', () => {
     const markup = renderToStaticMarkup(<MenuIcon iconName="slack" />)
 
-    expect(markup).toContain('/assets/icons/slack/medium.png')
+    expect(markup).toContain('/assets/icons/medium/slack.png')
     expect(markup).toContain('data-icon-name="slack"')
   })
 })

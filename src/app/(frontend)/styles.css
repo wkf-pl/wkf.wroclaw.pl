@@ -872,6 +872,203 @@ body:has(> .homePage) .siteHeader {
   text-decoration: none;
 }
 
+.privacyBanner {
+  position: fixed;
+  z-index: 100;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.5rem;
+  align-items: center;
+  width: min(72rem, calc(100% - 2rem));
+  margin-inline: auto;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--panel);
+  box-shadow: 0 1.2rem 3rem rgb(0 0 0 / 45%);
+}
+
+.privacyBannerCopy {
+  max-width: 65ch;
+}
+
+.privacyBanner h2,
+.privacyDialog h2 {
+  margin-bottom: 0.45rem;
+  color: var(--ivory);
+  font-size: clamp(1.3rem, 3vw, 1.65rem);
+  line-height: 1.2;
+}
+
+.privacyBanner p,
+.privacyDialog p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.privacyBanner a,
+.privacyDialog a,
+.googleMapPlaceholder a {
+  color: var(--gold-light);
+  text-underline-offset: 0.2em;
+}
+
+.privacyBannerActions,
+.privacyDialogActions,
+.googleMapPlaceholderActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.privacyBannerActions button,
+.privacyDialogActions button,
+.googleMapPlaceholderActions button,
+.googleMapPlaceholderActions a {
+  min-height: 2.75rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--gold);
+  border-radius: 0.4rem;
+  background: var(--background-deep);
+  color: var(--ivory);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+}
+
+.privacyBannerActions button:hover,
+.privacyBannerActions button:focus-visible,
+.privacyDialogActions button:hover,
+.privacyDialogActions button:focus-visible,
+.googleMapPlaceholderActions button:hover,
+.googleMapPlaceholderActions button:focus-visible,
+.googleMapPlaceholderActions a:hover,
+.googleMapPlaceholderActions a:focus-visible {
+  border-color: var(--gold-light);
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.privacyDialogBackdrop {
+  position: fixed;
+  z-index: 110;
+  inset: 0;
+  display: grid;
+  padding: 1rem;
+  place-items: center;
+  background: rgb(0 13 23 / 84%);
+}
+
+.privacyDialog {
+  width: min(42rem, 100%);
+  max-height: calc(100vh - 2rem);
+  padding: clamp(1.1rem, 4vw, 2rem);
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--panel);
+  box-shadow: 0 1.2rem 3rem rgb(0 0 0 / 48%);
+}
+
+.privacyDialogHeader {
+  display: flex;
+  gap: 1rem;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.privacyDialogClose {
+  padding: 0.35rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.privacyCategory {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgb(243 163 19 / 35%);
+  border-radius: 0.7rem;
+  background: var(--panel-soft);
+}
+
+.privacyCategory strong {
+  color: var(--gold-light);
+}
+
+.privacyCategory p {
+  margin-top: 0.25rem;
+}
+
+.privacyCategory label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--ivory);
+  font-weight: 700;
+}
+
+.privacyCategory input {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--gold);
+}
+
+.privacyDialogDetails {
+  margin-top: 1rem;
+}
+
+.privacyDialogActions {
+  margin-top: 1.5rem;
+}
+
+.googleMapPlaceholder {
+  display: grid;
+  min-height: 100%;
+  padding: clamp(1rem, 4vw, 2rem);
+  place-content: center;
+  border: 1px solid rgb(243 163 19 / 45%);
+  border-radius: 0.7rem;
+  background: var(--panel-soft);
+  text-align: center;
+}
+
+.googleMapPlaceholder > strong {
+  color: var(--gold-light);
+  font-size: 1.2rem;
+}
+
+.googleMapPlaceholder > p {
+  max-width: 56ch;
+  margin: 0.5rem auto 1rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.googleMapPlaceholderActions {
+  justify-content: center;
+}
+
+.googleMapPlaceholder .googleMapPlaceholderPolicy {
+  margin-bottom: 0;
+  font-size: 0.875rem;
+}
+
 /* CMS listing and article pages */
 .contentShell {
   padding-bottom: clamp(4rem, 10vw, 8rem);
@@ -1666,6 +1863,20 @@ a.attachmentItem:hover {
 
   .siteFooter {
     width: min(100% - 2rem, 40rem);
+  }
+
+  .privacyBanner {
+    grid-template-columns: 1fr;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+
+  .privacyBannerActions button {
+    flex: 1 1 12rem;
+  }
+
+  .privacyCategory {
+    grid-template-columns: 1fr;
   }
 
   .siteHeader {

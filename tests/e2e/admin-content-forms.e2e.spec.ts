@@ -242,6 +242,8 @@ async function assertFullWidthMapPreview(
   mapURL: string,
 ): Promise<void> {
   await page.locator(fieldSelector).fill(mapURL)
+  await expect(page.locator('iframe[title="Podgląd mapy wydarzenia"]')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Wczytaj podgląd Map Google' }).last().click()
   const frame = page.locator('iframe[title="Podgląd mapy wydarzenia"]').last()
   await expect(frame).toBeVisible()
 
