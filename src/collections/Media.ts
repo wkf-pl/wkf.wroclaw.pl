@@ -5,7 +5,7 @@ import {
   invalidateAllPublicDataAfterDelete,
 } from '@/modules/cache/invalidate-public-data'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
-import { mediaDocumentMimeTypes } from '@/modules/media/media-categories'
+import { mediaDocumentMimeTypes, webRasterImageMimeTypes } from '@/modules/media/media-categories'
 
 const createMedia = createRolePermissionAccess({ operation: 'create', resource: 'media' })
 const deleteMedia = createRolePermissionAccess({ operation: 'delete', resource: 'media' })
@@ -158,6 +158,6 @@ export const Media: CollectionConfig = {
     singular: 'Plik',
   },
   upload: {
-    mimeTypes: ['image/*', ...mediaDocumentMimeTypes],
+    mimeTypes: [...webRasterImageMimeTypes, ...mediaDocumentMimeTypes],
   },
 }

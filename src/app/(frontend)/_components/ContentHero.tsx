@@ -5,7 +5,7 @@ import type { PublicBreadcrumb } from '@/modules/content/public-hierarchy'
 import type { Category } from '@/payload-types'
 
 import { HierarchyBreadcrumbs } from './HierarchyBreadcrumbs'
-import { Icon } from './Icon'
+import { RasterIcon } from '@/components/RasterIcon'
 
 export type ContentHeroImage = {
   alt: string
@@ -99,13 +99,13 @@ export function ContentHeroMeta({ authorName, date }: ContentHeroMetaProperties)
     <p className="contentHeroMeta">
       {date ? (
         <span className="contentHeroMetaItem">
-          <Icon name="calendar" />
+          <RasterIcon name="calendar" size="small" />
           <time dateTime={date.dateTime}>{date.label}</time>
         </span>
       ) : null}
       {authorName ? (
         <span className="contentHeroMetaItem">
-          <Icon name="users" />
+          <RasterIcon name="users" size="small" />
           Autor: {authorName}
         </span>
       ) : null}

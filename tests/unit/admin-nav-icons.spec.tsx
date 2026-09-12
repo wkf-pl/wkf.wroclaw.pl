@@ -31,21 +31,22 @@ const additionalNavigationIcons = [
 ]
 
 describe('admin navigation icons', () => {
-  it.each(visibleCollectionSlugs)('renders a decorative line icon for %s', (slug) => {
+  it.each(visibleCollectionSlugs)('renders a decorative raster icon for %s', (slug) => {
     const markup = renderToStaticMarkup(<AdminNavIcon name={slug} />)
 
-    expect(markup).toContain('class="nav__link-icon"')
+    expect(markup).toContain('nav__link-icon')
     expect(markup).toContain('aria-hidden="true"')
-    expect(markup).toContain('stroke="currentColor"')
+    expect(markup).toContain('data-icon-size="small"')
+    expect(markup).toContain('/assets/icons/')
   })
 
   it.each(additionalNavigationIcons)('renders the %s navigation icon', (name) => {
-    expect(renderToStaticMarkup(<AdminNavIcon name={name} />)).toContain('class="nav__link-icon"')
+    expect(renderToStaticMarkup(<AdminNavIcon name={name} />)).toContain('nav__link-icon')
   })
 
   it('renders a fallback icon for future collections', () => {
     expect(renderToStaticMarkup(<AdminNavIcon name="future-collection" />)).toContain(
-      'M3.5 3.5h5v5h-5z',
+      'data-icon-name="collection"',
     )
   })
 

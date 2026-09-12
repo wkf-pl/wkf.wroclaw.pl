@@ -113,13 +113,13 @@ describe('member profile validation', () => {
     expect(mimeTypes).not.toContain('image/gif')
   })
 
-  it('uses the SVG placeholder when a profile has no photo', () => {
+  it('uses the WebP placeholder when a profile has no photo', () => {
     expect(getMemberProfileImageURL({ photo: null } as never, 'card')).toBe(
-      '/assets/member-profile-placeholder.svg',
+      '/assets/member-profile-placeholder.webp',
     )
-    expect(existsSync(resolve(process.cwd(), 'public/assets/member-profile-placeholder.svg'))).toBe(
-      true,
-    )
+    expect(
+      existsSync(resolve(process.cwd(), 'public/assets/member-profile-placeholder.webp')),
+    ).toBe(true)
   })
 
   it('renders embedded profiles as a card, list or grid', () => {

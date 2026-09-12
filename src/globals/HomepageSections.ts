@@ -1,6 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
 import { invalidateSiteSettingsAfterChange } from '@/modules/cache/invalidate-public-data'
+import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
 import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
 import { createIconFields, createLinkFields } from '@/modules/navigation/fields'
 
@@ -118,7 +119,7 @@ export const HomepageSections: GlobalConfig = {
                 {
                   name: 'backgroundImage',
                   type: 'upload',
-                  filterOptions: { mimeType: { contains: 'image/' } },
+                  filterOptions: { mimeType: { in: [...webRasterImageMimeTypes] } },
                   label: 'Obraz tła',
                   relationTo: 'media',
                 },

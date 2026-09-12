@@ -16,6 +16,7 @@ describe('content slugs', () => {
     expect(validatePageSlug('members')).toBeTypeOf('string')
     expect(validatePageSlug('preview')).toBeTypeOf('string')
     expect(validatePageSlug('blog')).toBe(true)
+    expect(validatePageSlug('dokumenty')).toBe(true)
     expect(validatePageSlug('o-klubie')).toBe(true)
   })
 })

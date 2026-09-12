@@ -2,6 +2,7 @@ import { APIError, type CollectionBeforeValidateHook } from 'payload'
 
 import { getRelationshipId, type RelationshipReference } from '@/lib/relationships'
 import { walkContentLeafBlocks } from '@/modules/content/walk-content-leaf-blocks'
+import { isWebRasterImageMimeType } from '@/modules/media/media-categories'
 
 type ManualMediaItem = {
   media?: RelationshipReference
@@ -90,7 +91,7 @@ export const validateMediaBlocks: CollectionBeforeValidateHook = async ({ data, 
 
   for (const mediaId of galleryMediaIDs) {
     const media = mediaByID.get(String(mediaId))
-    if (!media?.mimeType?.startsWith('image/')) {
+    if (!isWebRasterImageMimeType(media?.mimeType)) {
       throw new APIError('Galeria mediów może zawierać wyłącznie obrazy.', 400)
     }
   }

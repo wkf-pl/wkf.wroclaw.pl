@@ -1,3 +1,15 @@
+.rasterIcon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+  background-color: currentcolor;
+  image-rendering: auto;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+}
+
 .wkf-admin-brand {
   display: flex;
   flex-direction: column;
@@ -51,6 +63,137 @@
   color: var(--wkf-related-link-hover-color);
 }
 
+.raster-icon-picker {
+  .rs__control {
+    min-height: 50px;
+  }
+
+  .rs__value-container {
+    padding-block: 5px;
+  }
+
+  .rs__menu-list {
+    max-height: min(32rem, 60vh);
+    padding: 12px;
+  }
+
+  .rs__group {
+    padding: 0;
+  }
+
+  .rs__group + .rs__group {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--theme-elevation-150);
+  }
+
+  .rs__group-heading {
+    margin: 0 0 8px;
+    color: var(--theme-elevation-700);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.25;
+  }
+
+  .rs__group > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+    gap: 8px;
+  }
+}
+
+.raster-icon-picker__value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .rasterIcon {
+    width: 28px;
+    height: 28px;
+    color: var(--theme-text);
+  }
+
+  > span:not(.rasterIcon) {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  small {
+    color: var(--theme-elevation-600);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+}
+
+.raster-icon-picker__option {
+  display: grid;
+  min-width: 0;
+  min-height: 112px;
+  padding: 10px 8px;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-s);
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  background: var(--theme-elevation-0);
+  color: var(--theme-text);
+  cursor: pointer;
+
+  .rasterIcon {
+    width: 40px;
+    height: 40px;
+    color: currentcolor;
+  }
+}
+
+.raster-icon-picker__option-copy {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+
+  strong {
+    max-width: 100%;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  small {
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--theme-elevation-600);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.raster-icon-picker__option--focused {
+  background: var(--theme-elevation-100);
+  border-color: var(--theme-elevation-500);
+  outline: 2px solid var(--theme-elevation-800);
+  outline-offset: -2px;
+}
+
+.raster-icon-picker__option--selected {
+  background: var(--theme-elevation-150);
+  border-color: var(--theme-elevation-800);
+  box-shadow: inset 0 0 0 1px var(--theme-elevation-800);
+}
+
 .wkf-user-menu__trigger {
   min-width: 0;
   max-width: min(260px, 34vw);
@@ -93,6 +236,37 @@
 .wkf-user-relationship {
   position: relative;
   min-width: 0;
+}
+
+.wkf-map-preview-consent {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-s);
+  background: var(--theme-elevation-50);
+
+  p {
+    max-width: 70ch;
+    margin: 0 0 0.75rem;
+  }
+
+  button {
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--theme-elevation-400);
+    border-radius: var(--style-radius-s);
+    background: var(--theme-elevation-100);
+    color: var(--theme-text);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+
+    &:hover,
+    &:focus-visible {
+      border-color: var(--theme-elevation-800);
+      background: var(--theme-elevation-150);
+    }
+  }
 }
 
 .wkf-profile-sidebar-field,
@@ -487,8 +661,7 @@
       flex: 0 0 16px;
       background-color: currentColor;
       content: '';
-      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M16 10.6667V14.6667C16 15.4031 15.4031 16 14.6667 16H5.3333C4.5969 16 4 15.4031 4 14.6667V5.3333C4 4.5969 4.5969 4 5.3333 4H9.3333M16 4L10 10M16 4H12M16 4V8' fill='none' stroke='black' stroke-linecap='square'/%3E%3C/svg%3E")
-        center / contain no-repeat;
+      mask: url('/assets/icons/small/external-link.png') center / contain no-repeat;
     }
 
     &:hover,

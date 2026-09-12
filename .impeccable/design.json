@@ -1,0 +1,339 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-09T21:23:53Z",
+  "title": "Design System: Wrocławski Klub Fantastyki",
+  "extensions": {
+    "colorMeta": {
+      "deep-night": {
+        "role": "neutral",
+        "displayName": "Deep Night",
+        "canonical": "#001422",
+        "tonalRamp": [
+          "oklch(15% 0.041 239.0)",
+          "oklch(26% 0.041 239.0)",
+          "oklch(37% 0.041 239.0)",
+          "oklch(49% 0.041 239.0)",
+          "oklch(61% 0.041 239.0)",
+          "oklch(73% 0.041 239.0)",
+          "oklch(84% 0.041 239.0)",
+          "oklch(95% 0.041 239.0)"
+        ]
+      },
+      "night-abyss": {
+        "role": "neutral",
+        "displayName": "Night Abyss",
+        "canonical": "#000d17",
+        "tonalRamp": [
+          "oklch(15% 0.032 236.2)",
+          "oklch(26% 0.032 236.2)",
+          "oklch(37% 0.032 236.2)",
+          "oklch(49% 0.032 236.2)",
+          "oklch(61% 0.032 236.2)",
+          "oklch(73% 0.032 236.2)",
+          "oklch(84% 0.032 236.2)",
+          "oklch(95% 0.032 236.2)"
+        ]
+      },
+      "constellation-panel": {
+        "role": "neutral",
+        "displayName": "Constellation Panel",
+        "canonical": "#031d2e",
+        "tonalRamp": [
+          "oklch(15% 0.046 240.8)",
+          "oklch(26% 0.046 240.8)",
+          "oklch(37% 0.046 240.8)",
+          "oklch(49% 0.046 240.8)",
+          "oklch(61% 0.046 240.8)",
+          "oklch(73% 0.046 240.8)",
+          "oklch(84% 0.046 240.8)",
+          "oklch(95% 0.046 240.8)"
+        ]
+      },
+      "raised-night": {
+        "role": "neutral",
+        "displayName": "Raised Night",
+        "canonical": "#0a2638",
+        "tonalRamp": [
+          "oklch(15% 0.048 240.5)",
+          "oklch(26% 0.048 240.5)",
+          "oklch(37% 0.048 240.5)",
+          "oklch(49% 0.048 240.5)",
+          "oklch(61% 0.048 240.5)",
+          "oklch(73% 0.048 240.5)",
+          "oklch(84% 0.048 240.5)",
+          "oklch(95% 0.048 240.5)"
+        ]
+      },
+      "lantern-amber": {
+        "role": "primary",
+        "displayName": "Lantern Amber",
+        "canonical": "#f3a313",
+        "tonalRamp": [
+          "oklch(15% 0.160 73.2)",
+          "oklch(26% 0.160 73.2)",
+          "oklch(37% 0.160 73.2)",
+          "oklch(49% 0.160 73.2)",
+          "oklch(61% 0.160 73.2)",
+          "oklch(73% 0.160 73.2)",
+          "oklch(84% 0.160 73.2)",
+          "oklch(95% 0.160 73.2)"
+        ]
+      },
+      "lantern-glow": {
+        "role": "primary",
+        "displayName": "Lantern Glow",
+        "canonical": "#ffbd38",
+        "tonalRamp": [
+          "oklch(15% 0.158 80.1)",
+          "oklch(26% 0.158 80.1)",
+          "oklch(37% 0.158 80.1)",
+          "oklch(49% 0.158 80.1)",
+          "oklch(61% 0.158 80.1)",
+          "oklch(73% 0.158 80.1)",
+          "oklch(84% 0.158 80.1)",
+          "oklch(95% 0.158 80.1)"
+        ]
+      },
+      "parchment-ivory": {
+        "role": "neutral",
+        "displayName": "Parchment Ivory",
+        "canonical": "#f4efe5",
+        "tonalRamp": [
+          "oklch(15% 0.014 84.6)",
+          "oklch(26% 0.014 84.6)",
+          "oklch(37% 0.014 84.6)",
+          "oklch(49% 0.014 84.6)",
+          "oklch(61% 0.014 84.6)",
+          "oklch(73% 0.014 84.6)",
+          "oklch(84% 0.014 84.6)",
+          "oklch(95% 0.014 84.6)"
+        ]
+      },
+      "mist-silver": {
+        "role": "neutral",
+        "displayName": "Mist Silver",
+        "canonical": "#c7cbd0",
+        "tonalRamp": [
+          "oklch(15% 0.008 253.9)",
+          "oklch(26% 0.008 253.9)",
+          "oklch(37% 0.008 253.9)",
+          "oklch(49% 0.008 253.9)",
+          "oklch(61% 0.008 253.9)",
+          "oklch(73% 0.008 253.9)",
+          "oklch(84% 0.008 253.9)",
+          "oklch(95% 0.008 253.9)"
+        ]
+      },
+      "lantern-line": {
+        "role": "primary",
+        "displayName": "Lantern Line",
+        "canonical": "rgb(243 163 19 / 82%)",
+        "tonalRamp": [
+          "oklch(15% 0.160 73.2 / 82%)",
+          "oklch(26% 0.160 73.2 / 82%)",
+          "oklch(37% 0.160 73.2 / 82%)",
+          "oklch(49% 0.160 73.2 / 82%)",
+          "oklch(61% 0.160 73.2 / 82%)",
+          "oklch(73% 0.160 73.2 / 82%)",
+          "oklch(84% 0.160 73.2 / 82%)",
+          "oklch(95% 0.160 73.2 / 82%)"
+        ]
+      },
+      "button-ink": {
+        "role": "neutral",
+        "displayName": "Button Ink",
+        "canonical": "#052033",
+        "tonalRamp": [
+          "oklch(15% 0.049 243.1)",
+          "oklch(26% 0.049 243.1)",
+          "oklch(37% 0.049 243.1)",
+          "oklch(49% 0.049 243.1)",
+          "oklch(61% 0.049 243.1)",
+          "oklch(73% 0.049 243.1)",
+          "oklch(84% 0.049 243.1)",
+          "oklch(95% 0.049 243.1)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Singular page and listing titles." },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section titles and content-block headings."
+      },
+      "title": { "displayName": "Title", "purpose": "Card titles and featured labels." },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Long-form reading and substantive descriptions."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Eyebrows, content kinds, and compact metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "featured-media-lift",
+        "value": "0 1.2rem 3rem rgb(0 0 0 / 36%), 0 0 1.8rem rgb(243 163 19 / 10%)",
+        "purpose": "Cast shadow and restrained amber halo for prominent visual evidence."
+      },
+      {
+        "name": "card-lift",
+        "value": "0 0.7rem 1.6rem rgb(0 0 0 / 18%)",
+        "purpose": "Quieter lift for reusable profile and content cards."
+      },
+      {
+        "name": "narrative-focus",
+        "value": "0 3px 22px rgb(0 0 0 / 65%)",
+        "purpose": "Keeps large display text legible over cinematic imagery."
+      }
+    ],
+    "motion": [
+      {
+        "name": "image-reveal",
+        "value": "transform 320ms ease",
+        "purpose": "Slow image enlargement on prominent news cards."
+      },
+      {
+        "name": "media-response",
+        "value": "transform 180ms ease",
+        "purpose": "Compact zoom response on gallery media."
+      },
+      {
+        "name": "control-response",
+        "value": "border-color 160ms ease, background-color 160ms ease, color 160ms ease",
+        "purpose": "Fast, restrained state changes on controls and file actions."
+      }
+    ],
+    "breakpoints": [
+      { "name": "wide-collapse", "value": "70rem" },
+      { "name": "grid-collapse", "value": "62rem" },
+      { "name": "single-column", "value": "48rem" },
+      { "name": "compact-header", "value": "34rem" },
+      { "name": "single-member-column", "value": "32rem" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "A compact Lantern Glow action for the principal decision in a local control group.",
+      "html": "<button class=\"ds-button-primary\" type=\"button\">Explore the event</button>",
+      "css": ".ds-button-primary { min-height: 2.75rem; padding: 0.6rem 1rem; border: 1px solid var(--gold-light); border-radius: 0.4rem; background: var(--gold-light); color: #052033; font: inherit; font-weight: 700; cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease; } .ds-button-primary:hover { transform: translateY(-2px); box-shadow: 0 0.7rem 1.6rem rgb(0 0 0 / 24%), 0 0 1rem rgb(243 163 19 / 16%); } .ds-button-primary:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }"
+    },
+    {
+      "name": "Outlined Navigation Action",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "A framed secondary action that stays integrated with the nocturnal page surface.",
+      "html": "<a class=\"ds-navigation-action\" href=\"#\">Join WKF</a>",
+      "css": ".ds-navigation-action { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0.65rem 1rem; border: 1px solid var(--gold); border-radius: 0.4rem; background: transparent; color: var(--ivory); font-weight: 700; text-decoration: none; transition: color 160ms ease, border-color 160ms ease, transform 160ms ease; } .ds-navigation-action:hover { border-color: var(--gold-light); color: var(--gold-light); transform: translateY(-2px); } .ds-navigation-action:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A dark framed field for search and filtering without introducing a separate light form surface.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Search documents</span><input class=\"ds-field-input\" type=\"search\" placeholder=\"Title or number\"></label>",
+      "css": ".ds-field { display: grid; gap: 0.45rem; color: var(--ivory); } .ds-field-label { font-weight: 700; } .ds-field-input { min-height: 2.75rem; padding: 0.6rem 0.75rem; border: 1px solid rgb(243 163 19 / 55%); border-radius: 0.4rem; background: var(--panel); color: var(--ivory); font: inherit; } .ds-field-input::placeholder { color: var(--muted); } .ds-field-input:focus-visible { border-color: var(--gold-light); outline: 3px solid rgb(255 189 56 / 32%); outline-offset: 2px; }"
+    },
+    {
+      "name": "Taxonomy Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "A quiet category link framed as a compact route marker.",
+      "html": "<a class=\"ds-taxonomy-chip\" href=\"#\">RPG</a>",
+      "css": ".ds-taxonomy-chip { display: inline-flex; padding: 0.3rem 0.65rem; border: 1px solid rgb(243 163 19 / 45%); border-radius: 999px; background: rgb(0 13 23 / 46%); color: var(--gold-light); font-size: 0.85rem; text-decoration: none; transition: border-color 160ms ease, background-color 160ms ease; } .ds-taxonomy-chip:hover { border-color: var(--gold-light); background: rgb(243 163 19 / 12%); } .ds-taxonomy-chip:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }"
+    },
+    {
+      "name": "Content Card",
+      "kind": "card",
+      "refersTo": "content-card",
+      "description": "A reusable editorial card with restrained lift and a clear amber frame.",
+      "html": "<article class=\"ds-content-card\"><div class=\"ds-content-card-media\"></div><div class=\"ds-content-card-copy\"><p class=\"ds-content-card-label\">Club news</p><h3 class=\"ds-content-card-title\"><a href=\"#\">A new chapter for the community</a></h3><p class=\"ds-content-card-summary\">An update from the people building Wrocław's shared fantasy space.</p></div></article>",
+      "css": ".ds-content-card { overflow: hidden; border: 1px solid rgb(243 163 19 / 55%); border-radius: 0.75rem; background: rgb(5 31 47 / 86%); color: var(--ivory); box-shadow: 0 0.7rem 1.6rem rgb(0 0 0 / 18%); } .ds-content-card-media { min-height: 9rem; border-bottom: 1px solid rgb(243 163 19 / 35%); background: radial-gradient(circle at 72% 30%, rgb(243 163 19 / 28%), transparent 24%), linear-gradient(145deg, var(--panel-soft), var(--background-deep)); } .ds-content-card-copy { padding: 1.25rem; } .ds-content-card-label { margin: 0; color: var(--gold-light); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; } .ds-content-card-title { margin: 0.55rem 0 0.75rem; font-family: var(--font-roboto-slab), Georgia, serif; font-size: 1.5rem; line-height: 1.05; } .ds-content-card-title a { color: var(--ivory); text-decoration: none; } .ds-content-card-title a:hover { color: var(--gold-light); } .ds-content-card-title a:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; } .ds-content-card-summary { margin: 0; color: var(--muted); line-height: 1.6; }"
+    },
+    {
+      "name": "Featured Event",
+      "kind": "card",
+      "refersTo": "content-card",
+      "description": "A signature evidence-bearing surface with the system's strongest staged lift.",
+      "html": "<article class=\"ds-featured-event\"><div class=\"ds-featured-event-media\"><p class=\"ds-featured-event-date\">Tuesday, 18:00</p><h3 class=\"ds-featured-event-title\">Fantasy club evening</h3></div><div class=\"ds-featured-event-copy\"><p>Meet players, readers, and creators from across Wrocław.</p><dl class=\"ds-featured-event-facts\"><div><dt>When</dt><dd>16 September</dd></div><div><dt>Where</dt><dd>Wrocław</dd></div></dl><a class=\"ds-featured-event-link\" href=\"#\">View event</a></div></article>",
+      "css": ".ds-featured-event { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(12rem, 1fr); overflow: hidden; border: 1px solid var(--line); border-radius: 0.75rem; background: linear-gradient(135deg, rgb(9 38 57 / 96%), rgb(0 18 31 / 98%)); color: var(--ivory); box-shadow: 0 1.2rem 3rem rgb(0 0 0 / 36%), 0 0 1.8rem rgb(243 163 19 / 10%); } .ds-featured-event-media { display: flex; min-height: 14rem; padding: 1.5rem; flex-direction: column; justify-content: space-between; background: linear-gradient(rgb(0 10 17 / 45%), transparent 45%, rgb(0 10 17 / 82%)), radial-gradient(circle at 74% 28%, rgb(243 163 19 / 42%), transparent 20%), var(--panel-soft); } .ds-featured-event-date { margin: 0; color: var(--gold-light); font-weight: 700; } .ds-featured-event-title { margin: 0; font-family: var(--font-roboto-slab), Georgia, serif; font-size: 2rem; text-shadow: 0 3px 22px rgb(0 0 0 / 65%); } .ds-featured-event-copy { padding: 1.5rem; color: var(--muted); } .ds-featured-event-facts { display: grid; gap: 0.75rem; margin: 1rem 0; } .ds-featured-event-facts div { display: grid; grid-template-columns: 4rem 1fr; gap: 0.5rem; } .ds-featured-event-facts dt { color: var(--gold-light); font-weight: 700; } .ds-featured-event-facts dd { margin: 0; color: var(--ivory); } .ds-featured-event-link { color: var(--gold-light); font-weight: 700; } .ds-featured-event-link:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; } @media (max-width: 36rem) { .ds-featured-event { grid-template-columns: 1fr; } }"
+    },
+    {
+      "name": "Main Navigation",
+      "kind": "nav",
+      "refersTo": "button-outline",
+      "description": "A spacious text-led route map with one optional framed action.",
+      "html": "<nav class=\"ds-main-navigation\" aria-label=\"Main navigation\"><a class=\"ds-main-navigation-link\" href=\"#\">News</a><a class=\"ds-main-navigation-link\" href=\"#\">Events</a><a class=\"ds-main-navigation-link\" href=\"#\">About</a><a class=\"ds-main-navigation-action\" href=\"#\">Join WKF</a></nav>",
+      "css": ".ds-main-navigation { display: flex; flex-wrap: wrap; gap: 1rem 2.5rem; align-items: center; padding: 1rem 0; border-bottom: 1px solid rgb(243 163 19 / 25%); color: var(--ivory); } .ds-main-navigation a { color: inherit; font-weight: 700; text-decoration: none; } .ds-main-navigation-link { padding: 0.65rem 0; } .ds-main-navigation-action { padding: 0.65rem 1rem; border: 1px solid var(--gold); border-radius: 0.4rem; } .ds-main-navigation a:hover { color: var(--gold-light); } .ds-main-navigation a:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Cartographer's Constellation",
+    "overview": "The system imagines WKF as a chart drawn across a nocturnal Wrocław: people, events, and smaller initiatives become points connected by lantern-amber routes. Deep navy fields establish calm institutional weight, while warm light, restrained ornament, and fantasy imagery invite visitors into the community rather than presenting the club as a distant authority.\n\nIts voice is atmospheric, credible, welcoming, and quietly fantastical. The visual system is lifted and theatrical: important media and featured surfaces read as illuminated objects staged above a deep background, with cast shadows, localized glow, and layered image treatments. The framing remains tactile and restrained so the experience supports trust instead of becoming spectacle.",
+    "keyCharacteristics": [
+      "Deep nocturnal canvases with distinct tonal layers rather than generic black.",
+      "Lantern-amber routes, borders, and interaction cues used as deliberate points of guidance.",
+      "Parchment-ivory reading color softened by cool silver secondary text.",
+      "Lifted featured surfaces, cinematic image overlays, and controlled pools of warm light.",
+      "Framed, tactile, and restrained components with modest curvature and precise state changes.",
+      "Raster-only iconography that behaves as authored visual material, never as a font glyph or generic vector symbol."
+    ],
+    "rules": [
+      {
+        "name": "The Lantern Route Rule",
+        "body": "Amber traces paths, frames important content, and marks interaction; it does not become a broad decorative fill.",
+        "section": "colors"
+      },
+      {
+        "name": "The True Night Rule",
+        "body": "Use layered navy surfaces for darkness. Generic pure black is reserved for shadow and image control, not the page canvas.",
+        "section": "colors"
+      },
+      {
+        "name": "The Chronicle, Not Costume Rule",
+        "body": "Typography may feel literary and storied, but it must never imitate runes, blackletter, or game-interface display fonts.",
+        "section": "typography"
+      },
+      {
+        "name": "The Guided Expansion Rule",
+        "body": "Let media and browsable collections occupy the wider shell, but return prose and decision-making content to a narrower measure.",
+        "section": "layout"
+      },
+      {
+        "name": "The Staged Evidence Rule",
+        "body": "Reserve the strongest lift and glow for real imagery, featured activity, and proof-bearing content; depth must reinforce importance rather than decorate every panel.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Warm Light Rule",
+        "body": "Glow is localized and amber. Avoid diffuse blue neon, multicolor bloom, or uniform halos around every component.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Authored Mark Rule",
+        "body": "Every icon is a raster graphic designed or exported for its role; never substitute an SVG, icon font, or Unicode character.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do use deep navy layers, cinematic imagery, and localized Lantern Amber light to create a credible nocturnal stage.",
+      "Do reserve meaningful lift for featured activity, real media, and evidence-bearing content.",
+      "Do keep components framed, tactile, and restrained even when the surrounding composition is theatrical.",
+      "Do preserve the approved WKF logo and give it clear space on Deep Night surfaces.",
+      "Do use transparent raster PNG or WebP icons with explicit dimensions and sufficient resolution for high-density displays.",
+      "Do maintain strong focus visibility, readable contrast, and reduced-motion behavior."
+    ],
+    "donts": [
+      "Don't use gaming neon, tavern-fantasy kitsch, or impersonal corporate-blue interface styling.",
+      "Don't use SVG icons, icon fonts, emoji, or Unicode characters as substitutes for raster icon artwork.",
+      "Don't turn Lantern Amber into a large-area background or apply glow uniformly to every surface.",
+      "Don't give every card the strongest theatrical shadow; a hierarchy without a quiet plane has no depth.",
+      "Don't use decorative fantasy typefaces that undermine institutional credibility or long-form readability.",
+      "Don't fabricate visual proof, partner marks, endorsements, or activity imagery that the organization cannot substantiate."
+    ]
+  }
+}

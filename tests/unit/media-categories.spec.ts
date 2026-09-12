@@ -1,14 +1,27 @@
 import { describe, expect, it } from 'vitest'
 
-import { getMediaCategoryWhere, mediaDocumentMimeTypes } from '@/modules/media/media-categories'
+import {
+  getMediaCategoryWhere,
+  mediaDocumentMimeTypes,
+  webRasterImageMimeTypes,
+} from '@/modules/media/media-categories'
 
 describe('media categories', () => {
   it('uses images as the default media category', () => {
-    expect(getMediaCategoryWhere('images')).toEqual({ mimeType: { like: 'image/%' } })
+    expect(getMediaCategoryWhere('images')).toEqual({
+      mimeType: { in: [...webRasterImageMimeTypes] },
+    })
   })
 
-  it('places every image MIME type in the image tab', () => {
-    expect(getMediaCategoryWhere('images')).toEqual({ mimeType: { like: 'image/%' } })
+  it('places only supported web raster formats in the image tab', () => {
+    expect(webRasterImageMimeTypes).toEqual([
+      'image/avif',
+      'image/gif',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ])
+    expect(webRasterImageMimeTypes).not.toContain('image/svg+xml')
   })
 
   it('includes the requested and common document formats in the document tab', () => {
@@ -32,7 +45,7 @@ describe('media categories', () => {
         { mimeType: { exists: false } },
         {
           and: [
-            { mimeType: { not_like: 'image/%' } },
+            { mimeType: { not_in: [...webRasterImageMimeTypes] } },
             { mimeType: { not_in: [...mediaDocumentMimeTypes] } },
           ],
         },

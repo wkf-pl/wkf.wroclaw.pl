@@ -42,15 +42,7 @@ export function SiteHeader({
                 key={item.id}
                 {...link}
               >
-                {item.appearance === 'icon' ? (
-                  <MenuIcon
-                    customIcon={item.customIcon}
-                    iconSource={item.iconSource}
-                    systemIcon={item.systemIcon}
-                  />
-                ) : (
-                  item.label
-                )}
+                {item.appearance === 'icon' ? <MenuIcon iconName={item.iconName} /> : item.label}
               </Link>
             ))}
           </nav>

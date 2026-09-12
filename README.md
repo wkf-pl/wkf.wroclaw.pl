@@ -13,7 +13,7 @@ Jedna aplikacja Node.js łącząca publiczny frontend Next.js, panel i API Paylo
 
 ## Runtime lokalny
 
-Projekt przypina Node.js 22.17.0 przez sekcję `volta` w `package.json`. Po zainstalowaniu Volty wejście do katalogu projektu automatycznie przełącza aktywny runtime na właściwą wersję. pnpm 11.16.0 jest przypięty przez pole `packageManager`.
+Projekt przypina Node.js 22.18.0 przez sekcję `volta` w `package.json`. Po zainstalowaniu Volty wejście do katalogu projektu automatycznie przełącza aktywny runtime na właściwą wersję. pnpm 11.16.0 jest przypięty przez pole `packageManager`.
 
 ## Uruchomienie w Dockerze
 
@@ -90,3 +90,4 @@ Szczegółowa konfiguracja Azure i wymagane ustawienia GitHub są opisane w `inf
 ## Dokumentacja
 
 - [Rejestr decyzji architektonicznych](docs/ADR.md)
+- [Polityka prywatności](docs/Privacy.md)

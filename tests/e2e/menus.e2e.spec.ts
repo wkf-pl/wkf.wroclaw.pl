@@ -99,9 +99,8 @@ test.beforeAll(async ({ browser }) => {
           {
             customAddress: 'blog',
             customScheme: 'path',
-            iconSource: 'system',
+            iconName: 'dice',
             label: 'Sesje',
-            systemIcon: 'dice',
             targetType: 'custom',
           },
         ],
@@ -162,8 +161,8 @@ test.afterAll(async ({ browser }) => {
 test('renders editable menus and configured groups on the home page', async ({ page }) => {
   await page.goto('/')
 
-  await expect(page.locator('.homeHeroImage')).toHaveAttribute('src', /e2e-home-hero\.png/)
-  await expect(page.locator('.siteBrand img')).toHaveAttribute('src', /logo-color\.webp/)
+  await expect(page.locator('.homeHeroImage')).toHaveAttribute('src', /e2e-home-hero(?:-\d+)?\.png/)
+  await expect(page.locator('.siteBrand img')).toHaveAttribute('src', /logo-color(?:-\d+)?\.webp/)
   await expect(
     page.getByRole('link', { name: /E2E Klub Fantastyki — strona główna/ }),
   ).toBeVisible()
@@ -177,6 +176,9 @@ test('renders editable menus and configured groups on the home page', async ({ p
     'href',
     'mailto:kontakt@example.invalid',
   )
+  await expect(
+    page.getByRole('link', { name: 'E-mail' }).locator('[data-icon-name="mail"]'),
+  ).toHaveAttribute('data-icon-size', 'medium')
   const aboutHeaderLink = page
     .getByRole('navigation', { name: 'Główna nawigacja' })
     .getByRole('link', { name: 'O nas' })
@@ -184,18 +186,83 @@ test('renders editable menus and configured groups on the home page', async ({ p
   await expect(aboutHeaderLink).toHaveAttribute('href', '/o-nas')
   await expect(page.getByRole('navigation', { name: 'Obszary klubu' })).toContainText('Gry RPG')
   await expect(page.getByRole('heading', { name: 'E2E RPG' })).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: 'Sesje' }).locator('[data-icon-name="dice"]'),
+  ).toHaveAttribute('data-icon-size', 'medium')
   await expect(page.getByRole('heading', { name: 'E2E LARP' })).toHaveCount(0)
   await expect(page.getByRole('navigation', { name: 'Media społecznościowe' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Slack' })).toHaveAttribute(
     'href',
     'https://slack.example.invalid',
   )
+  await expect(
+    page.getByRole('link', { name: 'Slack' }).locator('[data-icon-name="facebook"]'),
+  ).toHaveAttribute('data-icon-size', 'medium')
   await expect(page.getByRole('navigation', { name: 'Nawigacja w stopce' })).toContainText('O nas')
   await expect(
     page
       .getByRole('navigation', { name: 'Nawigacja w stopce' })
       .getByRole('link', { name: 'O nas' }),
   ).toHaveAttribute('href', '/o-nas')
+})
+
+test('searches, selects with the keyboard and persists a named icon in a nested array', async ({
+  page,
+}) => {
+  await login({ page, user: editorTestUser })
+  await page.goto('/admin/globals/homepage-sections')
+
+  const groupsField = page.locator('#field-groups')
+  const groupsTab = page.getByRole('button', { name: 'Grupy', exact: true })
+  await expect(async () => {
+    await groupsTab.click()
+    await expect(groupsField).toBeVisible({ timeout: 2_000 })
+  }).toPass({ intervals: [500, 1_000], timeout: 15_000 })
+  await groupsField
+    .locator(':scope > .array-field__header')
+    .getByRole('button', { name: 'Pokaż wszystkie' })
+    .click()
+  const groupRow = groupsField.locator('.array-field__row').first()
+  const menuItemsField = groupRow.locator('#field-groups__0__menuItems')
+  await expect(menuItemsField).toBeVisible()
+  await menuItemsField
+    .locator(':scope > .array-field__header')
+    .getByRole('button', { name: 'Pokaż wszystkie' })
+    .click()
+
+  const menuItemRow = menuItemsField.locator('.array-field__row').first()
+  const iconField = menuItemRow.locator('#field-groups__0__menuItems__0__iconName')
+  await expect(iconField).toBeVisible()
+
+  const combobox = iconField.getByRole('combobox')
+  await combobox.click()
+  await combobox.fill('sword')
+  const swordOption = page.locator('.rs__menu [role="option"]').filter({ hasText: 'Miecz' })
+  await expect(swordOption).toContainText('sword')
+  await combobox.press('ArrowDown')
+  await combobox.press('Enter')
+  await expect(iconField.locator('[data-icon-name="sword"]')).toBeVisible()
+
+  const saveResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/api/globals/homepage-sections'),
+  )
+  await page.getByRole('button', { name: 'Zapisz' }).click()
+  expect((await saveResponse).ok()).toBe(true)
+
+  const payload = await getPayload({ config })
+  const savedHomepageSections = await payload.findGlobal({
+    slug: 'homepage-sections',
+    depth: 0,
+    overrideAccess: true,
+  })
+  expect(savedHomepageSections.groups?.[0]?.menuItems?.[0]?.iconName).toBe('sword')
+
+  await page.goto('/')
+  await expect(
+    page.getByRole('link', { name: 'Sesje' }).locator('[data-icon-name="sword"]'),
+  ).toHaveAttribute('data-icon-size', 'medium')
 })
 
 test('keeps the global header and footer on blog and CMS pages', async ({ page }) => {
@@ -220,9 +287,8 @@ function createTestNavigation(aboutPageID: number): Partial<Navigation> {
         appearance: 'icon',
         customAddress: 'kontakt@example.invalid',
         customScheme: 'mailto',
-        iconSource: 'system',
+        iconName: 'mail',
         label: 'E-mail',
-        systemIcon: 'mail',
         targetType: 'custom',
       },
       {
@@ -259,9 +325,8 @@ function createTestFooter(aboutPageID: number): Partial<Footer> {
       {
         customAddress: 'slack.example.invalid',
         customScheme: 'https',
-        iconSource: 'system',
+        iconName: 'facebook',
         label: 'Slack',
-        systemIcon: 'facebook',
         targetType: 'custom',
       },
     ],

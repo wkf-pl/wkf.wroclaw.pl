@@ -1,11 +1,11 @@
 import type { Field, Validate } from 'payload'
 
+import { rasterIconDefinitions, type SelectableRasterIconName } from '@/modules/icons/icon-registry'
+
 import { normalizeCustomAddress, validateCustomAddress } from './custom-target'
-import type { SystemIconName } from './icon-names'
 
 type NavigationSiblingData = {
   appearance?: unknown
-  iconSource?: unknown
   targetType?: unknown
 }
 
@@ -29,35 +29,15 @@ function isTarget(type: string) {
   return (_data: unknown, siblingData: NavigationSiblingData) => siblingData.targetType === type
 }
 
-export function usesCustomIcon(_data: unknown, siblingData: NavigationSiblingData): boolean {
-  return siblingData.iconSource === 'media'
-}
-
-export function usesSystemIcon(_data: unknown, siblingData: NavigationSiblingData): boolean {
-  return siblingData.iconSource === 'system'
-}
-
 export function usesIconAppearance(_data: unknown, siblingData: NavigationSiblingData): boolean {
   return siblingData.appearance === 'icon'
 }
 
-export const systemIconOptions: { label: string; value: SystemIconName }[] = [
-  { label: 'Czas', value: 'time' },
-  { label: 'Discord', value: 'discord' },
-  { label: 'E-mail', value: 'mail' },
-  { label: 'Facebook', value: 'facebook' },
-  { label: 'Gwiazda', value: 'star' },
-  { label: 'Instagram', value: 'instagram' },
-  { label: 'Kalendarz', value: 'calendar' },
-  { label: 'Kolekcja', value: 'collection' },
-  { label: 'Kość', value: 'dice' },
-  { label: 'Książka', value: 'book' },
-  { label: 'Lokalizacja', value: 'location' },
-  { label: 'Pionek', value: 'pawn' },
-  { label: 'Recenzja', value: 'review' },
-  { label: 'Slack', value: 'slack' },
-  { label: 'Użytkownicy', value: 'users' },
-]
+export const iconNameOptions: { label: string; value: SelectableRasterIconName }[] =
+  rasterIconDefinitions
+    .filter((definition) => definition.selectable)
+    .map(({ label, name }) => ({ label, value: name }))
+    .sort((first, second) => first.label.localeCompare(second.label, 'pl'))
 
 export const validatePageTarget: Validate<unknown, unknown, NavigationSiblingData> = (
   value,
@@ -278,66 +258,24 @@ export function createIconFields({
 } = {}): Field[] {
   const iconIsRequired = (siblingData: NavigationSiblingData) =>
     required || siblingData.appearance === 'icon'
-  const validateIconSource: Validate<unknown, unknown, NavigationSiblingData> = (
+  const validateIconName: Validate<unknown, unknown, NavigationSiblingData> = (
     value,
     { siblingData },
-  ) => (!iconIsRequired(siblingData) || value ? true : 'Wybierz źródło ikony.')
-  const validateSystemIcon: Validate<unknown, unknown, NavigationSiblingData> = (
-    value,
-    { siblingData },
-  ) =>
-    !iconIsRequired(siblingData) || siblingData.iconSource !== 'system' || value
-      ? true
-      : 'Wybierz ikonę systemową.'
-  const validateCustomIcon: Validate<unknown, unknown, NavigationSiblingData> = (
-    value,
-    { siblingData },
-  ) =>
-    !iconIsRequired(siblingData) || siblingData.iconSource !== 'media' || value
-      ? true
-      : 'Wybierz własną ikonę.'
+  ) => (!iconIsRequired(siblingData) || value ? true : 'Wybierz ikonę.')
 
   return [
     {
-      name: 'iconSource',
-      type: 'radio',
-      admin: {
-        condition: showWhenAppearanceIcon ? usesIconAppearance : undefined,
-      },
-      defaultValue: 'system',
-      label: 'Źródło ikony',
-      options: [
-        { label: 'Ikona systemowa', value: 'system' },
-        { label: 'Biblioteka Media', value: 'media' },
-      ],
-      validate: validateIconSource,
-    },
-    {
-      name: 'systemIcon',
+      name: 'iconName',
       type: 'select',
       admin: {
-        condition: (data, siblingData) =>
-          (!showWhenAppearanceIcon || usesIconAppearance(data, siblingData)) &&
-          usesSystemIcon(data, siblingData),
+        components: {
+          Field: '/components/admin/RasterIconPickerField#RasterIconPickerField',
+        },
+        condition: showWhenAppearanceIcon ? usesIconAppearance : undefined,
       },
       label: 'Ikona',
-      options: [...systemIconOptions],
-      validate: validateSystemIcon,
-    },
-    {
-      name: 'customIcon',
-      type: 'upload',
-      admin: {
-        condition: (data, siblingData) =>
-          (!showWhenAppearanceIcon || usesIconAppearance(data, siblingData)) &&
-          usesCustomIcon(data, siblingData),
-      },
-      label: 'Własna ikona',
-      filterOptions: {
-        mimeType: { contains: 'image/' },
-      },
-      relationTo: 'media',
-      validate: validateCustomIcon,
+      options: [...iconNameOptions],
+      validate: validateIconName,
     },
   ]
 }

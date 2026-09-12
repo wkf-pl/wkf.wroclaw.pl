@@ -100,7 +100,7 @@ export default async function EventPage({ params, searchParams }: Properties) {
       ) : null}
       {location?.mapEmbedURL ? (
         <div className="eventMap">
-          <GoogleMapEmbed src={location.mapEmbedURL} />
+          <GoogleMapEmbed externalMapURL={mapURL} src={location.mapEmbedURL} />
         </div>
       ) : null}
     </section>

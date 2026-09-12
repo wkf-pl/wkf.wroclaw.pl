@@ -21,13 +21,28 @@ export const mediaDocumentMimeTypes = [
   'text/xml',
 ] as const
 
+export const webRasterImageMimeTypes = [
+  'image/avif',
+  'image/gif',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+] as const
+
+export function isWebRasterImageMimeType(value: unknown): boolean {
+  return (
+    typeof value === 'string' &&
+    webRasterImageMimeTypes.some((mimeType) => mimeType === value)
+  )
+}
+
 export const mediaCategories = ['images', 'documents', 'other'] as const
 
 export type MediaCategory = (typeof mediaCategories)[number]
 
 export function getMediaCategoryWhere(category: MediaCategory): Where {
   if (category === 'images') {
-    return { mimeType: { like: 'image/%' } }
+    return { mimeType: { in: [...webRasterImageMimeTypes] } }
   }
 
   if (category === 'documents') {
@@ -39,7 +54,7 @@ export function getMediaCategoryWhere(category: MediaCategory): Where {
       { mimeType: { exists: false } },
       {
         and: [
-          { mimeType: { not_like: 'image/%' } },
+          { mimeType: { not_in: [...webRasterImageMimeTypes] } },
           { mimeType: { not_in: [...mediaDocumentMimeTypes] } },
         ],
       },

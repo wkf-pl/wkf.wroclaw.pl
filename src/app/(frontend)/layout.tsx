@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Roboto_Slab } from 'next/font/google'
 import type { ReactNode } from 'react'
 
+import { PrivacyConsentProvider } from '@/components/privacy/PrivacyConsent'
 import {
   getPublicFooter,
   getPublicNavigation,
@@ -56,9 +57,11 @@ export default async function FrontendLayout({ children }: FrontendLayoutPropert
   return (
     <html lang="pl">
       <body className={robotoSlab.variable}>
-        <SiteHeader navigation={navigation} siteSettings={siteSettings} />
-        {children}
-        <SiteFooter footer={footer} navigation={navigation} siteSettings={siteSettings} />
+        <PrivacyConsentProvider>
+          <SiteHeader navigation={navigation} siteSettings={siteSettings} />
+          {children}
+          <SiteFooter footer={footer} navigation={navigation} siteSettings={siteSettings} />
+        </PrivacyConsentProvider>
       </body>
     </html>
   )
