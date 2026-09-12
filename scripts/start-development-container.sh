@@ -3,5 +3,5 @@
 set -eu
 
 pnpm exec tsx scripts/prepare-development-migrations.ts
-pnpm migrate:with-media
+pnpm payload migrate
 exec pnpm dev:container

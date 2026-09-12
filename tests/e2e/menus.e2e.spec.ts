@@ -211,10 +211,13 @@ test('searches, selects with the keyboard and persists a named icon in a nested 
 }) => {
   await login({ page, user: editorTestUser })
   await page.goto('/admin/globals/homepage-sections')
-  await page.getByRole('button', { name: 'Grupy', exact: true }).click()
 
   const groupsField = page.locator('#field-groups')
-  await expect(groupsField).toBeVisible({ timeout: 15_000 })
+  const groupsTab = page.getByRole('button', { name: 'Grupy', exact: true })
+  await expect(async () => {
+    await groupsTab.click()
+    await expect(groupsField).toBeVisible({ timeout: 2_000 })
+  }).toPass({ intervals: [500, 1_000], timeout: 15_000 })
   await groupsField
     .locator(':scope > .array-field__header')
     .getByRole('button', { name: 'Pokaż wszystkie' })

@@ -122,7 +122,7 @@ Konto utrzymujemy do czasu utraty uprawnień albo zakończenia współpracy. Kon
 
 ### Co możesz zrobić
 
-Osoba posiadająca konto może sama poprawić swoje dane lub poprosić o to administratora. Administrator udziela również wyjaśnień i innej pomocy przy działaniach w panelu administracyjnym. 
+Osoba posiadająca konto może sama poprawić swoje dane lub poprosić o to administratora. Administrator udziela również wyjaśnień i innej pomocy przy działaniach w panelu administracyjnym.
 
 Osoba posiadająca konto powinna niezwłocznie zgłosić podejrzenie przejęcia hasła lub konta.
 
@@ -156,7 +156,7 @@ Dokument zgody przechowujemy przez czas publikacji danych, a później tylko tak
 
 ### Co możesz zrobić
 
-Opiekun może nie zgodzić się na dowolny z wymienionych elementów albo później cofnąć zgodę. Nie wpływa to na członkostwo osoby małoletniej. 
+Opiekun może nie zgodzić się na dowolny z wymienionych elementów albo później cofnąć zgodę. Nie wpływa to na członkostwo osoby małoletniej.
 
 > **Podstawa prawna:** publikacja danych opiera się na zgodzie — art. 6 ust. 1 lit. a RODO. Dane opiekuna i dokument zgody wykorzystujemy w uzasadnionym interesie polegającym na ochronie praw małoletniego i wykazaniu prawidłowości działania — art. 6 ust. 1 lit. f RODO.[^rodo]
 

@@ -28,9 +28,6 @@ import * as migration_20260901_172430 from './20260901_172430'
 import * as migration_20260901_181553_homepage_groups_and_default_logo from './20260901_181553_homepage_groups_and_default_logo'
 import * as migration_20260903_140650_column_layout from './20260903_140650_column_layout'
 import * as migration_20260911_121201_raster_icon_library from './20260911_121201_raster_icon_library'
-import * as migration_20260911_202457 from './20260911_202457'
-import * as migration_20260911_213315_icon_library_expansion from './20260911_213315_icon_library_expansion'
-import * as migration_20260912_122846_icon_library_groups_and_layout from './20260912_122846_icon_library_groups_and_layout'
 
 export const migrations = [
   {
@@ -182,20 +179,5 @@ export const migrations = [
     up: migration_20260911_121201_raster_icon_library.up,
     down: migration_20260911_121201_raster_icon_library.down,
     name: '20260911_121201_raster_icon_library',
-  },
-  {
-    up: migration_20260911_202457.up,
-    down: migration_20260911_202457.down,
-    name: '20260911_202457',
-  },
-  {
-    up: migration_20260911_213315_icon_library_expansion.up,
-    down: migration_20260911_213315_icon_library_expansion.down,
-    name: '20260911_213315_icon_library_expansion',
-  },
-  {
-    up: migration_20260912_122846_icon_library_groups_and_layout.up,
-    down: migration_20260912_122846_icon_library_groups_and_layout.down,
-    name: '20260912_122846_icon_library_groups_and_layout',
   },
 ]
