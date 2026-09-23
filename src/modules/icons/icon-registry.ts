@@ -177,6 +177,7 @@ const internalRasterIconDefinitions = [
   { category: 'internal', keywords: [], label: 'Profil', name: 'profile', selectable: false },
   { category: 'internal', keywords: [], label: 'Uprawnienia', name: 'roles', selectable: false },
   { category: 'internal', keywords: [], label: 'Ustawienia', name: 'settings', selectable: false },
+  { category: 'internal', keywords: [], label: 'Powiększenie', name: 'zoom-in', selectable: false },
 ] as const satisfies readonly RasterIconDefinition[]
 
 export const rasterIconDefinitions = [

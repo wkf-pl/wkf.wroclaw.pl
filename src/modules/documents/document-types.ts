@@ -18,3 +18,13 @@ export function isDocumentType(value: unknown): value is DocumentType {
 export function getDocumentTypeLabel(value: string): string {
   return documentTypeOptions.find((option) => option.value === value)?.label ?? value
 }
+
+export function getDocumentDisplayLabel(
+  documentType: string,
+  documentNumber?: null | string,
+): string {
+  const typeLabel = getDocumentTypeLabel(documentType).toLocaleUpperCase('pl-PL')
+  const normalizedDocumentNumber = documentNumber?.trim()
+
+  return normalizedDocumentNumber ? `${typeLabel} nr ${normalizedDocumentNumber}` : typeLabel
+}

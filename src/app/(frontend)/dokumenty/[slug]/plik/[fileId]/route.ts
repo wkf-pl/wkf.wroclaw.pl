@@ -11,6 +11,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ fileId: string; slug: string }> },
 ) {
+  const shouldDownload = new URL(request.url).searchParams.get('download') === '1'
   const { fileId, slug } = await params
   const parsedFileId = Number.parseInt(fileId, 10)
   if (!Number.isSafeInteger(parsedFileId)) return new Response(null, { status: 404 })
@@ -76,7 +77,7 @@ export async function GET(
     const responseHeaders = new Headers({
       'Accept-Ranges': 'bytes',
       'Cache-Control': 'public, max-age=3600',
-      'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
+      'Content-Disposition': `${shouldDownload ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
       'Content-Length': `${range ? range.end - range.start + 1 : fileSize}`,
       'Content-Type': properties.contentType || 'application/pdf',
     })

@@ -2,10 +2,12 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { CmsRichText } from '@/components/CmsRichText'
+import { getDocumentDisplayLabel } from '@/modules/documents/document-types'
 import { findPublishedDocumentBySlug } from '@/modules/documents/public-documents'
 import type { DocumentFile, User } from '@/payload-types'
 
-import { ContentHero, ContentHeroCategory, ContentHeroMeta } from '../../_components/ContentHero'
+import { ContentHero, ContentHeroMeta } from '../../_components/ContentHero'
+import { DocumentPdfPreview } from '../../_components/DocumentPdfPreview'
 import { TaxonomyLinks } from '../../_components/TaxonomyLinks'
 
 export const dynamic = 'force-dynamic'
@@ -45,6 +47,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ slug:
       return populatedFile ? [populatedFile] : []
     }) ?? []
   const authorName = getAuthorName(document.author)
+  const primaryFileHref = primaryFile ? `/dokumenty/${document.slug}/plik/${primaryFile.id}` : null
 
   return (
     <main className="contentHeroPage">
@@ -55,11 +58,15 @@ export default async function DocumentPage({ params }: { params: Promise<{ slug:
             { label: 'Dokumenty', url: '/dokumenty' },
             { label: document.title, url: null },
           ]}
-          description={document.summary}
-          eyebrow={<ContentHeroCategory category={document.category} />}
+          eyebrow={getDocumentDisplayLabel(document.documentType, document.documentNumber)}
+          media={
+            primaryFileHref ? (
+              <DocumentPdfPreview documentTitle={document.title} href={primaryFileHref} />
+            ) : undefined
+          }
           title={document.title}
         >
-          <TaxonomyLinks tags={document.tags} />
+          <TaxonomyLinks category={document.category} tags={document.tags} />
           <ContentHeroMeta
             authorName={authorName}
             date={{
@@ -70,17 +77,19 @@ export default async function DocumentPage({ params }: { params: Promise<{ slug:
         </ContentHero>
 
         <div className="contentShell contentPageBody documentBody">
+          <p className="documentSummary">{document.summary}</p>
           {document.content ? <CmsRichText className="richText" data={document.content} /> : null}
 
-          <section aria-labelledby="document-files-heading" className="attachments">
-            <h2 id="document-files-heading">Pliki</h2>
-            <ul>
-              {primaryFile ? <FileLink file={primaryFile} slug={document.slug} /> : null}
-              {attachments.map((file) => (
-                <FileLink file={file} key={file.id} slug={document.slug} />
-              ))}
-            </ul>
-          </section>
+          {attachments.length > 0 ? (
+            <section aria-labelledby="document-files-heading" className="attachments">
+              <h2 id="document-files-heading">Załączniki</h2>
+              <ul>
+                {attachments.map((file) => (
+                  <FileLink file={file} key={file.id} slug={document.slug} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </div>
       </article>
     </main>

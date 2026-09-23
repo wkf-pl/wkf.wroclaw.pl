@@ -100,15 +100,54 @@ test('renders the public documents register without account actions', async ({ p
       name: `Dokument E2E ${fixtureName}`,
     }),
   ).toBeVisible()
-  const fileLink = page.getByRole('link', { exact: true, name: `PDF ${fixtureName}` })
+  await expect(page.locator('.contentHeroEyebrow')).toHaveText('STATUT')
+  const fileLink = page.getByRole('link', {
+    exact: true,
+    name: `Otwórz główny plik PDF dokumentu: Dokument E2E ${fixtureName}`,
+  })
+  const downloadLink = page.getByRole('link', {
+    exact: true,
+    name: `Pobierz główny plik PDF dokumentu: Dokument E2E ${fixtureName}`,
+  })
   const filePath = await fileLink.getAttribute('href')
   expect(filePath).toMatch(new RegExp(`^/dokumenty/${fixtureName}/plik/\\d+$`))
   if (!filePath) {
     throw new Error('Missing document file path.')
   }
+  const previewFrame = page.locator('.documentPdfPreviewFrame')
+  await expect(previewFrame).toHaveAttribute(
+    'src',
+    `${filePath}#page=1&view=FitH&toolbar=0&navpanes=0`,
+  )
+  await expect(previewFrame).toHaveCSS('pointer-events', 'auto')
+  await expect(fileLink.locator('[data-icon-name="zoom-in"]')).toHaveCSS(
+    'mask-image',
+    /zoom-in\.png/,
+  )
+  await expect(downloadLink.locator('[data-icon-name="download"]')).toHaveCSS(
+    'mask-image',
+    /download\.png/,
+  )
+  const previewBox = await page.locator('.documentPdfPreview').boundingBox()
+  const previewFrameBox = await previewFrame.boundingBox()
+  const openLinkBox = await fileLink.boundingBox()
+  const footerBox = await page.locator('.siteFooterShell').boundingBox()
+  expect(previewBox).not.toBeNull()
+  expect(previewFrameBox).not.toBeNull()
+  expect(openLinkBox).not.toBeNull()
+  expect(footerBox).not.toBeNull()
+  expect(previewFrameBox?.width).toBeGreaterThan(previewBox?.width ?? Number.POSITIVE_INFINITY)
+  expect(openLinkBox?.width).toBeLessThan(previewBox?.width ?? 0)
+  expect(footerBox?.y).toBeGreaterThan((previewBox?.y ?? 0) + (previewBox?.height ?? 0))
+  await expect(downloadLink).toHaveAttribute('href', `${filePath}?download=1`)
   const fileResponse = await page.request.get(filePath)
   expect(fileResponse.ok()).toBe(true)
   expect(fileResponse.headers()['content-type']).toBe('application/pdf')
+  expect(fileResponse.headers()['content-disposition']).toContain('inline;')
+  const downloadResponse = await page.request.get(`${filePath}?download=1`)
+  expect(downloadResponse.ok()).toBe(true)
+  expect(downloadResponse.headers()['content-type']).toBe('application/pdf')
+  expect(downloadResponse.headers()['content-disposition']).toContain('attachment;')
 
   const loginResponse = await page.goto('/login')
   expect(loginResponse?.status()).toBe(404)

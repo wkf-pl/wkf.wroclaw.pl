@@ -152,8 +152,13 @@ describe('content hero', () => {
     expect(sharedDocument).toContain('<TaxonomyLinks tags={tags} />')
     expect(taxonomyPage).toContain('<ContentHero')
     expect(documentPage).toContain('<ContentHero')
-    expect(documentPage).toContain('<ContentHeroCategory category={document.category} />')
-    expect(documentPage).toContain('<TaxonomyLinks tags={document.tags} />')
+    expect(documentPage).toContain(
+      'eyebrow={getDocumentDisplayLabel(document.documentType, document.documentNumber)}',
+    )
+    expect(documentPage).toContain(
+      '<TaxonomyLinks category={document.category} tags={document.tags} />',
+    )
+    expect(documentPage).toContain('<DocumentPdfPreview')
     expect(memberPage).toContain('<ContentHero')
   })
 })
