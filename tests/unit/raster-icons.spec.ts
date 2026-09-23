@@ -74,7 +74,8 @@ describe('raster icon library', () => {
     expect(selectableRasterIconNames).toHaveLength(63)
     expect(new Set(selectableRasterIconNames)).toHaveLength(63)
     expect(new Set(selectableDefinitions.map(({ label }) => label))).toHaveLength(63)
-    expect(rasterIconDefinitions.filter(({ selectable }) => !selectable)).toHaveLength(5)
+    expect(selectableRasterIconNames).not.toContain('zoom-in')
+    expect(rasterIconDefinitions.filter(({ selectable }) => !selectable)).toHaveLength(6)
   })
 
   it('provides a transparent PNG at the exact source size for every tier', async () => {

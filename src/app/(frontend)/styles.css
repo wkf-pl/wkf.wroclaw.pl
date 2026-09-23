@@ -263,7 +263,7 @@ body:has(> .homePage) .siteHeader {
   gap: clamp(2.5rem, 6vw, 5rem);
   align-items: center;
   width: min(76rem, calc(100% - 3rem));
-  min-height: 34rem;
+  /*min-height: 24rem;*/
   margin-inline: auto;
   padding: 9.75rem 0 3rem;
 }
@@ -298,11 +298,11 @@ body:has(> .homePage) .siteHeader {
 }
 
 .contentHero h1 {
-  max-width: 14ch;
+  max-width: 20ch;
   margin-bottom: 1.4rem;
-  font-size: clamp(2.8rem, 5vw, 4.75rem);
+  font-size: clamp(2.8rem, 5vw, 3.75rem);
   font-weight: 700;
-  line-height: 0.98;
+  line-height: 1.1;
   text-wrap: balance;
 }
 
@@ -320,7 +320,7 @@ body:has(> .homePage) .siteHeader {
   width: 100%;
   aspect-ratio: 16 / 9;
   border: 1px solid rgb(243 163 19 / 82%);
-  border-radius: 0.8rem;
+  /*border-radius: 0.8rem;*/
   background: var(--background-deep);
   box-shadow:
     0 1.2rem 3rem rgb(0 0 0 / 36%),
@@ -1214,6 +1214,110 @@ body:has(> .homePage) .siteHeader {
   width: 100%;
 }
 
+.documentDetail .contentHeroInner {
+  z-index: 4;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+  align-items: start;
+}
+
+.documentDetail .contentHeroMedia {
+  position: absolute;
+  top: 12.95rem;
+  right: 0;
+  align-self: start;
+  width: min(28rem, 100%);
+  aspect-ratio: 210 / 297;
+}
+
+.documentBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+  column-gap: clamp(2.5rem, 6vw, 5rem);
+  min-height: 32rem;
+}
+
+.documentPdfPreview {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+}
+
+.documentPdfPreviewFrame {
+  display: block;
+  width: calc(100% + 1rem);
+  height: 100%;
+  border: 0;
+}
+
+.documentPdfPreviewActions {
+  position: absolute;
+  z-index: 1;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.documentPdfPreviewAction {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  padding: 0;
+  border: 1px solid var(--gold-light);
+  border-radius: 0.4rem;
+  background: rgb(0 13 23 / 92%);
+  color: var(--ivory);
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 0.7rem 1.6rem rgb(0 0 0 / 24%);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.documentPdfPreviewAction--open {
+  cursor: zoom-in;
+}
+
+.documentPdfPreviewAction .rasterIcon {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.documentPdfPreviewAction:hover,
+.documentPdfPreviewAction:focus-visible {
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.documentPdfPreviewAction:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+.documentSummary,
+.documentBody .richText,
+.documentBody .attachments {
+  grid-column: 1;
+  max-width: 70ch;
+}
+
+.documentSummary {
+  margin: 0 0 2rem;
+  color: var(--ivory);
+  font-size: clamp(1.08rem, 1.6vw, 1.2rem);
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.documentBody .richText {
+  line-height: 1.8;
+}
+
 .documentFilters {
   display: grid;
   gap: 1rem;
@@ -1819,6 +1923,20 @@ a.attachmentItem:hover {
     gap: 2.5rem;
   }
 
+  .documentDetail .contentHeroInner,
+  .documentBody {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 20rem);
+    gap: 2.5rem;
+  }
+
+  .documentBody {
+    min-height: 22rem;
+  }
+
+  .documentDetail .contentHeroMedia {
+    width: 20rem;
+  }
+
   .homeHero {
     min-height: 43rem;
     background-position: 56% top;
@@ -1913,6 +2031,24 @@ a.attachmentItem:hover {
   .contentHero--portrait .contentHeroMedia {
     justify-self: center;
     width: min(19rem, 82vw);
+  }
+
+  .documentDetail .contentHeroInner {
+    z-index: 2;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .documentDetail .contentHeroMedia {
+    position: relative;
+    top: auto;
+    right: auto;
+    justify-self: center;
+    width: min(26rem, 100%);
+  }
+
+  .documentBody {
+    display: block;
+    min-height: 0;
   }
 
   .contentHeroMetaItem + .contentHeroMetaItem::before {

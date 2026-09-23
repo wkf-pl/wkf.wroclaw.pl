@@ -41,6 +41,8 @@ services:
       timeout: 5s
       retries: 12
       start_period: 30s
+    mem_limit: 5g
+    mem_reservation: 3g
     ports:
       - '3000:3000'
     volumes:

@@ -21,6 +21,7 @@ type ContentHeroProperties = {
   description?: null | string
   eyebrow: ReactNode
   image?: ContentHeroImage
+  media?: ReactNode
   title: string
 }
 
@@ -38,13 +39,15 @@ export function ContentHero({
   description,
   eyebrow,
   image,
+  media,
   title,
 }: ContentHeroProperties) {
   const intermediateBreadcrumbs = breadcrumbs.slice(1, -1)
   const imageVariant = image?.variant ?? 'landscape'
+  const hasMedia = image !== undefined || media !== undefined
   const className = [
     'contentHero',
-    image ? null : 'contentHero--withoutImage',
+    hasMedia ? null : 'contentHero--withoutImage',
     imageVariant === 'portrait' ? 'contentHero--portrait' : null,
   ]
     .filter(Boolean)
@@ -63,7 +66,9 @@ export function ContentHero({
           {children}
         </div>
 
-        {image ? (
+        {media !== undefined ? (
+          <div className="contentHeroMedia contentHeroMedia--custom">{media}</div>
+        ) : image ? (
           <div className="contentHeroMedia">
             {/* eslint-disable-next-line @next/next/no-img-element -- CMS media can use a runtime-configured Azure host. */}
             <img
