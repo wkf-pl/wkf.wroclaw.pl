@@ -75,8 +75,8 @@ export function mergeEventCycleDefaults(currentData: Data, cycle: EventCycle): D
   const defaults = cycle.eventDefaults
 
   applyIfEmpty(data, 'title', defaults.title)
+  applyIfEmpty(data, 'eventType', getEventRelationshipID(defaults.eventType) ?? defaults.eventType)
   applyIfEmpty(data, 'heroImage', getEventRelationshipID(defaults.heroImage) ?? defaults.heroImage)
-  applyIfEmpty(data, 'tagline', defaults.tagline)
   applyIfEmpty(data, 'excerpt', defaults.excerpt)
   applyIfEmpty(data, 'layout', cloneWithoutInlineIDs(defaults.layout))
   applyIfEmpty(data, 'category', getEventRelationshipID(defaults.category) ?? defaults.category)

@@ -7,7 +7,9 @@ import { describe, expect, it } from 'vitest'
 
 import type { Event } from '@/payload-types'
 import { EventCycles } from '@/collections/EventCycles'
+import { EventTypes } from '@/collections/EventTypes'
 import { Events } from '@/collections/Events'
+import { eventTypeIconColors, isEventTypeIconColor } from '@/modules/events/event-types'
 import {
   validateCapacity,
   validateEventEnd,
@@ -45,6 +47,7 @@ function eventFixture(overrides: Partial<Event> = {}): Event {
     layout: [],
     timeMode: 'timed',
     eventStatus: 'scheduled',
+    eventType: 1,
     startAt: '2026-09-08T16:00:00.000Z',
     participation: 'public',
     capacityMode: 'unlimited',
@@ -60,6 +63,45 @@ function eventFixture(overrides: Partial<Event> = {}): Event {
 }
 
 describe('events model', () => {
+  it('places Cycle, title and required Event type in the first Event row', () => {
+    const tabs = Events.fields.find((field) => field.type === 'tabs')
+    expect(tabs?.type).toBe('tabs')
+    if (tabs?.type !== 'tabs') throw new Error('Missing Event tabs')
+    const firstRow = tabs.tabs[0]?.fields[0]
+    expect(firstRow?.type).toBe('row')
+    if (firstRow?.type !== 'row') throw new Error('Missing Event first row')
+
+    expect(firstRow.fields.map((field) => ('name' in field ? field.name : null))).toEqual([
+      'cycle',
+      'title',
+      'eventType',
+    ])
+    expect(firstRow.fields[2]).toMatchObject({
+      label: 'Rodzaj',
+      relationTo: 'event-types',
+      required: true,
+      type: 'relationship',
+    })
+  })
+
+  it('defines Event types as a shared icon dictionary with the WKF color palette', () => {
+    expect(EventTypes.versions).toBeUndefined()
+    expect(EventTypes.fields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'name', required: true, unique: true }),
+        expect.objectContaining({ name: 'iconName', required: true, type: 'select' }),
+        expect.objectContaining({
+          name: 'iconColor',
+          options: eventTypeIconColors,
+          required: true,
+          type: 'select',
+        }),
+      ]),
+    )
+    expect(isEventTypeIconColor('lantern-glow')).toBe(true)
+    expect(isEventTypeIconColor('custom-red')).toBe(false)
+  })
+
   it('keeps participation as the only audience-related Event field', () => {
     const row = flattenFields(Events.fields).find(
       (field) =>
@@ -90,8 +132,34 @@ describe('events model', () => {
     expect(defaultsGroup).toMatchObject({ type: 'group' })
     if (!defaultsGroup || defaultsGroup.type !== 'group') throw new Error('Missing Event defaults')
     expect(defaultsGroup.label).toBe(false)
-    expect(defaultsGroup.fields.some((field) => 'name' in field && field.name === 'title')).toBe(
-      true,
+    expect(
+      flattenFields(defaultsGroup.fields).some(
+        (field) => 'name' in field && field.name === 'title',
+      ),
+    ).toBe(true)
+    expect(
+      flattenFields(defaultsGroup.fields).find(
+        (field) => 'name' in field && field.name === 'eventType',
+      ),
+    ).toMatchObject({ relationTo: 'event-types', required: true, type: 'relationship' })
+  })
+
+  it('uses Streszczenie as the only short promotional copy for Events and Cycles', () => {
+    const eventFields = flattenFields(Events.fields)
+    const cycleFields = flattenFields(EventCycles.fields)
+
+    expect(eventFields.some((field) => 'name' in field && field.name === 'tagline')).toBe(false)
+    expect(cycleFields.some((field) => 'name' in field && field.name === 'tagline')).toBe(false)
+    expect(eventFields.find((field) => 'name' in field && field.name === 'excerpt')).toMatchObject({
+      label: 'Streszczenie',
+      maxLength: 700,
+      required: true,
+    })
+    expect(cycleFields.filter((field) => 'name' in field && field.name === 'excerpt')).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Streszczenie', maxLength: 700, required: true }),
+        expect.objectContaining({ label: 'Streszczenie', maxLength: 700 }),
+      ]),
     )
   })
 
@@ -175,14 +243,12 @@ describe('events model', () => {
       eventDefaults: {},
       excerpt: 'Opis cyklu',
       heroImage: 3,
-      tagline: 'Hasło cyklu',
       title: 'Cykl',
     }
     copyEventCycleContentToDefaults({ data, operation: 'create' } as never)
     expect(data.eventDefaults).toEqual({
       excerpt: 'Opis cyklu',
       heroImage: 3,
-      tagline: 'Hasło cyklu',
       title: 'Cykl',
     })
   })
@@ -191,6 +257,7 @@ describe('events model', () => {
     const merged = mergeEventCycleDefaults({ externalLinks: 0, organizers: 0, partners: 0 }, {
       id: 7,
       eventDefaults: {
+        eventType: { id: 17 },
         organizers: [{ id: 'organizer-row', profile: { id: 11, publicName: 'Anna' } }],
         partners: [{ id: 'partner-row', partner: { id: 12, name: 'Partner' }, roles: ['partner'] }],
         externalLinks: [
@@ -223,6 +290,7 @@ describe('events model', () => {
     } as never)
 
     expect(merged.organizers).toEqual([{ profile: 11 }])
+    expect(merged.eventType).toBe(17)
     expect(merged.partners).toEqual([{ partner: 12, roles: ['partner'] }])
     expect(merged.externalLinks).toEqual([
       {

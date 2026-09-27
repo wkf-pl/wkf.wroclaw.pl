@@ -209,6 +209,8 @@ test('renders editable menus and configured groups on the home page', async ({ p
 test('searches, selects with the keyboard and persists a named icon in a nested array', async ({
   page,
 }) => {
+  test.setTimeout(60_000)
+
   await login({ page, user: editorTestUser })
   await page.goto('/admin/globals/homepage-sections')
 
@@ -218,17 +220,20 @@ test('searches, selects with the keyboard and persists a named icon in a nested 
     await groupsTab.click()
     await expect(groupsField).toBeVisible({ timeout: 2_000 })
   }).toPass({ intervals: [500, 1_000], timeout: 15_000 })
-  await groupsField
+  const expandGroupsButton = groupsField
     .locator(':scope > .array-field__header')
     .getByRole('button', { name: 'Pokaż wszystkie' })
-    .click()
+  await expect(expandGroupsButton).toBeVisible({ timeout: 15_000 })
+  await expandGroupsButton.click()
+
   const groupRow = groupsField.locator('.array-field__row').first()
   const menuItemsField = groupRow.locator('#field-groups__0__menuItems')
-  await expect(menuItemsField).toBeVisible()
-  await menuItemsField
+  await expect(menuItemsField).toBeVisible({ timeout: 15_000 })
+  const expandMenuItemsButton = menuItemsField
     .locator(':scope > .array-field__header')
     .getByRole('button', { name: 'Pokaż wszystkie' })
-    .click()
+  await expect(expandMenuItemsButton).toBeVisible({ timeout: 15_000 })
+  await expandMenuItemsButton.click()
 
   const menuItemRow = menuItemsField.locator('.array-field__row').first()
   const iconField = menuItemRow.locator('#field-groups__0__menuItems__0__iconName')

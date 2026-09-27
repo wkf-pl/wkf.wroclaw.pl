@@ -72,6 +72,7 @@ export interface Config {
     posts: Post;
     events: Event;
     'event-cycles': EventCycle;
+    'event-types': EventType;
     categories: Category;
     tags: Tag;
     media: Media;
@@ -110,6 +111,7 @@ export interface Config {
     posts: PostsSelect<false> | PostsSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
     'event-cycles': EventCyclesSelect<false> | EventCyclesSelect<true>;
+    'event-types': EventTypesSelect<false> | EventTypesSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -470,8 +472,8 @@ export interface Event {
   id: number;
   cycle?: (number | null) | EventCycle;
   title: string;
+  eventType: number | EventType;
   heroImage?: (number | null) | Media;
-  tagline?: string | null;
   excerpt: string;
   layout: (
     | RichTextBlock
@@ -580,7 +582,6 @@ export interface EventCycle {
   id: number;
   title: string;
   heroImage?: (number | null) | Media;
-  tagline?: string | null;
   excerpt: string;
   layout: (
     | RichTextBlock
@@ -604,8 +605,8 @@ export interface EventCycle {
   };
   eventDefaults: {
     title?: string | null;
+    eventType: number | EventType;
     heroImage?: (number | null) | Media;
-    tagline?: string | null;
     excerpt?: string | null;
     layout: (
       | RichTextBlock
@@ -862,6 +863,7 @@ export interface Role {
           | 'posts'
           | 'events'
           | 'event-cycles'
+          | 'event-types'
           | 'partners'
           | 'documents'
           | 'club-sections'
@@ -1076,6 +1078,81 @@ export interface ColumnLayoutBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-types".
+ */
+export interface EventType {
+  id: number;
+  name: string;
+  iconName:
+    | 'announcement'
+    | 'arrow-right'
+    | 'arrow'
+    | 'arrow-left'
+    | 'arrows'
+    | 'calendar'
+    | 'download'
+    | 'event'
+    | 'external-link'
+    | 'globe'
+    | 'home'
+    | 'location'
+    | 'compass'
+    | 'confetti'
+    | 'star'
+    | 'time'
+    | 'book'
+    | 'collection'
+    | 'document'
+    | 'image'
+    | 'pdf'
+    | 'review'
+    | 'tag'
+    | 'cards'
+    | 'dice'
+    | 'd4'
+    | 'd6'
+    | 'd8'
+    | 'd10'
+    | 'd12'
+    | 'd20'
+    | 'dnd5'
+    | 'pawn'
+    | 'larp'
+    | 'sword'
+    | 'axe'
+    | 'bow'
+    | 'fighter'
+    | 'fireball'
+    | 'mace'
+    | 'mage'
+    | 'shield'
+    | 'wand'
+    | 'astronaut'
+    | 'gun'
+    | 'sf'
+    | 'star-trek'
+    | 'star-wars-empire'
+    | 'star-wars-rebel-alliance'
+    | 'steampunk'
+    | 'stormtrooper'
+    | 'partner'
+    | 'users'
+    | 'bluesky'
+    | 'discord'
+    | 'facebook'
+    | 'instagram'
+    | 'linkedin'
+    | 'mail'
+    | 'messenger'
+    | 'slack'
+    | 'twitch'
+    | 'youtube';
+  iconColor: 'lantern-glow' | 'mist-silver' | 'parchment-ivory';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "partners".
  */
 export interface Partner {
@@ -1266,6 +1343,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'event-cycles';
         value: number | EventCycle;
+      } | null)
+    | ({
+        relationTo: 'event-types';
+        value: number | EventType;
       } | null)
     | ({
         relationTo: 'categories';
@@ -1603,8 +1684,8 @@ export interface PostsSelect<T extends boolean = true> {
 export interface EventsSelect<T extends boolean = true> {
   cycle?: T;
   title?: T;
+  eventType?: T;
   heroImage?: T;
-  tagline?: T;
   excerpt?: T;
   layout?:
     | T
@@ -1700,7 +1781,6 @@ export interface EventsSelect<T extends boolean = true> {
 export interface EventCyclesSelect<T extends boolean = true> {
   title?: T;
   heroImage?: T;
-  tagline?: T;
   excerpt?: T;
   layout?:
     | T
@@ -1724,8 +1804,8 @@ export interface EventCyclesSelect<T extends boolean = true> {
     | T
     | {
         title?: T;
+        eventType?: T;
         heroImage?: T;
-        tagline?: T;
         excerpt?: T;
         layout?:
           | T
@@ -1803,6 +1883,17 @@ export interface EventCyclesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-types_select".
+ */
+export interface EventTypesSelect<T extends boolean = true> {
+  name?: T;
+  iconName?: T;
+  iconColor?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

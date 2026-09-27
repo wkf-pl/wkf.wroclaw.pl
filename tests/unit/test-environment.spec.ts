@@ -79,7 +79,9 @@ describe('integration test environment', () => {
     const packageConfiguration = readFileSync('package.json', 'utf8')
     const packageScripts = JSON.parse(packageConfiguration).scripts as Record<string, string>
     const playwrightConfiguration = readFileSync('playwright.config.ts', 'utf8')
+    const cacheCleanupScript = readFileSync('scripts/clear-e2e-cache.ts', 'utf8')
 
+    expect(packageScripts['prepare:e2e']).toContain('scripts/clear-e2e-cache.ts')
     expect(packageScripts['prepare:e2e']).toContain('scripts/seed.ts')
     expect(packageScripts['seed']).toContain('tsx ./scripts/seed.ts')
     expect(packageScripts['test:e2e:ci']).toContain('pnpm prepare:e2e')
@@ -88,6 +90,8 @@ describe('integration test environment', () => {
     expect(packageConfiguration).toContain('NEXT_DIST_DIR=.next-e2e-ci')
     expect(packageConfiguration).toContain('PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100')
     expect(packageConfiguration).toContain('PLAYWRIGHT_REUSE_EXISTING_SERVER=false')
+    expect(cacheCleanupScript).toContain("resolve(process.cwd(), '.next-e2e-ci')")
+    expect(cacheCleanupScript).toContain('force: true, recursive: true')
     expect(playwrightConfiguration).toContain('PLAYWRIGHT_OUTPUT_DIR')
     expect(playwrightConfiguration).toContain('PLAYWRIGHT_HTML_OUTPUT_DIR')
     expect(playwrightConfiguration).toContain("join(tmpdir(), 'wkf-online-playwright-results')")

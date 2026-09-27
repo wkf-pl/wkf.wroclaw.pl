@@ -10,10 +10,12 @@ import {
 } from '@/modules/content/public-content'
 import { hasRenderableIcon, resolveLink, resolvePageLink } from '@/modules/navigation/links'
 import { findHomepageEvents } from '@/modules/events/public-events'
+import { findCalendarMonth } from '@/modules/events/calendar-data'
+import { getWarsawCalendarMonth } from '@/modules/events/calendar-presentation'
 
 import { CmsImage } from './_components/CmsImage'
 import { MenuIcon } from './_components/MenuIcon'
-import { EventCarousel } from './_components/EventCarousel'
+import { EventShowcase } from './_components/EventShowcase'
 import { HomepageHero } from './_components/HomepageHero'
 
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
@@ -149,10 +151,12 @@ function Sections({ sections, title }: { sections: HomepageGroup[]; title?: null
 }
 
 export default async function HomePage() {
-  const [posts, hero, homepageSections] = await Promise.all([
+  const initialCalendarMonth = getWarsawCalendarMonth()
+  const [posts, hero, homepageSections, calendarData] = await Promise.all([
     findPublishedPosts(),
     getPublicHomepageHero(),
     getPublicHomepageSections(),
+    findCalendarMonth(initialCalendarMonth),
   ])
   const eventWindowWeeks = homepageSections.eventWindowWeeks ?? 4
   const eventSlideLimit = homepageSections.eventSlideLimit ?? 6
@@ -165,19 +169,17 @@ export default async function HomePage() {
       <HomepageHero hero={hero} />
 
       <div className="homeShell">
-        {events.length ? (
-          <section aria-labelledby="events-heading" className="homeSection homeEvents">
-            <SectionHeading id="events-heading">{homepageSections.eventsTitle}</SectionHeading>
-            {homepageSections.eventsContent ? (
-              <CmsRichText className="homeSectionContent" data={homepageSections.eventsContent} />
-            ) : null}
-            <EventCarousel events={events} />
-            <div className="homeEventLinks">
-              <Link href="/events">Wszystkie wydarzenia</Link>
-              <Link href="/events/calendar.ics">Subskrybuj kalendarz WKF</Link>
-            </div>
-          </section>
-        ) : null}
+        <section aria-labelledby="events-heading" className="homeSection homeEvents">
+          <SectionHeading id="events-heading">{homepageSections.eventsTitle}</SectionHeading>
+          {homepageSections.eventsContent ? (
+            <CmsRichText className="homeSectionContent" data={homepageSections.eventsContent} />
+          ) : null}
+          <EventShowcase
+            events={events}
+            initialCalendarData={calendarData}
+            initialCalendarMonth={initialCalendarMonth}
+          />
+        </section>
         <NewsSection posts={posts.slice(0, postCount)} title={homepageSections.newsTitle} />
         <Sections sections={sections} title={homepageSections.sectionsTitle} />
       </div>

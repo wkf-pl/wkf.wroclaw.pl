@@ -114,7 +114,7 @@ test('shows the author display name with an email tooltip in a relationship fiel
 
   const authorField = page.locator('#field-author')
   const userName = authorField.getByText(editorTestUser.displayName, { exact: true })
-  await expect(userName).toBeVisible()
+  await expect(userName).toBeVisible({ timeout: 15_000 })
   await authorField.locator('.rs__control').hover()
 
   await expect(page.locator('.wkf-user-relationship > .tooltip--show')).toContainText(

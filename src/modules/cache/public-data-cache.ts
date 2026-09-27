@@ -4,6 +4,7 @@ import { connection } from 'next/server.js'
 export const publicCacheTags = {
   contentListings: 'public:content-listings',
   eventCycles: 'public:event-cycles',
+  eventTypes: 'public:event-types',
   events: 'public:events',
   homepage: 'public:homepage',
   media: 'public:media',

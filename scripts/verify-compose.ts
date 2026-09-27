@@ -36,6 +36,19 @@ function getRequiredString(value: unknown, property: string): string {
   return propertyValue
 }
 
+function getRelationshipID(value: unknown): number | string | undefined {
+  if (typeof value === 'number' || typeof value === 'string') {
+    return value
+  }
+
+  if (!isJsonRecord(value)) {
+    return undefined
+  }
+
+  const id = value.id
+  return typeof id === 'number' || typeof id === 'string' ? id : undefined
+}
+
 async function requestJSON(url: string, init?: RequestInit): Promise<unknown> {
   const response = await fetch(url, init)
   const responseText = await response.text()
@@ -132,12 +145,12 @@ async function verifyComposeStack(): Promise<void> {
   const createdUserRoles = getRequiredProperty(createdUser, 'roles')
   const createdUserID = getRequiredProperty(createdUser, 'id')
 
-  if (!Array.isArray(createdUserRoles) || !createdUserRoles.includes('administrator')) {
-    throw new Error('The first user did not receive the administrator role')
-  }
-
   if (typeof createdUserID !== 'number' && typeof createdUserID !== 'string') {
     throw new Error('Created user ID must be a number or string')
+  }
+
+  if (!Array.isArray(createdUserRoles)) {
+    throw new Error('Created user roles must be an array')
   }
 
   userID = createdUserID
@@ -148,6 +161,55 @@ async function verifyComposeStack(): Promise<void> {
     method: 'POST',
   })
   authenticationToken = getRequiredString(loginResponse, 'token')
+  let authenticationHeaders = { Authorization: `JWT ${authenticationToken}` }
+  const roleKeys = await Promise.all(
+    createdUserRoles.map(async (roleReference) => {
+      if (isJsonRecord(roleReference) && typeof roleReference.key === 'string') {
+        return roleReference.key
+      }
+
+      const roleID = getRelationshipID(roleReference)
+      if (roleID === undefined) return undefined
+
+      const role = await requestJSON(`${applicationURL}/api/roles/${roleID}`, {
+        headers: authenticationHeaders,
+      })
+      return getRequiredString(role, 'key')
+    }),
+  )
+
+  if (!roleKeys.includes('administrator')) {
+    throw new Error('The first user did not receive the administrator role')
+  }
+
+  const editorRolesResponse = await requestJSON(
+    `${applicationURL}/api/roles?where[key][equals]=editor&limit=1&depth=0`,
+    { headers: authenticationHeaders },
+  )
+  const editorRoles = getRequiredProperty(editorRolesResponse, 'docs')
+  const editorRole = Array.isArray(editorRoles) ? editorRoles[0] : undefined
+  const editorRoleID = getRelationshipID(editorRole)
+
+  if (editorRoleID === undefined) {
+    throw new Error('The editor role is missing')
+  }
+
+  const createdUserRoleIDs = createdUserRoles
+    .map(getRelationshipID)
+    .filter((roleID): roleID is number | string => roleID !== undefined)
+  await requestJSON(`${applicationURL}/api/users/${createdUserID}`, {
+    body: JSON.stringify({ roles: [...new Set([...createdUserRoleIDs, editorRoleID])] }),
+    headers: { ...authenticationHeaders, 'Content-Type': 'application/json' },
+    method: 'PATCH',
+  })
+
+  const editorLoginResponse = await requestJSON(`${applicationURL}/api/users/login`, {
+    body: JSON.stringify({ email: testEmail, password: testPassword }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  })
+  authenticationToken = getRequiredString(editorLoginResponse, 'token')
+  authenticationHeaders = { Authorization: `JWT ${authenticationToken}` }
 
   const image = await readFile(path.resolve('public/assets/favicon-32.png'))
   const mediaForm = new FormData()
@@ -156,7 +218,7 @@ async function verifyComposeStack(): Promise<void> {
 
   const createdMediaResponse = await requestJSON(`${applicationURL}/api/media`, {
     body: mediaForm,
-    headers: { Authorization: `JWT ${authenticationToken}` },
+    headers: authenticationHeaders,
     method: 'POST',
   })
   const createdMedia = getRequiredProperty(createdMediaResponse, 'doc')

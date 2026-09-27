@@ -66,7 +66,7 @@ export const copyEventCycleContentToDefaults: CollectionBeforeValidateHook = ({
       ? (data.eventDefaults as Record<string, unknown>)
       : {}
 
-  for (const field of ['title', 'heroImage', 'tagline', 'excerpt'] as const) {
+  for (const field of ['title', 'heroImage', 'excerpt'] as const) {
     if (isEmpty(eventDefaults[field]) && !isEmpty(data[field])) {
       eventDefaults[field] = cloneValue(data[field])
     }

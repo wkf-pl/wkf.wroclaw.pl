@@ -61,6 +61,10 @@ async function handler(req: PayloadRequest): Promise<Response> {
             : source.category,
         endAt,
         eventStatus: 'scheduled' as const,
+        eventType:
+          source.eventType && typeof source.eventType === 'object'
+            ? source.eventType.id
+            : source.eventType,
         excerpt: source.excerpt,
         externalLinks: source.externalLinks,
         heroImage:
@@ -73,7 +77,6 @@ async function handler(req: PayloadRequest): Promise<Response> {
         participation: source.participation,
         partners: source.partners,
         startAt: startAt.toISOString(),
-        tagline: source.tagline,
         tags: source.tags?.map((item) => (typeof item === 'object' ? item.id : item)),
         timeMode: source.timeMode,
         title: source.title,
