@@ -13,7 +13,16 @@ test('groups editor navigation with the intended labels and order', async ({ pag
 
   await expect(
     navigation.getByRole('button', { name: 'Treści' }).locator('..').locator('a'),
-  ).toHaveText(['Strony', 'Wpisy', 'Wydarzenia', 'Cykle wydarzeń', 'Kategorie', 'Tagi', 'Media'])
+  ).toHaveText([
+    'Strony',
+    'Wpisy',
+    'Wydarzenia',
+    'Cykle wydarzeń',
+    'Rodzaje wydarzeń',
+    'Kategorie',
+    'Tagi',
+    'Media',
+  ])
   await expect(
     navigation.getByRole('button', { name: 'Klubowe' }).locator('..').locator('a'),
   ).toHaveText(['Dokumenty', 'Partnerzy'])

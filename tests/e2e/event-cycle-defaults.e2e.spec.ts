@@ -117,13 +117,13 @@ test.beforeAll(async () => {
       author: author.id,
       eventDefaults: {
         capacityMode: 'unlimited',
+        eventType: 1,
         excerpt: 'Domyślne streszczenie E2E',
         layout: layout(),
         location: { country: 'Polska' },
         organizers: [{ profile: organizer.id, role: 'Osoba prowadząca' }],
         partners: [{ partner: partner.id, roles: ['partner'] }],
         participation: 'public',
-        tagline: 'Domyślne hasło E2E',
         title: 'Domyślny tytuł E2E',
         externalLinks: [
           {
@@ -173,6 +173,18 @@ test('applies selected Cycle defaults to an Event form without overwriting value
   await page.goto('/admin/collections/events/create')
 
   const cycleField = page.locator('#field-cycle')
+  const titleField = page.locator('#field-title')
+  const eventTypeField = page.locator('#field-eventType')
+  const firstRow = cycleField.locator('xpath=ancestor::*[contains(@class, "row")][1]')
+  await expect(firstRow).toBeVisible()
+  await expect(titleField).toBeVisible()
+  await expect(eventTypeField).toBeVisible()
+  expect(
+    await firstRow
+      .locator('#field-cycle, #field-title, #field-eventType')
+      .evaluateAll((fields) => fields.map((field) => field.id)),
+  ).toEqual(['field-cycle', 'field-title', 'field-eventType'])
+
   await cycleField.getByRole('combobox').click()
   const cycleResponsePromise = page.waitForResponse(
     (response) =>
@@ -190,12 +202,10 @@ test('applies selected Cycle defaults to an Event form without overwriting value
   expect(cycleData.eventDefaults?.externalLinks).toHaveLength(1)
 
   await expect(page.getByRole('textbox', { name: 'Tytuł *' })).toHaveValue('Domyślny tytuł E2E')
-  await expect(page.getByRole('textbox', { name: 'Hasło reklamowe' })).toHaveValue(
-    'Domyślne hasło E2E',
-  )
   await expect(page.getByRole('textbox', { name: 'Streszczenie *' })).toHaveValue(
     'Domyślne streszczenie E2E',
   )
+  await expect(page.locator('#field-eventType')).toContainText('Sesje RPG')
   await expect(
     page.getByText('Organizator: Organizator domyślny E2E', { exact: true }),
   ).toBeVisible()

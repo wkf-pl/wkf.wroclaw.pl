@@ -160,6 +160,12 @@ const partnerCacheTags = [
   publicCacheTags.sitemap,
 ]
 
+const eventTypeCacheTags = [
+  publicCacheTags.eventTypes,
+  publicCacheTags.events,
+  publicCacheTags.homepage,
+]
+
 const memberProfileCacheTags = [
   publicCacheTags.memberProfiles,
   publicCacheTags.pages,
@@ -203,6 +209,15 @@ export function getMemberProfileCacheTags(): string[] {
 export function getMemberProfileImageCacheTags(): string[] {
   return [...memberProfileImageCacheTags]
 }
+
+export function getEventTypeCacheTags(): string[] {
+  return [...eventTypeCacheTags]
+}
+
+export const invalidateEventTypesAfterChange =
+  invalidateCollectionTagsAfterChange(eventTypeCacheTags)
+export const invalidateEventTypesAfterDelete =
+  invalidateCollectionTagsAfterDelete(eventTypeCacheTags)
 
 export const invalidatePartnersAfterChange = invalidateCollectionTagsAfterChange(partnerCacheTags)
 export const invalidatePartnersAfterDelete = invalidateCollectionTagsAfterDelete(partnerCacheTags)

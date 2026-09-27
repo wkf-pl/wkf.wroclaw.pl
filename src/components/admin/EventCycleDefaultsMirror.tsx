@@ -26,11 +26,9 @@ export function EventCycleDefaultsMirror() {
   const { isEditing } = useDocumentInfo()
   const title = useFormFields(([fields]) => fields.title?.value)
   const heroImage = useFormFields(([fields]) => fields.heroImage?.value)
-  const tagline = useFormFields(([fields]) => fields.tagline?.value)
   const excerpt = useFormFields(([fields]) => fields.excerpt?.value)
   const defaultTitle = useField<unknown>({ potentiallyStalePath: 'eventDefaults.title' })
   const defaultHeroImage = useField<unknown>({ potentiallyStalePath: 'eventDefaults.heroImage' })
-  const defaultTagline = useField<unknown>({ potentiallyStalePath: 'eventDefaults.tagline' })
   const defaultExcerpt = useField<unknown>({ potentiallyStalePath: 'eventDefaults.excerpt' })
   const lastMirroredValues = useRef<Record<string, unknown>>({})
 
@@ -50,19 +48,8 @@ export function EventCycleDefaultsMirror() {
 
     mirror('title', title, defaultTitle)
     mirror('heroImage', heroImage, defaultHeroImage)
-    mirror('tagline', tagline, defaultTagline)
     mirror('excerpt', excerpt, defaultExcerpt)
-  }, [
-    defaultExcerpt,
-    defaultHeroImage,
-    defaultTagline,
-    defaultTitle,
-    excerpt,
-    heroImage,
-    isEditing,
-    tagline,
-    title,
-  ])
+  }, [defaultExcerpt, defaultHeroImage, defaultTitle, excerpt, heroImage, isEditing, title])
 
   return null
 }

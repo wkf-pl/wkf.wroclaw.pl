@@ -7,6 +7,7 @@ const adminIconNames: Record<string, RasterIconName> = {
   'club-sections': 'collection',
   documents: 'document',
   'event-cycles': 'calendar',
+  'event-types': 'event',
   events: 'event',
   footer: 'footer',
   'homepage-hero': 'image',

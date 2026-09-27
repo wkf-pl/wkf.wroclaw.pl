@@ -60,6 +60,11 @@ export const permissionResources = {
     ownershipField: 'author',
     publishedField: '_status',
   },
+  'event-types': {
+    collection: 'event-types',
+    kind: 'collection',
+    label: 'Rodzaje wydarzeń',
+  },
   partners: {
     collection: 'partners',
     kind: 'collection',

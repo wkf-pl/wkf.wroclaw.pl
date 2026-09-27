@@ -228,6 +228,7 @@ describe('column layout integration', () => {
         author: author.id,
         eventDefaults: {
           capacityMode: 'unlimited',
+          eventType: 1,
           excerpt: 'Default Event excerpt',
           layout: columnLayout('Default left', 'Default right'),
           location: { country: 'Polska' },

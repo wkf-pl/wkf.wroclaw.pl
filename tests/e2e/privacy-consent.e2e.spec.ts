@@ -32,6 +32,7 @@ test.beforeAll(async () => {
       calendarRevision: 0,
       capacityMode: 'unlimited',
       eventStatus: 'scheduled',
+      eventType: 1,
       excerpt: 'Wydarzenie do testowania prywatności osadzonej mapy.',
       location: {
         city: 'Wrocław',

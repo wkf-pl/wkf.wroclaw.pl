@@ -6,10 +6,12 @@ import type { Partner, User } from '@/payload-types'
 import { findPublicContent } from '@/modules/content/content-listing'
 import { findEventsForPartner, findPublishedPartnerBySlug } from '@/modules/events/public-events'
 import { publicRequestContext } from '@/modules/content/public-access'
+import { GET as getCalendar } from '@/app/(frontend)/events/calendar.json/route'
 
 import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/integration-author'
 
 const slugs = {
+  cancelled: 'integration-cancelled-event',
   cycle: 'integration-event-cycle',
   cycleEvent: 'integration-cycle-event',
   cycleEventSecond: 'integration-cycle-event-second',
@@ -72,7 +74,14 @@ async function cleanup() {
     overrideAccess: true,
     where: {
       slug: {
-        in: [slugs.public, slugs.members, slugs.draft, slugs.cycleEvent, slugs.cycleEventSecond],
+        in: [
+          slugs.cancelled,
+          slugs.public,
+          slugs.members,
+          slugs.draft,
+          slugs.cycleEvent,
+          slugs.cycleEventSecond,
+        ],
       },
     },
   })
@@ -123,6 +132,7 @@ function eventData(
     calendarRevision: 0,
     capacityMode: 'unlimited' as const,
     eventStatus: 'scheduled' as const,
+    eventType: 1,
     excerpt: `Integration event ${slug}`,
     layout: layout(),
     location: { city: 'Wrocław', country: 'Polska', venueName: 'WKF' },
@@ -161,6 +171,15 @@ describe('events integration', () => {
         draft: true,
         overrideAccess: true,
       }),
+      payload.create({
+        collection: 'events',
+        data: {
+          ...eventData(slugs.cancelled, 'public', 'published'),
+          eventStatus: 'cancelled',
+        },
+        draft: false,
+        overrideAccess: true,
+      }),
     ])
     const anonymous = await payload.find({
       collection: 'events',
@@ -171,7 +190,7 @@ describe('events integration', () => {
       where: { slug: { in: Object.values(slugs) } },
     })
     expect(anonymous.docs.map((event) => event.slug).sort()).toEqual(
-      [slugs.members, slugs.public].sort(),
+      [slugs.cancelled, slugs.members, slugs.public].sort(),
     )
 
     const publicListing = await findPublicContent({
@@ -192,6 +211,54 @@ describe('events integration', () => {
     expect(partnerEvents.map((event) => event.slug)).toContain(slugs.members)
   })
 
+  it('serves public scheduled Events and the Event type dictionary by month', async () => {
+    const invalid = await getCalendar(
+      new Request('http://localhost/events/calendar.json?month=bad'),
+    )
+    expect(invalid.status).toBe(400)
+
+    const response = await getCalendar(
+      new Request('http://localhost/events/calendar.json?month=2030-09'),
+    )
+    expect(response.status).toBe(200)
+    const data = (await response.json()) as {
+      eventTypes: { name: string }[]
+      events: { slug: string }[]
+      truncated: boolean
+    }
+
+    expect(data.events.map((event) => event.slug)).toEqual(
+      expect.arrayContaining([slugs.public, slugs.members]),
+    )
+    expect(data.events.map((event) => event.slug)).not.toContain(slugs.draft)
+    expect(data.events.map((event) => event.slug)).not.toContain(slugs.cancelled)
+    expect(data.eventTypes.map((eventType) => eventType.name)).toEqual(['Sesje RPG', 'Spotkania'])
+    expect(data.truncated).toBe(false)
+  })
+
+  it('grants Event type management to Event editors and protects used types', async () => {
+    const roles = await payload.find({
+      collection: 'roles',
+      depth: 0,
+      limit: 1,
+      overrideAccess: true,
+      where: { key: { equals: 'editor' } },
+    })
+    expect(roles.docs[0]?.permissions).toContainEqual(
+      expect.objectContaining({
+        canCreate: true,
+        deleteAllowed: true,
+        readAllowed: true,
+        resource: 'event-types',
+        updateAllowed: true,
+      }),
+    )
+
+    await expect(
+      payload.delete({ collection: 'event-types', id: 1, overrideAccess: true }),
+    ).rejects.toThrow('Nie można usunąć rodzaju używanego')
+  })
+
   it('copies cycle defaults once and records published calendar metadata', async () => {
     const cycle = await payload.create({
       collection: 'event-cycles',
@@ -206,6 +273,7 @@ describe('events integration', () => {
         title: 'Integration cycle',
         eventDefaults: {
           capacityMode: 'unlimited',
+          eventType: 1,
           excerpt: 'Copied cycle excerpt',
           layout: layout(),
           location: { city: 'Wrocław', country: 'Polska', venueName: 'Cycle venue' },

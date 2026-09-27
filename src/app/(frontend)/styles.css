@@ -2410,72 +2410,78 @@ a.attachmentItem:hover {
 
 .featuredEvent {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr);
+  grid-area: 1 / 1;
+  grid-template-columns: minmax(0, 1.18fr) minmax(20rem, 0.82fr);
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 0.7rem;
   background: linear-gradient(135deg, rgb(9 38 57 / 96%), rgb(0 18 31 / 98%));
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.featuredEvent--active {
+  z-index: 1;
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .featuredEventImageLink {
   position: relative;
   display: block;
-  min-height: 22rem;
+  min-height: 20rem;
   overflow: hidden;
+  background: var(--background-deep);
 }
 
 .featuredEventImageLink::after {
   position: absolute;
   inset: 0;
-  background: linear-gradient(rgb(0 10 17 / 58%), transparent 38%, rgb(0 10 17 / 82%));
+  background:
+    linear-gradient(180deg, rgb(0 10 17 / 68%), transparent 44%),
+    linear-gradient(90deg, transparent 70%, rgb(0 10 17 / 48%));
   content: '';
 }
 
 .featuredEventImage {
   width: 100%;
   height: 100%;
-  min-height: 22rem;
+  min-height: 20rem;
   object-fit: cover;
 }
 
-.featuredEventTitle,
-.featuredEventCalendar {
+.featuredEventTitle {
   position: absolute;
   z-index: 1;
-  right: 2rem;
-  left: 2rem;
-  text-shadow: 0 2px 12px #000;
-}
-
-.featuredEventTitle {
-  top: 1.7rem;
+  top: clamp(1.25rem, 3vw, 1.8rem);
+  right: clamp(1.25rem, 3vw, 2rem);
+  left: clamp(1.25rem, 3vw, 2rem);
   color: inherit;
   font-family: var(--font-roboto-slab), Georgia, serif;
-  font-size: clamp(2rem, 5vw, 3rem);
-  text-decoration: none;
-}
-
-.featuredEventCalendar {
-  bottom: 1.7rem;
-  color: var(--gold-light);
+  font-size: clamp(1.8rem, 4vw, 2.75rem);
   font-weight: 700;
+  line-height: 1.05;
+  text-decoration: none;
+  text-shadow: 0 3px 18px rgb(0 0 0 / 78%);
+  text-wrap: balance;
 }
 
 .featuredEventContent {
   display: flex;
   flex-direction: column;
-  padding: clamp(1.6rem, 4vw, 2.4rem);
-}
-
-.featuredEventContent h3 {
-  margin-bottom: 1rem;
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  min-width: 0;
+  padding: clamp(1.5rem, 3vw, 2rem);
 }
 
 .featuredEventContent p {
   margin: 0 0 1rem;
   color: var(--muted);
   line-height: 1.5;
+}
+
+.featuredEventSummary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
 }
 
 .featuredEventFact {
@@ -2495,8 +2501,68 @@ a.attachmentItem:hover {
   height: 1.25rem;
 }
 
+.featuredEventActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1rem;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 0.35rem;
+}
+
+.featuredEventPrimaryAction,
+.featuredEventCalendar,
+.eventCalendarSubscription,
+.homeEventAllLink {
+  display: inline-flex;
+  gap: 0.6rem;
+  align-items: center;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.featuredEventPrimaryAction {
+  min-height: 2.75rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--gold-light);
+  border-radius: 0.4rem;
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.featuredEventCalendar,
+.eventCalendarSubscription,
+.homeEventAllLink {
+  color: var(--gold-light);
+}
+
+.featuredEventPrimaryAction:hover,
+.featuredEventPrimaryAction:focus-visible {
+  background: var(--gold);
+  color: var(--background-deep);
+}
+
+.featuredEventCalendar:hover,
+.featuredEventCalendar:focus-visible,
+.eventCalendarSubscription:hover,
+.eventCalendarSubscription:focus-visible,
+.homeEventAllLink:hover,
+.homeEventAllLink:focus-visible {
+  color: var(--ivory);
+}
+
+.featuredEventActions .rasterIcon,
+.eventCalendarSubscription .rasterIcon,
+.homeEventAllLink .rasterIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.eventCarouselSlides {
+  display: grid;
+}
+
 .carouselControls,
-.homeEventLinks,
 .contentSectionHeading {
   display: flex;
   gap: 0.8rem;
@@ -2506,7 +2572,6 @@ a.attachmentItem:hover {
 
 .carouselControls {
   justify-content: center;
-  margin-top: 0.8rem;
 }
 
 .carouselControls button {
@@ -2520,16 +2585,346 @@ a.attachmentItem:hover {
 }
 
 .carouselControls button[aria-pressed='true'] {
+  border-color: var(--gold-light);
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.homeEventShowcase {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: linear-gradient(145deg, rgb(3 29 46 / 98%), rgb(0 13 23 / 98%));
+}
+
+.homeEventToolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+}
+
+.homeEventViewTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(8rem, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--gold);
+  border-radius: 0.4rem;
+}
+
+.homeEventViewTabs button {
+  min-height: 2.65rem;
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-right: 1px solid var(--gold);
+  background: transparent;
+  color: var(--ivory);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.homeEventViewTabs button:last-child {
+  border-right: 0;
+}
+
+.homeEventViewTabs button[aria-selected='true'] {
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.homeEventViewTabs button:hover:not([aria-selected='true']) {
+  background: rgb(243 163 19 / 12%);
+}
+
+.homeEventAllLink {
+  justify-self: end;
+}
+
+.homeEventPanel {
+  border-top: 1px solid var(--line);
+}
+
+.homeEventEmpty {
+  display: grid;
+  min-height: 12rem;
+  margin: 0;
+  place-items: center;
+  padding: 2rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.eventCarouselFooter {
+  display: flex;
+  min-height: 3.8rem;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.homeEventViewTabs button:focus-visible,
+.homeEventAllLink:focus-visible,
+.featuredEventPrimaryAction:focus-visible,
+.featuredEventCalendar:focus-visible,
+.eventCalendarSubscription:focus-visible,
+.calendarNavigation button:focus-visible,
+.calendarGrid button:focus-visible,
+.calendarEventLink:focus-visible,
+.calendarSelectionItem h5 a:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+.eventCalendar {
+  min-width: 0;
+}
+
+.calendarLayout {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.82fr) minmax(0, 1.45fr);
+}
+
+.calendarDetails {
+  min-width: 0;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border-right: 1px solid var(--line);
+  background: rgb(10 38 56 / 38%);
+}
+
+.calendarDetails h4 {
+  margin-bottom: 1.1rem;
+  color: var(--ivory);
+  font-size: clamp(1.35rem, 2.5vw, 1.8rem);
+  text-transform: capitalize;
+}
+
+.calendarMonth {
+  min-width: 0;
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.calendarNavigation {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendarNavigation h3 {
+  margin: 0;
+  color: var(--ivory);
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.calendarNavigation button {
+  display: inline-grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--gold-light);
+  cursor: pointer;
+}
+
+.calendarNavigation button:hover {
+  border-color: var(--gold);
+  background: rgb(243 163 19 / 12%);
+}
+
+.calendarNavigation .rasterIcon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding-block: 1.25rem;
+  text-align: center;
+}
+
+.calendarWeekday {
+  padding-bottom: 0.35rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.calendarGrid button {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 3.25rem;
+  grid-template-rows: auto 1.05rem;
+  place-items: center;
+  padding: 0.3rem 0.15rem;
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--ivory);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.calendarGrid button:hover {
+  border-color: rgb(243 163 19 / 54%);
+  background: rgb(243 163 19 / 9%);
+}
+
+.calendarGrid .calendarHasEvents {
+  border-color: rgb(243 163 19 / 38%);
+  background: rgb(10 38 56 / 78%);
+  font-weight: 700;
+}
+
+.calendarGrid button[aria-pressed='true'] {
+  border-color: var(--gold-light);
   background: var(--gold);
-  color: var(--navy);
+  color: var(--background-deep);
 }
 
-.homeEventLinks {
-  margin-top: 1rem;
+.calendarDayNumber {
+  font-variant-numeric: tabular-nums;
 }
 
-.homeEventLinks a {
-  padding-inline: 20px;
+.calendarEventIcons {
+  display: flex;
+  min-width: 0;
+  min-height: 1.05rem;
+  gap: 0.1rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+}
+
+.calendarEventTypeIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.calendarEventTypeIcon[data-event-type-color='lantern-glow'] {
+  color: var(--gold-light);
+}
+
+.calendarEventTypeIcon[data-event-type-color='mist-silver'] {
+  color: var(--muted);
+}
+
+.calendarEventTypeIcon[data-event-type-color='parchment-ivory'] {
+  color: var(--ivory);
+}
+
+.calendarGrid button[aria-pressed='true'] .calendarEventTypeIcon {
+  color: var(--background-deep);
+}
+
+.calendarEventTypeIcon .rasterIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.calendarLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  list-style: none;
+}
+
+.calendarLegend li {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.calendarStatus {
+  margin: 0;
+  padding: 0 1.25rem 1rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.calendarStatus a {
+  color: var(--gold-light);
+}
+
+.calendarSelection {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.calendarSelection > p {
+  margin: 0;
+}
+
+.calendarSelectionItem + .calendarSelectionItem {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgb(243 163 19 / 26%);
+}
+
+.calendarSelectionItem h5 {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  margin: 0 0 0.7rem;
+  color: var(--ivory);
+  font-size: 1.05rem;
+}
+
+.calendarSelectionItem h5 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.calendarSelectionItem p {
+  margin: 0 0 0.85rem;
+  font-size: 0.9rem;
+}
+
+.calendarEventLink {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--gold-light);
+  font-weight: 700;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.calendarEventLink .rasterIcon {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.calendarFooter {
+  display: flex;
+  min-height: 3.8rem;
+  gap: 1rem 2rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem clamp(1.25rem, 3vw, 2rem);
+  border-top: 1px solid var(--line);
 }
 
 .eventGrid {
@@ -2601,6 +2996,10 @@ a.attachmentItem:hover {
 }
 
 @media (width <= 62rem) {
+  .featuredEvent {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 1fr);
+  }
+
   .eventGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2608,8 +3007,62 @@ a.attachmentItem:hover {
 
 @media (width <= 48rem) {
   .featuredEvent,
+  .calendarLayout,
   .eventGrid {
     grid-template-columns: 1fr;
+  }
+
+  .homeEventToolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .homeEventToolbar > span {
+    display: none;
+  }
+
+  .homeEventAllLink {
+    justify-self: center;
+  }
+
+  .featuredEventImageLink,
+  .featuredEventImage {
+    min-height: 16rem;
+  }
+
+  .calendarMonth {
+    grid-row: 1;
+    padding-inline: 0.75rem;
+  }
+
+  .calendarDetails {
+    grid-row: 2;
+    border-top: 1px solid var(--line);
+    border-right: 0;
+  }
+
+  .calendarFooter {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .calendarGrid {
+    gap: 0.15rem;
+  }
+
+  .calendarGrid button {
+    min-height: 2.75rem;
+  }
+}
+
+@media (width <= 34rem) {
+  .homeEventViewTabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .eventCarouselFooter {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

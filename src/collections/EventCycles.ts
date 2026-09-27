@@ -82,12 +82,11 @@ export const EventCycles: CollectionConfig = {
           fields: [
             getEditorialField(editorialFields, 'title'),
             getEditorialField(editorialFields, 'heroImage'),
-            { name: 'tagline', type: 'text', label: 'Hasło reklamowe', maxLength: 180 },
             {
               name: 'excerpt',
               type: 'textarea',
               label: 'Streszczenie',
-              maxLength: 500,
+              maxLength: 700,
               required: true,
             },
             createContentLayoutField('Treści'),
@@ -102,10 +101,28 @@ export const EventCycles: CollectionConfig = {
               type: 'group',
               label: false,
               fields: [
-                { name: 'title', type: 'text', label: 'Tytuł', maxLength: 180 },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'title',
+                      type: 'text',
+                      admin: { width: '67%' },
+                      label: 'Tytuł',
+                      maxLength: 180,
+                    },
+                    {
+                      name: 'eventType',
+                      type: 'relationship',
+                      admin: { width: '33%' },
+                      label: 'Rodzaj',
+                      relationTo: 'event-types',
+                      required: true,
+                    },
+                  ],
+                },
                 { name: 'heroImage', type: 'upload', label: 'Obraz główny', relationTo: 'media' },
-                { name: 'tagline', type: 'text', label: 'Hasło reklamowe', maxLength: 180 },
-                { name: 'excerpt', type: 'textarea', label: 'Streszczenie', maxLength: 500 },
+                { name: 'excerpt', type: 'textarea', label: 'Streszczenie', maxLength: 700 },
                 createContentLayoutField('Treści'),
                 { type: 'row', fields: createTaxonomyFields({ position: 'main' }) },
                 {
