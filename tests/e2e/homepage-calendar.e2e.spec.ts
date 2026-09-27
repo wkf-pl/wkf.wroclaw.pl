@@ -1,8 +1,73 @@
 import { expect, test } from '@playwright/test'
+import { getPayload, type Payload } from 'payload'
+
+import config from '../../src/payload.config.js'
+import { editorTestUser } from '../helpers/seedUser'
 
 const eventSlug = 'homepage-calendar-e2e'
 const eventTitle = 'Kalendarz strony głównej E2E'
 const eventDay = 15
+const carouselEventSlugs = ['homepage-carousel-first-e2e', 'homepage-carousel-second-e2e']
+let payload: Payload
+
+test.describe.configure({ mode: 'serial' })
+
+test.beforeAll(async () => {
+  payload = await getPayload({ config })
+  await cleanupCarouselFixtures()
+
+  const [users, eventTypes] = await Promise.all([
+    payload.find({
+      collection: 'users',
+      depth: 0,
+      limit: 1,
+      overrideAccess: true,
+      where: { email: { equals: editorTestUser.email } },
+    }),
+    payload.find({
+      collection: 'event-types',
+      depth: 0,
+      limit: 1,
+      overrideAccess: true,
+      where: { name: { equals: 'Sesje RPG' } },
+    }),
+  ])
+  const author = users.docs[0]
+  const eventType = eventTypes.docs[0]
+  if (!author) throw new Error('Missing the editor E2E user.')
+  if (!eventType) throw new Error('Missing the Sesje RPG event type.')
+
+  for (const [index, slug] of carouselEventSlugs.entries()) {
+    await payload.create({
+      collection: 'events',
+      data: {
+        _status: 'published',
+        author: author.id,
+        calendarRevision: 0,
+        capacityMode: 'unlimited',
+        eventStatus: 'scheduled',
+        eventType: eventType.id,
+        excerpt: `Streszczenie wydarzenia karuzeli E2E ${index + 1}.`,
+        location: { country: 'Polska' },
+        participation: 'public',
+        layout: [
+          {
+            blockType: 'richText',
+            content: createLexicalDocument(`Treść wydarzenia karuzeli E2E ${index + 1}.`),
+          },
+        ],
+        slug,
+        startAt: new Date(Date.now() + (index + 1) * 86_400_000).toISOString(),
+        timeMode: 'timed',
+        title: `Wydarzenie karuzeli E2E ${index + 1}`,
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+  }
+})
+
+test.afterAll(async () => cleanupCarouselFixtures())
 
 test('switches one responsive Events frame between the carousel and interactive calendar', async ({
   page,
@@ -104,3 +169,46 @@ test('switches one responsive Events frame between the carousel and interactive 
   expect(subscriptionBox).not.toBeNull()
   expect(subscriptionBox?.y ?? 0).toBeGreaterThan(legendBox?.y ?? 0)
 })
+
+async function cleanupCarouselFixtures(): Promise<void> {
+  if (!payload) return
+  await payload.delete({
+    collection: 'events',
+    overrideAccess: true,
+    where: { slug: { in: carouselEventSlugs } },
+  })
+}
+
+function createLexicalDocument(text: string) {
+  return {
+    root: {
+      children: [
+        {
+          children: [
+            {
+              detail: 0,
+              format: 0,
+              mode: 'normal',
+              style: '',
+              text,
+              type: 'text',
+              version: 1,
+            },
+          ],
+          direction: null,
+          format: '' as const,
+          indent: 0,
+          textFormat: 0,
+          textStyle: '',
+          type: 'paragraph' as const,
+          version: 1,
+        },
+      ],
+      direction: 'ltr' as const,
+      format: '' as const,
+      indent: 0,
+      type: 'root' as const,
+      version: 1,
+    },
+  }
+}
