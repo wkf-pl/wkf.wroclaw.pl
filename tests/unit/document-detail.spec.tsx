@@ -51,6 +51,7 @@ describe('document detail', () => {
   it('overlays the PDF across the hero boundary while reserving the body text column', () => {
     const styles = readFileSync('src/app/(frontend)/styles.css', 'utf8')
 
+    expect(styles).toMatch(/\.documentDetail \.contentHero \{[^}]*overflow: visible;/)
     expect(styles).toMatch(
       /\.documentDetail \.contentHeroMedia \{[\s\S]*?position: absolute;[\s\S]*?top: 12\.95rem;/,
     )
