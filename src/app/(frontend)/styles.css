@@ -1278,6 +1278,10 @@ body:has(> .homePage) .siteHeader {
   width: 100%;
 }
 
+.documentDetail .contentHero {
+  overflow: visible;
+}
+
 .documentDetail .contentHeroInner {
   z-index: 4;
   grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);

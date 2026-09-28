@@ -131,13 +131,35 @@ test('renders the public documents register without account actions', async ({ p
   const previewBox = await page.locator('.documentPdfPreview').boundingBox()
   const previewFrameBox = await previewFrame.boundingBox()
   const openLinkBox = await fileLink.boundingBox()
+  const heroBox = await page.locator('.contentHero').boundingBox()
   const footerBox = await page.locator('.siteFooterShell').boundingBox()
   expect(previewBox).not.toBeNull()
   expect(previewFrameBox).not.toBeNull()
   expect(openLinkBox).not.toBeNull()
+  expect(heroBox).not.toBeNull()
   expect(footerBox).not.toBeNull()
   expect(previewFrameBox?.width).toBeGreaterThan(previewBox?.width ?? Number.POSITIVE_INFINITY)
   expect(openLinkBox?.width).toBeLessThan(previewBox?.width ?? 0)
+  expect(previewBox?.y ?? 0).toBeGreaterThan(heroBox?.y ?? Number.POSITIVE_INFINITY)
+  expect((previewBox?.y ?? 0) + (previewBox?.height ?? 0)).toBeGreaterThan(
+    (heroBox?.y ?? 0) + (heroBox?.height ?? 0),
+  )
+  const previewIsVisibleBelowHero = await page.evaluate(() => {
+    const hero = document.querySelector<HTMLElement>('.contentHero')
+    const preview = document.querySelector<HTMLElement>('.documentPdfPreview')
+
+    if (!hero || !preview) return false
+
+    const heroBox = hero.getBoundingClientRect()
+    const previewBox = preview.getBoundingClientRect()
+    const testedElement = document.elementFromPoint(
+      previewBox.left + previewBox.width / 2,
+      Math.min(previewBox.bottom - 1, heroBox.bottom + 8),
+    )
+
+    return testedElement !== null && preview.contains(testedElement)
+  })
+  expect(previewIsVisibleBelowHero).toBe(true)
   expect(footerBox?.y).toBeGreaterThan((previewBox?.y ?? 0) + (previewBox?.height ?? 0))
   await expect(downloadLink).toHaveAttribute('href', `${filePath}?download=1`)
   const fileResponse = await page.request.get(filePath)
