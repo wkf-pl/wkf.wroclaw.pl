@@ -145,7 +145,10 @@ describe('integration test environment', () => {
   })
 
   it('keeps host and container Next build artifacts separate', () => {
-    const continuousIntegrationSetup = readFileSync('.github/actions/setup-project/action.yml', 'utf8')
+    const continuousIntegrationSetup = readFileSync(
+      '.github/actions/setup-project/action.yml',
+      'utf8',
+    )
     const composeConfiguration = readFileSync('compose.yml', 'utf8')
     const developmentServerScript = readFileSync('scripts/run-development-server.sh', 'utf8')
     const temporaryPreviewScript = readFileSync('scripts/run-temporary-preview.sh', 'utf8')
