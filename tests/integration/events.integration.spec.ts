@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
+import { createRichTextDocument, extractRichTextText } from '@/modules/content/rich-text'
 import type { Partner, User } from '@/payload-types'
 import { findPublicContent } from '@/modules/content/content-listing'
 import { findEventsForPartner, findPublishedPartnerBySlug } from '@/modules/events/public-events'
@@ -133,7 +134,7 @@ function eventData(
     capacityMode: 'unlimited' as const,
     eventStatus: 'scheduled' as const,
     eventType: 1,
-    excerpt: `Integration event ${slug}`,
+    excerpt: createRichTextDocument([`Integration event ${slug}`]),
     layout: layout(),
     location: { city: 'Wrocław', country: 'Polska', venueName: 'WKF' },
     participation,
@@ -267,14 +268,14 @@ describe('events integration', () => {
       data: {
         _status: 'published',
         author: author.id,
-        excerpt: 'Integration cycle',
+        excerpt: createRichTextDocument(['Integration cycle']),
         layout: layout(),
         slug: slugs.cycle,
         title: 'Integration cycle',
         eventDefaults: {
           capacityMode: 'unlimited',
           eventType: 1,
-          excerpt: 'Copied cycle excerpt',
+          excerpt: createRichTextDocument(['Copied cycle excerpt']),
           layout: layout(),
           location: { city: 'Wrocław', country: 'Polska', venueName: 'Cycle venue' },
           participation: 'public',
@@ -289,7 +290,7 @@ describe('events integration', () => {
       data: {
         ...eventData(slugs.cycleEvent, 'public', 'published'),
         cycle: cycle.id,
-        excerpt: '',
+        excerpt: createRichTextDocument([]),
         layout: [],
         location: { country: 'Polska' },
       },
@@ -301,12 +302,12 @@ describe('events integration', () => {
       data: {
         ...eventData(slugs.cycleEventSecond, 'public', 'published'),
         cycle: cycle.id,
-        excerpt: '',
+        excerpt: createRichTextDocument([]),
         layout: [],
         location: { country: 'Polska' },
       },
     })
-    expect(event.excerpt).toBe('Copied cycle excerpt')
+    expect(extractRichTextText(event.excerpt)).toBe('Copied cycle excerpt')
     expect(event.location.venueName).toBe('Cycle venue')
     expect(
       typeof event.defaultsAppliedCycle === 'object'

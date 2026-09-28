@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import type { Event } from '@/payload-types'
 import { formatEventDate, getEventStatusLabel } from '@/modules/events/presentation'
+import { extractRichTextText } from '@/modules/content/rich-text'
 
 import { CmsImage } from './CmsImage'
 
@@ -18,7 +19,7 @@ export function EventList({ events }: { events: Event[] }) {
               <h3>{event.title}</h3>
               <time dateTime={event.startAt}>{formatEventDate(event)}</time>
               {event.location?.venueName ? <p>{event.location.venueName}</p> : null}
-              <p>{event.excerpt}</p>
+              <p>{extractRichTextText(event.excerpt)}</p>
             </div>
           </Link>
         </article>

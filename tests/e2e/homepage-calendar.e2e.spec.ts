@@ -47,7 +47,7 @@ test.beforeAll(async () => {
         capacityMode: 'unlimited',
         eventStatus: 'scheduled',
         eventType: eventType.id,
-        excerpt: `Streszczenie wydarzenia karuzeli E2E ${index + 1}.`,
+        excerpt: createLexicalDocument(`Streszczenie wydarzenia karuzeli E2E ${index + 1}.`),
         location: { country: 'Polska' },
         participation: 'public',
         layout: [
@@ -91,7 +91,7 @@ test('switches one responsive Events frame between the carousel and interactive 
               iconName: 'dice',
               name: 'Sesje RPG',
             },
-            excerpt: 'Streszczenie wydarzenia kalendarzowego E2E.',
+            excerpt: createLexicalDocument('Streszczenie wydarzenia kalendarzowego E2E.'),
             id: 1,
             slug: eventSlug,
             startAt: `${month}-${String(eventDay).padStart(2, '0')}T12:00:00.000Z`,

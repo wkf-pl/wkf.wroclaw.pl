@@ -25,7 +25,8 @@ import {
   validateGoogleMapsEmbed,
 } from '@/modules/events/map-embed'
 import { GoogleMapEmbed } from '@/components/maps/GoogleMapEmbed'
-import { formatEventDate } from '@/modules/events/presentation'
+import { formatEventDate, formatEventDateParts } from '@/modules/events/presentation'
+import { createRichTextDocument } from '@/modules/content/rich-text'
 
 function flattenFields(fields: Field[]): Field[] {
   return fields.flatMap((field) => {
@@ -43,7 +44,7 @@ function eventFixture(overrides: Partial<Event> = {}): Event {
   return {
     id: 1,
     title: 'Erpegowy wtorek',
-    excerpt: 'Spotkanie przy grach fabularnych.',
+    excerpt: createRichTextDocument(['Spotkanie przy grach fabularnych.']),
     layout: [],
     timeMode: 'timed',
     eventStatus: 'scheduled',
@@ -152,13 +153,13 @@ describe('events model', () => {
     expect(cycleFields.some((field) => 'name' in field && field.name === 'tagline')).toBe(false)
     expect(eventFields.find((field) => 'name' in field && field.name === 'excerpt')).toMatchObject({
       label: 'Streszczenie',
-      maxLength: 700,
       required: true,
+      type: 'richText',
     })
     expect(cycleFields.filter((field) => 'name' in field && field.name === 'excerpt')).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ label: 'Streszczenie', maxLength: 700, required: true }),
-        expect.objectContaining({ label: 'Streszczenie', maxLength: 700 }),
+        expect.objectContaining({ label: 'Streszczenie', required: true, type: 'richText' }),
+        expect.objectContaining({ label: 'Streszczenie', type: 'richText' }),
       ]),
     )
   })
@@ -239,15 +240,16 @@ describe('events model', () => {
   })
 
   it('copies Cycle editorial content to empty Event defaults on creation', () => {
+    const excerpt = createRichTextDocument(['Opis cyklu'])
     const data = {
       eventDefaults: {},
-      excerpt: 'Opis cyklu',
+      excerpt,
       heroImage: 3,
       title: 'Cykl',
     }
     copyEventCycleContentToDefaults({ data, operation: 'create' } as never)
     expect(data.eventDefaults).toEqual({
-      excerpt: 'Opis cyklu',
+      excerpt,
       heroImage: 3,
       title: 'Cykl',
     })
@@ -320,6 +322,21 @@ describe('events model', () => {
     expect(formatEventDate(eventFixture({ endAt: '2026-09-10T19:00:00.000Z' }))).toBe(
       '8 września 2026, 18:00 - 10 września 2026, 21:00',
     )
+    expect(formatEventDateParts(eventFixture({ endAt: '2026-09-08T19:00:00.000Z' }))).toEqual({
+      date: '8 września 2026',
+      time: '18:00–21:00',
+    })
+    expect(
+      formatEventDateParts(
+        eventFixture({
+          endAt: '2026-09-10T19:00:00.000Z',
+          timeMode: 'allDay',
+        }),
+      ),
+    ).toEqual({
+      date: '8 września 2026 – 10 września 2026',
+      time: 'Cały dzień',
+    })
   })
 
   it('accepts HTTP and HTTPS venue websites only', () => {

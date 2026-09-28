@@ -14,7 +14,7 @@ export type CalendarEventType = {
 
 export type CalendarEvent = {
   eventType: CalendarEventType
-  excerpt: string
+  excerpt: Event['excerpt']
   id: number
   slug: string
   startAt: string

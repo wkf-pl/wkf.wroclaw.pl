@@ -5,7 +5,7 @@ import config from '../../src/payload.config.js'
 import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
-const eventSlug = 'privacy-consent-map-e2e'
+const eventSlug = 'privacy-consent-e2e'
 let payload: Payload
 
 test.describe.configure({ mode: 'serial' })
@@ -33,11 +33,10 @@ test.beforeAll(async () => {
       capacityMode: 'unlimited',
       eventStatus: 'scheduled',
       eventType: 1,
-      excerpt: 'Wydarzenie do testowania prywatności osadzonej mapy.',
+      excerpt: createLexicalDocument('Wydarzenie do testowania ustawień prywatności.'),
       location: {
         city: 'Wrocław',
         country: 'Polska',
-        mapEmbedURL: 'https://www.google.com/maps/embed?pb=privacy-e2e',
         postalCode: '54-530',
         streetAddress: 'ul. Rodła 32',
         venueName: 'Wrocławski Klub Fantastyki',
@@ -46,13 +45,13 @@ test.beforeAll(async () => {
       layout: [
         {
           blockType: 'richText',
-          content: createLexicalDocument('Treść wydarzenia do testowania prywatności mapy.'),
+          content: createLexicalDocument('Treść wydarzenia do testowania ustawień prywatności.'),
         },
       ],
       slug: eventSlug,
       startAt: '2026-12-12T17:00:00.000Z',
       timeMode: 'timed',
-      title: 'Prywatność mapy E2E',
+      title: 'Prywatność E2E',
     },
     draft: false,
     overrideAccess: true,
@@ -60,30 +59,6 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => cleanupFixture())
-
-test('blocks Google Maps until functional consent is selected', async ({ page }) => {
-  const googleRequests: string[] = []
-  const matomoRequests: string[] = []
-  page.on('request', (request) => {
-    if (request.url().includes('google.com/maps')) googleRequests.push(request.url())
-    if (request.url().includes('matomo')) matomoRequests.push(request.url())
-  })
-  await page.route('https://www.google.com/**', (route) => route.abort())
-
-  await page.goto(`/events/${eventSlug}`)
-
-  await expect(page.locator('iframe[title="Mapa miejsca wydarzenia"]')).toHaveCount(0)
-  await expect(page.getByText('Mapa czeka na Twoją zgodę')).toBeVisible()
-  expect(googleRequests).toEqual([])
-  expect(matomoRequests).toEqual([])
-
-  await page.getByRole('button', { name: 'Dostosuj' }).click()
-  await page.getByRole('checkbox', { name: 'Zezwalam na Mapy Google' }).check()
-  await page.getByRole('button', { name: 'Zapisz wybór' }).click()
-  await expect(page.locator('iframe[title="Mapa miejsca wydarzenia"]')).toHaveCount(1)
-  await expect.poll(() => googleRequests.length).toBeGreaterThan(0)
-  expect(matomoRequests).toEqual([])
-})
 
 test('asks again after the saved decision expires', async ({ page }) => {
   await page.addInitScript(() => {
@@ -101,7 +76,6 @@ test('asks again after the saved decision expires', async ({ page }) => {
   await page.goto(`/events/${eventSlug}`)
 
   await expect(page.getByRole('heading', { name: 'Szanujemy Twoją prywatność' })).toBeVisible()
-  await expect(page.locator('iframe[title="Mapa miejsca wydarzenia"]')).toHaveCount(0)
 })
 
 test('audits browser storage on the public site and after CMS login', async ({ context, page }) => {

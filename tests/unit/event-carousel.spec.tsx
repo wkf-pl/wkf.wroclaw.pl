@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 import { EventCarousel } from '@/app/(frontend)/_components/EventCarousel'
+import { createRichTextDocument } from '@/modules/members/rich-text'
 import type { Event } from '@/payload-types'
 
 function eventFixture(id: number, overrides: Partial<Event> = {}): Event {
@@ -12,7 +13,7 @@ function eventFixture(id: number, overrides: Partial<Event> = {}): Event {
     createdAt: '2026-09-01T10:00:00.000Z',
     eventStatus: 'scheduled',
     eventType: 1,
-    excerpt: `Streszczenie ${id}`,
+    excerpt: createRichTextDocument([`Streszczenie ${id}`, `Drugi akapit ${id}`]),
     id,
     layout: [],
     location: { country: 'Polska' },
@@ -36,6 +37,7 @@ describe('Event carousel', () => {
     expect(markup).toContain('Wydarzenie 1')
     expect(markup).toContain('Wydarzenie 2')
     expect(markup).toContain('Streszczenie 1')
+    expect(markup).toContain('Drugi akapit 1')
     expect(markup).toContain('Streszczenie 2')
     expect(markup).toContain('aria-hidden="true"')
     expect(markup.indexOf('class="featuredEventTitle"')).toBeLessThan(

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { CollectionBeforeChangeHook, CollectionBeforeValidateHook } from 'payload'
 
 import { getEventRelationshipID, mergeEventCycleDefaults } from './defaults'
+import { isRichTextEmpty } from '@/modules/content/rich-text'
 
 function isEmpty(value: unknown): boolean {
   return (
@@ -67,7 +68,11 @@ export const copyEventCycleContentToDefaults: CollectionBeforeValidateHook = ({
       : {}
 
   for (const field of ['title', 'heroImage', 'excerpt'] as const) {
-    if (isEmpty(eventDefaults[field]) && !isEmpty(data[field])) {
+    const defaultIsEmpty =
+      field === 'excerpt' ? isRichTextEmpty(eventDefaults[field]) : isEmpty(eventDefaults[field])
+    const sourceHasValue =
+      field === 'excerpt' ? !isRichTextEmpty(data[field]) : !isEmpty(data[field])
+    if (defaultIsEmpty && sourceHasValue) {
       eventDefaults[field] = cloneValue(data[field])
     }
   }

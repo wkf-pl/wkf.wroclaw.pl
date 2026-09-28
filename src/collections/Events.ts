@@ -60,7 +60,7 @@ export const Events: CollectionConfig = {
       '_status',
     ],
     group: 'Treści',
-    listSearchableFields: ['title', 'cycle', 'slug', 'excerpt'],
+    listSearchableFields: ['title', 'cycle', 'slug'],
     useAsTitle: 'title',
     pagination: {
       limits: [10, 25, 50],
@@ -99,9 +99,8 @@ export const Events: CollectionConfig = {
             getEditorialField(editorialFields, 'heroImage'),
             {
               name: 'excerpt',
-              type: 'textarea',
+              type: 'richText',
               label: 'Streszczenie',
-              maxLength: 700,
               required: true,
             },
             createContentLayoutField('Treści'),

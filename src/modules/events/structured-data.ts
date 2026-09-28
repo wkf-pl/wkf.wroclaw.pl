@@ -1,4 +1,5 @@
 import type { Event, EventCycle, Partner } from '@/payload-types'
+import { extractRichTextText } from '@/modules/content/rich-text'
 import { getMediaURL } from '@/modules/media/media-url'
 
 export function createEventStructuredData(event: Event) {
@@ -14,7 +15,7 @@ export function createEventStructuredData(event: Event) {
     '@context': 'https://schema.org',
     '@type': 'Event',
     name: event.title,
-    description: event.excerpt,
+    description: extractRichTextText(event.excerpt),
     startDate: event.startAt,
     endDate: event.endAt || undefined,
     eventStatus: status,
@@ -60,7 +61,7 @@ export function createEventCycleStructuredData(cycle: EventCycle) {
     '@context': 'https://schema.org',
     '@type': ['EventSeries', 'CollectionPage'],
     name: cycle.title,
-    description: cycle.excerpt,
+    description: extractRichTextText(cycle.excerpt),
     url: `https://wkf.wroclaw.pl/events/series/${cycle.slug}`,
   }
 }

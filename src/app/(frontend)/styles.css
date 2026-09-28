@@ -249,6 +249,7 @@ body:has(> .homePage) .siteHeader {
 
 .contentHero {
   position: relative;
+  overflow: hidden;
   background:
     linear-gradient(90deg, rgb(0 13 23 / 32%), transparent 46%, rgb(0 13 23 / 12%)),
     url('/assets/content-hero-night-sky.webp') center top / cover no-repeat,
@@ -289,6 +290,69 @@ body:has(> .homePage) .siteHeader {
 .contentHeroEyebrow {
   min-height: 1.2em;
   line-height: 1.2;
+}
+
+.eventHeroEyebrow,
+.eventHeroType,
+.eventHeroLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.eventHeroEyebrow {
+  gap: 0.65rem 1rem;
+}
+
+.eventHeroType {
+  gap: 0.55rem;
+}
+
+.eventHeroType .rasterIcon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.eventHeroType[data-event-type-color='lantern-glow'] .rasterIcon {
+  color: var(--gold-light);
+}
+
+.eventHeroType[data-event-type-color='mist-silver'] .rasterIcon {
+  color: var(--muted);
+}
+
+.eventHeroType[data-event-type-color='parchment-ivory'] .rasterIcon {
+  color: var(--ivory);
+}
+
+.eventHeroStatus {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgb(243 163 19 / 56%);
+  border-radius: 0.35rem;
+  background: rgb(0 13 23 / 62%);
+  color: var(--muted);
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+}
+
+.eventHeroStatus:not([data-event-status='scheduled']) {
+  border-color: rgb(255 189 56 / 82%);
+  color: var(--ivory);
+}
+
+.eventHeroLinks {
+  gap: 0.65rem 1.25rem;
+  margin-top: 1.4rem;
+}
+
+.eventHeroLinks a {
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-decoration-thickness: 1px;
+  text-transform: uppercase;
+  text-underline-offset: 0.25em;
 }
 
 .contentHeroCopy .hierarchyBreadcrumbs a,
@@ -2603,6 +2667,9 @@ a.attachmentItem:hover {
   gap: 1rem;
   align-items: center;
   padding: 0.9rem 1rem;
+  background:
+    /*linear-gradient(rgb(0 13 23 / 50%), rgb(0 13 23 / 50%)),*/ url('/assets/placeholder-nebula.webp')
+    center 5% / cover no-repeat;
 }
 
 .homeEventViewTabs {
@@ -2962,31 +3029,277 @@ a.attachmentItem:hover {
   margin: 0.3rem 0 0.8rem;
 }
 
-.eventDetails,
-.eventCooperation {
-  margin: 2rem 0;
-  padding: 1.5rem;
-  border: 1px solid var(--line);
-  border-radius: 0.7rem;
+.eventPageBody {
+  padding-top: 0;
 }
 
-.eventDetails dl {
+.eventDetails {
+  position: relative;
+  z-index: 4;
   display: grid;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.25rem 2rem;
+  align-items: stretch;
+  margin: -2.75rem 0 clamp(3rem, 6vw, 5rem);
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid rgb(243 163 19 / 72%);
+  border-radius: 0.75rem;
+  background: rgb(3 29 46 / 96%);
+  box-shadow:
+    0 1.2rem 3rem rgb(0 0 0 / 30%),
+    0 0 1.5rem rgb(243 163 19 / 8%);
+}
+
+.eventFacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin: 0;
+}
+
+.eventFact {
+  min-width: 0;
+}
+
+.eventFact + .eventFact {
+  padding-left: 1.25rem;
+  border-left: 1px solid rgb(243 163 19 / 22%);
+}
+
+.eventFact > dt {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.eventFact > dt .rasterIcon {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--ivory);
 }
 
 .eventDetails dt {
   color: var(--gold-light);
+  font-size: 0.82rem;
   font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
 }
 
 .eventDetails dd {
-  margin: 0.2rem 0 0;
+  margin: 0.4rem 0 0;
+  color: var(--ivory);
+  line-height: 1.45;
 }
 
-.eventMap {
-  aspect-ratio: 16 / 9;
-  margin-top: 1.5rem;
+.eventFact > dd {
+  padding-left: 1.95rem;
+}
+
+.eventFactPrimary,
+.eventFactSecondary,
+.eventFact time {
+  display: block;
+}
+
+.eventFactPrimary {
+  font-weight: 700;
+}
+
+.eventFactSecondary {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.eventFact--combined dt:nth-of-type(2) {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(243 163 19 / 18%);
+}
+
+.eventDetails dd a {
+  color: inherit;
+}
+
+.eventDetailActions {
+  display: flex;
+  min-width: 13rem;
+  flex-direction: column;
+  gap: 0.8rem;
+  justify-content: center;
+  padding-left: 2rem;
+  border-left: 1px solid rgb(243 163 19 / 52%);
+}
+
+.eventPrimaryAction,
+.eventSecondaryAction {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.4rem;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+}
+
+.eventPrimaryAction {
+  border: 1px solid var(--gold-light);
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.eventSecondaryAction {
+  color: var(--ivory);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+}
+
+.eventPrimaryAction:hover,
+.eventPrimaryAction:focus-visible {
+  background: var(--ivory);
+  border-color: var(--ivory);
+}
+
+.eventSecondaryAction:hover,
+.eventSecondaryAction:focus-visible {
+  color: var(--gold-light);
+}
+
+.eventPrimaryAction:focus-visible,
+.eventSecondaryAction:focus-visible,
+.eventHeroLinks a:focus-visible,
+.eventSidebar a:focus-visible,
+.eventLinkList a:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+.eventPrimaryAction .rasterIcon,
+.eventSecondaryAction .rasterIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.eventPageColumns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 21rem);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: start;
+}
+
+.eventPageMain,
+.eventPageSidebar {
+  min-width: 0;
+}
+
+.eventPageSidebar {
+  position: sticky;
+  top: 1.5rem;
+}
+
+.eventSidebar {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.eventSidebarSection {
+  padding: 1.35rem;
+  border: 1px solid rgb(243 163 19 / 30%);
+  border-radius: 0.75rem;
+  background: rgb(3 29 46 / 74%);
+  box-shadow: 0 0.7rem 1.6rem rgb(0 0 0 / 18%);
+}
+
+.eventSidebarSection h2 {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgb(243 163 19 / 38%);
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+}
+
+.eventSidebarList,
+.eventSidebarContactChannels,
+.eventLinkList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.eventSidebarList {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.eventSidebarList > li + li {
+  padding-top: 1.15rem;
+  border-top: 1px solid rgb(243 163 19 / 18%);
+}
+
+.eventSidebarList h3 {
+  margin-bottom: 0.35rem;
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.eventSidebarList h3 a {
+  color: var(--ivory);
+}
+
+.eventSidebarList p {
+  margin-bottom: 0.65rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.eventSidebarList .eventSidebarRole {
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eventSidebarContactChannels {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.eventSidebarContactChannels a,
+.eventLinkList a {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  color: var(--gold-light);
+  overflow-wrap: anywhere;
+}
+
+.eventSidebarContactChannels .rasterIcon,
+.eventLinkList .rasterIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.eventSupplementary {
+  display: grid;
+  gap: clamp(2.5rem, 6vw, 4rem);
+  margin-top: clamp(3rem, 7vw, 5rem);
+}
+
+.eventSupplementarySection > h2 {
+  margin-bottom: 1.25rem;
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+}
+
+.eventLinkList {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .googleMapEmbed {
@@ -3003,6 +3316,34 @@ a.attachmentItem:hover {
   .eventGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .eventDetails {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .eventFacts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .eventDetailActions {
+    min-width: 0;
+    padding: 1.25rem 0 0;
+    border-top: 1px solid rgb(243 163 19 / 32%);
+    border-left: 0;
+    justify-content: flex-start;
+  }
+
+  .eventPageColumns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .eventPageSidebar {
+    position: static;
+  }
+
+  .eventSidebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (width <= 48rem) {
@@ -3010,6 +3351,27 @@ a.attachmentItem:hover {
   .calendarLayout,
   .eventGrid {
     grid-template-columns: 1fr;
+  }
+
+  .eventDetails {
+    margin-top: -1.75rem;
+  }
+
+  .eventFacts,
+  .eventSidebar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .eventFact + .eventFact {
+    padding-top: 1rem;
+    padding-left: 0;
+    border-top: 1px solid rgb(243 163 19 / 22%);
+    border-left: 0;
+  }
+
+  .eventDetailActions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .homeEventToolbar {

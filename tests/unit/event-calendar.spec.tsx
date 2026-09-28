@@ -9,6 +9,13 @@ import {
   toCalendarEvent,
   type CalendarMonthPayload,
 } from '@/modules/events/calendar-presentation'
+import { createRichTextDocument } from '@/modules/members/rich-text'
+
+const firstExcerpt = createRichTextDocument([
+  'Cotygodniowe spotkanie przy grach fabularnych.',
+  'Drugi akapit kalendarza.',
+])
+const secondExcerpt = createRichTextDocument(['Otwarte spotkanie klubowe.'])
 
 const calendarData: CalendarMonthPayload = {
   eventTypes: [
@@ -18,7 +25,7 @@ const calendarData: CalendarMonthPayload = {
   events: [
     {
       eventType: { id: 1, iconColor: 'lantern-glow', iconName: 'dice', name: 'Sesje RPG' },
-      excerpt: 'Cotygodniowe spotkanie przy grach fabularnych.',
+      excerpt: firstExcerpt,
       id: 1,
       slug: 'erpegowy-wtorek',
       startAt: '2026-09-08T16:00:00.000Z',
@@ -26,7 +33,7 @@ const calendarData: CalendarMonthPayload = {
     },
     {
       eventType: { id: 2, iconColor: 'mist-silver', iconName: 'users', name: 'Spotkania' },
-      excerpt: 'Otwarte spotkanie klubowe.',
+      excerpt: secondExcerpt,
       id: 2,
       slug: 'spotkanie-klubowe',
       startAt: '2026-09-08T17:00:00.000Z',
@@ -49,10 +56,12 @@ describe('Event calendar', () => {
     expect(markup).toContain('Sesje RPG')
     expect(markup).toContain('Spotkania')
     expect(markup).toContain('Cotygodniowe spotkanie przy grach fabularnych.')
+    expect(markup).toContain('Drugi akapit kalendarza.')
     expect(markup).toContain('Subskrybuj kalendarz WKF')
   })
 
   it('keeps the Event excerpt in the public calendar payload', () => {
+    const excerpt = createRichTextDocument(['Streszczenie wydarzenia.'])
     expect(
       toCalendarEvent({
         eventType: {
@@ -63,13 +72,13 @@ describe('Event calendar', () => {
           name: 'Sesje RPG',
           updatedAt: '2026-09-01T10:00:00.000Z',
         },
-        excerpt: 'Streszczenie wydarzenia.',
+        excerpt,
         id: 1,
         slug: 'wydarzenie',
         startAt: '2026-09-08T16:00:00.000Z',
         title: 'Wydarzenie',
       }),
-    ).toMatchObject({ excerpt: 'Streszczenie wydarzenia.' })
+    ).toMatchObject({ excerpt })
   })
 
   it('announces an initially truncated month before hydration', () => {

@@ -14,15 +14,16 @@ test('renders Cycle tabs, generated URL and grammatical creation labels', async 
 
   await page.getByRole('textbox', { name: 'Tytuł *' }).pressSequentially('Testowy Cykl Łódź')
   await page
-    .getByRole('textbox', { name: 'Streszczenie *' })
+    .locator('[contenteditable="true"]')
+    .first()
     .pressSequentially('Pełne streszczenie Cyklu')
   await expect(page.getByRole('textbox', { name: 'Slug *' })).toHaveValue('testowy-cykl-lodz')
 
   await page.getByRole('button', { name: 'Domyślne dane Wydarzenia' }).click()
   await expect(page.locator('#field-eventDefaults__title')).toHaveValue('Testowy Cykl Łódź')
-  await expect(page.locator('#field-eventDefaults__excerpt')).toHaveValue(
-    'Pełne streszczenie Cyklu',
-  )
+  await expect(
+    page.locator('[contenteditable="true"]').filter({ hasText: 'Pełne streszczenie Cyklu' }),
+  ).toBeVisible()
   await expect(page.locator('#field-eventDefaults__layout h3')).toContainText('Treści')
   await expect(page.getByText('Event Defaults', { exact: true })).toHaveCount(0)
 
