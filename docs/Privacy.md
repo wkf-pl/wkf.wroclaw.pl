@@ -1,235 +1,335 @@
-# Polityka prywatności
+# Privacy policy
 
-**Wersja:** 1.0  
-**Obowiązuje od:** [data wejścia w życie]
+**Version:** 1.0<br>
+**Effective from:** [effective date]
 
-## Najpierw najważniejsze
+## The essentials first
 
-Wrocławski Klub Fantastyki jest organizacją społeczną, a nie firmą zajmującą się danymi. Chcemy, aby nasza strona pomagała poznawać Klub, jego działalność i wydarzenia — bez niepotrzebnej ingerencji w prywatność osób, które ją odwiedzają.
+Wrocławski Klub Fantastyki is a community organization, not a data business. We want our website to
+help people discover the Club, its activities, and its events without unnecessarily intruding on the
+privacy of its visitors.
 
-Dlatego:
+Therefore:
 
-- nie sprzedajemy danych osobowych;
-- nie udostępniamy danych reklamodawcom i nie wyświetlamy reklam dopasowanych do użytkownika;
-- nie śledzimy osób pomiędzy różnymi stronami internetowymi;
-- nie budujemy profili zainteresowań konkretnych odwiedzających;
-- nie podejmujemy wobec nikogo decyzji wyłącznie w sposób automatyczny;
-- ograniczamy zbierane informacje do tych, które są potrzebne do działania i ochrony strony albo do załatwienia sprawy, z którą ktoś się do nas zwrócił;
-- funkcje dostarczane przez podmioty zewnętrzne, takie jak osadzona mapa Google, uruchamiamy dopiero po świadomym wyborze użytkownika.
+- we do not sell personal data;
+- we do not share data with advertisers or display personalized advertising;
+- we do not track people across different websites;
+- we do not build interest profiles of individual visitors;
+- we do not make decisions about anyone solely by automated means;
+- we limit collected information to what is necessary to operate and protect the website or handle
+  a matter submitted to us; and
+- we activate features provided by third parties, such as an embedded Google Map, only after the
+  user makes an informed choice.
 
-Obecnie nie korzystamy narzędzi do tworzenia statystyki odwiedzin. Jeżeli w przyszłości zechcemy mierzyć zainteresowanie treściami, najpierw opiszemy zasady takiego pomiaru, zaktualizujemy tę politykę i — jeżeli będzie to wymagane — poprosimy o zgodę.
+We currently do not use visit-statistics tools. If we decide to measure interest in content in the
+future, we will first describe how that measurement works, update this policy, and ask for consent
+when required.
 
-## Kto odpowiada za dane
+## Who is responsible for the data
 
-Prawo wymaga, aby osoba korzystająca ze strony wiedziała, kto decyduje o wykorzystaniu jej danych i jak może się z nim skontaktować.
+The law requires website users to know who decides how their data is used and how to contact that
+entity.
 
-### Jak to rozwiązujemy
+### How we address this
 
-Administratorem danych jest:
+The data controller is:
 
-**Wrocławski Klub Fantastyki**  
-KRS 0001219417  
-ul. Rodła 32, 54-530 Wrocław
+**Wrocławski Klub Fantastyki**<br>
+National Court Register number (KRS): 0001219417<br>
+ul. Rodła 32, 54-530 Wrocław, Poland
 
-dalej nazywany „Klubem” lub „WKF”.
+referred to below as the “Club” or “WKF”.
 
-W sprawach dotyczących prywatności można napisać na **kontakt@wkf.wroclaw.pl** albo wysłać list na podany wyżej adres. Klub nie wyznaczył inspektora ochrony danych. Wiadomości dotyczące prywatności obsługują wyłącznie upoważnione osoby.
+For privacy matters, email **kontakt@wkf.wroclaw.pl** or send a letter to the address above. The Club
+has not appointed a data protection officer. Only authorized people handle privacy correspondence.
 
-> **Podstawa prawna:** obowiązek podania danych administratora i informacji o przetwarzaniu wynika przede wszystkim z art. 12–13 RODO.[^rodo]
+> **Legal basis:** the obligation to identify the controller and provide information about processing
+> follows primarily from Articles 12–13 of the GDPR.[^gdpr]
 
-## Techniczne działanie i bezpieczeństwo strony
+## Technical operation and website security
 
-Każda strona internetowa otrzymuje pewne dane techniczne, ponieważ bez nich serwer nie wiedziałby, jak odpowiedzieć. Część tych informacji może być pomocna przy naprawianiu błędów w działaniu strony i usuwaniu skutków ewentualnych awarii lub ataków hakerskich.
+Every website receives some technical data because the server could not respond without it. Some of
+this information also helps diagnose website errors and respond to failures or cyberattacks.
 
-### Jak to rozwiązujemy
+### How we address this
 
-Serwer może zapisywać adres IP, datę i czas połączenia, żądany adres strony, kod odpowiedzi, informacje o przeglądarce i urządzeniu oraz dane diagnostyczne o błędzie. Wykorzystujemy je wyłącznie do dostarczenia strony, zapewnienia jej dostępności, diagnozowania problemów i ochrony przed nadużyciami.
+The server may record an IP address, connection date and time, requested page address, response
+code, browser and device information, and error diagnostics. We use this information only to deliver
+the website, keep it available, diagnose problems, and protect it from misuse.
 
-Zwykłe logi diagnostyczne przechowujemy przez **30 dni**. Konkretny zapis możemy zachować dłużej tylko wtedy, gdy jest potrzebny do zbadania incydentu, spełnienia obowiązku prawnego albo ustalenia lub obrony roszczeń.
+We retain ordinary diagnostic logs for **30 days**. We may keep a specific entry longer only when it
+is needed to investigate an incident, comply with a legal obligation, or establish or defend legal
+claims.
 
-### Co możesz zrobić
+### What you can do
 
-Przesłania podstawowych danych technicznych nie da się wyłączyć bez rezygnacji z połączenia ze stroną. Można natomiast korzystać z typowych zabezpieczeń przeglądarki lub sieci, o ile nie uniemożliwiają one wyświetlenia serwisu.
+Basic technical data cannot be withheld without giving up the connection to the website. You can
+use ordinary browser or network protections as long as they do not prevent the website from being
+displayed.
 
-> **Podstawa prawna:** prawnie uzasadniony interes Klubu w zapewnieniu bezpieczeństwa, dostępności i prawidłowego działania strony — art. 6 ust. 1 lit. f RODO.[^rodo]
+> **Legal basis:** the Club's legitimate interest in the website's security, availability, and
+> proper operation — Article 6(1)(f) of the GDPR.[^gdpr]
 
-## Pamięć przeglądarki i pliki cookies
+## Browser storage and cookies
 
-Przeglądarka może zapisywać na urządzeniu krótkie informacje. Cookies są jednym z takich mechanizmów; podobnie działa pamięć lokalna i pamięć sesji w przeglądarce. Mogą służyć zarówno funkcjom potrzebnym użytkownikowi, jak i funkcjom niezbędnym do działania strony. WKF nie używa ich do śledzenia, reklamy ani statystyk odwiedzin.
+A browser can store small pieces of information on a device. Cookies are one such mechanism; local
+storage and session storage work similarly. They can support functions requested by the user or
+functions necessary for the website to operate. WKF does not use them for tracking, advertising, or
+visit statistics.
 
-### Jak to rozwiązujemy
+### How we address this
 
-Na stronie publicznej zapisujemy w pamięci lokalnej wyłącznie decyzję dotyczącą opcjonalnych funkcji. Dzięki temu nie pytamy o nią przy każdym otwarciu strony. Preferencja `wkf-privacy-consent` zawiera wersję ustawień, zgodę albo odmowę, datę wyboru i termin wygaśnięcia. Jest przechowywana przez **6 miesięcy**.
+On the public website, we store only the decision about optional features in local storage. This
+prevents us from asking for the same choice on every visit. The `wkf-privacy-consent` preference
+contains the settings version, consent or refusal, the date of the choice, and its expiration date.
+It is stored for **six months**.
 
-Panel administracyjny jest dostępny tylko dla upoważnionych osób i może korzystać z mechanizmów niezbędnych do bezpiecznego logowania i pracy redakcyjnej:
+The admin panel is available only to authorized people and may use mechanisms needed for secure
+authentication and editorial work:
 
-| Mechanizm                            | Do czego służy                                      | Jak długo jest przechowywany                                    |
-| ------------------------------------ | --------------------------------------------------- | --------------------------------------------------------------- |
-| `payload-token` — cookie HTTP-only   | utrzymanie bezpiecznej sesji zalogowanego redaktora | 2 godziny                                                       |
-| `payload-theme` — cookie             | zapamiętanie wybranego wyglądu panelu               | do 365 dni                                                      |
-| `_payloadClipboard` — pamięć lokalna | schowek treści skopiowanych przez redaktora         | do usunięcia przez użytkownika lub wyczyszczenia danych witryny |
-| pamięć sesji panelu                  | jednorazowe komunikaty pomiędzy ekranami edycji     | do zamknięcia karty lub wykorzystania komunikatu                |
+| Mechanism                           | Purpose                                       | Retention                                       |
+| ----------------------------------- | --------------------------------------------- | ----------------------------------------------- |
+| `payload-token` — HTTP-only cookie  | maintains an editor's authenticated session   | 2 hours                                         |
+| `payload-theme` — cookie            | remembers the selected admin appearance       | up to 365 days                                  |
+| `_payloadClipboard` — local storage | stores content copied by an editor            | until the user removes it or clears site data   |
+| admin-panel session storage         | passes one-time messages between edit screens | until the tab closes or the message is consumed |
 
-Te mechanizmy służą wykonaniu funkcji wyraźnie żądanej przez użytkownika albo bezpieczeństwu panelu. Nie wykorzystujemy ich do obserwowania aktywności poza stroną WKF.
+These mechanisms provide a function explicitly requested by the user or protect the admin panel.
+We do not use them to observe activity outside the WKF website.
 
-### Co możesz zrobić
+### What you can do
 
-Opcjonalne funkcje można odrzucić bez utraty dostępu do publicznej treści. Decyzję można zmienić w ustawieniach prywatności tam, gdzie aplikacja udostępnia odpowiedni przycisk. Można też usunąć dane tej witryny w ustawieniach przeglądarki i odświeżyć stronę — wtedy poprosimy o wybór ponownie. Zablokowanie mechanizmów niezbędnych może uniemożliwić logowanie do panelu lub zapamiętanie decyzji.
+You can refuse optional features without losing access to public content. You can change your choice
+in the privacy settings wherever the application provides the relevant button. You can also delete
+this site's data in your browser settings and refresh the page; we will then ask you to choose again.
+Blocking necessary mechanisms can prevent admin-panel authentication or stop the choice from being
+remembered.
 
-> **Podstawa prawna:** zapis lub odczyt informacji z urządzenia reguluje w szczególności art. 399–400 Prawa komunikacji elektronicznej. Mechanizmy konieczne do dostarczenia funkcji żądanej przez użytkownika nie wymagają odrębnej zgody; pozostałe pozostają wyłączone do czasu zgody.[^pke]
+> **Legal basis:** storing information on or reading it from a device is governed in particular by
+> Articles 399–400 of the Polish Electronic Communications Law. Mechanisms necessary to provide a
+> function requested by the user do not require separate consent; all others remain disabled until
+> consent is given.[^ecl]
 
-## Mapy Google
+## Google Maps
 
-Osadzona mapa nie jest tylko obrazkiem. Po jej wczytaniu przeglądarka łączy się bezpośrednio z Google. Dostawca może wtedy otrzymać między innymi adres IP, czas połączenia oraz informacje o przeglądarce i urządzeniu, a także korzystać z własnych cookies lub pamięci urządzenia.
+An embedded map is more than an image. When it loads, the browser connects directly to Google. The
+provider can then receive an IP address, connection time, and browser and device information, among
+other data, and may use its own cookies or device storage.
 
-### Jak to rozwiązujemy
+### How we address this
 
-Nie umieszczamy mapy w kodzie strony i nie wysyłamy żądania do Google, dopóki użytkownik nie włączy w ustawieniach prywatności przełącznika „Funkcjonalne — Mapy Google”. Przed zgodą pokazujemy adres miejsca, własny komunikat oraz zwykłe łącze do Map Google. Po wyrażeniu zgody dane techniczne otrzymuje Google jako odrębny administrator swojej usługi.
+We do not include the map in the page code or send any request to Google until the user enables the
+“Funkcjonalne — Mapy Google” (“Functional — Google Maps”) switch in the privacy settings. Before
+consent, we show the venue address, our own message, and an ordinary link to Google Maps. After
+consent, Google receives technical data as a separate controller of its service.
 
-### Co możesz zrobić
+### What you can do
 
-Możesz odmówić i nadal korzystać z całej publicznej treści strony. Możesz też otworzyć podany adres samodzielnie w wybranej usłudze. Kliknięcie zwykłego łącza do Map Google przenosi do zewnętrznego serwisu, który działa według [własnej polityki prywatności](https://policies.google.com/privacy?hl=pl).
+You can refuse and still use all public website content. You can also open the address yourself in
+a service of your choice. Following an ordinary Google Maps link opens an external service governed
+by [Google's own privacy policy](https://policies.google.com/privacy?hl=en).
 
-Zgodę można później cofnąć w ustawieniach prywatności. Osadzona mapa zostanie wtedy natychmiast usunięta ze strony. Cofnięcie zgody nie zmienia zgodności z prawem wcześniejszego działania.
+You can later withdraw consent in the privacy settings. The embedded map will then be removed from
+the page immediately. Withdrawal does not affect the lawfulness of earlier processing.
 
-> **Podstawa prawna:** zgoda — art. 6 ust. 1 lit. a RODO oraz art. 399–400 Prawa komunikacji elektronicznej.[^rodo] [^pke]
+> **Legal basis:** consent — Article 6(1)(a) of the GDPR and Articles 399–400 of the Polish
+> Electronic Communications Law.[^gdpr] [^ecl]
 
-## Wiadomości i inne sprawy kierowane do Klubu
+## Messages and other matters submitted to the Club
 
-Gdy ktoś pisze do Klubu, musimy użyć przekazanych informacji, aby przeczytać wiadomość, odpowiedzieć i załatwić opisaną sprawę.
+When someone writes to the Club, we must use the information they provide to read the message,
+reply, and handle the matter described.
 
-### Jak to rozwiązujemy
+### How we address this
 
-Wykorzystujemy adres e-mail, dane podane w podpisie i treść wiadomości tylko w zakresie związanym z daną sprawą. Wiadomości przechowujemy do jej zakończenia. Możemy zachować je dłużej, gdy trwa związana z nimi relacja, wymagają tego przepisy albo treść jest potrzebna dla bezpieczeństwa, rozliczalności lub ustalenia i obrony roszczeń.
+We use the email address, signature information, and message content only as relevant to the matter.
+We retain messages until the matter is completed. We may keep them longer while a related
+relationship continues, when law requires it, or when their contents are needed for security,
+accountability, or establishing and defending claims.
 
-Poczta działa na serwerze administrowanym przez upoważnioną osobę działającą na rzecz Klubu.
+Email runs on a server administered by an authorized person acting on behalf of the Club.
 
-### Co możesz zrobić
+### What you can do
 
-Podanie adresu i treści wiadomości jest dobrowolne, lecz bez danych kontaktowych możemy nie mieć możliwości odpowiedzi. Nie należy przesyłać informacji, które nie są potrzebne do załatwienia sprawy.
+Providing an address and message content is voluntary, but without contact details we may be unable
+to respond. Do not send information that is unnecessary for the matter.
 
-> **Podstawa prawna:** zależnie od treści sprawy: prawnie uzasadniony interes w prowadzeniu korespondencji i działalności Klubu (art. 6 ust. 1 lit. f RODO), działania przed zawarciem lub wykonanie umowy (lit. b) albo obowiązek prawny (lit. c).[^rodo]
+> **Legal basis:** depending on the matter: legitimate interest in managing correspondence and Club
+> activities (Article 6(1)(f) of the GDPR), steps before entering into or performing a contract
+> (point (b)), or a legal obligation (point (c)).[^gdpr]
 
-## Konta osób redagujących stronę
+## Accounts for website editors
 
-Panel administracyjny musi rozpoznawać upoważnione osoby, przyznawać im właściwe role i chronić treści przed nieuprawnionymi zmianami.
+The admin panel must recognize authorized people, assign the correct roles, and protect content from
+unauthorized changes.
 
-### Jak to rozwiązujemy
+### How we address this
 
-Klub sam zakłada konta osobom współpracującym przy stronie; nie prowadzimy publicznej samorejestracji. Przetwarzamy adres e-mail, nazwę wyświetlaną, role i uprawnienia, zabezpieczone dane logowania oraz informacje potrzebne do ochrony sesji.
+The Club creates accounts for people who work on the website; there is no public self-registration.
+We process the email address, display name, roles and permissions, protected sign-in data, and
+information needed to secure the session.
 
-Konto utrzymujemy do czasu utraty uprawnień albo zakończenia współpracy. Konto można zdezaktywować na stałe - w takiej sytuacji dane są anonimizowane a wizytówka przestaje być widoczna. Po dezaktywacji konta dane użytkownika mogą przez krótki czas pozostawać w ograniczonych kopiach zapasowych, zgodnie z przyjętym cyklem kopii.
+We retain an account until its authorization is withdrawn or the cooperation ends. An account can
+be permanently deactivated; in that case, its data is anonymized and the profile is no longer
+visible. After deactivation, user data may remain briefly in restricted backups according to the
+adopted backup cycle.
 
-### Co możesz zrobić
+### What you can do
 
-Osoba posiadająca konto może sama poprawić swoje dane lub poprosić o to administratora. Administrator udziela również wyjaśnień i innej pomocy przy działaniach w panelu administracyjnym.
+An account holder can correct their data or ask an administrator to do so. An administrator also
+provides explanations and other assistance with admin-panel operations.
 
-Osoba posiadająca konto powinna niezwłocznie zgłosić podejrzenie przejęcia hasła lub konta.
+An account holder should report suspected password or account compromise immediately.
 
-> **Podstawa prawna:** prawnie uzasadniony interes Klubu w bezpiecznym prowadzeniu strony i kontrolowaniu dostępu — art. 6 ust. 1 lit. f RODO.[^rodo]
+> **Legal basis:** the Club's legitimate interest in securely operating the website and controlling
+> access — Article 6(1)(f) of the GDPR.[^gdpr]
 
-## Profile członkowskie, zdjęcia i dane kontaktowe
+## Member profiles, photographs, and contact details
 
-Publiczny profil pozwala przedstawić osoby tworzące społeczność Klubu, ale informacje umieszczone w Internecie mogą zobaczyć nie tylko członkowie. Mogą one zostać skopiowane, zindeksowane przez wyszukiwarki lub zachowane w ich pamięci podręcznej.
+A public profile presents people who create the Club community, but information published online
+can be seen by non-members as well. It may be copied, indexed by search engines, or retained in their
+caches.
 
-### Jak to rozwiązujemy
+### How we address this
 
-Profil może zawierać wybraną nazwę publiczną, opis, zainteresowania, prowadzone gry i aktywności, funkcję w Klubie, zdjęcie oraz wskazane kanały kontaktu. Publikujemy tylko elementy dobrowolnie zaakceptowane przez osobę, której dotyczy profil. Publikacja zdjęcia lub innych danych kontaktowych wymaga osobnego, świadomego wyboru.
+A profile can contain a chosen public name, description, interests, games and activities led, Club
+role, photograph, and selected contact channels. We publish only the elements voluntarily accepted
+by the person the profile describes. Publishing a photograph or other contact details requires a
+separate, informed choice.
 
-Profil pozostaje dostępny do jego wyłączenia. Po dezaktywacji konta profil jest automatycznie czyszczony. Nie gwarantujemy usunięcia kopii wykonanych wcześniej przez wyszukiwarki lub inne niezależne podmioty.
+The profile remains available until disabled. When the account is deactivated, the profile is
+cleared automatically. We cannot guarantee removal of copies previously made by search engines or
+other independent entities.
 
-### Co możesz zrobić
+### What you can do
 
-Zgoda jest dobrowolna i można ją w każdej chwili cofnąć. Odmowa publikacji profilu, zdjęcia albo danych kontaktowych — podobnie jak późniejsze cofnięcie zgody — nie wpływa na członkostwo w Klubie. Po otrzymaniu żądania wyłączymy odpowiedni element na aktywnej stronie. Możesz to też zrobić sam przez panel administracyjny.
+Consent is voluntary and can be withdrawn at any time. Refusing publication of a profile,
+photograph, or contact details, or withdrawing consent later, does not affect Club membership. Once
+we receive a request, we will disable the relevant element on the active website. You can also do
+this yourself through the admin panel.
 
-> **Podstawa prawna:** zgoda — art. 6 ust. 1 lit. a RODO. Publikację wizerunku reguluje również art. 81 ustawy o prawie autorskim i prawach pokrewnych, o ile nie ma zastosowania przewidziany w nim wyjątek.[^rodo] [^wizerunek]
+> **Legal basis:** consent — Article 6(1)(a) of the GDPR. Publication of a person's image is also
+> governed by Article 81 of the Polish Copyright and Related Rights Act unless an exception in that
+> provision applies.[^gdpr] [^image-rights]
 
-## Profile osób małoletnich
+## Profiles of minors
 
-Dane i wizerunek dziecka wymagają szczególnej ostrożności. Jedna ogólna zgoda nie powinna ukrywać kilku różnych decyzji o publikacji.
+A child's data and image require particular care. One general consent should not conceal several
+different publication decisions.
 
-### Jak to rozwiązujemy
+### How we address this
 
-Profil osoby małoletniej publikujemy dopiero po otrzymaniu podpisanej zgody rodzica lub opiekuna prawnego. Osobno pytamy o zgodę na opis i pozostałe dane profilu, publikację wizerunku oraz wybrane kanały kontaktu. Nie wymagamy kopii dokumentu tożsamości.
+We publish a minor's profile only after receiving signed consent from a parent or legal guardian.
+We request separate consent for the description and other profile data, publication of the image,
+and selected contact channels. We do not require a copy of an identity document.
 
-Dokument zgody przechowujemy przez czas publikacji danych, a później tylko tak długo, jak jest to potrzebne do wykazania prawidłowości zgody lub ochrony przed roszczeniami.
+We retain the consent document while the data is published and afterward only for as long as needed
+to demonstrate that consent was valid or to defend against claims.
 
-### Co możesz zrobić
+### What you can do
 
-Opiekun może nie zgodzić się na dowolny z wymienionych elementów albo później cofnąć zgodę. Nie wpływa to na członkostwo osoby małoletniej.
+A guardian can refuse any of these elements or withdraw consent later. This does not affect the
+minor's Club membership.
 
-> **Podstawa prawna:** publikacja danych opiera się na zgodzie — art. 6 ust. 1 lit. a RODO. Dane opiekuna i dokument zgody wykorzystujemy w uzasadnionym interesie polegającym na ochronie praw małoletniego i wykazaniu prawidłowości działania — art. 6 ust. 1 lit. f RODO.[^rodo]
+> **Legal basis:** publication of data relies on consent — Article 6(1)(a) of the GDPR. We use the
+> guardian's data and the consent document under the legitimate interest of protecting the minor's
+> rights and demonstrating proper conduct — Article 6(1)(f) of the GDPR.[^gdpr]
 
-## Kto może otrzymać dane
+## Who may receive data
 
-Utrzymanie strony, poczty i kopii zapasowych wymaga udziału dostawców technicznych. W niektórych sytuacjach dostęp może być potrzebny także organowi publicznemu albo doradcy pomagającemu Klubowi.
+Operating the website, email, and backups requires technical providers. In some situations, a public
+authority or adviser assisting the Club may also need access.
 
-### Jak to rozwiązujemy
+### How we address this
 
-Dostęp otrzymują tylko upoważnione osoby działające dla Klubu oraz dostawcy, których usługi są rzeczywiście potrzebne. Dotyczy to w szczególności infrastruktury Microsoft Azure używanej do hostingu, bazy danych, plików, kopii zapasowych i logów. Dane możemy też ujawnić podmiotom świadczącym niezbędną pomoc techniczną lub prawną oraz uprawnionym organom, jeżeli wymaga tego prawo.
+Access is limited to authorized people acting for the Club and providers whose services are
+actually needed. This applies in particular to Microsoft Azure infrastructure used for hosting, the
+database, files, backups, and logs. We may also disclose data to entities providing necessary
+technical or legal assistance and to authorized public bodies when required by law.
 
-Po wyrażeniu zgody na mapę dane techniczne otrzymuje Google. Publiczne profile są z założenia dostępne każdemu użytkownikowi Internetu, wyszukiwarkom i podmiotom archiwizującym publiczną sieć.
+After consent to the map, Google receives technical data. Public profiles are, by design, available
+to every Internet user, search engine, and entity that archives the public web.
 
-Nie przekazujemy danych nikomu po to, aby prowadził na ich podstawie reklamę, śledzenie czy profilowanie.
+We do not provide data to anyone for advertising, tracking, or profiling.
 
-## Dane poza Europejskim Obszarem Gospodarczym
+## Data outside the European Economic Area
 
-Globalny dostawca może w pewnych sytuacjach udostępnić dane lub pomoc techniczną spoza Europejskiego Obszaru Gospodarczego, nawet jeśli główne zasoby usługi znajdują się w Europie.
+In some situations, a global provider may make data or technical support available from outside the
+European Economic Area even when the service's primary resources are in Europe.
 
-### Jak to rozwiązujemy
+### How we address this
 
-Główne zasoby aplikacji konfigurujemy w europejskim regionie Azure. Jeżeli dostawca ma uzyskać dostęp do danych spoza EOG, wymagamy podstawy przewidzianej w rozdziale V RODO, na przykład decyzji Komisji Europejskiej stwierdzającej odpowiedni stopień ochrony albo standardowych klauzul umownych wraz z odpowiednimi zabezpieczeniami.
+We configure the application's primary resources in a European Azure region. If a provider is to
+access data from outside the EEA, we require a basis provided by Chapter V of the GDPR, such as a
+European Commission adequacy decision or standard contractual clauses with appropriate safeguards.
 
-Google opisuje miejsca i podstawy przetwarzania we własnej polityce. Połączenie z Google następuje dopiero po zgodzie na osadzoną mapę albo po samodzielnym przejściu do jego serwisu.
+Google describes processing locations and grounds in its own policy. A connection to Google occurs
+only after consent to the embedded map or when the user independently visits its service.
 
-### Co możesz zrobić
+### What you can do
 
-Informację o stosowanych zabezpieczeniach można uzyskać, pisząc na **kontakt@wkf.wroclaw.pl**.
+You can request information about the safeguards used by emailing **kontakt@wkf.wroclaw.pl**.
 
-> **Podstawa prawna:** zasady przekazywania danych poza EOG określa rozdział V RODO.[^rodo]
+> **Legal basis:** Chapter V of the GDPR governs transfers of data outside the EEA.[^gdpr]
 
-## Jak długo przechowujemy dane
+## How long we retain data
 
-Nie chcemy przechowywać danych „na wszelki wypadek”. Konkretne terminy podaliśmy przy odpowiednich tematach. Gdy nie da się z góry wskazać jednej daty, bierzemy pod uwagę czas potrzebny do załatwienia sprawy, trwanie relacji z daną osobą, obowiązki prawne, bezpieczeństwo oraz terminy dochodzenia roszczeń. Po ustaniu celu dane usuwamy lub anonimizujemy, z uwzględnieniem krótkiego cyklu ograniczonych kopii zapasowych.
+We do not want to retain data “just in case”. Specific periods appear under the relevant topics.
+When one date cannot be stated in advance, we consider the time needed to handle the matter, the
+duration of the relationship with the person, legal obligations, security, and limitation periods
+for claims. Once the purpose ends, we delete or anonymize the data, subject to a short cycle of
+restricted backups.
 
-## Twoje prawa
+## Your rights
 
-Osoba, której dane dotyczą, nie traci nad nimi kontroli tylko dlatego, że przekazała je Klubowi albo że zostały zapisane podczas korzystania ze strony.
+A data subject does not lose control of their data merely because they provided it to the Club or it
+was recorded while they used the website.
 
-### Jak to rozwiązujemy
+### How we address this
 
-W zależności od podstawy prawnej i okoliczności przysługują prawa do:
+Depending on the legal basis and circumstances, you may have the right to:
 
-- uzyskania dostępu do danych i ich kopii;
-- poprawienia danych;
-- żądania usunięcia lub ograniczenia przetwarzania;
-- otrzymania danych w formacie nadającym się do przeniesienia, gdy to prawo ma zastosowanie;
-- sprzeciwu wobec przetwarzania opartego na prawnie uzasadnionym interesie;
-- cofnięcia zgody w dowolnym momencie, bez wpływu na zgodność z prawem wcześniejszego przetwarzania;
-- złożenia skargi do Prezesa Urzędu Ochrony Danych Osobowych.
+- access the data and receive a copy;
+- correct the data;
+- request erasure or restriction of processing;
+- receive data in a portable format where that right applies;
+- object to processing based on legitimate interests;
+- withdraw consent at any time without affecting the lawfulness of earlier processing; and
+- lodge a complaint with the President of the Polish Personal Data Protection Office.
 
-### Co możesz zrobić
+### What you can do
 
-Najprościej napisać na **kontakt@wkf.wroclaw.pl**. Możemy poprosić o informacje pozwalające upewnić się, że odpowiadamy właściwej osobie, ale nie będziemy żądać danych nadmiarowych. Odpowiemy bez zbędnej zwłoki, co do zasady w ciągu miesiąca. Skargę można złożyć bezpośrednio do [Prezesa UODO](https://uodo.gov.pl/pl/493/155).
+The simplest option is to email **kontakt@wkf.wroclaw.pl**. We may ask for information needed to
+confirm that we are responding to the correct person, but we will not request excessive data. We
+will respond without undue delay, normally within one month. You can submit a complaint directly to
+the [President of the Polish Personal Data Protection Office](https://uodo.gov.pl/en).
 
-> **Podstawa prawna:** prawa osoby określają przede wszystkim art. 15–21 RODO, a prawo do skargi — art. 77 RODO.[^rodo]
+> **Legal basis:** data-subject rights are defined primarily in Articles 15–21 of the GDPR, and the
+> right to complain in Article 77.[^gdpr]
 
-## Bezpieczeństwo i rozsądne granice
+## Security and reasonable limits
 
-Stosujemy uprawnienia dopasowane do roli, szyfrowane połączenia, ograniczenie dostępu, kopie zapasowe i logi bezpieczeństwa. Aktualizujemy aplikację i ograniczamy zakres wykorzystywanych informacji. Żadna metoda nie usuwa ryzyka całkowicie, dlatego reagujemy na incydenty i — gdy wymagają tego przepisy — informujemy zainteresowane osoby oraz organ nadzorczy.
+We use role-appropriate permissions, encrypted connections, access restrictions, backups, and
+security logs. We update the application and limit the information used. No method eliminates all
+risk, so we respond to incidents and, when law requires it, notify affected people and the
+supervisory authority.
 
-Nie podejmujemy decyzji wywołujących skutki prawne lub podobnie istotnie wpływających na osobę wyłącznie w sposób automatyczny.
+We do not make decisions that produce legal effects or similarly significantly affect a person
+solely by automated means.
 
-## Zmiany polityki
+## Policy changes
 
-Aktualna wersja polityki jest udostępniana jako Dokument w serwisie WKF. Gdy zmienimy cel przetwarzania, dostawcę lub zakres opcjonalnej funkcji, zaktualizujemy opis przed uruchomieniem zmiany. Jeżeli będzie potrzebna nowa zgoda, poprosimy o ponowną decyzję zamiast zakładać, że wcześniejszy wybór obejmuje nowe zastosowanie.
+The current policy is made available as a Document on the WKF website. When we change a processing
+purpose, provider, or optional feature scope, we will update the description before launching the
+change. If new consent is needed, we will ask for another decision instead of assuming that an
+earlier choice covers the new use.
 
 ---
 
-## Przypisy prawne
+## Legal references
 
-[^rodo]: [Rozporządzenie Parlamentu Europejskiego i Rady (UE) 2016/679 — RODO](https://eur-lex.europa.eu/eli/reg/2016/679/oj/pol).
+[^gdpr]: [Regulation (EU) 2016/679 of the European Parliament and of the Council — General Data Protection Regulation](https://eur-lex.europa.eu/eli/reg/2016/679/oj/eng).
 
-[^pke]: [Ustawa z 12 lipca 2024 r. — Prawo komunikacji elektronicznej](https://eli.gov.pl/api/acts/DU/2024/1221/text.html), w szczególności art. 399–400.
+[^ecl]: [Polish Act of 12 July 2024 — Electronic Communications Law](https://eli.gov.pl/api/acts/DU/2024/1221/text.html), in particular Articles 399–400.
 
-[^wizerunek]: [Ustawa o prawie autorskim i prawach pokrewnych — tekst jednolity ogłoszony w 2025 r.](https://eli.gov.pl/eli/DU/2025/24/ogl/pol), w szczególności art. 81.
+[^image-rights]: [Polish Copyright and Related Rights Act — consolidated text published in 2025](https://eli.gov.pl/eli/DU/2025/24/ogl/pol), in particular Article 81.

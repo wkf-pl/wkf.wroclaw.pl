@@ -1,44 +1,52 @@
 # WKF Online
 
-Jedna aplikacja Node.js łącząca publiczny frontend Next.js, panel i API Payload oraz kod domenowy Wrocławskiego Klubu Fantastyki.
+A single Node.js application combining a public Next.js frontend, the Payload administration panel
+and API, and the domain code of Wrocławski Klub Fantastyki.
 
 ## Stack
 
-- Next.js 16 i React 19,
-- Payload 3,
-- PostgreSQL,
-- Azure Blob Storage (Azurite lokalnie),
-- SMTP przez oficjalny adapter Nodemailer,
-- Docker Compose z PostgreSQL, Azurite i Mailpit.
+- Next.js 16 and React 19
+- Payload 3
+- PostgreSQL
+- Azure Blob Storage, with Azurite used locally
+- SMTP through the official Nodemailer adapter
+- Docker Compose with PostgreSQL, Azurite, and Mailpit
 
-## Runtime lokalny
+## Local runtime
 
-Projekt przypina Node.js 22.18.0 przez sekcję `volta` w `package.json`. Po zainstalowaniu Volty wejście do katalogu projektu automatycznie przełącza aktywny runtime na właściwą wersję. pnpm 11.16.0 jest przypięty przez pole `packageManager`.
+The project pins Node.js 22.18.0 through the `volta` section in `package.json`. After Volta is
+installed, entering the project directory automatically selects the correct runtime. pnpm 11.16.0
+is pinned through the `packageManager` field.
 
-## Uruchomienie w Dockerze
+## Run with Docker
 
-1. Skopiuj `.env.example` do `.env`.
-2. Ustaw `PAYLOAD_SECRET`, na przykład wynikiem `openssl rand -base64 32`.
-3. Uruchom `docker compose up --build`.
-4. W osobnym terminalu uruchom `docker compose exec -T app pnpm verify:compose`, aby sprawdzić HTTP, bootstrap pierwszego administratora, upload do Azurite i wysyłkę do Mailpit. Test wymaga pustej kolekcji użytkowników i usuwa utworzone przez siebie rekordy oraz wiadomość.
+1. Copy `.env.example` to `.env`.
+2. Set `PAYLOAD_SECRET`, for example to the result of `openssl rand -base64 32`.
+3. Run `docker compose up --build`.
+4. In another terminal, run `docker compose exec -T app pnpm verify:compose` to verify HTTP, the
+   first-administrator bootstrap, an Azurite upload, and delivery to Mailpit. The check requires an
+   empty users collection and removes the records and message it creates.
 
-Aplikacja będzie dostępna pod `http://127.0.0.1:3000` (również `http://localhost:3000`), panel Payload pod `http://127.0.0.1:3000/admin`, a Mailpit pod `http://127.0.0.1:8025`.
+The application is available at `http://127.0.0.1:3000` and `http://localhost:3000`, the Payload
+admin panel at `http://127.0.0.1:3000/admin`, and Mailpit at `http://127.0.0.1:8025`.
 
-Uploady przechodzą przez ten sam oficjalny adapter Azure na każdym środowisku. Lokalnie trafiają do Azurite, a na stagingu i produkcji do osobnych kontenerów Azure Blob Storage.
+Uploads use the same official Azure adapter in every environment. Locally they are stored in
+Azurite; staging and production use separate Azure Blob Storage containers.
 
-## Uruchomienie aplikacji poza Dockerem
+## Run the application outside Docker
 
-Można uruchamiać proces Next.js lokalnie, pozostawiając usługi pomocnicze w kontenerach:
+The Next.js process can run locally while supporting services remain in containers:
 
 ```bash
 docker compose up -d postgres azurite mailpit
 pnpm install
-pnpm dev
+WKF_ALLOW_NEXT_DEV=1 pnpm dev
 ```
 
-Domyślne `.env.example` używa adresów usług dostępnych z hosta, w tym lokalnego endpointu Azurite.
+The default `.env.example` uses service addresses reachable from the host, including the local
+Azurite endpoint.
 
-## Najważniejsze polecenia
+## Main commands
 
 ```bash
 pnpm check
@@ -50,44 +58,59 @@ pnpm seed
 pnpm verify:compose
 ```
 
-## Struktura
+See the [operational scripts reference](scripts/README.md) for the implementation entry points
+behind development, test preparation, staging data operations, and Azure deployments.
+
+## Structure
 
 ```text
 src/
-├── app/          frontend, panel Payload, API i health check
-├── collections/  cienkie konfiguracje kolekcji Payload
-├── globals/      globalne ustawienia strony
-├── modules/      logika domenowa według funkcji biznesowych
-├── access/       współdzielone reguły dostępu Payload
-├── jobs/         zadania domenowe Payload Jobs
-├── email/        konfiguracja SMTP i szablony
-├── storage/      konfiguracja Azure Blob Storage i Azurite
-└── lib/          małe narzędzia infrastrukturalne
+├── app/          frontend, Payload admin panel, API, and health checks
+├── collections/  thin Payload collection configurations
+├── globals/      global site settings
+├── modules/      domain logic grouped by business capability
+├── access/       shared Payload access rules
+├── jobs/         Payload domain jobs
+├── email/        SMTP configuration and templates
+├── storage/      Azure Blob Storage and Azurite configuration
+└── lib/          small infrastructure utilities
 ```
 
-`collections/` nie powinno przejmować logiki biznesowej. Operacje takie jak zapis na sesję, rezygnacja czy awans z listy rezerwowej będą implementowane w `modules/sessions/` i wywoływane z cienkich hooków, endpointów lub zadań.
+`collections/` should not absorb business logic. Operations such as session registration,
+cancellation, and promotion from a waiting list belong in `modules/sessions/` and are called from
+thin hooks, endpoints, or jobs.
 
-## Infrastruktura
+## Infrastructure
 
-Projekt ma trzy środowiska:
+The project has three environments:
 
-- `local` działa w Docker Compose z PostgreSQL, Azurite i Mailpit,
-- `staging` działa w osobnej grupie zasobów i osobnym Azure Container Apps Environment,
-- `prod` działa w osobnej grupie zasobów pod docelowym adresem `https://wkf.wroclaw.pl`.
+- `local` runs in Docker Compose with PostgreSQL, Azurite, and Mailpit.
+- `staging` runs in a dedicated resource group and Azure Container Apps Environment.
+- `prod` runs in a dedicated resource group at `https://wkf.wroclaw.pl`.
 
-Definicje Bicep znajdują się w `infra/azure/`. Staging i produkcja mają osobne bazy PostgreSQL, konta Storage, środowiska Container Apps oraz Log Analytics. Współdzielą jedynie Azure Container Registry.
+Bicep definitions live in `infra/azure/`. Staging and production have separate PostgreSQL
+databases, Storage accounts, Container Apps Environments, and Log Analytics workspaces. Only Azure
+Container Registry is shared.
 
-Workflow stagingu buduje obraz tylko raz i publikuje jego digest. Produkcja wymaga ręcznego podania digestu sprawdzonego na stagingu. Na obu środowiskach migracje wykonuje osobny Azure Container Apps Job przed przełączeniem obrazu aplikacji.
+The staging workflow builds an image once and publishes its digest. Production requires the digest
+verified on staging to be supplied manually. In both environments, a separate Azure Container Apps
+Job runs migrations before the application switches to the new image.
 
-### Checkpointy danych stagingu
+### Staging data checkpoints
 
-Ręczny workflow GitHub Actions **Manage staging data** tworzy i odtwarza nazwane checkpointy bazy PostgreSQL oraz kontenera Media. Uruchom go przez **Actions → Manage staging data → Run workflow**, wybierając `backup` albo `restore`. Odtworzenie wymaga wpisania `RESTORE`, automatycznie zapisuje stan sprzed operacji i uruchamia wszystkie późniejsze migracje Payload przed ponownym udostępnieniem stagingu.
+The manually dispatched **Manage staging data** GitHub Actions workflow creates and restores named
+checkpoints of the PostgreSQL database and Media container. Open **Actions → Manage staging data →
+Run workflow**, then choose `backup` or `restore`. A restore requires the exact confirmation value
+`RESTORE`, saves the pre-operation state automatically, and runs all later Payload migrations before
+making staging available again.
 
-Checkpointy i deploymenty stagingu używają wspólnej blokady, dlatego nie mogą zmieniać środowiska równocześnie. Szczegółową procedurę oraz zachowanie w razie błędu opisuje [dokumentacja infrastruktury Azure](infra/azure/README.md#checkpointy-danych-stagingu).
+Staging checkpoints and deployments share one concurrency lock, so they cannot modify the
+environment simultaneously. The detailed procedure and failure behavior are documented in the
+[Azure infrastructure guide](infra/azure/README.md#staging-data-checkpoints).
 
-Szczegółowa konfiguracja Azure i wymagane ustawienia GitHub są opisane w `infra/azure/README.md`.
+## Documentation
 
-## Dokumentacja
-
-- [Rejestr decyzji architektonicznych](docs/ADR.md)
-- [Polityka prywatności](docs/Privacy.md)
+- [Architecture decision record index](docs/ADR.md)
+- [Privacy policy](docs/Privacy.md)
+- [Azure infrastructure](infra/azure/README.md)
+- [Operational scripts](scripts/README.md)

@@ -1,8 +1,8 @@
-# Decyzje architektoniczne
+# Architecture decisions
 
-Rejestr decyzji architektonicznych projektu WKF Online.
+Architecture decision records for WKF Online.
 
-| Numer                                                           | Decyzja                                  | Status   |
-| --------------------------------------------------------------- | ---------------------------------------- | -------- |
-| [0001](ADR/0001-content-listing-index-and-public-data-cache.md) | Indeks treści i cache publicznych danych | Accepted |
-| [0002](ADR/0002-privacy-preserving-visit-statistics.md)         | Prywatnościowa statystyka odwiedzin      | Proposed |
+| Number                                                          | Decision                                    | Status   |
+| --------------------------------------------------------------- | ------------------------------------------- | -------- |
+| [0001](ADR/0001-content-listing-index-and-public-data-cache.md) | Content listing index and public data cache | Accepted |
+| [0002](ADR/0002-privacy-preserving-visit-statistics.md)         | Privacy-preserving visit statistics         | Proposed |

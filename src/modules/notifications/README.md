@@ -1,3 +1,3 @@
 # Notifications
 
-Orkiestracja wiadomości e-mail i przyszłych kanałów powiadomień.
+Orchestration of email and future notification channels.

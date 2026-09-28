@@ -1,45 +1,59 @@
-# ADR 0002: Prywatnościowa statystyka odwiedzin
+# ADR 0002: Privacy-preserving visit statistics
 
 - **Status:** Proposed
-- **Data:** 2026-09-12
+- **Date:** 2026-09-12
 
-## Kontekst
+## Context
 
-WKF może w przyszłości potrzebować zbiorczych informacji o liczbie odwiedzin i zainteresowaniu poszczególnymi treściami. Celem byłaby wyłącznie techniczna optymalizacja serwisu i lepsze dopasowanie publikowanych materiałów, bez reklamy, sprzedaży danych, rozpoznawania konkretnych osób ani śledzenia ich pomiędzy serwisami.
+WKF may eventually need aggregate information about visit counts and interest in individual pieces
+of content. Its only purposes would be technical service optimization and better alignment of
+published material, without advertising, data sales, identifying particular people, or tracking
+them across sites.
 
-Nowa aplikacja nie prowadzi obecnie takiej statystyki. Samo skonfigurowanie Matomo bez cookies nie oznacza, że pomiar jest obojętny dla prywatności: skrypt nadal może uzyskiwać informacje z urządzenia i przesyłać dane do serwera statystycznego.
+The new application does not currently collect these statistics. Configuring Matomo without
+cookies does not by itself make measurement privacy-neutral: the script can still read information
+from a device and transmit data to the statistics server.
 
-## Proponowany kierunek
+## Proposed direction
 
-Jeżeli Klub zdecyduje się wdrożyć Matomo albo porównywalne narzędzie:
+If the Club decides to introduce Matomo or a comparable tool:
 
-1. statystyka otrzyma osobną kategorię zgody, domyślnie wyłączoną;
-2. wersja zapisanych preferencji zostanie podniesiona, aby każdy użytkownik podjął nową decyzję;
-3. żaden skrypt, piksel ani endpoint statystyczny nie zostanie wywołany przed zgodą, również w konfiguracji bez cookies;
-4. preferowane będzie rozwiązanie zarządzane przez Klub, z danymi przechowywanymi w EOG;
-5. wyłączone pozostaną User ID, fingerprinting, śledzenie między domenami, łączenie aktywności z kontami CMS, nagrania sesji, mapy cieplne, reklamy i funkcje marketingowe;
-6. adres IP zostanie zanonimizowany przed zapisem, a precyzyjna geolokalizacja wyłączona;
-7. adresy URL, tytuły stron, parametry, referrery i zdarzenia będą filtrowane, aby nie zapisywały danych osobowych;
-8. przed uruchomieniem zostaną określone krótkie okresy retencji danych surowych i uzasadniony okres przechowywania raportów zbiorczych;
-9. dostęp do raportów otrzymają wyłącznie upoważnione osoby, a sygnał Do Not Track będzie respektowany jako dodatkowa ochrona;
-10. polityka prywatności zostanie zaktualizowana przed rozpoczęciem pomiaru.
+1. Statistics will receive a separate consent category that is disabled by default.
+2. The stored-preference version will increase so every user makes a new choice.
+3. No statistics script, pixel, or endpoint will be called before consent, including in a
+   cookieless configuration.
+4. A Club-managed solution with data stored in the EEA will be preferred.
+5. User ID, fingerprinting, cross-domain tracking, linking activity to CMS accounts, session
+   recordings, heat maps, advertising, and marketing features will remain disabled.
+6. IP addresses will be anonymized before storage, and precise geolocation will be disabled.
+7. URLs, page titles, parameters, referrers, and events will be filtered to prevent personal data
+   from being recorded.
+8. Short raw-data retention periods and a justified aggregate-report retention period will be
+   defined before launch.
+9. Reports will be available only to authorized people, and Do Not Track will be respected as an
+   additional safeguard.
+10. The privacy policy will be updated before measurement begins.
 
-## Warunki odbioru przyszłego wdrożenia
+## Acceptance conditions for a future implementation
 
-- Brak decyzji, odmowa oraz zgoda wyłącznie na funkcje map nie powodują żadnego żądania do systemu statystycznego.
-- Cofnięcie zgody zatrzymuje dalszy pomiar bez konieczności odświeżenia strony.
-- Wysłane adresy i zdarzenia nie zawierają adresów e-mail, nazw użytkowników, tokenów, danych formularzy ani identyfikatorów kont.
-- Raporty nie pozwalają odtworzyć historii konkretnego odwiedzającego.
-- Automatyczne usuwanie danych po upływie ustalonego okresu zostało sprawdzone na danych testowych.
-- Faktyczna konfiguracja, umowy z dostawcami, lokalizacja danych i podstawa prawna przeszły przegląd techniczny oraz prawny.
+- No decision, refusal, or consent only to map features causes any request to the statistics system.
+- Withdrawing consent stops further measurement without requiring a page refresh.
+- Submitted addresses and events contain no email addresses, user names, tokens, form data, or
+  account identifiers.
+- Reports cannot reconstruct the history of a particular visitor.
+- Automatic deletion after the defined period has been verified with test data.
+- The actual configuration, vendor agreements, data location, and legal basis have passed technical
+  and legal review.
 
-## Konsekwencje
+## Consequences
 
-Takie podejście ograniczy szczegółowość raportów i może zmniejszyć liczbę zarejestrowanych wizyt. Jest to świadomy koszt przyjęcia prywatności jako ważniejszej od kompletności statystyk. Wdrożenie wymaga osobnej decyzji i nie wynika automatycznie z przyjęcia tego ADR.
+This approach will limit report detail and may reduce the number of recorded visits. That is a
+deliberate cost of prioritizing privacy over statistical completeness. Implementation requires a
+separate decision and does not follow automatically from accepting this ADR.
 
-## Źródła do ponownej weryfikacji przed wdrożeniem
+## Sources to verify again before implementation
 
-- [Matomo: praca bez cookies](https://matomo.org/faq/general/faq_157/)
-- [Matomo: ustawienia prywatności](https://matomo.org/faq/general/configure-privacy-settings-in-matomo/)
-- [EDPB: techniczny zakres art. 5 ust. 3 dyrektywy ePrivacy](https://www.edpb.europa.eu/system/files/documents/2024-10/edpb_guidelines_202302_technical_scope_art_53_eprivacydirective_v2_en_0.pdf)
-- [Prawo komunikacji elektronicznej](https://eli.gov.pl/api/acts/DU/2024/1221/text.html)
+- [Matomo: tracking without cookies](https://matomo.org/faq/general/faq_157/)
+- [Matomo: privacy settings](https://matomo.org/faq/general/configure-privacy-settings-in-matomo/)
+- [EDPB: technical scope of Article 5(3) of the ePrivacy Directive](https://www.edpb.europa.eu/system/files/documents/2024-10/edpb_guidelines_202302_technical_scope_art_53_eprivacydirective_v2_en_0.pdf)
+- [Polish Electronic Communications Law](https://eli.gov.pl/api/acts/DU/2024/1221/text.html)

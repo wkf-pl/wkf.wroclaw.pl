@@ -1,3 +1,3 @@
-# Szablony e-mail
+# Email templates
 
-Szablony wiadomości transakcyjnych będą dodawane razem z procesami domenowymi, które ich wymagają.
+Transactional message templates will be added with the domain processes that require them.

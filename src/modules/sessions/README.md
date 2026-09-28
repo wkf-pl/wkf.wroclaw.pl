@@ -1,3 +1,3 @@
 # Sessions
 
-Logika sesji RPG: pojemność, zapisy, rezygnacje i lista rezerwowa.
+RPG session logic: capacity, registration, cancellation, and waiting lists.
