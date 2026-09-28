@@ -137,7 +137,7 @@ if (($# > 0)); then
   preview_command=("$@")
 else
   preview_command=(
-    volta run --node 22.17.0 pnpm dev
+    volta run --node 22.18.0 pnpm dev
     --hostname 127.0.0.1
     --port "$preview_port"
   )

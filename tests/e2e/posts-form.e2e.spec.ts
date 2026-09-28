@@ -109,6 +109,8 @@ test('uses the shared target selector when editing a rich text link', async ({ p
   const documentLabel = (await documentOption.textContent())?.trim()
   expect(documentLabel).toBeTruthy()
   await documentOption.click()
+  await expect(documentField.locator('.rs__single-value')).toContainText(documentLabel ?? '')
+  await expect(drawer.locator('#field-linkType')).toHaveValue('internal')
   await expect(drawer.locator('#field-doc')).toHaveValue('[object Object]')
   await drawer.getByRole('button', { name: 'Zapisz zmiany' }).click()
   await expect(drawer).toBeHidden({ timeout: 15_000 })
