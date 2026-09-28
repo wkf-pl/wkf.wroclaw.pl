@@ -1,3 +1,5 @@
+// Smoke-tests the local Compose stack across HTTP, database, Blob Storage, and email boundaries.
+
 import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'

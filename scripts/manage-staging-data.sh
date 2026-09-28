@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Creates or restores consistent PostgreSQL and Media checkpoints for the staging environment.
+
 set -Eeuo pipefail
 
 operation="${1:-}"

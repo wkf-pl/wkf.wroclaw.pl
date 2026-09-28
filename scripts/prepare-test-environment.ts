@@ -1,3 +1,5 @@
+// Recreates the isolated test database from committed migrations and verifies the migration set.
+
 import { spawn } from 'node:child_process'
 import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'

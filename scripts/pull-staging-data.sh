@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Replaces local PostgreSQL and Azurite data with a validated staging checkpoint.
+
 set -Eeuo pipefail
 umask 077
 

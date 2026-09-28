@@ -1,3 +1,5 @@
+// Seeds idempotent demonstration content, media, navigation, and global site settings.
+
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 

@@ -18,7 +18,7 @@ describe('deployment workflows', () => {
     expect(classifier).toContain('git diff --name-only')
   })
 
-  it('keeps the CI and staging build paths single and cache-aware', () => {
+  it('keeps the CI application build single and the container build cache-aware', () => {
     const continuousIntegrationWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
     const stagingTriggerWorkflow = readFileSync(
       '.github/workflows/deploy-staging-on-master.yml',
@@ -26,7 +26,8 @@ describe('deployment workflows', () => {
     )
     const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
 
-    expect(continuousIntegrationWorkflow).not.toContain('run: pnpm build')
+    expect(continuousIntegrationWorkflow.match(/run: pnpm build/g) ?? []).toHaveLength(1)
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm package:e2e-runtime')
     expect(continuousIntegrationWorkflow).not.toMatch(/^  push:/m)
     expect(continuousIntegrationWorkflow).toContain('cache-to: type=gha,mode=max,scope=wkf-online')
     expect(stagingTriggerWorkflow).toMatch(/^  push:\n    branches:\n      - master$/m)
@@ -46,7 +47,7 @@ describe('deployment workflows', () => {
     expect(continuousIntegrationWorkflow).toContain('git diff --exit-code --')
     expect(continuousIntegrationWorkflow).toContain('run: pnpm test:integration')
     expect(continuousIntegrationWorkflow).toContain('playwright install --with-deps chromium')
-    expect(continuousIntegrationWorkflow).toContain('run: pnpm test:e2e:ci')
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm test:e2e:ci:production')
   })
 
   it('preserves deployment safety boundaries', () => {

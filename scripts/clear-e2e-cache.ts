@@ -1,3 +1,5 @@
+// Removes the dedicated Next.js development cache before a CI-style E2E run.
+
 import { rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Runs a bounded, isolated Next.js preview and removes its process group and cache on exit.
+
 set -Eeuo pipefail
 
 if [[ "${WKF_ALLOW_NEXT_DEV:-}" != "1" ]]; then
