@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Starts the local Next.js development server after an explicit safety opt-in.
+
 set -Eeuo pipefail
 
 if [[ "${WKF_ALLOW_NEXT_DEV:-}" != "1" ]]; then

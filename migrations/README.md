@@ -1,9 +1,10 @@
-# Migracje Payload
+# Payload migrations
 
-Pliki migracji PostgreSQL generuje polecenie:
+Generate PostgreSQL migration files with:
 
 ```bash
 pnpm migrate:create
 ```
 
-Migracje muszą być częścią commita zmieniającego schemat. Na stagingu i produkcji wykonuje je osobny Container Apps Job przed przełączeniem aplikacji na nowy digest obrazu.
+Migrations must be included in the commit that changes the schema. On staging and production, a
+dedicated Container Apps Job runs them before the application switches to the new image digest.

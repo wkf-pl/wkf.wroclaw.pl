@@ -1,3 +1,3 @@
 # Events
 
-Logika wydarzeń klubowych, miejsc i publikacji kalendarza.
+Club event, venue, and calendar publication logic.

@@ -46,6 +46,30 @@ jobs:
       - name: Run static checks and unit tests
         run: pnpm check
 
+  build-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up project
+        uses: ./.github/actions/setup-project
+
+      - name: Build production runtime
+        run: pnpm build
+
+      - name: Package production runtime
+        run: pnpm package:e2e-runtime
+
+      - name: Upload production runtime
+        uses: actions/upload-artifact@v7
+        with:
+          compression-level: 0
+          if-no-files-found: error
+          name: wkf-next-runtime-${{ github.sha }}
+          path: tmp/wkf-next-runtime.tar.gz
+          retention-days: 1
+
   integration:
     runs-on: ubuntu-latest
     steps:
@@ -59,6 +83,7 @@ jobs:
         run: pnpm test:integration
 
   end-to-end:
+    needs: [verify, build-e2e]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -72,13 +97,26 @@ jobs:
       - name: Set up project
         uses: ./.github/actions/setup-project
 
+      - name: Download production runtime
+        uses: actions/download-artifact@v8
+        with:
+          name: wkf-next-runtime-${{ github.sha }}
+          path: tmp/wkf-next-runtime-artifact
+
+      - name: Extract production runtime
+        run: |
+          mkdir -p tmp/wkf-next-runtime
+          tar -xzf tmp/wkf-next-runtime-artifact/wkf-next-runtime.tar.gz \
+            -C tmp/wkf-next-runtime
+          test -f tmp/wkf-next-runtime/server.js
+
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run end-to-end tests
         env:
           PLAYWRIGHT_SHARD: ${{ matrix.shard }}/4
-        run: pnpm test:e2e:ci
+        run: pnpm test:e2e:ci:production
 
       - name: Upload Playwright diagnostics
         if: failure()

@@ -1,14 +1,13 @@
-# Kolekcje
+# Collections
 
-Aktywne kolekcje fundamentu i treści:
+Active collections:
 
-- infrastruktura: `Users`, `Media`,
-- treści: `Pages`, `Posts`, `Categories`, `Tags`.
+- system and access: `Users`, `Roles`
+- pages and editorial content: `Pages`, `Posts`, `Categories`, `Tags`
+- events: `Events`, `EventCycles`, `EventTypes`
+- people and organizations: `MemberProfiles`, `Partners`, `ClubSections`
+- files: `Media`, `MemberProfileImages`, `Documents`, `DocumentFiles`
+- internal public-query projection: `ContentListingItems`
 
-Planowane kolekcje kolejnych modułów:
-
-- wydarzenia: `Events`, `Venues`,
-- RPG: `GameSystems`, `GameSessions`, `SessionRegistrations`,
-- osoby: `Members`.
-
-Kolekcje powinny zawierać schemat, kontrolę dostępu i cienkie hooki. Logika procesów biznesowych należy do `src/modules/`.
+Collections should contain schemas, access control, and thin hooks. Business-process logic belongs
+in `src/modules/`.

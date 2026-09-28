@@ -28,6 +28,8 @@ export default defineConfig({
   testDir: './tests/e2e',
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
+  /* Fail CI when a test succeeds only on retry. */
+  failOnFlakyTests: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 1 : 0,
   /* Opt out of parallel tests on CI. */
@@ -41,8 +43,8 @@ export default defineConfig({
   use: {
     baseURL: frontendURL,
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+    /* Retain the first failed attempt on CI. See https://playwright.dev/docs/trace-viewer */
+    trace: process.env.CI ? 'retain-on-first-failure' : 'on-first-retry',
   },
   projects: [
     {

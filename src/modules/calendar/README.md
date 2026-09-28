@@ -1,3 +1,3 @@
 # Calendar
 
-Eksport iCalendar, subskrypcje oraz integracje kalendarzowe.
+iCalendar exports, subscriptions, and calendar integrations.

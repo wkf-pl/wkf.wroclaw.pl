@@ -78,6 +78,7 @@ describe('integration test environment', () => {
   it('runs CI end-to-end tests against the isolated test environment', () => {
     const packageConfiguration = readFileSync('package.json', 'utf8')
     const packageScripts = JSON.parse(packageConfiguration).scripts as Record<string, string>
+    const runtimePackagingScript = readFileSync('scripts/package-e2e-runtime.sh', 'utf8')
     const playwrightConfiguration = readFileSync('playwright.config.ts', 'utf8')
     const cacheCleanupScript = readFileSync('scripts/clear-e2e-cache.ts', 'utf8')
 
@@ -85,6 +86,11 @@ describe('integration test environment', () => {
     expect(packageScripts['prepare:e2e']).toContain('scripts/seed.ts')
     expect(packageScripts['seed']).toContain('tsx ./scripts/seed.ts')
     expect(packageScripts['test:e2e:ci']).toContain('pnpm prepare:e2e')
+    expect(packageScripts['test:e2e:ci:production']).toContain('pnpm prepare:e2e')
+    expect(packageScripts['test:e2e:ci:production']).toContain(
+      'node tmp/wkf-next-runtime/server.js',
+    )
+    expect(packageScripts['package:e2e-runtime']).toBe('bash scripts/package-e2e-runtime.sh')
     expect(packageConfiguration).toContain('DOTENV_CONFIG_OVERRIDE=true')
     expect(packageConfiguration).toContain('DOTENV_CONFIG_PATH=test.env')
     expect(packageConfiguration).toContain('NEXT_DIST_DIR=.next-e2e-ci')
@@ -92,10 +98,18 @@ describe('integration test environment', () => {
     expect(packageConfiguration).toContain('PLAYWRIGHT_REUSE_EXISTING_SERVER=false')
     expect(cacheCleanupScript).toContain("resolve(process.cwd(), '.next-e2e-ci')")
     expect(cacheCleanupScript).toContain('force: true, recursive: true')
+    expect(runtimePackagingScript).toContain('NEXT_DIST_DIR:-.next-host')
+    expect(runtimePackagingScript).toContain('standalone')
+    expect(runtimePackagingScript).toContain('runtime_distribution_directory')
+    expect(runtimePackagingScript).toContain('public')
     expect(playwrightConfiguration).toContain('PLAYWRIGHT_OUTPUT_DIR')
     expect(playwrightConfiguration).toContain('PLAYWRIGHT_HTML_OUTPUT_DIR')
     expect(playwrightConfiguration).toContain("join(tmpdir(), 'wkf-online-playwright-results')")
     expect(playwrightConfiguration).toContain("join(tmpdir(), 'wkf-online-playwright-report')")
+    expect(playwrightConfiguration).toContain('failOnFlakyTests: !!process.env.CI')
+    expect(playwrightConfiguration).toContain(
+      "trace: process.env.CI ? 'retain-on-first-failure' : 'on-first-retry'",
+    )
   })
 
   it('manages shared Playwright users once per complete run', () => {
@@ -122,17 +136,26 @@ describe('integration test environment', () => {
     expect(loginHelper).not.toContain("page.fill('#field-password'")
   })
 
-  it('runs independent CI validation groups in parallel', () => {
+  it('builds one verified production runtime before starting the E2E shards', () => {
     const continuousIntegrationWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
 
     expect(continuousIntegrationWorkflow).toMatch(/^  verify:\n/m)
+    expect(continuousIntegrationWorkflow).toMatch(/^  build-e2e:\n/m)
     expect(continuousIntegrationWorkflow).toMatch(/^  integration:\n/m)
     expect(continuousIntegrationWorkflow).toMatch(/^  end-to-end:\n/m)
     expect(continuousIntegrationWorkflow).toMatch(/^  validate-container:\n/m)
-    expect(continuousIntegrationWorkflow).not.toContain('needs:')
+    expect(continuousIntegrationWorkflow).toContain('needs: [verify, build-e2e]')
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm package:e2e-runtime')
+    expect(continuousIntegrationWorkflow).toContain('name: wkf-next-runtime-${{ github.sha }}')
+    expect(continuousIntegrationWorkflow).toContain('uses: actions/download-artifact@v8')
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm test:e2e:ci:production')
     expect(continuousIntegrationWorkflow).toContain('shard: [1, 2, 3, 4]')
     expect(continuousIntegrationWorkflow).toContain('PLAYWRIGHT_SHARD: ${{ matrix.shard }}/4')
     expect(continuousIntegrationWorkflow).toContain('playwright-diagnostics-${{ matrix.shard }}')
+
+    const validateContainerJob = continuousIntegrationWorkflow.split('  validate-container:\n')[1]
+    expect(validateContainerJob).toBeDefined()
+    expect(validateContainerJob).not.toContain('needs:')
   })
 
   it('cancels superseded CI runs for the same pull request', () => {

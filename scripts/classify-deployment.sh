@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Classifies Git changes into image build, infrastructure, and migration deployment actions.
+
 set -Eeuo pipefail
 
 deployed_source_sha="${1:-}"

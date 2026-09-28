@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Deploys an immutable application image and optional infrastructure or migrations to Azure.
+
 set -Eeuo pipefail
 
 target_environment="${1:?Usage: deploy-azure.sh <staging|prod> <image-reference> [--maintenance] [--provision]}"

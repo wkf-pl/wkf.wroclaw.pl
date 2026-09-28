@@ -1,162 +1,176 @@
-# Infrastruktura Azure
+# Azure infrastructure
 
-Projekt utrzymuje dwa izolowane środowiska Azure oraz lokalne środowisko Compose:
+The project maintains two isolated Azure environments and one local Compose environment:
 
-| Środowisko | Grupa zasobów    | Adres                                    |
-| ---------- | ---------------- | ---------------------------------------- |
-| local      | nie dotyczy      | `http://127.0.0.1:3000`                  |
-| staging    | `rg-wkf-staging` | techniczny adres `azurecontainerapps.io` |
-| prod       | `rg-wkf-prod`    | `https://wkf.wroclaw.pl`                 |
+| Environment | Resource group   | Address                                   |
+| ----------- | ---------------- | ----------------------------------------- |
+| local       | not applicable   | `http://127.0.0.1:3000`                   |
+| staging     | `rg-wkf-staging` | technical `azurecontainerapps.io` address |
+| prod        | `rg-wkf-prod`    | `https://wkf.wroclaw.pl`                  |
 
-Grupy zasobów tworzymy wcześniej, poza workflowem. `shared.bicep` wdraża wspólny Azure Container Registry do `rg-wkf-shared`. `main.bicep` wdraża zasoby konkretnego środowiska do wskazanej grupy z modułów w `modules/`: Container Apps Environment, aplikację, ręczny job migracyjny, PostgreSQL Flexible Server, Blob Storage oraz Log Analytics. Wszystkie zasoby domyślnie powstają w regionie `Poland Central` (`polandcentral`).
+Resource groups are created in advance, outside the workflows. `shared.bicep` deploys the shared
+Azure Container Registry to `rg-wkf-shared`. `main.bicep` deploys environment-specific resources to
+the selected group through modules in `modules/`: a Container Apps Environment, the application, a
+manually triggered migration job, PostgreSQL Flexible Server, Blob Storage, and Log Analytics. All
+resources default to the `Poland Central` (`polandcentral`) region.
 
-Pliki `environments/staging.bicepparam` i `environments/prod.bicepparam` zawierają wyłącznie niesekretne różnice środowisk. Sekrety są pobierane w czasie kompilacji parametrów ze zmiennych środowiskowych.
+The `environments/staging.bicepparam` and `environments/prod.bicepparam` files contain only
+non-secret environment differences. Secrets are supplied through environment variables while
+parameters are compiled.
 
-Oba środowiska skalują aplikację od zera do jednej repliki, ponieważ lokalny Next Data Cache nie jest współdzielony między replikami. Uzasadnienie i ścieżkę dalszego skalowania opisuje [ADR 0001](../../docs/ADR/0001-content-listing-index-and-public-data-cache.md).
+Both environments scale the application from zero to one replica because the local Next Data Cache
+is not shared between replicas. [ADR 0001](../../docs/ADR/0001-content-listing-index-and-public-data-cache.md)
+explains the constraint and the path to later scaling.
 
 ## GitHub environments
 
-Utwórz środowiska GitHub `staging` i `prod`. Środowisko `prod` powinno mieć wymagane ręczne zatwierdzenie.
+Create `staging` and `prod` GitHub environments. The `prod` environment should require manual
+approval.
 
-W obu środowiskach skonfiguruj zmienne:
+Configure these variables in both environments:
 
-- `AZURE_CLIENT_ID` — identyfikator aplikacji używanej przez GitHub OIDC,
-- `AZURE_SUBSCRIPTION_ID`,
-- `AZURE_TENANT_ID`.
+- `AZURE_CLIENT_ID` — client ID of the application used by GitHub OIDC
+- `AZURE_SUBSCRIPTION_ID`
+- `AZURE_TENANT_ID`
 
-Tożsamość OIDC stagingu otrzymuje rolę `Contributor` wyłącznie w `rg-wkf-staging` i
-`rg-wkf-shared`. Ponieważ obraz jest budowany raz na runnerze GitHub i wysyłany bezpośrednio do
-ACR, tożsamość wymaga również roli danych `AcrPush` na rejestrze w `rg-wkf-shared`. Nie wymaga
-żadnej roli na poziomie całej subskrypcji ani uprawnień do zarządzania rolami. `AcrPush` nadaje
-administrator jednorazowo poza workflowem; sam workflow nie może rozszerzać swoich uprawnień.
+The staging OIDC identity receives the `Contributor` role only in `rg-wkf-staging` and
+`rg-wkf-shared`. Because GitHub builds the image once and pushes it directly to ACR, the identity
+also needs the `AcrPush` data-plane role on the registry in `rg-wkf-shared`. It needs neither a
+subscription-wide role nor permission to manage roles. An administrator grants `AcrPush` once,
+outside the workflow; the workflow cannot extend its own privileges.
 
-Przypisanie dla obecnego rejestru używającego klasycznego trybu RBAC można wykonać jako właściciel
-subskrypcji lub administrator RBAC:
+For the current registry using classic RBAC, a subscription owner or RBAC administrator can create
+the assignment with:
 
 ```bash
 registry_id="$(az acr show --name <registry-name> --query id --output tsv)"
 az role assignment create --assignee <github-oidc-client-id> --role AcrPush --scope "$registry_id"
 ```
 
-Zarządzana tożsamość `wkf-staging-registry` jest tworzona przed pierwszym wdrożeniem i jednorazowo otrzymuje rolę `AcrPull` w `rg-wkf-shared`. Workflow nie może samodzielnie zmieniać tego przypisania.
+The `wkf-staging-registry` managed identity is created before the first deployment and receives a
+one-time `AcrPull` assignment in `rg-wkf-shared`. The workflow cannot change that assignment itself.
 
-Produkcja może dodatkowo otrzymać zmienną `CUSTOM_DOMAIN_CERTIFICATE_ID` z pełnym resource ID certyfikatu przypisanego do Container Apps Environment.
+Production can additionally define `CUSTOM_DOMAIN_CERTIFICATE_ID` with the complete resource ID of
+the certificate assigned to the Container Apps Environment.
 
-W obu środowiskach skonfiguruj sekrety:
+Configure these secrets in both environments:
 
-- `PAYLOAD_SECRET`,
-- `POSTGRES_ADMIN_PASSWORD`.
+- `PAYLOAD_SECRET`
+- `POSTGRES_ADMIN_PASSWORD`
 
-Produkcja wymaga dodatkowo zmiennej `SMTP_HOST` i sekretów:
+Production additionally requires the `SMTP_HOST` variable and these secrets:
 
-- `SMTP_USER`,
-- `SMTP_PASSWORD`.
+- `SMTP_USER`
+- `SMTP_PASSWORD`
 
-Na stagingu SMTP jest początkowo wyłączone. Nie blokuje to działania strony ani panelu, ale funkcje wysyłające pocztę nie będą dostępne do czasu skonfigurowania serwera SMTP.
+SMTP is initially disabled on staging. This does not block the website or admin panel, but email
+features remain unavailable until an SMTP server is configured.
 
-Staging utrzymuje konfigurację Microsoft Entra na potrzeby opcjonalnego logowania Easy Auth i
-wymaga dodatkowo zmiennych:
+Staging keeps a Microsoft Entra configuration for optional Easy Auth sign-in and additionally
+requires these variables:
 
-- `ENTRA_TENANT_ID`,
-- `ENTRA_CLIENT_ID`,
-- `ENTRA_ALLOWED_GROUP_ID` — identyfikator grupy zawierającej Zarząd i osoby techniczne,
+- `ENTRA_TENANT_ID`
+- `ENTRA_CLIENT_ID`
+- `ENTRA_ALLOWED_GROUP_ID` — the group containing board members and technical staff
 
-oraz sekretu `ENTRA_CLIENT_SECRET`.
+It also requires the `ENTRA_CLIENT_SECRET` secret.
 
-Rejestracja aplikacji stagingowej musi emitować identyfikatory grup w tokenie. Easy Auth
-przepuszcza anonimowe żądania do strony i panelu Payload, a grupa wskazana przez
-`ENTRA_ALLOWED_GROUP_ID` ogranicza konta używane przy opcjonalnym logowaniu Microsoft.
-Panel Payload nadal wymaga własnego uwierzytelnienia. Staging zwraca również `robots.txt`
-blokujący indeksowanie całej witryny.
+The staging app registration must emit group identifiers in the token. Easy Auth allows anonymous
+requests to the website and Payload admin panel, while the group selected by
+`ENTRA_ALLOWED_GROUP_ID` restricts accounts used for optional Microsoft sign-in. The Payload admin
+panel still requires its own authentication. Staging also serves a `robots.txt` that blocks the
+entire site from indexing.
 
-Po pierwszym utworzeniu stagingu dodaj do rejestracji aplikacji Entra URI przekierowania:
+After staging is first created, add this redirect URI to the Entra app registration:
 
 ```text
-https://<adres-stagingu>/.auth/login/aad/callback
+https://<staging-address>/.auth/login/aad/callback
 ```
 
-Włącz również wydawanie ID tokenów wymaganych przez przepływ logowania Easy Auth:
+Enable the ID tokens required by the Easy Auth sign-in flow:
 
 ```bash
 az ad app update --id "$ENTRA_CLIENT_ID" --enable-id-token-issuance true
 ```
 
-## Wdrożenia
+## Deployments
 
-Udane zakończenie `ci.yml` po pushu do `dev` wywołuje wielokrotnego użytku
-`deploy-staging.yml`. Pull request uruchamia walidację obrazu z cache’em BuildKit, ale nie
-wdrożenie. Push do `dev` nie buduje obrazu w jobie `verify`; docelowy obraz powstaje i jest
-wysyłany do ACR tylko raz w workflowie stagingowym.
+A push to `master` invokes the reusable `deploy-staging.yml` workflow through
+`deploy-staging-on-master.yml`. Pull requests run CI, including a production Next.js build used by
+the Playwright shards and a cache-aware container image validation, but they do not deploy.
 
-Każda rewizja zapisuje `DEPLOYED_SOURCE_SHA`. Workflow porównuje ten commit z docelowym i
-automatycznie ustala, czy potrzebne są nowy obraz, pełny provisioning i migracje. Jeżeli aktywna
-rewizja nie ma jeszcze metadanej SHA, bezpiecznie wykonuje wszystkie operacje. Ręczne uruchomienie
-pozwala wymusić lub pominąć provisioning i migracje.
+Every deployed revision records `DEPLOYED_SOURCE_SHA`. The workflow compares that commit with the
+target and determines automatically whether it needs a new image, full provisioning, and
+migrations. If the active revision does not yet have SHA metadata, the workflow safely enables all
+three actions. A manual run can force or skip provisioning and migrations.
 
-Workflow stagingowy:
+The staging workflow:
 
-1. pomija nieaktualny commit oczekujący w kolejce,
-2. klasyfikuje zmiany względem aktywnej rewizji,
-3. uzgadnia wspólne zasoby i pełną infrastrukturę tylko wtedy, gdy są potrzebne,
-4. buduje i wysyła jeden niezmienny obraz albo ponownie wykorzystuje aktywny digest,
-5. przed zmianami zapisuje faktycznie aktywną rewizję i jej obraz jako punkt rollbacku,
-6. po zmianach migracji tworzy kopię PostgreSQL, wchodzi w maintenance i uruchamia job migracyjny,
-7. przełącza aplikację na nowy obraz; bez migracji pozostawia bezprzerwowe przełączenie trybowi
-   pojedynczej rewizji Container Apps,
-8. przez maksymalnie 10 minut sprawdza readiness w `/api/health`, liveness w
-   `/api/health/live` oraz odpowiedzi HTTP dla `/` i `/admin`, a na stagingu także blokadę
-   indeksowania w `/robots.txt`,
-9. zapisuje digest w podsumowaniu workflowu.
+1. Skips an obsolete commit that waited in the queue.
+2. Classifies changes against the active revision.
+3. Reconciles shared resources and complete environment infrastructure only when required.
+4. Builds and pushes one immutable image, or reuses the active digest.
+5. Records the actual active revision and its image as the rollback point before changing anything.
+6. For migration changes, creates a PostgreSQL backup, enters maintenance, and runs the migration
+   job.
+7. Switches the application to the new image; without migrations, Container Apps single-revision
+   mode handles a zero-downtime transition.
+8. For up to ten minutes, checks readiness at `/api/health`, liveness at `/api/health/live`, HTTP
+   responses for `/` and `/admin`, and the staging indexing block in `/robots.txt`.
+9. Writes the image digest to the workflow summary.
 
-Deployment stagingu oraz operacje na checkpointach danych współdzielą grupę współbieżności
-`staging-operations`. GitHub wykona je kolejno i nie przerwie rozpoczętej operacji nowszym
-uruchomieniem.
+Staging deployment and data-checkpoint operations share the `staging-operations` concurrency group.
+GitHub runs them sequentially and does not cancel an operation already in progress when a newer one
+starts.
 
-Jeżeli migracja lub testy HTTP nie powiodą się, skrypt uruchamia `migrate:down` tylko wtedy, gdy
-wcześniej zakończył `migrate`, dezaktywuje inne rewizje i przywraca zapisany punkt rollbacku.
-Aktywnej już rewizji nie próbuje ponownie aktywować. Gdy wycofanie bazy się nie powiedzie,
-poprzednia rewizja celowo pozostaje nieaktywna, aby nie uruchomić starego kodu na niezgodnym
-schemacie.
+If a migration or HTTP check fails, the script runs `migrate:down` only after `migrate` completed,
+deactivates other revisions, and restores the recorded rollback point. It does not attempt to
+reactivate a revision that is already active. If the database rollback fails, the old revision
+deliberately remains inactive rather than running old code against an incompatible schema.
 
-## Checkpointy danych stagingu
+## Staging data checkpoints
 
-Workflow `Manage staging data` jest dostępny wyłącznie jako ręczne **Run workflow** w GitHub
-Actions. Obsługuje dwie operacje:
+The **Manage staging data** workflow is available only through the manual **Run workflow** action in
+GitHub Actions. It supports two operations:
 
-- `backup` tworzy nazwany checkpoint całej bazy PostgreSQL i wszystkich aktualnych blobów z
-  kontenera `media`,
-- `restore` odtwarza wskazany checkpoint; wymaga podania dokładnej wartości `RESTORE` w polu
-  potwierdzenia.
+- `backup` creates a named checkpoint of the complete PostgreSQL database and all current blobs in
+  the `media` container.
+- `restore` restores the selected checkpoint and requires the exact `RESTORE` confirmation value.
 
-Nazwa checkpointu musi mieć od 3 do 63 małych liter, cyfr lub łączników, na przykład
-`beta-start`. Istniejący checkpoint nie jest nadpisywany. Przed każdą operacją aplikacja przechodzi
-w tryb maintenance, aby baza i Media przedstawiały ten sam stan. Plik bazy jest weryfikowany przez
-`pg_restore --list` i sumę SHA-256, a manifest zapisuje czas, obraz, SHA wdrożonego kodu i liczbę
-blobów Media.
+A checkpoint name must contain 3–63 lowercase letters, digits, or hyphens, for example
+`beta-start`. An existing checkpoint is never overwritten. Before either operation, the application
+enters maintenance mode so the database and Media represent the same state. The database archive is
+verified with `pg_restore --list` and a SHA-256 checksum; the manifest records the time, image,
+deployed source SHA, and Media blob count.
 
-Przed właściwym odtworzeniem workflow tworzy checkpoint ratunkowy `rescue-<czas>`. Następnie
-odtwarza bazę i Media, uruchamia aktualny job `payload migrate` oraz `migrate:status`, aktywuje
-zapisaną rewizję i sprawdza `/api/health`, `/api/health/live`, `/`, `/admin` oraz `/robots.txt`.
-Jeśli błąd wystąpi po
-rozpoczęciu destrukcyjnego odtwarzania, staging pozostaje w maintenance; nie uruchamiamy aplikacji
-na częściowo odtworzonej lub niezgodnej bazie. Ponowienie `restore` odzyskuje wtedy ostatnią rewizję
-nawet wtedy, gdy żadna rewizja nie jest aktywna. Tymczasowa reguła PostgreSQL dopuszczająca
-wyłącznie adres IP runnera jest usuwana również po błędzie.
+Before the actual restore, the workflow creates a `rescue-<timestamp>` checkpoint. It then restores
+the database and Media, runs the current `payload migrate` job and `migrate:status`, activates the
+recorded revision, and checks `/api/health`, `/api/health/live`, `/`, `/admin`, and `/robots.txt`.
+If an error occurs after destructive restoration begins, staging remains in maintenance mode; the
+application is not started against partially restored or incompatible data. Retrying `restore` can
+recover the latest revision even when no revision is active. The temporary PostgreSQL firewall rule
+that allows only the runner IP is also removed after a failure.
 
-Konto Storage stagingu ma włączone wersjonowanie blobów oraz 14-dniowe soft delete dla blobów i
-kontenerów. Checkpointy ratunkowe są automatycznie usuwane po 14 dniach; nazwane checkpointy
-pozostają do ręcznego usunięcia. Te mechanizmy chronią pliki Media, których nie obejmuje kopia
-PostgreSQL.
+The staging Storage account enables blob versioning and 14-day soft deletion for blobs and
+containers. Rescue checkpoints are deleted automatically after 14 days; named checkpoints remain
+until manually deleted. These controls protect Media files, which are not included in a PostgreSQL
+backup.
 
-`deploy-production.yml` jest uruchamiany ręcznie. Przyjmuje digest zatwierdzonego obrazu i pełny
-SHA źródłowy raportowane przez staging, sprawdza obecność obrazu w ACR, automatycznie klasyfikuje
-zmiany i przełącza aplikację. Obraz nie jest budowany ponownie. Operator może jawnie wymusić lub
-pominąć pełny provisioning i migracje.
+`deploy-production.yml` is manually dispatched. It accepts the approved image digest and full
+source SHA reported by staging, confirms that the image exists in ACR, classifies changes
+automatically, and switches the application. It never rebuilds the image. The operator can
+explicitly force or skip full provisioning and migrations.
 
-## Domena produkcyjna
+## Production domain
 
-Parametry produkcji ustawiają `SERVER_URL=https://wkf.wroclaw.pl`. Samo przypięcie domeny i certyfikatu wymaga wcześniejszego skierowania DNS na Container Apps. Po utworzeniu certyfikatu przekaż jego resource ID jako `customDomainCertificateId`; dopóki parametr jest pusty, aplikacja pozostaje dostępna pod technicznym adresem Azure.
+Production parameters set `SERVER_URL=https://wkf.wroclaw.pl`. Binding the domain and certificate
+requires DNS to point to Container Apps first. After creating the certificate, pass its resource ID
+as `customDomainCertificateId`; while the parameter is empty, the application remains available at
+its technical Azure address.
 
-## Bezpieczeństwo sieciowe
+## Network security
 
-Obecna wersja pozwala PostgreSQL przyjmować połączenia z usług Azure przez regułę `0.0.0.0`. Jest to działający punkt startowy, ale przed przetwarzaniem danych produkcyjnych należy rozważyć prywatne endpointy i osobne sieci wirtualne dla stagingu oraz produkcji. Połączenie aplikacji z bazą wymusza TLS przez `sslmode=require`.
+The current version allows PostgreSQL connections from Azure services through the `0.0.0.0` rule.
+This is a functional starting point, but private endpoints and separate virtual networks for staging
+and production should be considered before processing production data. Application database
+connections require TLS through `sslmode=require`.

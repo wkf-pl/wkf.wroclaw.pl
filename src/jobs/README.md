@@ -1,5 +1,7 @@
-# Payload Jobs
+# Payload jobs
 
-Ten katalog będzie zawierał zadania domenowe, takie jak przypomnienia o sesjach, awans z listy rezerwowej i publikacja zaplanowanej treści.
+This directory will contain domain jobs such as session reminders, promotion from a waiting list,
+and scheduled content publication.
 
-Migracje bazy i jednorazowe operacje infrastrukturalne nie są Payload Jobs; w Azure powinny działać jako Container Apps Jobs.
+Database migrations and one-off infrastructure operations are not Payload jobs; in Azure, they
+should run as Container Apps Jobs.

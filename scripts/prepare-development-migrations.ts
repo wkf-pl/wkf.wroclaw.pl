@@ -1,3 +1,5 @@
+// Removes a known legacy Payload development marker when committed migrations can reconcile it.
+
 import { getPayload } from 'payload'
 
 import { migrations } from '../migrations'

@@ -1,3 +1,4 @@
-# Moduły domenowe
+# Domain modules
 
-Podział modułów odpowiada funkcjom klubu, a nie tabelom bazy danych. Publiczne API modułu powinno być małe i możliwe do wywołania z hooka Payload, endpointu albo zadania.
+Module boundaries follow club capabilities rather than database tables. A module's public API should
+be small and callable from a Payload hook, endpoint, or job.

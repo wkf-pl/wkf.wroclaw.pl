@@ -1,23 +1,23 @@
 # Content
 
-Moduł współdzieli konfigurację pól redakcyjnych, generowanie adresów URL, reguły
-publikacji oraz zapytania publicznego frontendu.
+This module shares editorial field configuration, URL generation, publication rules, and public
+frontend queries.
 
-## Publiczne trasy
+## Public routes
 
-- `/[slug]` — opublikowane strony statyczne,
-- `/blog` i `/blog/[slug]` — lista i szczegóły opublikowanych wpisów,
-- `/category/[category]` i `/tag/[tag]` — listy wpisów według taksonomii.
+- `/[slug]` — published static pages
+- `/blog` and `/blog/[slug]` — the list and details of published posts
+- `/category/[category]` and `/tag/[tag]` — posts filtered by taxonomy
 
-Publiczne zapytania zawsze korzystają z kontroli dostępu Payload i dodatkowo ograniczają wyniki
-do dokumentów ze statusem `published`.
+Public queries always use Payload access control and additionally restrict results to documents with
+the `published` status.
 
-## Dostęp w panelu
+## Admin access
 
-- prawa `create`, `read`, `update` i `delete` są konfigurowane w kolekcji `Roles`,
-- brak prawa `read` ukrywa zasób przed zalogowanym użytkownikiem,
-- ograniczenia `własne` i `opublikowane` są egzekwowane również przez API,
-- uprawnienia wielu ról sumują się, a dostęp bez ograniczeń ma pierwszeństwo.
+- `create`, `read`, `update`, and `delete` permissions are configured in the `Roles` collection.
+- Without `read` permission, a resource is hidden from the authenticated user.
+- The `own` and `published` restrictions are also enforced through the API.
+- Permissions from multiple roles are combined, and unrestricted access takes precedence.
 
-Panel Payload ukrywa przyciski akcji na podstawie praw `create`, `update` i `delete` zwracanych
-przez te same reguły dostępu, które zabezpieczają API.
+The Payload admin panel hides action buttons according to the `create`, `update`, and `delete`
+permissions returned by the same access rules that protect the API.

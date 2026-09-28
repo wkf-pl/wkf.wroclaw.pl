@@ -14,6 +14,7 @@ Use this skill for documentation stored in:
 
 ## Core rules
 
+- Write documentation in English.
 - Keep `README.md` concise. They must give a fast overview, short setup or usage guidance, and links to deeper material. Do not turn them into walls of text.
 - Use `docs/` for detailed material.
 - Whenever `docs/` contains useful files, link to them from the corresponding `README.md`.

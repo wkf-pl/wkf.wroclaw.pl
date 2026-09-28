@@ -1,68 +1,133 @@
-# 0001. Indeks treści i cache publicznych danych
+# 0001. Content listing index and public data cache
 
 - Status: Accepted
-- Data: 2026-08-21
+- Date: 2026-08-21
 
-## Kontekst
+## Context
 
-Publiczne listingi łączą strony, wpisy, wydarzenia i cykle wydarzeń. Dotychczas każda kolekcja była odpytywana osobno o liczbę rekordów równą numerowi strony pomnożonemu przez rozmiar strony. Wyniki były następnie łączone, sortowane i przycinane w aplikacji. Koszt zapytania, transfer danych i zużycie pamięci rosły liniowo wraz z numerem strony. Pobieranie pełnego `layout` tylko po to, by zbudować streszczenie, dodatkowo zwiększało koszt.
+Public listings combine pages, posts, events, and event cycles. Previously, every collection was
+queried separately for a record count equal to the page number multiplied by the page size. The
+application then merged, sorted, and trimmed the results. Query cost, data transfer, and memory use
+grew linearly with the page number. Fetching the complete `layout` only to generate an excerpt added
+further cost.
 
-Publiczne odczyty tych kolekcji mają jeden wariant dostępu: anonimowy. Zalogowanie do aplikacji nie poszerza widoczności publicznych stron, wpisów, wydarzeń ani cykli. Dokumenty i pliki chronione nadal wymagają dynamicznej kontroli dostępu i nie są częścią tej decyzji.
+Public reads of these collections have one access variant: anonymous. Signing in to the application
+does not broaden the visibility of public pages, posts, events, or cycles. Protected documents and
+files still require dynamic access checks and are outside this decision.
 
-## Decyzja
+## Decision
 
-### Denormalizowany indeks listingowy
+### Denormalized listing index
 
-Wprowadzamy ukrytą kolekcję Payload `content-listing-items`. Nie ma ona panelu administracyjnego, REST ani GraphQL, a zewnętrzne mutacje są zabronione. Każdy opublikowany dokument źródłowy ma jeden rekord identyfikowany unikalną parą źródła i ID dokumentu.
+We introduce a hidden Payload collection named `content-listing-items`. It has no admin interface,
+REST, or GraphQL endpoint, and external mutations are forbidden. Every published source document
+has one record identified by the unique pair of source and document ID.
 
-Indeks przechowuje wyłącznie pola potrzebne listingom: źródło, ID i czas aktualizacji dokumentu, tytuł, URL, streszczenie, daty sortowania i wydarzenia, widoczność, obraz, taksonomie, stronę nadrzędną oraz cykl wydarzenia. Indeksy bazy obejmują parę źródło–ID, datę sortowania, tytuł, rodzica, cykl i terminy wydarzeń.
+The index stores only fields needed by listings: the document source, ID, and update time; title;
+URL; excerpt; sort and event dates; visibility; image; taxonomies; parent page; and event cycle.
+Database indexes cover the source-ID pair, sort date, title, parent, cycle, and event dates.
 
-Hooki Pages, Posts, Events i EventCycles odczytują kanoniczną opublikowaną wersję w tej samej transakcji co zapis dokumentu. Wykonują upsert indeksu albo usuwają rekord po wycofaniu publikacji. Autosave szkicu jest pomijany, jeśli czas aktualizacji opublikowanej wersji nie zmienił się. Usunięcie źródła usuwa również rekord indeksu.
+Hooks on Pages, Posts, Events, and EventCycles read the canonical published version in the same
+transaction as the document write. They upsert the index or remove the record after unpublishing.
+A draft autosave is skipped when the published version's update time has not changed. Deleting a
+source also deletes its index record.
 
-Listing wykonuje jedno zapytanie z właściwymi `page` i `limit`, `depth: 1`, ograniczonym `select` i `populate`. Nie pobiera `layout`. Zachowuje istniejące filtry, a remisy rozstrzyga stabilnie tytułem, typem źródła i ID. `sortDate` oznacza początek wydarzenia lub datę publikacji, z datą utworzenia jako wartością zapasową.
+A listing performs one query with the correct `page` and `limit`, `depth: 1`, and restricted
+`select` and `populate` values. It does not fetch `layout`. Existing filters remain unchanged, and
+ties are resolved consistently by title, source type, and ID. `sortDate` is the event start or
+publication date, falling back to the creation date.
 
-Wybraliśmy kolekcję Payload zamiast widoku SQL, ponieważ używa tych samych relacji, kontroli dostępu, typów i mechanizmu migracji co reszta aplikacji. Zwykły widok nadal wymagałby kosztownego łączenia tabel wersjonowanych. Materialized view wymagałby osobnego mechanizmu odświeżania, trudniejszego do powiązania transakcyjnie z publikacją.
+We chose a Payload collection over a SQL view because it uses the same relationships, access
+control, types, and migration mechanism as the rest of the application. A regular view would still
+require expensive joins across versioned tables. A materialized view would require a separate
+refresh mechanism that would be harder to bind transactionally to publication.
 
-### Generowanie `listingExcerpt`
+### Generating `listingExcerpt`
 
-Przy publikacji strony puste `listingExcerpt` jest wypełniane tekstem pierwszego niepustego akapitu pierwszego bloku rich text. Nagłówki i puste akapity są pomijane, tekst z linków i formatowanych elementów jest zachowywany, białe znaki normalizowane, a wynik skracany do 500 znaków na granicy słowa. Wartość wpisana ręcznie nigdy nie jest nadpisywana. Brak akapitu pozostawia pole puste.
+When a page is published with an empty `listingExcerpt`, the field is populated from the first
+non-empty paragraph in the first rich-text block. Headings and empty paragraphs are skipped, text
+from links and formatted elements is preserved, whitespace is normalized, and the result is
+truncated at a word boundary to 500 characters. A manually entered value is never overwritten. If
+there is no paragraph, the field remains empty.
 
-Migracja uzupełnia streszczenia istniejących opublikowanych stron porcjami. Runtime nie odczytuje już `layout` w celu zbudowania listingu.
+The migration backfills excerpts for existing published pages in batches. Runtime code no longer
+reads `layout` to build a listing.
 
-### Cache publicznych danych
+### Public data cache
 
-Cache obejmuje dane, nie pełny statyczny HTML. Listingi treści, katalog wizytówek, filtrowane listingi mediów i dane strony głównej są przechowywane przez 5 minut. Szczegóły treści, partnerów i wizytówek, relacje wydarzeń, cykli i wpisów oraz sitemapa są przechowywane przez godzinę. Granica infrastrukturalna otacza `unstable_cache`, dzięki czemu logika domenowa nie zależy bezpośrednio od interfejsu cache Next.js. `connection()` zapobiega odczytom bazy podczas `next build`, nie wyłączając Data Cache. Publiczny HTML nadal jest renderowany dynamicznie.
+The cache stores data rather than complete static HTML. Content listings, the member profile
+directory, filtered media listings, and homepage data are cached for five minutes. Content,
+partner, and profile details; event, cycle, and post relationships; and the sitemap are cached for
+one hour. An infrastructure boundary wraps `unstable_cache`, so domain logic does not depend
+directly on the Next.js cache interface. `connection()` prevents database reads during `next build`
+without disabling the Data Cache. Public HTML remains dynamically rendered.
 
-Klucze uwzględniają wszystkie argumenty zapytania, w tym znormalizowane źródła, rodzaj i tryb bloku, stronę, rozmiar strony, sortowanie, filtry oraz kolejność ręcznie wskazanych mediów. Ręcznie wskazane media są pobierane jednym zapytaniem i porządkowane zgodnie z kolejnością redakcyjną. Odczyty relacyjne otrzymują tagi obu stron zależności, na przykład wydarzenia partnera mają tagi `events` i `partners`.
+Keys include every query argument, including normalized sources, block kind and mode, page, page
+size, sorting, filters, and the editorial order of manually selected media. Manually selected media
+are fetched in one query and restored to editorial order. Relationship reads receive tags from both
+sides of the relationship; for example, a partner's events carry both `events` and `partners` tags.
 
-Szerokie tagi kolekcji oraz tagi `content-listings`, `homepage` i `public-sitemap` pozwalają unieważniać zależne dane po utworzeniu, publikacji, aktualizacji, wycofaniu publikacji i usunięciu. Zmiana partnera unieważnia dane partnerów, wydarzeń, cykli i sitemapy. Zmiana wizytówki unieważnia jej katalog i szczegół oraz szczegóły stron, wpisów, wydarzeń, cykli i partnerów, które mogą zawierać osadzony profil; zmiana zdjęcia wykonuje ten sam zestaw unieważnień bez sitemapy. Zmiany kategorii i tagów obejmują także listingi mediów, a zmiana medium lub ustawień dostępu WWW unieważnia cały publiczny cache. Szerokie zależności są celowe, ponieważ dokumenty pobierane z większą głębokością zawierają osadzone dane relacji.
+Broad collection tags plus `content-listings`, `homepage`, and `public-sitemap` tags invalidate
+dependent data after creation, publication, updates, unpublishing, and deletion. A partner change
+invalidates partner, event, event-cycle, and sitemap data. A profile change invalidates its
+directory and detail data plus the details of pages, posts, events, cycles, and partners that may
+embed the profile; changing a profile image performs the same invalidations except for the sitemap.
+Category and tag changes also cover media listings, while a media or web-access-setting change
+invalidates the entire public cache. These broad dependencies are intentional because documents
+fetched at greater depth contain embedded relationship data.
 
-Każdy cache'owany odczyt używa anonimowego użytkownika, kontekstu publicznej witryny i nie omija kontroli dostępu. Dotyczy to również partnerów, wizytówek, mediów oraz relacji wydarzeń i cykli. Wydarzenia i cykle członkowskie pozostają niewidoczne również dla zalogowanego użytkownika na publicznych trasach. Dokumenty i pliki chronione, logowanie, kalendarze ICS oraz `robots.txt` pozostają dynamiczne i poza cache opisanym w tej decyzji.
+Every cached read uses an anonymous user and public-site context and does not bypass access control.
+This also applies to partners, profiles, media, and event and cycle relationships. Member-only events
+and cycles remain hidden on public routes even from an authenticated user. Protected documents and
+files, authentication, ICS calendars, and `robots.txt` remain dynamic and outside the cache defined
+by this decision.
 
-### Jedna replika
+### Single replica
 
-Next Data Cache nie jest współdzielony pomiędzy niezależnymi replikami aplikacji. Do czasu wprowadzenia współdzielonego cache Azure Container App ma `minimumReplicas: 0` i `maximumReplicas: 1`. Po restarcie lub wybudzeniu cache odbudowuje się z PostgreSQL. Ograniczenie zapobiega obsłudze kolejnych żądań przez repliki z różnym stanem lokalnego cache.
+Next Data Cache is not shared between independent application replicas. Until a shared cache is
+introduced, the Azure Container App uses `minimumReplicas: 0` and `maximumReplicas: 1`. After a
+restart or cold start, the cache is rebuilt from PostgreSQL. This limit prevents consecutive
+requests from being served by replicas with different local cache states.
 
-## Odrzucone warianty
+## Rejected alternatives
 
-- Pobieranie wielu kolekcji i łączenie w pamięci pozostawia liniowy koszt głębokiej paginacji.
-- Cache Components wymagają szerszej migracji sposobu renderowania; izolacja cache pozwala wrócić do tej opcji później.
-- Cache per rola nie ma wartości dla treści z jedną anonimową wersją publiczną i zwiększa liczbę wariantów oraz ryzyko wycieku uprawnień.
-- Redis i wiele replik zwiększają koszty operacyjne przed potwierdzeniem, że ruch wymaga skalowania poziomego.
-- Pełne statyczne HTML wymagałoby utrzymywania grafu zależności między szczegółami, listingami, stroną główną i sitemapą. Cache danych z tagami daje prostsze, kontrolowane unieważnianie.
+- Fetching multiple collections and merging them in memory retains the linear cost of deep
+  pagination.
+- Cache Components require a broader rendering migration; the cache boundary allows that option to
+  be revisited later.
+- A cache per role offers no value for content with one anonymous public variant and increases both
+  the number of variants and the risk of permission leaks.
+- Redis and multiple replicas add operational cost before traffic demonstrates a need for horizontal
+  scaling.
+- Complete static HTML would require maintaining a dependency graph across detail views, listings,
+  the homepage, and the sitemap. A tagged data cache provides simpler, controlled invalidation.
 
-## Konsekwencje i ryzyka
+## Consequences and risks
 
-Głęboka strona listingu pobiera najwyżej rozmiar strony, niezależnie od jej numeru. Odczyty są prostsze i nie potrzebują dużych struktur rich text. Kosztem jest denormalizacja oraz konieczność utrzymania synchronizacji indeksu.
+A deep listing page fetches no more than the page size, regardless of its page number. Reads are
+simpler and do not require large rich-text structures. The cost is denormalization and the need to
+keep the index synchronized.
 
-Awaria hooka powoduje wycofanie transakcji zapisu, więc źródło i indeks nie rozchodzą się. Błędy w logice projekcji mogą jednak dać spójny technicznie, lecz niepoprawny rekord; testy integracyjne obejmują pełny cykl publikacji. Unieważnianie cache po synchronizacji ma szerokie tagi i może wykonywać więcej ponownych odczytów niż minimalny graf zależności. Jedna replika ogranicza przepustowość i dostępność podczas restartu.
+A hook failure rolls back the write transaction, so the source and index cannot diverge. Projection
+logic errors can still produce a technically consistent but incorrect record; integration tests
+cover the complete publication lifecycle. Cache invalidation after synchronization uses broad tags
+and may cause more re-fetching than a minimal dependency graph. A single replica limits throughput
+and availability during restarts.
 
-## Migracja i rollback
+## Migration and rollback
 
-Migracja tworzy tabelę, relacje i indeksy, następnie porcjami generuje brakujące streszczenia oraz buduje indeks opublikowanych dokumentów. Kontekst migracji wyłącza wtórną synchronizację i unieważnianie cache. `down` usuwa kolekcję indeksową i jej typy, ale zachowuje wygenerowane streszczenia, ponieważ po migracji mogły zostać zmienione redakcyjnie.
+The migration creates the table, relationships, and indexes, then generates missing excerpts and
+builds the index of published documents in batches. Migration context disables secondary
+synchronization and cache invalidation. `down` removes the index collection and its types but keeps
+generated excerpts because editors may have changed them after migration.
 
-Rollback aplikacji wymaga wykonania migracji `down` przed uruchomieniem wersji nieznającej indeksu. Powrót do wielu replik wymaga najpierw współdzielonego cache albo rezygnacji z cache danych zależnego od lokalnego stanu.
+Rolling the application back requires running the `down` migration before starting a version that
+does not know about the index. Returning to multiple replicas first requires either a shared cache
+or removal of the data cache that depends on local state.
 
-## Dalszy rozwój
+## Further development
 
-Jeśli jedna replika stanie się ograniczeniem, warstwa infrastrukturalna cache może zostać przeniesiona do współdzielonego magazynu bez zmiany zapytań domenowych. Można wtedy zwiększyć liczbę replik i zawęzić tagi na podstawie pomiarów. Cache Components pozostają możliwą ścieżką po ustabilizowaniu ich użycia w aplikacji i potwierdzeniu korzyści w profilowaniu.
+If one replica becomes a constraint, the cache infrastructure layer can move to shared storage
+without changing domain queries. Replica count can then increase, and tags can be narrowed based on
+measurements. Cache Components remain a possible path after their use in the application stabilizes
+and profiling confirms the benefit.
