@@ -66,7 +66,7 @@ export const EventCycles: CollectionConfig = {
     },
     defaultColumns: ['title', 'slug', 'category', 'tags', '_status', 'publishedAt'],
     group: 'Treści',
-    listSearchableFields: ['title', 'slug', 'excerpt'],
+    listSearchableFields: ['title', 'slug'],
     useAsTitle: 'title',
     pagination: {
       limits: [10, 25, 50],
@@ -84,9 +84,8 @@ export const EventCycles: CollectionConfig = {
             getEditorialField(editorialFields, 'heroImage'),
             {
               name: 'excerpt',
-              type: 'textarea',
+              type: 'richText',
               label: 'Streszczenie',
-              maxLength: 700,
               required: true,
             },
             createContentLayoutField('Treści'),
@@ -122,7 +121,7 @@ export const EventCycles: CollectionConfig = {
                   ],
                 },
                 { name: 'heroImage', type: 'upload', label: 'Obraz główny', relationTo: 'media' },
-                { name: 'excerpt', type: 'textarea', label: 'Streszczenie', maxLength: 700 },
+                { name: 'excerpt', type: 'richText', label: 'Streszczenie' },
                 createContentLayoutField('Treści'),
                 { type: 'row', fields: createTaxonomyFields({ position: 'main' }) },
                 {

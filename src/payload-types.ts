@@ -474,7 +474,21 @@ export interface Event {
   title: string;
   eventType: number | EventType;
   heroImage?: (number | null) | Media;
-  excerpt: string;
+  excerpt: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
   layout: (
     | RichTextBlock
     | ListingBlock
@@ -582,7 +596,21 @@ export interface EventCycle {
   id: number;
   title: string;
   heroImage?: (number | null) | Media;
-  excerpt: string;
+  excerpt: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
   layout: (
     | RichTextBlock
     | ListingBlock
@@ -607,7 +635,21 @@ export interface EventCycle {
     title?: string | null;
     eventType: number | EventType;
     heroImage?: (number | null) | Media;
-    excerpt?: string | null;
+    excerpt?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
     layout: (
       | RichTextBlock
       | ListingBlock

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
 import { RasterIcon } from '@/components/RasterIcon'
+import { CmsRichText } from '@/components/CmsRichText'
 import {
   getCalendarEventDate,
   type CalendarEvent,
@@ -103,7 +104,7 @@ export function EventCalendar({
                       <EventTypeIcon eventType={event.eventType} />
                       <Link href={`/events/${event.slug}`}>{event.title}</Link>
                     </h5>
-                    <p>{event.excerpt}</p>
+                    <CmsRichText className="calendarEventSummary" data={event.excerpt} />
                     <Link className="calendarEventLink" href={`/events/${event.slug}`}>
                       <span>Zobacz wydarzenie</span>
                       <RasterIcon name="arrow-right" size="small" />

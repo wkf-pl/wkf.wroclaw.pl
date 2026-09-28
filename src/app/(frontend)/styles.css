@@ -2603,6 +2603,9 @@ a.attachmentItem:hover {
   gap: 1rem;
   align-items: center;
   padding: 0.9rem 1rem;
+  background:
+    /*linear-gradient(rgb(0 13 23 / 50%), rgb(0 13 23 / 50%)),*/
+    url('/assets/placeholder-nebula.webp') center 5% / cover no-repeat;
 }
 
 .homeEventViewTabs {

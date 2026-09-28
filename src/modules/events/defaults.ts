@@ -1,6 +1,7 @@
 import type { Data } from 'payload'
 
 import type { EventCycle } from '@/payload-types'
+import { isRichTextEmpty } from '@/modules/content/rich-text'
 
 export function getEventRelationshipID(value: unknown): number | string | undefined {
   if (typeof value === 'number' || typeof value === 'string') return value
@@ -65,7 +66,13 @@ function normalizeLinkRows(value: unknown): unknown {
 function applyIfEmpty(data: Data, field: string, value: unknown): void {
   const currentValue = data[field]
   const isEmptyFormArray = Array.isArray(value) && currentValue === 0
-  if ((isEmpty(currentValue) || isEmptyFormArray) && !isEmpty(value)) {
+  const isEmptyRichText = field === 'excerpt' && isRichTextEmpty(currentValue)
+  const hasRichTextValue = field !== 'excerpt' || !isRichTextEmpty(value)
+  if (
+    (isEmpty(currentValue) || isEmptyFormArray || isEmptyRichText) &&
+    !isEmpty(value) &&
+    hasRichTextValue
+  ) {
     data[field] = structuredClone(value)
   }
 }

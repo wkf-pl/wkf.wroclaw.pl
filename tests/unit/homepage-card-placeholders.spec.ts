@@ -14,4 +14,13 @@ describe('homepage card placeholders', () => {
     expect(sharedFallbackRule).toContain(`url('${placeholderURL}') center / cover no-repeat`)
     expect(existsSync(`public${placeholderURL}`)).toBe(true)
   })
+
+  it('uses the nebula image in the home event toolbar background', () => {
+    const styles = readFileSync('src/app/(frontend)/styles.css', 'utf8')
+    const eventToolbarRule = styles.match(
+      /\.homeEventToolbar\s*\{(?<declarations>[^}]+)\}/,
+    )?.groups?.declarations
+
+    expect(eventToolbarRule).toContain(`url('${placeholderURL}') center / cover no-repeat`)
+  })
 })

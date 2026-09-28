@@ -2,6 +2,7 @@ import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, PayloadReque
 
 import type { Event, EventCycle, Page, Post } from '@/payload-types'
 import { invalidateContentSource } from '@/modules/cache/invalidate-public-data'
+import { extractRichTextText } from '@/modules/content/rich-text'
 
 import type { TaxonomizableCollectionSlug, TaxonomizableDocument } from './content-listing'
 
@@ -52,7 +53,10 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
     eventEndAt: event?.endAt ?? null,
     eventStartAt: event?.startAt ?? null,
     excerpt:
-      page?.listingExcerpt?.trim() || post?.excerpt || event?.excerpt || cycle?.excerpt || null,
+      page?.listingExcerpt?.trim() ||
+      post?.excerpt ||
+      extractRichTextText(event?.excerpt ?? cycle?.excerpt) ||
+      null,
     heroImage: relationshipID(document.heroImage),
     parentPage: page ? relationshipID(page.parent) : null,
     sortDate: event?.startAt ?? document.publishedAt ?? document.createdAt,

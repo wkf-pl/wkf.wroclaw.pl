@@ -1,4 +1,5 @@
 import type { Event } from '@/payload-types'
+import { extractRichTextText } from '@/modules/content/rich-text'
 
 import { WARSAW_TIME_ZONE } from './constants'
 
@@ -94,7 +95,7 @@ function createEventLines(event: Event, siteURL: string): string[] {
     `DTSTAMP:${new Date(event.updatedAt).toISOString().replaceAll(/[-:]/g, '').replace('.000', '')}`,
     `STATUS:${eventStatus(event)}`,
     `SUMMARY:${escapeICS(event.title)}`,
-    `DESCRIPTION:${escapeICS(event.excerpt)}`,
+    `DESCRIPTION:${escapeICS(extractRichTextText(event.excerpt))}`,
     `LOCATION:${escapeICS(formatLocation(event))}`,
     `URL:${url}`,
   ]

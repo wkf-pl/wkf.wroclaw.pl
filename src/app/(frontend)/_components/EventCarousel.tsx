@@ -8,6 +8,7 @@ import { formatEventDate } from '@/modules/events/presentation'
 
 import { CmsImage } from './CmsImage'
 import { RasterIcon } from '@/components/RasterIcon'
+import { CmsRichText } from '@/components/CmsRichText'
 
 export function EventCarousel({
   events,
@@ -65,7 +66,7 @@ export function EventCarousel({
                 <span className="featuredEventTitle">{item.title}</span>
               </Link>
               <div className="featuredEventContent">
-                <p className="featuredEventSummary">{item.excerpt}</p>
+                <CmsRichText className="featuredEventSummary" data={item.excerpt} />
                 <p className="featuredEventFact">
                   <span aria-label="Kiedy" className="featuredEventFactIcon" role="img">
                     <RasterIcon name="calendar" size="medium" />

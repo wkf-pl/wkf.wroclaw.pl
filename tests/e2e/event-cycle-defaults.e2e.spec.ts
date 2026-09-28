@@ -3,6 +3,7 @@ import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
 import type { MemberProfile, Partner, User } from '@/payload-types'
+import { createRichTextDocument } from '@/modules/content/rich-text'
 
 import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
@@ -118,7 +119,7 @@ test.beforeAll(async () => {
       eventDefaults: {
         capacityMode: 'unlimited',
         eventType: 1,
-        excerpt: 'Domyślne streszczenie E2E',
+        excerpt: createRichTextDocument(['Domyślne streszczenie E2E']),
         layout: layout(),
         location: { country: 'Polska' },
         organizers: [{ profile: organizer.id, role: 'Osoba prowadząca' }],
@@ -134,7 +135,7 @@ test.beforeAll(async () => {
           },
         ],
       },
-      excerpt: 'Opis Cyklu E2E',
+      excerpt: createRichTextDocument(['Opis Cyklu E2E']),
       layout: layout(),
       slug: cycleSlug,
       title: cycleTitle,
@@ -202,9 +203,9 @@ test('applies selected Cycle defaults to an Event form without overwriting value
   expect(cycleData.eventDefaults?.externalLinks).toHaveLength(1)
 
   await expect(page.getByRole('textbox', { name: 'Tytuł *' })).toHaveValue('Domyślny tytuł E2E')
-  await expect(page.getByRole('textbox', { name: 'Streszczenie *' })).toHaveValue(
-    'Domyślne streszczenie E2E',
-  )
+  await expect(
+    page.locator('[contenteditable="true"]').filter({ hasText: 'Domyślne streszczenie E2E' }),
+  ).toBeVisible()
   await expect(page.locator('#field-eventType')).toContainText('Sesje RPG')
   await expect(
     page.getByText('Organizator: Organizator domyślny E2E', { exact: true }),
