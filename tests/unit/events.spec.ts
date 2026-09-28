@@ -25,7 +25,7 @@ import {
   validateGoogleMapsEmbed,
 } from '@/modules/events/map-embed'
 import { GoogleMapEmbed } from '@/components/maps/GoogleMapEmbed'
-import { formatEventDate } from '@/modules/events/presentation'
+import { formatEventDate, formatEventDateParts } from '@/modules/events/presentation'
 import { createRichTextDocument } from '@/modules/content/rich-text'
 
 function flattenFields(fields: Field[]): Field[] {
@@ -322,6 +322,21 @@ describe('events model', () => {
     expect(formatEventDate(eventFixture({ endAt: '2026-09-10T19:00:00.000Z' }))).toBe(
       '8 września 2026, 18:00 - 10 września 2026, 21:00',
     )
+    expect(formatEventDateParts(eventFixture({ endAt: '2026-09-08T19:00:00.000Z' }))).toEqual({
+      date: '8 września 2026',
+      time: '18:00–21:00',
+    })
+    expect(
+      formatEventDateParts(
+        eventFixture({
+          endAt: '2026-09-10T19:00:00.000Z',
+          timeMode: 'allDay',
+        }),
+      ),
+    ).toEqual({
+      date: '8 września 2026 – 10 września 2026',
+      time: 'Cały dzień',
+    })
   })
 
   it('accepts HTTP and HTTPS venue websites only', () => {

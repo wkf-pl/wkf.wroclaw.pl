@@ -12,6 +12,44 @@ const timeFormatter = new Intl.DateTimeFormat('pl-PL', {
   timeZone: 'Europe/Warsaw',
 })
 
+export type EventDateParts = {
+  date: string
+  time: string
+}
+
+export function formatEventDateParts(
+  event: Pick<Event, 'endAt' | 'startAt' | 'timeMode'>,
+): EventDateParts {
+  const start = new Date(event.startAt)
+  const startDate = dateFormatter.format(start)
+  if (!event.endAt) {
+    return {
+      date: startDate,
+      time: event.timeMode === 'allDay' ? 'Cały dzień' : `Od ${timeFormatter.format(start)}`,
+    }
+  }
+
+  const end = new Date(event.endAt)
+  const endDate = dateFormatter.format(end)
+  if (startDate === endDate) {
+    return {
+      date: startDate,
+      time:
+        event.timeMode === 'allDay'
+          ? 'Cały dzień'
+          : `${timeFormatter.format(start)}–${timeFormatter.format(end)}`,
+    }
+  }
+
+  return {
+    date: `${startDate} – ${endDate}`,
+    time:
+      event.timeMode === 'allDay'
+        ? 'Cały dzień'
+        : `${timeFormatter.format(start)}–${timeFormatter.format(end)}`,
+  }
+}
+
 export function formatEventDate(event: Pick<Event, 'endAt' | 'startAt' | 'timeMode'>): string {
   const start = new Date(event.startAt)
   const startDate = dateFormatter.format(start)

@@ -17,14 +17,19 @@ type CmsPageDocumentProperties = {
   document: Event | EventCycle | Page | Partner | Post
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
-  eyebrow?: string
+  aside?: ReactNode
+  bodyClassName?: string
+  description?: null | string
+  eyebrow?: ReactNode
   afterBlocks?: ReactNode
   beforeBlocks?: ReactNode
   breadcrumbs?: PublicBreadcrumb[]
+  heroContent?: ReactNode
   heroDate?: {
     dateTime: string
     label: string
   }
+  showHeroMeta?: boolean
 }
 
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
@@ -37,18 +42,23 @@ export async function CmsPageDocument({
   document,
   pathname,
   searchParams,
+  aside,
+  bodyClassName,
+  description,
   eyebrow,
   afterBlocks,
   beforeBlocks,
   breadcrumbs: providedBreadcrumbs,
+  heroContent,
   heroDate,
+  showHeroMeta = true,
 }: CmsPageDocumentProperties) {
   const authorName = getAuthorName(document.author)
   const category = 'category' in document ? document.category : undefined
   const tags = 'tags' in document ? document.tags : undefined
   const title = 'title' in document ? document.title : document.name
   const heroEyebrow =
-    'title' in document ? <ContentHeroCategory category={category} /> : eyebrow || 'Partner'
+    eyebrow ?? ('title' in document ? <ContentHeroCategory category={category} /> : 'Partner')
   const breadcrumbs = await getContentBreadcrumbs(document, providedBreadcrumbs, title)
   const image = getContentHeroImage(document.heroImage)
   const date =
@@ -63,20 +73,53 @@ export async function CmsPageDocument({
   return (
     <main className="contentHeroPage">
       <article className="cmsDocument cmsPageDocument">
-        <ContentHero breadcrumbs={breadcrumbs} eyebrow={heroEyebrow} image={image} title={title}>
+        <ContentHero
+          breadcrumbs={breadcrumbs}
+          description={description}
+          eyebrow={heroEyebrow}
+          image={image}
+          title={title}
+        >
+          {heroContent}
           <TaxonomyLinks tags={tags} />
-          <ContentHeroMeta authorName={authorName} date={date} />
+          {showHeroMeta ? <ContentHeroMeta authorName={authorName} date={date} /> : null}
         </ContentHero>
 
-        <div className="contentShell contentPageBody">
+        <div
+          className={[
+            'contentShell',
+            'contentPageBody',
+            aside ? 'contentPageBody--withAside' : null,
+            bodyClassName,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
           {beforeBlocks}
-
-          <ContentLayoutRenderer
-            document={document}
-            pathname={pathname}
-            searchParams={searchParams}
-          />
-          {afterBlocks}
+          {aside ? (
+            <div className="eventPageColumns">
+              <div className="eventPageMain">
+                <ContentLayoutRenderer
+                  document={document}
+                  pathname={pathname}
+                  searchParams={searchParams}
+                />
+                {afterBlocks}
+              </div>
+              <aside aria-label="Organizatorzy i partnerzy" className="eventPageSidebar">
+                {aside}
+              </aside>
+            </div>
+          ) : (
+            <>
+              <ContentLayoutRenderer
+                document={document}
+                pathname={pathname}
+                searchParams={searchParams}
+              />
+              {afterBlocks}
+            </>
+          )}
         </div>
       </article>
     </main>
