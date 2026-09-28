@@ -106,6 +106,10 @@ describe('integration test environment', () => {
     expect(playwrightConfiguration).toContain('PLAYWRIGHT_HTML_OUTPUT_DIR')
     expect(playwrightConfiguration).toContain("join(tmpdir(), 'wkf-online-playwright-results')")
     expect(playwrightConfiguration).toContain("join(tmpdir(), 'wkf-online-playwright-report')")
+    expect(playwrightConfiguration).toContain('failOnFlakyTests: !!process.env.CI')
+    expect(playwrightConfiguration).toContain(
+      "trace: process.env.CI ? 'retain-on-first-failure' : 'on-first-retry'",
+    )
   })
 
   it('manages shared Playwright users once per complete run', () => {
