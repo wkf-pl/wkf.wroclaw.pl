@@ -6,7 +6,7 @@ import {
 } from '@/modules/cache/invalidate-public-data'
 import { eventTypeIconColors } from '@/modules/events/event-types'
 import { rasterIconPickerOptions } from '@/modules/icons/icon-picker-options'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 const createEventTypes = createRolePermissionAccess({
   operation: 'create',

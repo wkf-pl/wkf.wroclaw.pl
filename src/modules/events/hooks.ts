@@ -2,7 +2,9 @@ import { randomUUID } from 'node:crypto'
 
 import type { CollectionBeforeChangeHook, CollectionBeforeValidateHook } from 'payload'
 
-import { getEventRelationshipID, mergeEventCycleDefaults } from './defaults'
+import { getFormRelationshipId } from '@/lib/relationships'
+
+import { mergeEventCycleDefaults } from './defaults'
 import { isRichTextEmpty } from '@/modules/content/rich-text'
 
 function isEmpty(value: unknown): boolean {
@@ -25,8 +27,8 @@ export const applyEventCycleDefaults: CollectionBeforeValidateHook = async ({
 }) => {
   if (!data) return data
 
-  const cycleID = getEventRelationshipID(data.cycle ?? originalDoc?.cycle)
-  const appliedCycleID = getEventRelationshipID(
+  const cycleID = getFormRelationshipId(data.cycle ?? originalDoc?.cycle)
+  const appliedCycleID = getFormRelationshipId(
     data.defaultsAppliedCycle ?? originalDoc?.defaultsAppliedCycle,
   )
   if (cycleID === undefined || String(cycleID) === String(appliedCycleID)) return data

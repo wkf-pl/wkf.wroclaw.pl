@@ -1,21 +1,23 @@
-import { APIError, type Access, type CollectionConfig, type FieldAccess, type Where } from 'payload'
+import type { Access, CollectionConfig, FieldAccess, Where } from 'payload'
 
 import {
   invalidateMemberProfilesAfterChange,
   invalidateMemberProfilesAfterDelete,
 } from '@/modules/cache/invalidate-public-data'
+import { getRelationshipId } from '@/lib/relationships'
 import {
-  type ContactChannelType,
   contactChannelOptions,
-  createBaseProfileSlug,
-  getRelationshipID,
   isMember,
-  normalizeContactAddress,
   validateContactAddress,
   validateGame,
   validateUniqueGames,
 } from '@/modules/members/member-profile'
-import { combineAccessResults, getUserIdentity } from '@/modules/membership/role-permissions'
+import {
+  deleteMemberProfileImage,
+  prepareMemberProfile,
+  reconcileMemberProfileImages,
+} from '@/modules/members/member-profile-lifecycle'
+import { combineAccessResults, getUserIdentity } from '@/modules/membership/permission-resolution'
 
 const publicProfileConstraint: Where = { _status: { equals: 'published' } }
 
@@ -41,7 +43,7 @@ const readProfileVersions: Access = ({ req }) => {
 }
 
 const readOwnedProfileField: FieldAccess = ({ doc, req, siblingData }) =>
-  getRelationshipID(doc?.owner ?? siblingData?.owner) === getUserIdentity(req.user)
+  getRelationshipId(doc?.owner ?? siblingData?.owner) === getUserIdentity(req.user)
 
 export const MemberProfiles: CollectionConfig = {
   slug: 'member-profiles',
@@ -290,169 +292,9 @@ export const MemberProfiles: CollectionConfig = {
     },
   ],
   hooks: {
-    afterChange: [
-      async ({ doc, req }) => {
-        const currentPhotoID = getRelationshipID(doc.photo)
-        const ownerID = getRelationshipID(doc.owner)
-        const publishedProfiles = await req.payload.find({
-          collection: 'member-profiles',
-          depth: 0,
-          draft: false,
-          limit: 1,
-          overrideAccess: true,
-          pagination: false,
-          req,
-          where: {
-            and: [{ id: { equals: doc.id } }, { _status: { equals: 'published' } }],
-          },
-        })
-        const publishedProfile = publishedProfiles.docs[0]
-        const publishedPhotoID = getRelationshipID(publishedProfile?.photo)
-
-        if (ownerID !== undefined) {
-          const images = await req.payload.find({
-            collection: 'member-profile-images',
-            depth: 0,
-            limit: 2,
-            overrideAccess: true,
-            pagination: false,
-            req,
-            where: { owner: { equals: ownerID } },
-          })
-
-          for (const image of images.docs) {
-            const retainedByDraft = image.id === currentPhotoID
-            const retainedByPublishedProfile = image.id === publishedPhotoID
-            if (!retainedByDraft && !retainedByPublishedProfile) {
-              await req.payload.delete({
-                collection: 'member-profile-images',
-                id: image.id,
-                overrideAccess: true,
-                req,
-              })
-              continue
-            }
-
-            await req.payload.update({
-              collection: 'member-profile-images',
-              id: image.id,
-              data: { isPubliclyUsed: retainedByPublishedProfile },
-              overrideAccess: true,
-              req,
-            })
-          }
-        }
-
-        return doc
-      },
-      invalidateMemberProfilesAfterChange,
-    ],
-    afterDelete: [
-      async ({ doc, req }) => {
-        const photoID = getRelationshipID(doc.photo)
-        if (photoID !== undefined) {
-          await req.payload.delete({
-            collection: 'member-profile-images',
-            id: photoID,
-            overrideAccess: true,
-            req,
-          })
-        }
-
-        return doc
-      },
-      invalidateMemberProfilesAfterDelete,
-    ],
-    beforeValidate: [
-      async ({ data, operation, originalDoc, req }) => {
-        if (!data) {
-          return data
-        }
-
-        const authenticatedUserID = getUserIdentity(req.user)
-        if (operation === 'create') {
-          if (authenticatedUserID === undefined) {
-            throw new APIError('Wizytówka wymaga zalogowanego właściciela.', 401)
-          }
-          data.owner = authenticatedUserID
-        } else {
-          data.owner = getRelationshipID(originalDoc?.owner)
-        }
-
-        const ownerID = getRelationshipID(data.owner)
-        if (ownerID === undefined) {
-          throw new APIError('Wizytówka musi mieć właściciela.', 400)
-        }
-
-        if (operation === 'create') {
-          const existingProfile = await req.payload.find({
-            collection: 'member-profiles',
-            depth: 0,
-            limit: 1,
-            overrideAccess: true,
-            pagination: false,
-            req,
-            where: { owner: { equals: ownerID } },
-          })
-          if (existingProfile.docs.length > 0) {
-            throw new APIError('To konto ma już wizytówkę publiczną.', 400)
-          }
-        }
-
-        if (Array.isArray(data.contactChannels)) {
-          data.contactChannels = data.contactChannels.map((channel) => {
-            if (!channel || typeof channel !== 'object') {
-              return channel
-            }
-
-            const type = channel.type
-            const url = channel.url
-            return typeof type === 'string' && typeof url === 'string'
-              ? { ...channel, url: normalizeContactAddress(type as ContactChannelType, url) }
-              : channel
-          })
-        }
-
-        const photoID = getRelationshipID(data.photo)
-        if (photoID !== undefined) {
-          const photo = await req.payload.findByID({
-            collection: 'member-profile-images',
-            depth: 0,
-            id: photoID,
-            overrideAccess: true,
-            req,
-          })
-          if (getRelationshipID(photo.owner) !== ownerID) {
-            throw new APIError('Zdjęcie profilowe musi należeć do właściciela wizytówki.', 400)
-          }
-        }
-
-        if (operation === 'create') {
-          const baseSlug = createBaseProfileSlug(data.publicName)
-          let candidateSlug = baseSlug
-          let suffix = 2
-          while (true) {
-            const matches = await req.payload.find({
-              collection: 'member-profiles',
-              depth: 0,
-              limit: 1,
-              overrideAccess: true,
-              pagination: false,
-              req,
-              where: { slug: { equals: candidateSlug } },
-            })
-            if (matches.docs.length === 0) {
-              data.slug = candidateSlug
-              break
-            }
-            candidateSlug = `${baseSlug}-${suffix}`
-            suffix += 1
-          }
-        }
-
-        return data
-      },
-    ],
+    afterChange: [reconcileMemberProfileImages, invalidateMemberProfilesAfterChange],
+    afterDelete: [deleteMemberProfileImage, invalidateMemberProfilesAfterDelete],
+    beforeValidate: [prepareMemberProfile],
   },
   labels: {
     plural: 'Wizytówki klubowiczów',

@@ -12,6 +12,8 @@ import type {
   Post,
   Tag,
 } from '@/payload-types'
+import { getPopulatedRelationship, getPopulatedRelationships } from '@/lib/relationships'
+import { normalizeListingWindow } from '@/modules/content/listing-window'
 import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
@@ -63,8 +65,7 @@ async function findPublicContentUncached(
   options: CachedFindPublicContentOptions,
 ): Promise<PublicContentResult> {
   const payload = await getPayload({ config })
-  const page = options.pagination ? Math.max(1, Math.floor(options.page)) : 1
-  const pageSize = Math.min(100, Math.max(1, Math.floor(options.pageSize)))
+  const { page, pageSize } = normalizeListingWindow(options)
   const result = await payload.find({
     collection: 'content-listing-items',
     context: publicRequestContext,
@@ -122,9 +123,7 @@ export async function findPublicContent(
     categoryIds,
     eventCycleId: options.eventCycleId,
     eventTimeFilter: options.eventTimeFilter,
-    page: Math.max(1, Math.floor(options.page)),
-    pageSize: Math.min(100, Math.max(1, Math.floor(options.pageSize))),
-    pagination: options.pagination,
+    ...normalizeListingWindow(options),
     parentId: options.parentId,
     sort: options.sort,
     sources: [...new Set(options.sources)].sort(),
@@ -199,56 +198,14 @@ type SelectedListingItem = Pick<
 
 function mapIndexItem(item: SelectedListingItem): PublicContentListItem {
   return {
-    category: populatedRelationship(item.category),
+    category: getPopulatedRelationship(item.category),
     date: item.sortDate,
     excerpt: item.excerpt ?? null,
     id: item.sourceDocumentId,
-    image: populatedRelationship(item.heroImage),
+    image: getPopulatedRelationship(item.heroImage),
     kind: item.source,
-    tags: populatedRelationships(item.tags),
+    tags: getPopulatedRelationships(item.tags),
     title: item.title,
     url: item.url,
   }
-}
-
-function populatedRelationship<T>(value: null | number | T | undefined): null | T {
-  return value && typeof value === 'object' ? value : null
-}
-
-function populatedRelationships<T>(values: (number | T)[] | null | undefined): T[] {
-  return values?.filter((value): value is T => typeof value === 'object') ?? []
-}
-
-export function createContentComparator(
-  sort: ContentListingSort,
-): (first: PublicContentListItem, second: PublicContentListItem) => number {
-  return (first, second) => {
-    const titleComparison = first.title.localeCompare(second.title, 'pl')
-    const dateComparison = compareDates(first.date, second.date)
-    let primaryComparison: number
-    switch (sort) {
-      case 'oldest':
-      case 'eventDateAscending':
-        primaryComparison = dateComparison
-        break
-      case 'titleAscending':
-        primaryComparison = titleComparison
-        break
-      case 'titleDescending':
-        primaryComparison = -titleComparison
-        break
-      default:
-        primaryComparison = -dateComparison
-    }
-    if (primaryComparison !== 0) return primaryComparison
-    if ((sort === 'titleAscending' || sort === 'titleDescending') && dateComparison !== 0)
-      return -dateComparison
-    if (titleComparison !== 0) return titleComparison
-    const kindComparison = first.kind.localeCompare(second.kind, 'en')
-    return kindComparison !== 0 ? kindComparison : first.id - second.id
-  }
-}
-
-function compareDates(first: null | string, second: null | string): number {
-  return new Date(first ?? 0).getTime() - new Date(second ?? 0).getTime()
 }

@@ -12,7 +12,7 @@ import {
   validateHierarchy,
 } from '@/modules/content/hierarchy'
 import { createRelatedContentJoinFields } from '@/modules/content/taxonomy-fields'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 const createCategories = createRolePermissionAccess({
   operation: 'create',

@@ -9,7 +9,7 @@ import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
 import { createDraftPreviewURL } from '@/modules/content/draft-preview'
 import { publishedPublicAccess } from '@/modules/content/public-access'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 
 const createPosts = createRolePermissionAccess({ operation: 'create', resource: 'posts' })

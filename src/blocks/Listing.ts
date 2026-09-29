@@ -1,5 +1,7 @@
 import type { Block, Validate } from 'payload'
 
+import { createListingPaginationRow, createListingTaxonomyRow } from './listing-fields'
+
 type ListingSiblingData = {
   parentFilter?: unknown
   sources?: unknown
@@ -86,25 +88,7 @@ export const ListingBlock: Block = {
         },
       ],
     },
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'category',
-          type: 'relationship',
-          admin: { placeholder: '<brak>', width: '50%' },
-          label: 'Kategoria',
-          relationTo: 'categories',
-        },
-        {
-          name: 'tag',
-          type: 'relationship',
-          admin: { placeholder: '<brak>', width: '50%' },
-          label: 'Tag',
-          relationTo: 'tags',
-        },
-      ],
-    },
+    createListingTaxonomyRow(),
     {
       type: 'row',
       fields: [
@@ -162,28 +146,7 @@ export const ListingBlock: Block = {
         },
       ],
     },
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'pageSize',
-          type: 'number',
-          admin: { width: '50%' },
-          defaultValue: 12,
-          label: 'Elementy na stronę',
-          max: 100,
-          min: 1,
-          required: true,
-        },
-        {
-          name: 'pagination',
-          type: 'checkbox',
-          admin: { width: '50%' },
-          defaultValue: true,
-          label: 'Włącz paginację',
-        },
-      ],
-    },
+    createListingPaginationRow(),
     {
       name: 'parentFilter',
       type: 'select',

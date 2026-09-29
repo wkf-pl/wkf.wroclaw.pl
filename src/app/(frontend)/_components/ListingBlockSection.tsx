@@ -2,14 +2,14 @@ import { redirect } from 'next/navigation'
 
 import type { Event, EventCycle, ListingBlock, Page, Partner, Post } from '@/payload-types'
 import { getRelationshipId } from '@/lib/relationships'
-import { createBlockParameterSuffix } from '@/modules/content/block-parameter-name'
+import { createPaginatedURL, resolveBlockPagination } from '@/modules/content/pagination'
 import {
   findPublicContent,
   type TaxonomizableCollectionSlug,
 } from '@/modules/content/content-listing'
 
 import { ContentList } from './ContentList'
-import { ContentPagination, createPaginatedURL, getRequestedPage } from './ContentPagination'
+import { ContentPagination } from './ContentPagination'
 
 type ContentDocument = Event | EventCycle | Page | Partner | Post
 
@@ -26,9 +26,13 @@ export async function ListingBlockSection({
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
 }) {
-  const parameterSuffix = createBlockParameterSuffix(block.id, blockPath)
-  const parameterName = `listing_${parameterSuffix}`
-  const requestedPage = block.pagination ? getRequestedPage(searchParams[parameterName]) : 1
+  const { parameterName, requestedPage } = resolveBlockPagination({
+    blockId: block.id,
+    blockPath,
+    enabled: Boolean(block.pagination),
+    parameterPrefix: 'listing',
+    searchParams,
+  })
   const parentId = getListingParentId(block, document)
   const result = await findPublicContent({
     categoryId: getRelationshipId(block.category),

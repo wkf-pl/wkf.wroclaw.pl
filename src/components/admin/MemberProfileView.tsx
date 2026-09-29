@@ -14,7 +14,7 @@ import { formatAdminURL } from 'payload/shared'
 
 import type { MemberProfile } from '@/payload-types'
 import { skipPublicCacheInvalidationContextKey } from '@/modules/cache/public-data-cache'
-import { getUserIdentity } from '@/modules/membership/role-permissions'
+import { getUserIdentity } from '@/modules/membership/permission-resolution'
 import { userHasRole } from '@/modules/membership/user-roles'
 
 import { MemberProfilePublicationStatusSync } from './MemberProfilePublicationStatusSync'

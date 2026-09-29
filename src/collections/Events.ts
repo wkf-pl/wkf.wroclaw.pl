@@ -23,7 +23,7 @@ import { applyEventCycleDefaults, updateEventCalendarMetadata } from '@/modules/
 import { createNextEventEndpoint } from '@/modules/events/create-next-event'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 const createEvents = createRolePermissionAccess({ operation: 'create', resource: 'events' })
 const deleteEvents = createRolePermissionAccess({ operation: 'delete', resource: 'events' })

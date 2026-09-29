@@ -4,7 +4,7 @@ import {
   invalidateAllPublicDataAfterChange,
   invalidateAllPublicDataAfterDelete,
 } from '@/modules/cache/invalidate-public-data'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import { mediaDocumentMimeTypes, webRasterImageMimeTypes } from '@/modules/media/media-categories'
 
 const createMedia = createRolePermissionAccess({ operation: 'create', resource: 'media' })
@@ -128,7 +128,7 @@ export const Media: CollectionConfig = {
       admin: {
         components: {
           Cell: '/components/admin/UserIdentity#UserRelationshipCell',
-          Field: '/components/admin/UserIdentity#UserRelationshipField',
+          Field: '/components/admin/UserRelationshipField#UserRelationshipField',
         },
         position: 'sidebar',
         readOnly: true,

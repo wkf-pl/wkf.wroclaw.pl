@@ -16,11 +16,6 @@ import type {
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import { publicRequestContext } from '@/modules/content/public-access'
 
-type PostTaxonomyFilter = {
-  field: 'category' | 'tags'
-  id: number
-}
-
 const findPublishedPageBySlugCached = cachePublicData(
   'published-page-by-slug',
   async (slug: string) => {
@@ -156,24 +151,18 @@ export const findPublishedPostBySlug = cache(findPublishedPostBySlugCached)
 
 const findPublishedPostsCached = cachePublicData(
   'published-posts',
-  async (field?: PostTaxonomyFilter['field'], id?: number): Promise<Post[]> => {
+  async (limit: number): Promise<Post[]> => {
     const payload = await getPayload({ config })
-    const taxonomyConstraint = field && id !== undefined ? { [field]: { equals: id } } : undefined
     const result = await payload.find({
       collection: 'posts',
       context: publicRequestContext,
       depth: 2,
       draft: false,
-      limit: 100,
+      limit,
       overrideAccess: false,
       sort: ['-publishedAt', '-createdAt'],
       user: null,
-      where: {
-        and: [
-          { _status: { equals: 'published' } },
-          ...(taxonomyConstraint ? [taxonomyConstraint] : []),
-        ],
-      },
+      where: { _status: { equals: 'published' } },
     })
 
     return result.docs
@@ -181,8 +170,9 @@ const findPublishedPostsCached = cachePublicData(
   { revalidate: 300, tags: [publicCacheTags.posts, publicCacheTags.homepage] },
 )
 
-export function findPublishedPosts(filter?: PostTaxonomyFilter): Promise<Post[]> {
-  return findPublishedPostsCached(filter?.field, filter?.id)
+export function findPublishedPosts(limit: number): Promise<Post[]> {
+  const normalizedLimit = Number.isFinite(limit) ? Math.min(100, Math.max(1, Math.floor(limit))) : 1
+  return findPublishedPostsCached(normalizedLimit)
 }
 
 const findCategoryBySlugCached = cachePublicData(

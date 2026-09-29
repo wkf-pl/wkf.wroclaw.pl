@@ -3,7 +3,7 @@ import type { GlobalConfig } from 'payload'
 import { invalidateNavigationAfterChange } from '@/modules/cache/invalidate-public-data'
 import { defaultHomepageHeroTitle, homepageTitleEditor } from '@/modules/content/homepage-rich-text'
 import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import { createLinkFields } from '@/modules/navigation/fields'
 
 const readHomepageHero = createRolePermissionAccess({

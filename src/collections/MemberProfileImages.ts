@@ -6,8 +6,9 @@ import {
   invalidateMemberProfileImagesAfterChange,
   invalidateMemberProfileImagesAfterDelete,
 } from '@/modules/cache/invalidate-public-data'
-import { getRelationshipID, isMember } from '@/modules/members/member-profile'
-import { combineAccessResults, getUserIdentity } from '@/modules/membership/role-permissions'
+import { getRelationshipId } from '@/lib/relationships'
+import { isMember } from '@/modules/members/member-profile'
+import { combineAccessResults, getUserIdentity } from '@/modules/membership/permission-resolution'
 
 const publicImageConstraint = { isPubliclyUsed: { equals: true } }
 
@@ -38,7 +39,7 @@ export const MemberProfileImages: CollectionConfig = {
       access: {
         create: () => false,
         read: ({ doc, req, siblingData }) => {
-          const ownerID = getRelationshipID(doc?.owner ?? siblingData?.owner)
+          const ownerID = getRelationshipId(doc?.owner ?? siblingData?.owner)
           return ownerID === getUserIdentity(req.user)
         },
         update: () => false,
@@ -79,7 +80,7 @@ export const MemberProfileImages: CollectionConfig = {
         if (operation === 'create' && authenticatedUserID !== undefined) {
           data.owner = authenticatedUserID
         } else if (operation === 'update') {
-          data.owner = getRelationshipID(originalDoc?.owner)
+          data.owner = getRelationshipId(originalDoc?.owner)
         }
 
         if (req.file && req.file.size > 5 * 1024 * 1024) {

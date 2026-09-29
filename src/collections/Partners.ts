@@ -10,7 +10,7 @@ import { createContentLayoutField } from '@/modules/content/layout-field'
 import { populateSlugFromName } from '@/modules/content/slug'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 const createPartners = createRolePermissionAccess({ operation: 'create', resource: 'partners' })
 const deletePartners = createRolePermissionAccess({ operation: 'delete', resource: 'partners' })

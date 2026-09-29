@@ -6,7 +6,7 @@ import {
 } from '@/modules/cache/invalidate-public-data'
 import { populateSlugFromName } from '@/modules/content/slug'
 import { createRelatedContentJoinFields } from '@/modules/content/taxonomy-fields'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 const createTags = createRolePermissionAccess({ operation: 'create', resource: 'tags' })
 const deleteTags = createRolePermissionAccess({ operation: 'delete', resource: 'tags' })

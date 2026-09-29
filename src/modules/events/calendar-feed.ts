@@ -3,6 +3,7 @@ import { getPayload, type Where } from 'payload'
 import config from '@payload-config'
 
 import type { Event, EventCycle } from '@/payload-types'
+import { collectPayloadPages } from '@/lib/payload-pagination'
 import { publicRequestContext } from '@/modules/content/public-access'
 
 export async function findPublicCalendarEvents(seriesKey?: null | string): Promise<{
@@ -34,16 +35,19 @@ export async function findPublicCalendarEvents(seriesKey?: null | string): Promi
     conditions.push({ cycle: { equals: series.id } })
   }
 
-  const result = await payload.find({
-    collection: 'events',
-    context: publicRequestContext,
-    depth: 1,
-    draft: false,
-    limit: 1000,
-    overrideAccess: false,
-    sort: ['startAt'],
-    user: null,
-    where: { and: conditions },
-  })
-  return { events: result.docs, series }
+  const events = await collectPayloadPages((page) =>
+    payload.find({
+      collection: 'events',
+      context: publicRequestContext,
+      depth: 1,
+      draft: false,
+      limit: 100,
+      overrideAccess: false,
+      page,
+      sort: ['startAt'],
+      user: null,
+      where: { and: conditions },
+    }),
+  )
+  return { events, series }
 }

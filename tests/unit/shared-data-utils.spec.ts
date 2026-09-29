@@ -7,7 +7,7 @@ import {
   withFieldWidth,
 } from '@/modules/content/editorial-fields'
 import { getMediaURL } from '@/modules/media/media-url'
-import { combineAccessWithConstraint } from '@/modules/membership/role-permissions'
+import { combineAccessWithConstraint } from '@/modules/membership/permission-resolution'
 import { userHasRole } from '@/modules/membership/user-roles'
 
 describe('shared data utilities', () => {

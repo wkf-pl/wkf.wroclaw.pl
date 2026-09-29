@@ -21,10 +21,8 @@ import { createDraftPreviewURL } from '@/modules/content/draft-preview'
 import { validatePageStructure } from '@/modules/content/page-validation'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
-import {
-  combineAccessWithConstraint,
-  createRolePermissionAccess,
-} from '@/modules/membership/role-permissions'
+import { combineAccessWithConstraint } from '@/modules/membership/permission-resolution'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 const createPages = createRolePermissionAccess({ operation: 'create', resource: 'pages' })
 const deletePagesByRole = createRolePermissionAccess({ operation: 'delete', resource: 'pages' })

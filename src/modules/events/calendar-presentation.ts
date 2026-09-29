@@ -34,6 +34,19 @@ const fallbackEventType: CalendarEventType = {
   name: 'Wydarzenie',
 }
 
+const calendarDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  day: '2-digit',
+  month: '2-digit',
+  timeZone: 'Europe/Warsaw',
+  year: 'numeric',
+})
+
+const calendarMonthFormatter = new Intl.DateTimeFormat('en-CA', {
+  month: '2-digit',
+  timeZone: 'Europe/Warsaw',
+  year: 'numeric',
+})
+
 export function toCalendarEventType(
   eventType: Pick<EventType, 'iconColor' | 'iconName' | 'id' | 'name'>,
 ): CalendarEventType {
@@ -66,12 +79,7 @@ export function toCalendarEvent(
 }
 
 export function getCalendarEventDate(event: Pick<CalendarEvent, 'startAt'>): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    day: '2-digit',
-    month: '2-digit',
-    timeZone: 'Europe/Warsaw',
-    year: 'numeric',
-  }).format(new Date(event.startAt))
+  return calendarDateFormatter.format(new Date(event.startAt))
 }
 
 export function isValidCalendarMonth(month: string): boolean {
@@ -91,9 +99,5 @@ export function getCalendarMonthBounds(month: string): { end: string; start: str
 }
 
 export function getWarsawCalendarMonth(date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    month: '2-digit',
-    timeZone: 'Europe/Warsaw',
-    year: 'numeric',
-  }).format(date)
+  return calendarMonthFormatter.format(date)
 }

@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { publishedPublicAccess } from '@/modules/content/public-access'
 import {
   clientUserHasResourcePermission,
-  createRolePermissionAccess,
   resolveRolePermission,
-  validateRolePermissions,
   type RoleRecord,
-} from '@/modules/membership/role-permissions'
+} from '@/modules/membership/permission-resolution'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
+import { validateRolePermissions } from '@/modules/membership/role-configuration'
 import type { PayloadRequest } from 'payload'
 
 function createRole(permissions: RoleRecord['permissions']): RoleRecord {

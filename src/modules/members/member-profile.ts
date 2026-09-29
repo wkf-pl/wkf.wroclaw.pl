@@ -1,7 +1,7 @@
 import type { PayloadRequest, Validate } from 'payload'
 
 import { formatSlug } from '@/modules/content/slug'
-import { getRequestRoles } from '@/modules/membership/role-permissions'
+import { getRequestRoles } from '@/modules/membership/role-access'
 
 export const memberRoleKey = 'member'
 
@@ -44,19 +44,6 @@ export function clientUserHasRole(user: unknown, roleKeys: readonly string[]): b
       typeof role.key === 'string' &&
       roleKeys.includes(role.key),
   )
-}
-
-export function getRelationshipID(value: unknown): number | string | undefined {
-  if (typeof value === 'number' || typeof value === 'string') {
-    return value
-  }
-
-  if (value && typeof value === 'object' && 'id' in value) {
-    const id = value.id
-    return typeof id === 'number' || typeof id === 'string' ? id : undefined
-  }
-
-  return undefined
 }
 
 export function normalizeContactAddress(type: ContactChannelType, value: string): string {

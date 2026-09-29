@@ -11,7 +11,9 @@ import {
 
 import { ContentHero } from './ContentHero'
 import { ContentList } from './ContentList'
-import { ContentPagination, createPaginatedURL, getRequestedPage } from './ContentPagination'
+import { createPaginatedURL, getRequestedPage } from '@/modules/content/pagination'
+
+import { ContentPagination } from './ContentPagination'
 
 type TaxonomyContentPageProperties = {
   kind: 'category' | 'tag'

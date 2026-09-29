@@ -1,6 +1,6 @@
 import type { Access } from 'payload'
 
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 const createUserWithRolePermission = createRolePermissionAccess({
   operation: 'create',

@@ -23,7 +23,7 @@ import { createEventFromCycleEndpoint } from '@/modules/events/create-event-from
 import { timeModeOptions } from '@/modules/events/constants'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 const createCycles = createRolePermissionAccess({ operation: 'create', resource: 'event-cycles' })
 const deleteCycles = createRolePermissionAccess({ operation: 'delete', resource: 'event-cycles' })
