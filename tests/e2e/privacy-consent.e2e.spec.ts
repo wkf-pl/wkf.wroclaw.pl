@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
 import config from '../../src/payload.config.js'
+import { createLexicalDocument } from '../helpers/lexical-document'
 import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
@@ -105,40 +106,6 @@ async function cleanupFixture(): Promise<void> {
     overrideAccess: true,
     where: { slug: { equals: eventSlug } },
   })
-}
-
-function createLexicalDocument(text: string) {
-  return {
-    root: {
-      children: [
-        {
-          children: [
-            {
-              detail: 0,
-              format: 0,
-              mode: 'normal',
-              style: '',
-              text,
-              type: 'text',
-              version: 1,
-            },
-          ],
-          direction: null,
-          format: '' as const,
-          indent: 0,
-          textFormat: 0,
-          textStyle: '',
-          type: 'paragraph' as const,
-          version: 1,
-        },
-      ],
-      direction: 'ltr' as const,
-      format: '' as const,
-      indent: 0,
-      type: 'root' as const,
-      version: 1,
-    },
-  }
 }
 
 async function readBrowserState(page: import('@playwright/test').Page) {

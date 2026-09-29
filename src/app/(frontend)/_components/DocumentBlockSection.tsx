@@ -2,14 +2,14 @@ import { redirect } from 'next/navigation'
 
 import type { DocumentsBlock } from '@/payload-types'
 import { getRelationshipId } from '@/lib/relationships'
-import { createBlockParameterSuffix } from '@/modules/content/block-parameter-name'
+import { createPaginatedURL, resolveBlockPagination } from '@/modules/content/pagination'
 import {
   findDocumentListing,
   type DocumentListingSort,
   type DocumentListingView,
 } from '@/modules/documents/document-listing'
 
-import { ContentPagination, createPaginatedURL, getRequestedPage } from './ContentPagination'
+import { ContentPagination } from './ContentPagination'
 import { DocumentItems } from './DocumentList'
 
 export async function DocumentBlockSection({
@@ -23,9 +23,13 @@ export async function DocumentBlockSection({
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
 }) {
-  const parameterSuffix = createBlockParameterSuffix(block.id, blockPath)
-  const parameterName = `documents_${parameterSuffix}`
-  const requestedPage = block.pagination ? getRequestedPage(searchParams[parameterName]) : 1
+  const { parameterName, requestedPage } = resolveBlockPagination({
+    blockId: block.id,
+    blockPath,
+    enabled: Boolean(block.pagination),
+    parameterPrefix: 'documents',
+    searchParams,
+  })
   const result = await findDocumentListing({
     categoryId: getRelationshipId(block.category),
     manualDocuments: getManualDocuments(block),

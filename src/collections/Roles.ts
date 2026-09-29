@@ -7,12 +7,12 @@ import {
   resourceSupportsOwnership,
   resourceSupportsPublishedStatus,
 } from '@/modules/membership/permission-resources'
+import { clientUserHasRole } from '@/modules/membership/permission-resolution'
+import { isAdministrator } from '@/modules/membership/role-access'
 import {
   administratorRoleKey,
-  clientUserHasRole,
-  isAdministrator,
   validateRolePermissions,
-} from '@/modules/membership/role-permissions'
+} from '@/modules/membership/role-configuration'
 
 const readAssignedRoles: Access = async ({ req }) => {
   if (await isAdministrator(req)) {

@@ -85,7 +85,7 @@ export function createEditorialFields({
       admin: {
         components: {
           Cell: '/components/admin/UserIdentity#UserRelationshipCell',
-          Field: '/components/admin/UserIdentity#UserRelationshipField',
+          Field: '/components/admin/UserRelationshipField#UserRelationshipField',
         },
         position: 'sidebar',
       },

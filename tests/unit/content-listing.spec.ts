@@ -1,33 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  createContentComparator,
-  type PublicContentListItem,
-} from '@/modules/content/content-listing'
-import {
   extractFirstRichTextParagraph,
   populateListingExcerptOnPublish,
 } from '@/modules/content/listing-excerpt'
-import {
-  createPaginatedURL,
-  getRequestedPage,
-} from '@/app/(frontend)/_components/ContentPagination'
+import { createPaginatedURL, getRequestedPage } from '@/modules/content/pagination'
 import { ContentListingItems } from '@/collections/ContentListingItems'
-
-function createItem(overrides: Partial<PublicContentListItem> = {}): PublicContentListItem {
-  return {
-    category: null,
-    date: '2026-01-01T00:00:00.000Z',
-    excerpt: null,
-    id: 1,
-    image: null,
-    kind: 'pages',
-    tags: [],
-    title: 'Alfa',
-    url: '/alfa',
-    ...overrides,
-  }
-}
 
 describe('content listing', () => {
   it('keeps the listing index internal and unavailable through generated APIs', () => {
@@ -166,17 +144,6 @@ describe('content listing', () => {
         originalDoc: { listingExcerpt: 'Stare ręczne streszczenie' },
       } as never),
     ).toMatchObject({ listingExcerpt: 'Pierwszy opis strony' })
-  })
-
-  it('sorts mixed content deterministically by date, title, kind and ID', () => {
-    const items = [
-      createItem({ id: 2, kind: 'posts', title: 'Beta' }),
-      createItem({ id: 3, kind: 'pages', title: 'Beta' }),
-      createItem({ date: '2026-02-01T00:00:00.000Z', id: 4, title: 'Najnowsza' }),
-      createItem({ id: 1, kind: 'pages', title: 'Alfa' }),
-    ]
-
-    expect(items.sort(createContentComparator('newest')).map(({ id }) => id)).toEqual([4, 1, 3, 2])
   })
 
   it('normalizes page numbers and preserves other listing parameters', () => {

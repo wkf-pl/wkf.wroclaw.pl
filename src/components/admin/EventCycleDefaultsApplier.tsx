@@ -4,7 +4,8 @@ import { useDocumentInfo, useForm, useFormFields, useServerFunctions } from '@pa
 import { useEffect, useRef } from 'react'
 
 import type { EventCycle } from '@/payload-types'
-import { getEventRelationshipID, mergeEventCycleDefaults } from '@/modules/events/defaults'
+import { getFormRelationshipId } from '@/lib/relationships'
+import { mergeEventCycleDefaults } from '@/modules/events/defaults'
 
 export function EventCycleDefaultsApplier() {
   const { docPermissions, getDocPreferences, isEditing } = useDocumentInfo()
@@ -14,7 +15,7 @@ export function EventCycleDefaultsApplier() {
   const appliedCycle = useRef<number | string | undefined>(undefined)
 
   useEffect(() => {
-    const cycleID = getEventRelationshipID(cycle)
+    const cycleID = getFormRelationshipId(cycle)
     if (isEditing || cycleID === undefined || String(cycleID) === String(appliedCycle.current)) {
       return
     }

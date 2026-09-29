@@ -1,6 +1,6 @@
 import { APIError, type CollectionConfig } from 'payload'
 
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import { readDocumentFiles } from '@/modules/documents/document-access'
 
 const createDocumentFiles = createRolePermissionAccess({

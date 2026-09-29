@@ -3,7 +3,7 @@ FROM node:22.18.0-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
-RUN corepack enable && corepack prepare pnpm@11.16.0 --activate
+RUN corepack enable && corepack prepare pnpm@11.28.2 --activate
 
 WORKDIR /app
 

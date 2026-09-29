@@ -1,5 +1,4 @@
 .next
-.next-e2e-ci
 AGENTS.md
 media
 migrations/*.json

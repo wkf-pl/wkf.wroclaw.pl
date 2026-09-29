@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
 import config from '../../src/payload.config.js'
+import { createLexicalDocument } from '../helpers/lexical-document'
 import { editorTestUser } from '../helpers/seedUser'
 
 const eventSlug = 'homepage-calendar-e2e'
@@ -177,38 +178,4 @@ async function cleanupCarouselFixtures(): Promise<void> {
     overrideAccess: true,
     where: { slug: { in: carouselEventSlugs } },
   })
-}
-
-function createLexicalDocument(text: string) {
-  return {
-    root: {
-      children: [
-        {
-          children: [
-            {
-              detail: 0,
-              format: 0,
-              mode: 'normal',
-              style: '',
-              text,
-              type: 'text',
-              version: 1,
-            },
-          ],
-          direction: null,
-          format: '' as const,
-          indent: 0,
-          textFormat: 0,
-          textStyle: '',
-          type: 'paragraph' as const,
-          version: 1,
-        },
-      ],
-      direction: 'ltr' as const,
-      format: '' as const,
-      indent: 0,
-      type: 'root' as const,
-      version: 1,
-    },
-  }
 }

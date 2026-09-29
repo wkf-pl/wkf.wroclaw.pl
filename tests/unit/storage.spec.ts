@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { PayloadRequest } from 'payload'
 
+import { Media } from '@/collections/Media'
 import { createStoragePlugins } from '@/storage/create-storage-plugins'
 
 afterEach(() => {
@@ -21,5 +23,18 @@ describe('storage configuration', () => {
     expect(() => createStoragePlugins()).toThrow(
       'Missing required environment variable: AZURE_STORAGE_ACCOUNT_BASE_URL',
     )
+  })
+
+  it('returns a document constraint when authorizing a public media file', async () => {
+    const readAccess = Media.access?.read
+    expect(typeof readAccess).toBe('function')
+    if (typeof readAccess !== 'function') return
+
+    const req = { context: {}, user: null } as unknown as PayloadRequest
+
+    await expect(readAccess({ isReadingStaticFile: true, req })).resolves.toEqual({
+      id: { exists: true },
+    })
+    await expect(readAccess({ req })).resolves.toBe(false)
   })
 })

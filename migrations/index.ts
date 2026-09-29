@@ -31,6 +31,7 @@ import * as migration_20260911_121201_raster_icon_library from './20260911_12120
 import * as migration_20260923_162345 from './20260923_162345'
 import * as migration_20260927_204521_merge_event_tagline_into_excerpt from './20260927_204521_merge_event_tagline_into_excerpt'
 import * as migration_20260928_085059 from './20260928_085059'
+import * as migration_20260929_175646_payload_3_90_system_fields from './20260929_175646_payload_3_90_system_fields'
 
 export const migrations = [
   {
@@ -197,5 +198,10 @@ export const migrations = [
     up: migration_20260928_085059.up,
     down: migration_20260928_085059.down,
     name: '20260928_085059',
+  },
+  {
+    up: migration_20260929_175646_payload_3_90_system_fields.up,
+    down: migration_20260929_175646_payload_3_90_system_fields.down,
+    name: '20260929_175646_payload_3_90_system_fields',
   },
 ]

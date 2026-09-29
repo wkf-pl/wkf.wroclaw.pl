@@ -1,0 +1,216 @@
+.membersPage {
+  padding-block: 2.5rem 4rem;
+}
+
+.membersHeader {
+  max-width: 54rem;
+  margin-bottom: 2rem;
+}
+
+.membersHeader h1 {
+  margin: 0 0 0.6rem;
+}
+
+.memberGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.4rem;
+}
+
+.memberGrid.memberGrid-card,
+.memberGrid.memberGrid-list {
+  grid-template-columns: 1fr;
+}
+
+.memberGrid-card .memberCard {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+}
+
+.memberGrid-card .memberCardImage {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.memberGrid-card .memberCardBody {
+  align-self: center;
+  padding: clamp(1.25rem, 4vw, 2rem);
+}
+
+.memberGrid-list {
+  gap: 0.75rem;
+}
+
+.memberGrid-list .memberCard {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: center;
+}
+
+.memberGrid-list .memberCardBody {
+  padding: 0.85rem 1rem;
+}
+
+.memberGrid-list .memberCardBody h3 {
+  font-size: 1.15rem;
+}
+
+.memberGrid-list :is(.memberCardSummary, .memberCardInterests) {
+  display: none;
+}
+
+.memberCard {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--gold) 52%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--navy) 82%, black);
+  box-shadow: 0 0.7rem 1.6rem rgb(0 0 0 / 18%);
+}
+
+.memberCard > a {
+  display: block;
+}
+
+.memberCardImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--navy);
+}
+
+.memberCardBody {
+  padding: 1.15rem;
+}
+
+.memberCardBody h3 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.memberCardBody h3 a {
+  color: var(--gold-light);
+}
+
+.memberContextLabel {
+  margin: 0.4rem 0 0;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.memberCardSummary {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0.8rem 0 0;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+}
+
+.memberCardInterests {
+  margin: 0.8rem 0 0;
+  color: color-mix(in srgb, var(--cream) 76%, transparent);
+  font-size: 0.92rem;
+}
+
+.memberChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.memberChips li {
+  padding: 0.28rem 0.62rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 58%, transparent);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 18%);
+  font-size: 0.86rem;
+}
+
+.memberProfilesBlock {
+  width: min(70rem, 100%);
+  margin-block: 2rem;
+  margin-inline: auto;
+}
+
+.memberProfilesBlock > h2,
+.memberProfilesBlock > .memberGrid {
+  width: min(62rem, 100%);
+  margin-inline: auto;
+}
+
+.pageBlocks > *,
+.pageBlocks > :is(.listingBlock, .documentsBlock, .mediaBlock, .memberProfilesBlock) > * {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+.memberProfilesBlock > h2 {
+  margin-bottom: 1rem;
+}
+
+.memberProfile {
+  max-width: 62rem;
+  margin-inline: auto;
+}
+
+.memberProfileSection {
+  margin-top: 1.8rem;
+}
+
+.memberProfileSection h2 {
+  margin-bottom: 0.55rem;
+  color: var(--gold-light);
+  font-size: 1.4rem;
+}
+
+.contactChannels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contactChannels a {
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  place-items: center;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  color: var(--gold-light);
+}
+
+.contactChannels a:hover,
+.contactChannels a:focus-visible {
+  background: var(--gold);
+  color: var(--navy);
+}
+
+.contactChannels .rasterIcon {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.memberProfileFooter {
+  margin-top: 2.8rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(255 255 255 / 18%);
+  font-size: 0.9rem;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}

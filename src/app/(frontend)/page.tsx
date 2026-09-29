@@ -152,16 +152,18 @@ function Sections({ sections, title }: { sections: HomepageGroup[]; title?: null
 
 export default async function HomePage() {
   const initialCalendarMonth = getWarsawCalendarMonth()
-  const [posts, hero, homepageSections, calendarData] = await Promise.all([
-    findPublishedPosts(),
+  const [hero, homepageSections, calendarData] = await Promise.all([
     getPublicHomepageHero(),
     getPublicHomepageSections(),
     findCalendarMonth(initialCalendarMonth),
   ])
   const eventWindowWeeks = homepageSections.eventWindowWeeks ?? 4
   const eventSlideLimit = homepageSections.eventSlideLimit ?? 6
-  const events = await findHomepageEvents(eventWindowWeeks, eventSlideLimit)
   const postCount = Number.parseInt(homepageSections.postCount ?? '2', 10)
+  const [events, posts] = await Promise.all([
+    findHomepageEvents(eventWindowWeeks, eventSlideLimit),
+    findPublishedPosts(postCount),
+  ])
   const sections = homepageSections.groups ?? []
 
   return (
@@ -180,7 +182,7 @@ export default async function HomePage() {
             initialCalendarMonth={initialCalendarMonth}
           />
         </section>
-        <NewsSection posts={posts.slice(0, postCount)} title={homepageSections.newsTitle} />
+        <NewsSection posts={posts} title={homepageSections.newsTitle} />
         <Sections sections={sections} title={homepageSections.sectionsTitle} />
       </div>
     </main>

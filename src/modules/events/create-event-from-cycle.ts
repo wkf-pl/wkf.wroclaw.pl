@@ -1,5 +1,7 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 
+import { eventEndpointErrorResponse } from './endpoint-response'
+
 async function handler(req: PayloadRequest): Promise<Response> {
   if (!req.user) return Response.json({ message: 'Zaloguj się w panelu.' }, { status: 401 })
 
@@ -8,20 +10,33 @@ async function handler(req: PayloadRequest): Promise<Response> {
     return Response.json({ message: 'Nieprawidłowy Cykl wydarzeń.' }, { status: 400 })
   }
 
-  const cycle = await req.payload.findByID({ collection: 'event-cycles', depth: 0, id, req })
-  const doc = await req.payload.create({
-    collection: 'events',
-    context: { skipSlugGeneration: true },
-    data: {
-      _status: 'draft',
-      cycle: cycle.id,
-      title: cycle.eventDefaults.title || cycle.title,
-    },
-    draft: true,
-    req,
-  })
+  try {
+    const cycle = await req.payload.findByID({
+      collection: 'event-cycles',
+      depth: 0,
+      id,
+      overrideAccess: false,
+      req,
+      user: req.user,
+    })
+    const doc = await req.payload.create({
+      collection: 'events',
+      context: { skipSlugGeneration: true },
+      data: {
+        _status: 'draft',
+        cycle: cycle.id,
+        title: cycle.eventDefaults.title || cycle.title,
+      },
+      draft: true,
+      overrideAccess: false,
+      req,
+      user: req.user,
+    })
 
-  return Response.json({ doc: { id: doc.id } }, { status: 201 })
+    return Response.json({ doc: { id: doc.id } }, { status: 201 })
+  } catch (error) {
+    return eventEndpointErrorResponse(req, error)
+  }
 }
 
 export const createEventFromCycleEndpoint: Endpoint = {

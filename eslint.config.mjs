@@ -31,5 +31,6 @@ export default defineConfig([
     'src/payload-generated-schema.ts',
     'src/payload-types.ts',
     'test-results/**',
+    'tmp/**',
   ]),
 ])

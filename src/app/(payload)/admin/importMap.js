@@ -36,7 +36,7 @@ import { ColumnLayoutField as ColumnLayoutField_22a13d07a182b85ab9ac566ada2dd12f
 import { ColumnLayoutBlockLabel as ColumnLayoutBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { HierarchyPath as HierarchyPath_6311b6033928ec6e076fdd24567b1bb0 } from '../../../components/admin/HierarchyPath'
 import { UserRelationshipCell as UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
-import { UserRelationshipField as UserRelationshipField_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
+import { UserRelationshipField as UserRelationshipField_a467c3b73beceda1dd92aed22692a084 } from '../../../components/admin/UserRelationshipField'
 import { PageCreateLabel as PageCreateLabel_0ea542d15a7bc53da30cd446a6eac5d4 } from '../../../components/admin/PageCreateLabel'
 import { DraftPreviewButton as DraftPreviewButton_4de757febecdd22106568bfa9952c5dd } from '../../../components/admin/DraftPreviewButton'
 import { BlurValidatedTextField as BlurValidatedTextField_78245b472a4cd124366becfa8638282c } from '../../../components/admin/BlurValidatedTextField'
@@ -76,10 +76,10 @@ import { FooterColumnRowLabel as FooterColumnRowLabel_25248d319d0ee96f21b07bc4bd
 import { AdminNav as AdminNav_231477f0faa4368be46fd47ffb9da4d9 } from '../../../components/admin/AdminNav'
 import { AdminLogo as AdminLogo_27eed1898e8caadb2fd2266b54bb4509 } from '../../../components/admin/AdminLogo'
 import { UserMenu as UserMenu_7d91cf2f001cfbe17cc92d608056f98b } from '../../../components/admin/UserMenu'
-import { AzureClientUploadHandler as AzureClientUploadHandler_635fb302eaf52f6baca4f9f8ad9ce104 } from '@payloadcms/storage-azure/client'
 import { AccountView as AccountView_368b90cdbf59bfc4abaa6771bb6dcf15 } from '../../../components/admin/AccountView'
 import { MemberProfileView as MemberProfileView_043b7c5e54ac4fdf04b50df2b5796c23 } from '../../../components/admin/MemberProfileView'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
+import { AzureClientUploadHandler as AzureClientUploadHandler_635fb302eaf52f6baca4f9f8ad9ce104 } from '@payloadcms/storage-azure/client'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
@@ -121,7 +121,7 @@ export const importMap = {
   "/components/admin/ContentBlockLabel#ColumnLayoutBlockLabel": ColumnLayoutBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/HierarchyPath#HierarchyPath": HierarchyPath_6311b6033928ec6e076fdd24567b1bb0,
   "/components/admin/UserIdentity#UserRelationshipCell": UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53,
-  "/components/admin/UserIdentity#UserRelationshipField": UserRelationshipField_0af2ec3c6a63521c7b2eedb66024da53,
+  "/components/admin/UserRelationshipField#UserRelationshipField": UserRelationshipField_a467c3b73beceda1dd92aed22692a084,
   "/components/admin/PageCreateLabel#PageCreateLabel": PageCreateLabel_0ea542d15a7bc53da30cd446a6eac5d4,
   "/components/admin/DraftPreviewButton#DraftPreviewButton": DraftPreviewButton_4de757febecdd22106568bfa9952c5dd,
   "/components/admin/BlurValidatedTextField#BlurValidatedTextField": BlurValidatedTextField_78245b472a4cd124366becfa8638282c,
@@ -161,8 +161,8 @@ export const importMap = {
   "/components/admin/AdminNav#AdminNav": AdminNav_231477f0faa4368be46fd47ffb9da4d9,
   "/components/admin/AdminLogo#AdminLogo": AdminLogo_27eed1898e8caadb2fd2266b54bb4509,
   "/components/admin/UserMenu#UserMenu": UserMenu_7d91cf2f001cfbe17cc92d608056f98b,
-  "@payloadcms/storage-azure/client#AzureClientUploadHandler": AzureClientUploadHandler_635fb302eaf52f6baca4f9f8ad9ce104,
   "/components/admin/AccountView#AccountView": AccountView_368b90cdbf59bfc4abaa6771bb6dcf15,
   "/components/admin/MemberProfileView#MemberProfileView": MemberProfileView_043b7c5e54ac4fdf04b50df2b5796c23,
-  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
+  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
+  "@payloadcms/storage-azure/client#AzureClientUploadHandler": AzureClientUploadHandler_635fb302eaf52f6baca4f9f8ad9ce104
 }

@@ -1,7 +1,8 @@
 import type { Access, PayloadRequest } from 'payload'
 
+import { collectPayloadPages } from '@/lib/payload-pagination'
 import { getRelationshipId } from '@/lib/relationships'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import {
   isPublicRequest,
   publicRequestContext,
@@ -19,18 +20,23 @@ const readDocumentFilesByPermission = createRolePermissionAccess({
 })
 
 export async function findPublicDocumentFileIds(req: PayloadRequest): Promise<(number | string)[]> {
-  const documents = await req.payload.find({
-    collection: 'documents',
-    context: publicRequestContext,
-    depth: 0,
-    limit: 1000,
-    overrideAccess: false,
-    pagination: false,
-    req,
-  })
+  const documents = await collectPayloadPages((page) =>
+    req.payload.find({
+      collection: 'documents',
+      context: publicRequestContext,
+      depth: 0,
+      draft: false,
+      limit: 100,
+      overrideAccess: false,
+      page,
+      req,
+      select: { attachments: true, primaryFile: true },
+      user: null,
+    }),
+  )
   const fileIds = new Set<number | string>()
 
-  for (const document of documents.docs) {
+  for (const document of documents) {
     const primaryFileId = getRelationshipId(document.primaryFile)
     if (primaryFileId !== undefined) {
       fileIds.add(primaryFileId)

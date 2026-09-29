@@ -4,6 +4,7 @@ import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 import type { Category, Page, Post, User } from '@/payload-types'
 
+import { createLexicalDocument } from '../helpers/lexical-document'
 import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
@@ -23,32 +24,6 @@ let payload: Payload
 let categories: Category[] = []
 let pages: Page[] = []
 let post: Post
-
-function createLexicalDocument(text: string) {
-  return {
-    root: {
-      children: [
-        {
-          children: [
-            { detail: 0, format: 0, mode: 'normal', style: '', text, type: 'text', version: 1 },
-          ],
-          direction: 'ltr' as const,
-          format: '' as const,
-          indent: 0,
-          textFormat: 0,
-          textStyle: '',
-          type: 'paragraph' as const,
-          version: 1,
-        },
-      ],
-      direction: 'ltr' as const,
-      format: '' as const,
-      indent: 0,
-      type: 'root' as const,
-      version: 1,
-    },
-  }
-}
 
 test.beforeAll(async () => {
   payload = await getPayload({ config })

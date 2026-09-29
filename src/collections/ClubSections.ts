@@ -8,7 +8,7 @@ import { populateSlugFromName } from '@/modules/content/slug'
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { publishedPublicAccess } from '@/modules/content/public-access'
 import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import { createIconFields, createLinkFields } from '@/modules/navigation/fields'
 
 const createClubSections = createRolePermissionAccess({

@@ -1,0 +1,791 @@
+/* CMS listing and article pages */
+.contentShell {
+  padding-bottom: clamp(4rem, 10vw, 8rem);
+}
+
+.contentPageBody,
+.documentBody,
+.memberProfilePage {
+  width: min(76rem, calc(100% - 3rem));
+  margin-inline: auto;
+}
+
+.cmsDocument {
+  width: 100%;
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.richText {
+  color: #dde0e2;
+  font-size: 1.08rem;
+  line-height: 1.75;
+}
+
+.richText h2,
+.richText h3 {
+  margin-top: 2.25em;
+  color: var(--ivory);
+}
+
+.richText a,
+.attachments a {
+  color: var(--gold-light);
+}
+
+.richText img {
+  max-width: 100%;
+  height: auto;
+}
+
+.taxonomyLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.taxonomyLinks a {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid rgb(243 163 19 / 45%);
+  border-radius: 999px;
+  color: var(--gold-light);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.hierarchyBreadcrumbs {
+  margin-bottom: 1.25rem;
+  color: #9faab2;
+  font-size: 0.9rem;
+}
+
+.hierarchyBreadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hierarchyBreadcrumbs li + li::before {
+  margin-right: 0.4rem;
+  color: var(--gold);
+  content: '›';
+}
+
+.hierarchyBreadcrumbs a,
+.childCategories a {
+  color: var(--gold-light);
+}
+
+.childCategories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.5rem;
+}
+
+.childCategories a {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgb(243 163 19 / 45%);
+  border-radius: 0.35rem;
+  text-decoration: none;
+}
+
+.attachments {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+}
+
+.documentDetail {
+  width: 100%;
+}
+
+.documentDetail .contentHero {
+  overflow: visible;
+}
+
+.documentDetail .contentHeroInner {
+  z-index: 4;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+  align-items: start;
+}
+
+.documentDetail .contentHeroMedia {
+  position: absolute;
+  top: 12.95rem;
+  right: 0;
+  align-self: start;
+  width: min(28rem, 100%);
+  aspect-ratio: 210 / 297;
+}
+
+.documentBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+  column-gap: clamp(2.5rem, 6vw, 5rem);
+  min-height: 32rem;
+}
+
+.documentPdfPreview {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+}
+
+.documentPdfPreviewFrame {
+  display: block;
+  width: calc(100% + 1rem);
+  height: 100%;
+  border: 0;
+}
+
+.documentPdfPreviewActions {
+  position: absolute;
+  z-index: 1;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.documentPdfPreviewAction {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  padding: 0;
+  border: 1px solid var(--gold-light);
+  border-radius: 0.4rem;
+  background: rgb(0 13 23 / 92%);
+  color: var(--ivory);
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 0.7rem 1.6rem rgb(0 0 0 / 24%);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.documentPdfPreviewAction--open {
+  cursor: zoom-in;
+}
+
+.documentPdfPreviewAction .rasterIcon {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.documentPdfPreviewAction:hover,
+.documentPdfPreviewAction:focus-visible {
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.documentPdfPreviewAction:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+.documentSummary,
+.documentBody .richText,
+.documentBody .attachments {
+  grid-column: 1;
+  max-width: 70ch;
+}
+
+.documentSummary {
+  margin: 0 0 2rem;
+  color: var(--ivory);
+  font-size: clamp(1.08rem, 1.6vw, 1.2rem);
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.documentBody .richText {
+  line-height: 1.8;
+}
+
+.documentFilters {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.documentFilters label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--ivory);
+}
+
+.documentFilters input,
+.documentFilters select {
+  min-height: 2.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgb(243 163 19 / 55%);
+  border-radius: 0.4rem;
+  background: var(--panel);
+  color: var(--ivory);
+  font: inherit;
+}
+
+.documentFilters button {
+  min-height: 2.75rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--gold-light);
+  border-radius: 0.4rem;
+  background: var(--gold-light);
+  color: #052033;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.documentFilters {
+  grid-template-columns: minmax(12rem, 1fr) minmax(8rem, 0.5fr) auto;
+  align-items: end;
+  width: min(62rem, 100%);
+  margin: 0 auto 2rem;
+}
+
+.documentList {
+  display: grid;
+  gap: 1rem;
+  width: min(62rem, 100%);
+  margin-inline: auto;
+}
+
+.documentsBlock {
+  width: min(70rem, 100%);
+  margin-inline: auto;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.documentListItem {
+  overflow: hidden;
+  border: 1px solid rgb(243 163 19 / 42%);
+  border-radius: 0.75rem;
+  background: rgb(5 31 47 / 72%);
+}
+
+.documentListItemContent {
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+}
+
+.documentList-cards .documentListItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(7rem, 14vw, 9rem);
+}
+
+.documentPdfLink {
+  display: grid;
+  min-height: 10rem;
+  margin: 1.25rem 1.25rem 1.25rem 0;
+  place-items: center;
+  border: 1px solid rgb(243 163 19 / 48%);
+  border-radius: 0.65rem;
+  color: var(--gold-light);
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.documentPdfLink:hover,
+.documentPdfLink:focus-visible {
+  border-color: var(--gold-light);
+  background: rgb(243 163 19 / 12%);
+  color: var(--ivory);
+}
+
+.documentPdfLink .rasterIcon {
+  width: min(5.5rem, 75%);
+  height: min(6.6rem, 82%);
+}
+
+.documentListItemMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0;
+  color: #9faab2;
+  font-size: 0.9rem;
+}
+
+.documentListItemMeta span {
+  color: var(--gold-light);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.documentListItem h2 {
+  margin: 0.5rem 0 0.75rem;
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+}
+
+.documentListItem h2 a {
+  color: var(--ivory);
+  text-decoration: none;
+}
+
+.documentListItemContent > p:last-child:not(.documentListItemMeta) {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.documentList-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(70rem, 100%);
+}
+
+.documentList-grid .documentListItemContent {
+  padding: 1.25rem;
+}
+
+.documentList-grid .documentListItem h2 {
+  font-size: 1.5rem;
+}
+
+.documentList-list {
+  gap: 0.75rem;
+}
+
+.documentList-list .documentListItemContent {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.documentList-list .documentListItem h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.documentPagination {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1rem;
+  width: min(62rem, 100%);
+  margin: 2rem auto 0;
+  text-align: center;
+}
+
+.documentPagination > :last-child {
+  text-align: right;
+}
+
+.emptyState {
+  width: min(48rem, 100%);
+  margin: 0 auto;
+  padding: 2rem;
+  border: 1px dashed rgb(243 163 19 / 48%);
+  border-radius: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.cmsPageDocument {
+  width: 100%;
+}
+
+.pageBlocks {
+  display: grid;
+  gap: clamp(2.5rem, 6vw, 5rem);
+}
+
+:is(.listingBlock, .documentsBlock, .mediaBlock, .memberProfilesBlock) {
+  container-name: content-block;
+  container-type: inline-size;
+}
+
+.columnLayout {
+  width: min(70rem, 100%);
+  min-width: 0;
+  margin-inline: auto;
+  container-name: column-layout;
+  container-type: inline-size;
+}
+
+.columnLayoutGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(1.25rem, 3vw, 2rem);
+  align-items: stretch;
+}
+
+.columnLayoutColumn {
+  display: grid;
+  grid-column: span var(--column-width);
+  grid-auto-rows: max-content;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  min-width: 0;
+}
+
+.columnLayoutColumn
+  > :is(.richText, .listingBlock, .mediaBlock, .documentsBlock, .memberProfilesBlock) {
+  width: 100%;
+  min-width: 0;
+  margin-inline: 0;
+}
+
+.columnLayoutColumn
+  :is(
+    .listingBlockHeading,
+    .contentList,
+    .mediaBlockHeading,
+    .mediaList,
+    .documentList,
+    .memberProfilesBlock > h2,
+    .memberProfilesBlock > .memberGrid,
+    .contentPagination,
+    .emptyState
+  ) {
+  width: 100%;
+  min-width: 0;
+  margin-inline: 0;
+}
+
+.listingBlock {
+  width: min(70rem, 100%);
+  margin-inline: auto;
+}
+
+.listingBlockHeading {
+  width: min(62rem, 100%);
+  margin: 0 auto 1.5rem;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+}
+
+.contentList {
+  display: grid;
+  gap: 1.5rem;
+  width: min(62rem, 100%);
+  margin: 0 auto;
+}
+
+.contentCard {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.2fr);
+  overflow: hidden;
+  border: 1px solid rgb(243 163 19 / 55%);
+  border-radius: 0.75rem;
+  background: rgb(5 31 47 / 86%);
+}
+
+.contentCardImage {
+  min-height: 15rem;
+  background: var(--panel);
+}
+
+.contentCardImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.contentCardContent {
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+}
+
+.contentCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0;
+  color: #9faab2;
+  font-size: 0.9rem;
+}
+
+.contentCardMeta span {
+  color: var(--gold-light);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.contentCard h2 {
+  margin: 0.5rem 0 0.75rem;
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+}
+
+.contentCard h2 a {
+  text-decoration: none;
+}
+
+.contentCardContent > p:not(.contentCardMeta) {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.contentList-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(70rem, 100%);
+}
+
+.contentList-grid .contentCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.contentList-grid .contentCardImage {
+  min-height: 12rem;
+}
+
+.contentList-grid .contentCardContent {
+  padding: 1.25rem;
+}
+
+.contentList-grid .contentCard h2 {
+  font-size: 1.5rem;
+}
+
+.contentList-compact {
+  gap: 0.75rem;
+}
+
+.contentList-compact .contentCard {
+  display: block;
+}
+
+.contentList-compact .contentCardContent {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.contentList-compact .contentCard h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.mediaBlock {
+  width: min(70rem, 100%);
+  margin-inline: auto;
+}
+
+.mediaBlockHeading {
+  width: min(62rem, 100%);
+  margin: 0 auto 1.5rem;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+}
+
+.mediaList {
+  display: grid;
+  gap: 1.5rem;
+  width: min(70rem, 100%);
+  margin-inline: auto;
+}
+
+.mediaList-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mediaList-cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(62rem, 100%);
+}
+
+.mediaList-list {
+  gap: 0.75rem;
+  width: min(62rem, 100%);
+}
+
+.mediaGalleryItem {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgb(243 163 19 / 55%);
+  border-radius: 0.75rem;
+  background: rgb(5 31 47 / 86%);
+}
+
+.mediaGalleryTrigger {
+  display: block;
+  width: 100%;
+  min-height: 12rem;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: var(--panel);
+  color: inherit;
+  cursor: zoom-in;
+}
+
+.mediaGalleryTrigger:focus-visible,
+.attachmentItem:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+.mediaGalleryTrigger img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  transition: transform 180ms ease;
+}
+
+.mediaGalleryTrigger:hover img {
+  transform: scale(1.025);
+}
+
+.mediaGalleryItem figcaption {
+  padding: 1rem 1.15rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.mediaGallery.mediaList-cards .mediaGalleryTrigger {
+  min-height: 18rem;
+}
+
+.mediaGallery.mediaList-list .mediaGalleryItem {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+  align-items: center;
+}
+
+.mediaGallery.mediaList-list .mediaGalleryTrigger,
+.mediaGallery.mediaList-list .mediaGalleryTrigger img {
+  min-height: 8rem;
+  aspect-ratio: 16 / 9;
+}
+
+.attachmentItem {
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgb(243 163 19 / 45%);
+  border-radius: 0.75rem;
+  background: rgb(5 31 47 / 86%);
+  color: var(--ivory);
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+a.attachmentItem:hover {
+  border-color: var(--gold-light);
+  transform: translateY(-2px);
+}
+
+.attachmentPreview {
+  display: grid;
+  flex: 0 0 8rem;
+  min-height: 7.5rem;
+  place-items: center;
+  overflow: hidden;
+  background: rgb(2 20 31 / 78%);
+}
+
+.attachmentPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.attachmentFileType {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgb(243 163 19 / 55%);
+  border-radius: 0.35rem;
+  color: var(--gold-light);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.attachmentContent {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 1.15rem 1.25rem;
+}
+
+.attachmentContent strong {
+  overflow-wrap: anywhere;
+}
+
+.attachmentMetadata {
+  color: #9faab2;
+  font-size: 0.84rem;
+}
+
+.attachmentDescription {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.attachmentList.mediaList-grid .attachmentItem {
+  flex-direction: column;
+}
+
+.attachmentList.mediaList-grid .attachmentPreview {
+  width: 100%;
+  min-height: 10rem;
+}
+
+.attachmentList.mediaList-cards .attachmentItem {
+  flex-direction: column;
+}
+
+.attachmentList.mediaList-cards .attachmentPreview {
+  width: 100%;
+  min-height: 13rem;
+}
+
+.yarl__root {
+  --yarl__color_backdrop: rgb(1 13 21 / 96%);
+  --yarl__color_button: var(--ivory);
+  --yarl__color_button_active: var(--gold-light);
+}
+
+.yarl__slide_description {
+  color: var(--ivory);
+  font-family: var(--font-roboto-slab), serif;
+}
+
+.contentPagination {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  width: min(62rem, 100%);
+  margin: 2rem auto 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.contentPagination a {
+  color: var(--gold-light);
+}
+
+.contentPagination a:last-child {
+  justify-self: end;
+}

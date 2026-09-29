@@ -75,55 +75,42 @@ export function getContentSourceCacheTags(source: TaxonomizableCollectionSlug): 
   return [...tagsBySource[source]]
 }
 
-export const invalidateListingsAfterChange: CollectionAfterChangeHook = ({ doc, req }) => {
-  if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
-    invalidatePublicCacheTags([
-      publicCacheTags.contentListings,
-      publicCacheTags.media,
-      publicCacheTags.sitemap,
-    ])
+function createCollectionCacheInvalidators(tags: readonly string[]): {
+  afterChange: CollectionAfterChangeHook
+  afterDelete: CollectionAfterDeleteHook
+} {
+  const invalidate = <Document>({
+    doc,
+    req,
+  }: {
+    doc: Document
+    req: { context?: Record<string, unknown> }
+  }) => {
+    if (!req.context?.[skipPublicCacheInvalidationContextKey]) invalidatePublicCacheTags(tags)
+    return doc
   }
-  return doc
+
+  return {
+    afterChange: invalidate as CollectionAfterChangeHook,
+    afterDelete: invalidate as CollectionAfterDeleteHook,
+  }
 }
 
-export const invalidateListingsAfterDelete: CollectionAfterDeleteHook = ({ doc, req }) => {
-  if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
-    invalidatePublicCacheTags([
-      publicCacheTags.contentListings,
-      publicCacheTags.media,
-      publicCacheTags.sitemap,
-    ])
-  }
-  return doc
-}
+const listingInvalidators = createCollectionCacheInvalidators([
+  publicCacheTags.contentListings,
+  publicCacheTags.media,
+  publicCacheTags.sitemap,
+])
+export const invalidateListingsAfterChange = listingInvalidators.afterChange
+export const invalidateListingsAfterDelete = listingInvalidators.afterDelete
 
-export const invalidateSitemapAfterChange: CollectionAfterChangeHook = ({ doc, req }) => {
-  if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
-    invalidatePublicCacheTags([publicCacheTags.sitemap])
-  }
-  return doc
-}
+const sitemapInvalidators = createCollectionCacheInvalidators([publicCacheTags.sitemap])
+export const invalidateSitemapAfterChange = sitemapInvalidators.afterChange
+export const invalidateSitemapAfterDelete = sitemapInvalidators.afterDelete
 
-export const invalidateSitemapAfterDelete: CollectionAfterDeleteHook = ({ doc, req }) => {
-  if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
-    invalidatePublicCacheTags([publicCacheTags.sitemap])
-  }
-  return doc
-}
-
-export const invalidateAllPublicDataAfterChange: CollectionAfterChangeHook = ({ doc, req }) => {
-  if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
-    invalidatePublicCacheTags(Object.values(publicCacheTags))
-  }
-  return doc
-}
-
-export const invalidateAllPublicDataAfterDelete: CollectionAfterDeleteHook = ({ doc, req }) => {
-  if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
-    invalidatePublicCacheTags(Object.values(publicCacheTags))
-  }
-  return doc
-}
+const allPublicDataInvalidators = createCollectionCacheInvalidators(Object.values(publicCacheTags))
+export const invalidateAllPublicDataAfterChange = allPublicDataInvalidators.afterChange
+export const invalidateAllPublicDataAfterDelete = allPublicDataInvalidators.afterDelete
 
 export const invalidateNavigationAfterChange: GlobalAfterChangeHook = ({ doc, req }) => {
   if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
@@ -139,19 +126,9 @@ export const invalidateSiteSettingsAfterChange: GlobalAfterChangeHook = ({ doc, 
   return doc
 }
 
-export const invalidateHomepageAfterChange: CollectionAfterChangeHook = ({ doc, req }) => {
-  if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
-    invalidatePublicCacheTags([publicCacheTags.homepage])
-  }
-  return doc
-}
-
-export const invalidateHomepageAfterDelete: CollectionAfterDeleteHook = ({ doc, req }) => {
-  if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
-    invalidatePublicCacheTags([publicCacheTags.homepage])
-  }
-  return doc
-}
+const homepageInvalidators = createCollectionCacheInvalidators([publicCacheTags.homepage])
+export const invalidateHomepageAfterChange = homepageInvalidators.afterChange
+export const invalidateHomepageAfterDelete = homepageInvalidators.afterDelete
 
 const partnerCacheTags = [
   publicCacheTags.partners,
@@ -180,24 +157,6 @@ const memberProfileImageCacheTags = memberProfileCacheTags.filter(
   (tag) => tag !== publicCacheTags.sitemap,
 )
 
-function invalidateCollectionTagsAfterChange(tags: readonly string[]): CollectionAfterChangeHook {
-  return ({ doc, req }) => {
-    if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
-      invalidatePublicCacheTags(tags)
-    }
-    return doc
-  }
-}
-
-function invalidateCollectionTagsAfterDelete(tags: readonly string[]): CollectionAfterDeleteHook {
-  return ({ doc, req }) => {
-    if (!req.context?.[skipPublicCacheInvalidationContextKey]) {
-      invalidatePublicCacheTags(tags)
-    }
-    return doc
-  }
-}
-
 export function getPartnerCacheTags(): string[] {
   return [...partnerCacheTags]
 }
@@ -214,20 +173,20 @@ export function getEventTypeCacheTags(): string[] {
   return [...eventTypeCacheTags]
 }
 
-export const invalidateEventTypesAfterChange =
-  invalidateCollectionTagsAfterChange(eventTypeCacheTags)
-export const invalidateEventTypesAfterDelete =
-  invalidateCollectionTagsAfterDelete(eventTypeCacheTags)
+const eventTypeInvalidators = createCollectionCacheInvalidators(eventTypeCacheTags)
+export const invalidateEventTypesAfterChange = eventTypeInvalidators.afterChange
+export const invalidateEventTypesAfterDelete = eventTypeInvalidators.afterDelete
 
-export const invalidatePartnersAfterChange = invalidateCollectionTagsAfterChange(partnerCacheTags)
-export const invalidatePartnersAfterDelete = invalidateCollectionTagsAfterDelete(partnerCacheTags)
-export const invalidateMemberProfilesAfterChange =
-  invalidateCollectionTagsAfterChange(memberProfileCacheTags)
-export const invalidateMemberProfilesAfterDelete =
-  invalidateCollectionTagsAfterDelete(memberProfileCacheTags)
-export const invalidateMemberProfileImagesAfterChange = invalidateCollectionTagsAfterChange(
+const partnerInvalidators = createCollectionCacheInvalidators(partnerCacheTags)
+export const invalidatePartnersAfterChange = partnerInvalidators.afterChange
+export const invalidatePartnersAfterDelete = partnerInvalidators.afterDelete
+
+const memberProfileInvalidators = createCollectionCacheInvalidators(memberProfileCacheTags)
+export const invalidateMemberProfilesAfterChange = memberProfileInvalidators.afterChange
+export const invalidateMemberProfilesAfterDelete = memberProfileInvalidators.afterDelete
+
+const memberProfileImageInvalidators = createCollectionCacheInvalidators(
   memberProfileImageCacheTags,
 )
-export const invalidateMemberProfileImagesAfterDelete = invalidateCollectionTagsAfterDelete(
-  memberProfileImageCacheTags,
-)
+export const invalidateMemberProfileImagesAfterChange = memberProfileImageInvalidators.afterChange
+export const invalidateMemberProfileImagesAfterDelete = memberProfileImageInvalidators.afterDelete

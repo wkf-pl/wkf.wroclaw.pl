@@ -1,6 +1,7 @@
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, PayloadRequest } from 'payload'
 
 import type { Event, EventCycle, Page, Post } from '@/payload-types'
+import { getRelationshipId } from '@/lib/relationships'
 import { invalidateContentSource } from '@/modules/cache/invalidate-public-data'
 import { extractRichTextText } from '@/modules/content/rich-text'
 
@@ -26,14 +27,6 @@ const contentListingSourceSelect = {
   updatedAt: true,
 } as const
 
-function relationshipID(value: null | number | { id: number } | undefined): number | undefined {
-  return typeof value === 'number'
-    ? value
-    : value && typeof value === 'object'
-      ? value.id
-      : undefined
-}
-
 function buildPublicURL(source: TaxonomizableCollectionSlug, slug: string): string {
   if (source === 'posts') return `/blog/${slug}`
   if (source === 'events') return `/events/${slug}`
@@ -48,8 +41,8 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
   const post = source === 'posts' ? (document as Post) : null
 
   return {
-    category: relationshipID(document.category),
-    eventCycle: event ? relationshipID(event.cycle) : null,
+    category: getRelationshipId(document.category),
+    eventCycle: event ? getRelationshipId(event.cycle) : null,
     eventEndAt: event?.endAt ?? null,
     eventStartAt: event?.startAt ?? null,
     excerpt:
@@ -57,15 +50,15 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
       post?.excerpt ||
       extractRichTextText(event?.excerpt ?? cycle?.excerpt) ||
       null,
-    heroImage: relationshipID(document.heroImage),
-    parentPage: page ? relationshipID(page.parent) : null,
+    heroImage: getRelationshipId(document.heroImage),
+    parentPage: page ? getRelationshipId(page.parent) : null,
     sortDate: event?.startAt ?? document.publishedAt ?? document.createdAt,
     source,
     sourceDocumentId: document.id,
     sourceUpdatedAt: document.updatedAt,
     tags:
       document.tags?.flatMap((tag) => {
-        const id = relationshipID(tag)
+        const id = getRelationshipId(tag)
         return id === undefined ? [] : [id]
       }) ?? [],
     title: document.title,

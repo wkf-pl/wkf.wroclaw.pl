@@ -209,6 +209,7 @@ export interface Media {
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
   uploadedBy?: (number | null) | User;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -842,6 +843,7 @@ export interface DocumentFile {
   document?: (number | null) | Document;
   uploadedBy?: (number | null) | User;
   prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -869,6 +871,7 @@ export interface User {
   resetPasswordExpiration?: string | null;
   salt?: string | null;
   hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
   loginAttempts?: number | null;
   lockUntil?: string | null;
   sessions?:
@@ -1072,6 +1075,7 @@ export interface MemberProfileImage {
   owner: number | User;
   isPubliclyUsed?: boolean | null;
   prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -1989,6 +1993,7 @@ export interface MediaSelect<T extends boolean = true> {
   category?: T;
   tags?: T;
   uploadedBy?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -2009,6 +2014,7 @@ export interface MemberProfileImagesSelect<T extends boolean = true> {
   owner?: T;
   isPubliclyUsed?: T;
   prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -2089,6 +2095,7 @@ export interface DocumentFilesSelect<T extends boolean = true> {
   document?: T;
   uploadedBy?: T;
   prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -2205,6 +2212,7 @@ export interface UsersSelect<T extends boolean = true> {
   resetPasswordExpiration?: T;
   salt?: T;
   hash?: T;
+  resetPasswordRequestedAt?: T;
   loginAttempts?: T;
   lockUntil?: T;
   sessions?:

@@ -10,6 +10,7 @@ import {
   EventSummary,
 } from '@/app/(frontend)/events/[slug]/EventDetails'
 import type { Event, EventType, MemberProfile, Partner } from '@/payload-types'
+import { readFrontendStyles } from '../helpers/frontend-styles'
 
 const eventType = {
   id: 1,
@@ -125,7 +126,7 @@ describe('event detail presentation', () => {
   })
 
   it('defines four summary columns and a responsive event body with a quieter sidebar', () => {
-    const styles = readFileSync('src/app/(frontend)/styles.css', 'utf8')
+    const styles = readFrontendStyles()
     const eventPage = readFileSync('src/app/(frontend)/events/[slug]/page.tsx', 'utf8')
 
     expect(styles).toMatch(

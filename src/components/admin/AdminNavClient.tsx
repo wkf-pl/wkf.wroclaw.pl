@@ -8,7 +8,7 @@ import { Link, NavGroup, useAuth, useConfig, useTranslation } from '@payloadcms/
 import { EntityType } from '@payloadcms/ui/shared'
 import { usePathname } from 'next/navigation.js'
 import { formatAdminURL } from 'payload/shared'
-import React, { Fragment } from 'react'
+import { Fragment } from 'react'
 
 import type { User } from '@/payload-types'
 import { userHasRole } from '@/modules/membership/user-roles'

@@ -2,11 +2,11 @@ import { redirect } from 'next/navigation'
 
 import type { AttachmentsBlock, Media, MediaGalleryBlock } from '@/payload-types'
 import { getRelationshipId } from '@/lib/relationships'
-import { createBlockParameterSuffix } from '@/modules/content/block-parameter-name'
+import { createPaginatedURL, resolveBlockPagination } from '@/modules/content/pagination'
 import { findPublicMedia, type MediaListingKind } from '@/modules/media/media-listing'
 
 import { AttachmentList } from './AttachmentList'
-import { ContentPagination, createPaginatedURL, getRequestedPage } from './ContentPagination'
+import { ContentPagination } from './ContentPagination'
 import { MediaGallery } from './MediaGallery'
 
 type MediaBlockSectionProperties = {
@@ -23,9 +23,13 @@ export async function MediaBlockSection({
   searchParams,
 }: MediaBlockSectionProperties) {
   const kind = block.blockType as MediaListingKind
-  const parameterSuffix = createBlockParameterSuffix(block.id, blockPath)
-  const parameterName = `${kind}_${parameterSuffix}`
-  const requestedPage = block.pagination ? getRequestedPage(searchParams[parameterName]) : 1
+  const { parameterName, requestedPage } = resolveBlockPagination({
+    blockId: block.id,
+    blockPath,
+    enabled: Boolean(block.pagination),
+    parameterPrefix: kind,
+    searchParams,
+  })
   const result = await findPublicMedia({
     categoryId: getRelationshipId(block.category),
     kind,

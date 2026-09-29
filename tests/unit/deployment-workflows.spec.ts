@@ -45,9 +45,12 @@ describe('deployment workflows', () => {
     expect(continuousIntegrationWorkflow).toContain('run: pnpm format:check')
     expect(continuousIntegrationWorkflow).toContain('run: pnpm generate:importmap')
     expect(continuousIntegrationWorkflow).toContain('git diff --exit-code --')
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm lint')
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm typecheck')
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm test:unit')
     expect(continuousIntegrationWorkflow).toContain('run: pnpm test:integration')
     expect(continuousIntegrationWorkflow).toContain('playwright install --with-deps chromium')
-    expect(continuousIntegrationWorkflow).toContain('run: pnpm test:e2e:ci:production')
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm test:e2e:ci')
   })
 
   it('preserves deployment safety boundaries', () => {

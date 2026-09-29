@@ -2,6 +2,8 @@ import { getPayload } from 'payload'
 
 import config from '@payload-config'
 
+import { publicRequestContext } from './public-access'
+
 type StoredBreadcrumb = {
   doc?: unknown
   label?: null | string
@@ -47,11 +49,14 @@ export async function createPageBreadcrumbs(
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'pages',
+      context: publicRequestContext,
       depth: 0,
       draft: false,
       limit: ancestorSlugs.length,
-      overrideAccess: true,
+      overrideAccess: false,
       pagination: false,
+      select: { slug: true },
+      user: null,
       where: {
         and: [{ slug: { in: ancestorSlugs } }, { _status: { equals: 'published' } }],
       },

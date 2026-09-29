@@ -4,7 +4,6 @@
 .next
 .next-container
 .next-host
-.next-e2e-ci
 coverage
 logs
 media

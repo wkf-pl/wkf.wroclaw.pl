@@ -4,7 +4,6 @@ import type { NavPreferences, PayloadRequest, ServerProps } from 'payload'
 import { Logout } from '@payloadcms/ui'
 import { RenderServerComponent } from '@payloadcms/ui/elements/RenderServerComponent'
 import { EntityType, groupNavItems } from '@payloadcms/ui/shared'
-import React from 'react'
 import { PREFERENCE_KEYS } from 'payload/shared'
 
 import { AdminNavClient } from './AdminNavClient'

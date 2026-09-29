@@ -2,7 +2,7 @@ import type { GlobalConfig } from 'payload'
 
 import { invalidateNavigationAfterChange } from '@/modules/cache/invalidate-public-data'
 import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
-import { createRolePermissionAccess } from '@/modules/membership/role-permissions'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import { createIconFields, createLinkFields } from '@/modules/navigation/fields'
 
 const readNavigation = createRolePermissionAccess({

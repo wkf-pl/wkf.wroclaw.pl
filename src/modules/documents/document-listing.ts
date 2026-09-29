@@ -3,7 +3,13 @@ import { getPayload, type Where } from 'payload'
 import config from '@payload-config'
 
 import type { Document } from '@/payload-types'
+import { getRelationshipIds } from '@/lib/relationships'
 import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
+import {
+  normalizeListingWindow,
+  paginateInMemory,
+  restoreRelationshipOrder,
+} from '@/modules/content/listing-window'
 import { publicRequestContext } from '@/modules/content/public-access'
 
 export type DocumentListingSort = 'newest' | 'oldest' | 'titleAscending' | 'titleDescending'
@@ -31,8 +37,7 @@ export type PublicDocumentListingResult = {
 export async function findDocumentListing(
   options: FindDocumentListingOptions,
 ): Promise<PublicDocumentListingResult> {
-  const page = options.pagination ? Math.max(1, Math.floor(options.page)) : 1
-  const pageSize = Math.min(100, Math.max(1, Math.floor(options.pageSize)))
+  const { page, pageSize } = normalizeListingWindow(options)
 
   if (options.selectionMode === 'manual') {
     return findManualDocuments(options, page, pageSize)
@@ -77,9 +82,7 @@ async function findManualDocuments(
   page: number,
   pageSize: number,
 ): Promise<PublicDocumentListingResult> {
-  const documentIds = (options.manualDocuments ?? []).map((document) =>
-    typeof document === 'number' ? document : document.id,
-  )
+  const documentIds = getRelationshipIds(options.manualDocuments)
   let documents: Document[] = []
 
   if (documentIds.length > 0) {
@@ -97,23 +100,21 @@ async function findManualDocuments(
         and: [{ id: { in: [...new Set(documentIds)] } }, { _status: { equals: 'published' } }],
       },
     })
-    const documentsById = new Map(result.docs.map((document) => [document.id, document]))
-    documents = documentIds.flatMap((documentId) => {
-      const document = documentsById.get(documentId)
-      return document ? [document] : []
-    })
+    documents = restoreRelationshipOrder(documentIds, result.docs)
   }
 
-  const totalDocs = documents.length
-  const totalPages = options.pagination ? Math.max(1, Math.ceil(totalDocs / pageSize)) : 1
-  const offset = options.pagination ? (page - 1) * pageSize : 0
-
-  return {
-    items: documents.slice(offset, offset + pageSize),
+  const pageResult = paginateInMemory(documents, {
     page,
     pageSize,
-    totalDocs,
-    totalPages,
+    pagination: options.pagination,
+  })
+
+  return {
+    items: pageResult.items,
+    page: pageResult.page,
+    pageSize: pageResult.pageSize,
+    totalDocs: pageResult.totalDocs,
+    totalPages: pageResult.totalPages,
   }
 }
 

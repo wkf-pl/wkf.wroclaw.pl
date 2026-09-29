@@ -96,6 +96,25 @@ Resource names and health checks can be adjusted with `STAGING_RESOURCE_GROUP_NA
 
 ## Builds, tests, and verification
 
+### `pre-push.ts`
+
+Runs the complete local validation pipeline in four phases and renders a compact terminal dashboard.
+Formatting, lint, and typecheck run concurrently, followed by concurrent unit and integration tests,
+then the production build and production-mode Playwright tests. Invoke it through:
+
+```bash
+pnpm pre-push
+```
+
+Static-check failures do not stop later phases. Unit or integration failures skip the build and
+browser tests, while a build failure skips browser tests. Error details are printed only after the
+pipeline finishes or stops: static checks list affected files, test phases list failing test names,
+and the build prints its captured error output.
+
+The browser stage packages the production build, extracts it into a unique system temporary
+directory, and removes that directory on completion. Set `WKF_PRE_PUSH_STATIC=1` to disable dynamic
+terminal redraw.
+
 ### `package-e2e-runtime.sh`
 
 Packages the standalone Next.js server, its static build output, and `public/` assets into one
@@ -111,20 +130,14 @@ The default input distribution is `NEXT_DIST_DIR=.next-host`, and the default ou
 `tmp/wkf-next-runtime.tar.gz`. The script refuses to package an incomplete standalone build and
 always removes its temporary staging directory.
 
-### `clear-e2e-cache.ts`
-
-Recursively removes `.next-e2e-ci` so a CI-style development-server E2E run cannot reuse an older
-Next.js cache. It is the first step in `pnpm prepare:e2e`, which is called by both CI E2E commands.
-It is not intended as a general cache-cleaning command.
-
 ### `prepare-test-environment.ts`
 
 Starts the `postgres-test` and `azurite` Compose services, recreates the isolated test database from
 committed Payload migrations, and verifies that the migration table contains exactly the migration
 files present in the repository. It does not seed CMS content.
 
-`pnpm prepare:integration` calls it directly. `pnpm test:integration` and both CI E2E commands call
-it indirectly before running tests. The test environment is loaded from `test.env`; the database
+`pnpm prepare:integration` calls it directly. `pnpm test:integration` and `pnpm test:e2e:ci` call it
+indirectly before running tests. The test environment is loaded from `test.env`; the database
 recreation is intentionally destructive only to that dedicated test database.
 
 ### `verify-compose.ts`
@@ -144,8 +157,7 @@ afterward. Because it verifies first-user bootstrap, the users collection must b
 ### `run-development-server.sh`
 
 Starts `next dev` with the repository's development environment, configured distribution directory,
-and Node warning settings. The `dev` and `dev:container` package scripts call it; the legacy
-development-server CI E2E command also uses it.
+and Node warning settings. The `dev` and `dev:container` package scripts call it.
 
 The script refuses to run unless `WKF_ALLOW_NEXT_DEV=1` is set. Docker Compose supplies that opt-in
 for the application service. `NEXT_DIST_DIR` selects the cache directory and defaults to

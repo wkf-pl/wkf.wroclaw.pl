@@ -1,19 +1,8 @@
 import type { Data } from 'payload'
 
 import type { EventCycle } from '@/payload-types'
+import { getFormRelationshipId } from '@/lib/relationships'
 import { isRichTextEmpty } from '@/modules/content/rich-text'
-
-export function getEventRelationshipID(value: unknown): number | string | undefined {
-  if (typeof value === 'number' || typeof value === 'string') return value
-  if (value && typeof value === 'object' && 'id' in value) {
-    const id = value.id
-    return typeof id === 'number' || typeof id === 'string' ? id : undefined
-  }
-  if (value && typeof value === 'object' && 'value' in value) {
-    return getEventRelationshipID(value.value)
-  }
-  return undefined
-}
 
 function isEmpty(value: unknown): boolean {
   return (
@@ -43,7 +32,7 @@ function normalizeRelationshipRows(
     delete row.id
     return {
       ...row,
-      [relationshipField]: getEventRelationshipID(row[relationshipField]) ?? row[relationshipField],
+      [relationshipField]: getFormRelationshipId(row[relationshipField]) ?? row[relationshipField],
     }
   })
 }
@@ -57,7 +46,7 @@ function normalizeLinkRows(value: unknown): unknown {
     const row = { ...(item as Record<string, unknown>) }
     delete row.id
     for (const field of relationshipFields) {
-      row[field] = getEventRelationshipID(row[field]) ?? row[field]
+      row[field] = getFormRelationshipId(row[field]) ?? row[field]
     }
     return row
   })
@@ -82,15 +71,15 @@ export function mergeEventCycleDefaults(currentData: Data, cycle: EventCycle): D
   const defaults = cycle.eventDefaults
 
   applyIfEmpty(data, 'title', defaults.title)
-  applyIfEmpty(data, 'eventType', getEventRelationshipID(defaults.eventType) ?? defaults.eventType)
-  applyIfEmpty(data, 'heroImage', getEventRelationshipID(defaults.heroImage) ?? defaults.heroImage)
+  applyIfEmpty(data, 'eventType', getFormRelationshipId(defaults.eventType) ?? defaults.eventType)
+  applyIfEmpty(data, 'heroImage', getFormRelationshipId(defaults.heroImage) ?? defaults.heroImage)
   applyIfEmpty(data, 'excerpt', defaults.excerpt)
   applyIfEmpty(data, 'layout', cloneWithoutInlineIDs(defaults.layout))
-  applyIfEmpty(data, 'category', getEventRelationshipID(defaults.category) ?? defaults.category)
+  applyIfEmpty(data, 'category', getFormRelationshipId(defaults.category) ?? defaults.category)
   applyIfEmpty(
     data,
     'tags',
-    defaults.tags?.map((item) => getEventRelationshipID(item) ?? item),
+    defaults.tags?.map((item) => getFormRelationshipId(item) ?? item),
   )
   applyIfEmpty(data, 'timeMode', defaults.defaultTimeMode)
   applyIfEmpty(data, 'participation', defaults.participation)

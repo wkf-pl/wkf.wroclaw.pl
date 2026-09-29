@@ -5,6 +5,8 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -32,9 +34,6 @@
     ".next/dev/types/**/*.ts",
     ".next-host/types/**/*.ts",
     ".next-host/dev/types/**/*.ts",
-    ".next-e2e-ci/dev/types/**/*.ts",
-    ".next-e2e-ci/dev/dev/types/**/*.ts",
-    ".next-e2e-ci/types/**/*.ts",
     ".next-container/types/**/*.ts",
     ".next-container/dev/types/**/*.ts"
   ],

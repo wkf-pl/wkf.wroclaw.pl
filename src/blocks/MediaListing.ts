@@ -1,13 +1,11 @@
 import type { Block, Field, Validate } from 'payload'
 
+import { createListingPaginationRow, createListingTaxonomyRow } from './listing-fields'
+import { validateUniqueRelationshipIds } from '@/modules/content/listing-window'
 import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
 
 type MediaSelectionSiblingData = {
   selectionMode?: unknown
-}
-
-type ManualMediaItem = {
-  media?: unknown
 }
 
 export const validateManualMediaItems: Validate<unknown, unknown, MediaSelectionSiblingData> = (
@@ -22,24 +20,7 @@ export const validateManualMediaItems: Validate<unknown, unknown, MediaSelection
     return 'Wybierz co najmniej jeden plik.'
   }
 
-  const mediaIds = value
-    .map((item) => {
-      if (!item || typeof item !== 'object' || !('media' in item)) {
-        return null
-      }
-
-      const media = (item as ManualMediaItem).media
-      if (typeof media === 'number' || typeof media === 'string') {
-        return String(media)
-      }
-
-      return media && typeof media === 'object' && 'id' in media
-        ? String((media as { id: unknown }).id)
-        : null
-    })
-    .filter((id): id is string => id !== null)
-
-  return new Set(mediaIds).size === mediaIds.length
+  return validateUniqueRelationshipIds(value, 'media')
     ? true
     : 'Każdy plik może zostać wybrany tylko raz.'
 }
@@ -92,33 +73,7 @@ function createMediaListingFields(
       },
       validate: validateManualMediaItems,
     },
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'category',
-          type: 'relationship',
-          admin: {
-            condition: (_data, siblingData) => siblingData.selectionMode === 'filters',
-            placeholder: '<brak>',
-            width: '50%',
-          },
-          label: 'Kategoria',
-          relationTo: 'categories',
-        },
-        {
-          name: 'tag',
-          type: 'relationship',
-          admin: {
-            condition: (_data, siblingData) => siblingData.selectionMode === 'filters',
-            placeholder: '<brak>',
-            width: '50%',
-          },
-          label: 'Tag',
-          relationTo: 'tags',
-        },
-      ],
-    },
+    createListingTaxonomyRow({ conditional: true }),
     {
       type: 'row',
       fields: [
@@ -155,28 +110,7 @@ function createMediaListingFields(
         },
       ],
     },
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'pageSize',
-          type: 'number',
-          admin: { width: '50%' },
-          defaultValue: 12,
-          label: 'Elementy na stronę',
-          max: 100,
-          min: 1,
-          required: true,
-        },
-        {
-          name: 'pagination',
-          type: 'checkbox',
-          admin: { width: '50%' },
-          defaultValue: true,
-          label: 'Włącz paginację',
-        },
-      ],
-    },
+    createListingPaginationRow(),
     {
       name: 'emptyMessage',
       type: 'text',

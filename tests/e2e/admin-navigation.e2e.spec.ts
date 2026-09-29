@@ -87,6 +87,19 @@ test('shows the selected logo and compact header item controls', async ({ page }
 
 test('presents raster icon choices as a grouped grid', async ({ page }) => {
   const payload = await getPayload({ config })
+  const editorUsers = await payload.find({
+    collection: 'users',
+    depth: 0,
+    limit: 1,
+    overrideAccess: true,
+    pagination: false,
+    where: { email: { equals: editorTestUser.email } },
+  })
+  const editor = editorUsers.docs[0]
+  if (!editor) {
+    throw new Error('The editor test user must exist before updating navigation.')
+  }
+
   const navigation = await payload.findGlobal({
     slug: 'navigation',
     depth: 0,
@@ -101,6 +114,7 @@ test('presents raster icon choices as a grouped grid', async ({ page }) => {
     slug: 'navigation',
     data: { headerItems: iconHeaderItems },
     overrideAccess: true,
+    user: editor,
   })
 
   try {
@@ -133,6 +147,7 @@ test('presents raster icon choices as a grouped grid', async ({ page }) => {
       slug: 'navigation',
       data: { headerItems: originalHeaderItems },
       overrideAccess: true,
+      user: editor,
     })
   }
 })

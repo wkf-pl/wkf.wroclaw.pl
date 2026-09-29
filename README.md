@@ -49,7 +49,8 @@ Azurite endpoint.
 ## Main commands
 
 ```bash
-pnpm check
+pnpm test
+pnpm pre-push
 pnpm build
 pnpm generate:types
 pnpm migrate:create
@@ -57,6 +58,10 @@ pnpm migrate
 pnpm seed
 pnpm verify:compose
 ```
+
+`pnpm test` runs the unit and integration suites. `pnpm pre-push` runs the complete local validation
+pipeline with a terminal dashboard: formatting check, lint, typecheck, unit and integration tests,
+production build, and production-mode browser tests.
 
 See the [operational scripts reference](scripts/README.md) for the implementation entry points
 behind development, test preparation, staging data operations, and Azure deployments.

@@ -1,11 +1,10 @@
 import type { Block, Validate } from 'payload'
 
+import { createListingPaginationRow, createListingTaxonomyRow } from './listing-fields'
+import { validateUniqueRelationshipIds } from '@/modules/content/listing-window'
+
 type DocumentSelectionSiblingData = {
   selectionMode?: unknown
-}
-
-type ManualDocumentItem = {
-  document?: unknown
 }
 
 export const validateManualDocumentItems: Validate<
@@ -21,24 +20,7 @@ export const validateManualDocumentItems: Validate<
     return 'Wybierz co najmniej jeden dokument.'
   }
 
-  const documentIds = value
-    .map((item) => {
-      if (!item || typeof item !== 'object' || !('document' in item)) {
-        return null
-      }
-
-      const document = (item as ManualDocumentItem).document
-      if (typeof document === 'number' || typeof document === 'string') {
-        return String(document)
-      }
-
-      return document && typeof document === 'object' && 'id' in document
-        ? String((document as { id: unknown }).id)
-        : null
-    })
-    .filter((id): id is string => id !== null)
-
-  return new Set(documentIds).size === documentIds.length
+  return validateUniqueRelationshipIds(value, 'document')
     ? true
     : 'Każdy dokument może zostać wybrany tylko raz.'
 }
@@ -102,33 +84,7 @@ export const DocumentsBlock: Block = {
       },
       validate: validateManualDocumentItems,
     },
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'category',
-          type: 'relationship',
-          admin: {
-            condition: (_data, siblingData) => siblingData.selectionMode === 'filters',
-            placeholder: '<brak>',
-            width: '50%',
-          },
-          label: 'Kategoria',
-          relationTo: 'categories',
-        },
-        {
-          name: 'tag',
-          type: 'relationship',
-          admin: {
-            condition: (_data, siblingData) => siblingData.selectionMode === 'filters',
-            placeholder: '<brak>',
-            width: '50%',
-          },
-          label: 'Tag',
-          relationTo: 'tags',
-        },
-      ],
-    },
+    createListingTaxonomyRow({ conditional: true }),
     {
       type: 'row',
       fields: [
@@ -165,28 +121,7 @@ export const DocumentsBlock: Block = {
         },
       ],
     },
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'pageSize',
-          type: 'number',
-          admin: { width: '50%' },
-          defaultValue: 12,
-          label: 'Elementy na stronę',
-          max: 100,
-          min: 1,
-          required: true,
-        },
-        {
-          name: 'pagination',
-          type: 'checkbox',
-          admin: { width: '50%' },
-          defaultValue: true,
-          label: 'Włącz paginację',
-        },
-      ],
-    },
+    createListingPaginationRow(),
     {
       name: 'emptyMessage',
       type: 'text',

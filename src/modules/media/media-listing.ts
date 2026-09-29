@@ -3,8 +3,14 @@ import { getPayload, type Where } from 'payload'
 import config from '@payload-config'
 
 import type { Media } from '@/payload-types'
+import { getRelationshipIds } from '@/lib/relationships'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
+import {
+  normalizeListingWindow,
+  paginateInMemory,
+  restoreRelationshipOrder,
+} from '@/modules/content/listing-window'
 import { publicRequestContext } from '@/modules/content/public-access'
 import {
   isWebRasterImageMimeType,
@@ -128,29 +134,21 @@ const findManualPublicMediaByIDsCached = cachePublicData(
         user: null,
         where: { id: { in: [...new Set(mediaIDs)] } },
       })
-      const mediaByID = new Map(result.docs.map((item) => [item.id, item]))
-      media = mediaIDs.flatMap((mediaID) => {
-        const item = mediaByID.get(mediaID)
-        return item ? [item] : []
-      })
+      media = restoreRelationshipOrder(mediaIDs, result.docs)
     }
 
     const eligibleMedia =
       options.kind === 'mediaGallery'
         ? media.filter((item) => isWebRasterImageMimeType(item.mimeType))
         : media
-    const totalDocs = eligibleMedia.length
-    const totalPages = options.pagination
-      ? Math.max(1, Math.ceil(totalDocs / options.pageSize))
-      : 1
-    const offset = options.pagination ? (options.page - 1) * options.pageSize : 0
+    const pageResult = paginateInMemory(eligibleMedia, options)
 
     return {
-      items: eligibleMedia.slice(offset, offset + options.pageSize).map(mapMedia),
-      page: options.page,
-      pageSize: options.pageSize,
-      totalDocs,
-      totalPages,
+      items: pageResult.items.map(mapMedia),
+      page: pageResult.page,
+      pageSize: pageResult.pageSize,
+      totalDocs: pageResult.totalDocs,
+      totalPages: pageResult.totalPages,
     }
   },
   { revalidate: 300, tags: [publicCacheTags.media] },
@@ -166,8 +164,8 @@ export async function findPublicMedia(options: FindPublicMediaOptions): Promise<
   }
 
   if (options.selectionMode === 'manual') {
-    const mediaIDs = (options.manualMedia ?? []).map((media) =>
-      typeof media === 'number' ? media : media.id,
+    const mediaIDs = getRelationshipIds(options.manualMedia).flatMap((id) =>
+      typeof id === 'number' ? [id] : [],
     )
     return findManualPublicMediaByIDsCached(normalizedOptions, mediaIDs)
   }
@@ -181,9 +179,7 @@ export function normalizePublicMediaOptions(
   return {
     categoryId: options.categoryId,
     kind: options.kind,
-    page: Math.max(1, Math.floor(options.page)),
-    pageSize: Math.min(100, Math.max(1, Math.floor(options.pageSize))),
-    pagination: options.pagination,
+    ...normalizeListingWindow(options),
     selectionMode: options.selectionMode,
     sort: options.sort,
     tagId: options.tagId,
