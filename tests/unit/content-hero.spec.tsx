@@ -11,6 +11,7 @@ import {
 } from '@/app/(frontend)/_components/ContentHero'
 import { TaxonomyLinks } from '@/app/(frontend)/_components/TaxonomyLinks'
 import type { Category, Tag } from '@/payload-types'
+import { readFrontendStyles } from '../helpers/frontend-styles'
 
 describe('content hero', () => {
   it('renders the shared content heading, metadata and framed image', () => {
@@ -113,7 +114,7 @@ describe('content hero', () => {
   })
 
   it('shares the homepage separator and places the site header over the hero background', () => {
-    const styles = readFileSync('src/app/(frontend)/styles.css', 'utf8')
+    const styles = readFrontendStyles()
 
     expect(styles).toContain("url('/assets/content-hero-night-sky.webp')")
     expect(styles).toContain('.homeHero::before,\n.contentHero::before')
@@ -127,7 +128,7 @@ describe('content hero', () => {
   })
 
   it('lets top-level content blocks use the full content body width', () => {
-    const styles = readFileSync('src/app/(frontend)/styles.css', 'utf8')
+    const styles = readFrontendStyles()
 
     expect(styles).toMatch(
       /\.pageBlocks > \*,[\s\S]*?width: 100%;[\s\S]*?max-width: none;[\s\S]*?margin-inline: 0;/,

@@ -1,0 +1,835 @@
+.featuredEvent {
+  display: grid;
+  grid-area: 1 / 1;
+  grid-template-columns: minmax(0, 1.18fr) minmax(20rem, 0.82fr);
+  overflow: hidden;
+  background: linear-gradient(135deg, rgb(9 38 57 / 96%), rgb(0 18 31 / 98%));
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.featuredEvent--active {
+  z-index: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.featuredEventImageLink {
+  position: relative;
+  display: block;
+  min-height: 20rem;
+  overflow: hidden;
+  background: var(--background-deep);
+}
+
+.featuredEventImageLink::after {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(0 10 17 / 68%), transparent 44%),
+    linear-gradient(90deg, transparent 70%, rgb(0 10 17 / 48%));
+  content: '';
+}
+
+.featuredEventImage {
+  width: 100%;
+  height: 100%;
+  min-height: 20rem;
+  object-fit: cover;
+}
+
+.featuredEventTitle {
+  position: absolute;
+  z-index: 1;
+  top: clamp(1.25rem, 3vw, 1.8rem);
+  right: clamp(1.25rem, 3vw, 2rem);
+  left: clamp(1.25rem, 3vw, 2rem);
+  color: inherit;
+  font-family: var(--font-roboto-slab), Georgia, serif;
+  font-size: clamp(1.8rem, 4vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.05;
+  text-decoration: none;
+  text-shadow: 0 3px 18px rgb(0 0 0 / 78%);
+  text-wrap: balance;
+}
+
+.featuredEventContent {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: clamp(1.5rem, 3vw, 2rem);
+}
+
+.featuredEventContent p {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.featuredEventSummary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+}
+
+.featuredEventFact {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
+.featuredEventFactIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--gold-light);
+}
+
+.featuredEventFactIcon .rasterIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.featuredEventActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1rem;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 0.35rem;
+}
+
+.featuredEventPrimaryAction,
+.featuredEventCalendar,
+.eventCalendarSubscription,
+.homeEventAllLink {
+  display: inline-flex;
+  gap: 0.6rem;
+  align-items: center;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.featuredEventPrimaryAction {
+  min-height: 2.75rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--gold-light);
+  border-radius: 0.4rem;
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.featuredEventCalendar,
+.eventCalendarSubscription,
+.homeEventAllLink {
+  color: var(--gold-light);
+}
+
+.featuredEventPrimaryAction:hover,
+.featuredEventPrimaryAction:focus-visible {
+  background: var(--gold);
+  color: var(--background-deep);
+}
+
+.featuredEventCalendar:hover,
+.featuredEventCalendar:focus-visible,
+.eventCalendarSubscription:hover,
+.eventCalendarSubscription:focus-visible,
+.homeEventAllLink:hover,
+.homeEventAllLink:focus-visible {
+  color: var(--ivory);
+}
+
+.featuredEventActions .rasterIcon,
+.eventCalendarSubscription .rasterIcon,
+.homeEventAllLink .rasterIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.eventCarouselSlides {
+  display: grid;
+}
+
+.carouselControls,
+.contentSectionHeading {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.carouselControls {
+  justify-content: center;
+}
+
+.carouselControls button {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--gold-light);
+  cursor: pointer;
+}
+
+.carouselControls button[aria-pressed='true'] {
+  border-color: var(--gold-light);
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.homeEventShowcase {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: linear-gradient(145deg, rgb(3 29 46 / 98%), rgb(0 13 23 / 98%));
+}
+
+.homeEventToolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  background:
+    /*linear-gradient(rgb(0 13 23 / 50%), rgb(0 13 23 / 50%)),*/ url('/assets/placeholder-nebula.webp')
+    center 5% / cover no-repeat;
+}
+
+.homeEventViewTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(8rem, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--gold);
+  border-radius: 0.4rem;
+}
+
+.homeEventViewTabs button {
+  min-height: 2.65rem;
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-right: 1px solid var(--gold);
+  background: transparent;
+  color: var(--ivory);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.homeEventViewTabs button:last-child {
+  border-right: 0;
+}
+
+.homeEventViewTabs button[aria-selected='true'] {
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.homeEventViewTabs button:hover:not([aria-selected='true']) {
+  background: rgb(243 163 19 / 12%);
+}
+
+.homeEventAllLink {
+  justify-self: end;
+}
+
+.homeEventPanel {
+  border-top: 1px solid var(--line);
+}
+
+.homeEventEmpty {
+  display: grid;
+  min-height: 12rem;
+  margin: 0;
+  place-items: center;
+  padding: 2rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.eventCarouselFooter {
+  display: flex;
+  min-height: 3.8rem;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.homeEventViewTabs button:focus-visible,
+.homeEventAllLink:focus-visible,
+.featuredEventPrimaryAction:focus-visible,
+.featuredEventCalendar:focus-visible,
+.eventCalendarSubscription:focus-visible,
+.calendarNavigation button:focus-visible,
+.calendarGrid button:focus-visible,
+.calendarEventLink:focus-visible,
+.calendarSelectionItem h5 a:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+.eventCalendar {
+  min-width: 0;
+}
+
+.calendarLayout {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.82fr) minmax(0, 1.45fr);
+}
+
+.calendarDetails {
+  min-width: 0;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border-right: 1px solid var(--line);
+  background: rgb(10 38 56 / 38%);
+}
+
+.calendarDetails h4 {
+  margin-bottom: 1.1rem;
+  color: var(--ivory);
+  font-size: clamp(1.35rem, 2.5vw, 1.8rem);
+  text-transform: capitalize;
+}
+
+.calendarMonth {
+  min-width: 0;
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.calendarNavigation {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendarNavigation h3 {
+  margin: 0;
+  color: var(--ivory);
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.calendarNavigation button {
+  display: inline-grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--gold-light);
+  cursor: pointer;
+}
+
+.calendarNavigation button:hover {
+  border-color: var(--gold);
+  background: rgb(243 163 19 / 12%);
+}
+
+.calendarNavigation .rasterIcon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding-block: 1.25rem;
+  text-align: center;
+}
+
+.calendarWeekday {
+  padding-bottom: 0.35rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.calendarGrid button {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 3.25rem;
+  grid-template-rows: auto 1.05rem;
+  place-items: center;
+  padding: 0.3rem 0.15rem;
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--ivory);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.calendarGrid button:hover {
+  border-color: rgb(243 163 19 / 54%);
+  background: rgb(243 163 19 / 9%);
+}
+
+.calendarGrid .calendarHasEvents {
+  border-color: rgb(243 163 19 / 38%);
+  background: rgb(10 38 56 / 78%);
+  font-weight: 700;
+}
+
+.calendarGrid button[aria-pressed='true'] {
+  border-color: var(--gold-light);
+  background: var(--gold);
+  color: var(--background-deep);
+}
+
+.calendarDayNumber {
+  font-variant-numeric: tabular-nums;
+}
+
+.calendarEventIcons {
+  display: flex;
+  min-width: 0;
+  min-height: 1.05rem;
+  gap: 0.1rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+}
+
+.calendarEventTypeIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.calendarEventTypeIcon[data-event-type-color='lantern-glow'] {
+  color: var(--gold-light);
+}
+
+.calendarEventTypeIcon[data-event-type-color='mist-silver'] {
+  color: var(--muted);
+}
+
+.calendarEventTypeIcon[data-event-type-color='parchment-ivory'] {
+  color: var(--ivory);
+}
+
+.calendarGrid button[aria-pressed='true'] .calendarEventTypeIcon {
+  color: var(--background-deep);
+}
+
+.calendarEventTypeIcon .rasterIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.calendarLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  list-style: none;
+}
+
+.calendarLegend li {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.calendarStatus {
+  margin: 0;
+  padding: 0 1.25rem 1rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.calendarStatus a {
+  color: var(--gold-light);
+}
+
+.calendarSelection {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.calendarSelection > p {
+  margin: 0;
+}
+
+.calendarSelectionItem + .calendarSelectionItem {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgb(243 163 19 / 26%);
+}
+
+.calendarSelectionItem h5 {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  margin: 0 0 0.7rem;
+  color: var(--ivory);
+  font-size: 1.05rem;
+}
+
+.calendarSelectionItem h5 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.calendarSelectionItem p {
+  margin: 0 0 0.85rem;
+  font-size: 0.9rem;
+}
+
+.calendarEventLink {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--gold-light);
+  font-weight: 700;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.calendarEventLink .rasterIcon {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.calendarFooter {
+  display: flex;
+  min-height: 3.8rem;
+  gap: 1rem 2rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem clamp(1.25rem, 3vw, 2rem);
+  border-top: 1px solid var(--line);
+}
+
+.eventGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.2rem;
+  margin: 1rem 0 3rem;
+}
+
+.eventCard {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  background: rgb(5 27 42 / 92%);
+}
+
+.eventCard > a {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.eventCardImage {
+  width: 100%;
+  height: 12rem;
+  object-fit: cover;
+}
+
+.eventCardContent {
+  padding: 1.2rem;
+}
+
+.eventCardContent h3 {
+  margin: 0.3rem 0 0.8rem;
+}
+
+.eventPageBody {
+  padding-top: 0;
+}
+
+.eventDetails {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.25rem 2rem;
+  align-items: stretch;
+  margin: -2.75rem 0 clamp(3rem, 6vw, 5rem);
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid rgb(243 163 19 / 72%);
+  border-radius: 0.75rem;
+  background: rgb(3 29 46 / 96%);
+  box-shadow:
+    0 1.2rem 3rem rgb(0 0 0 / 30%),
+    0 0 1.5rem rgb(243 163 19 / 8%);
+}
+
+.eventFacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin: 0;
+}
+
+.eventFact {
+  min-width: 0;
+}
+
+.eventFact + .eventFact {
+  padding-left: 1.25rem;
+  border-left: 1px solid rgb(243 163 19 / 22%);
+}
+
+.eventFact > dt {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.eventFact > dt .rasterIcon {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--ivory);
+}
+
+.eventDetails dt {
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.eventDetails dd {
+  margin: 0.4rem 0 0;
+  color: var(--ivory);
+  line-height: 1.45;
+}
+
+.eventFact > dd {
+  padding-left: 1.95rem;
+}
+
+.eventFactPrimary,
+.eventFactSecondary,
+.eventFact time {
+  display: block;
+}
+
+.eventFactPrimary {
+  font-weight: 700;
+}
+
+.eventFactSecondary {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.eventFact--combined dt:nth-of-type(2) {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(243 163 19 / 18%);
+}
+
+.eventDetails dd a {
+  color: inherit;
+}
+
+.eventDetailActions {
+  display: flex;
+  min-width: 13rem;
+  flex-direction: column;
+  gap: 0.8rem;
+  justify-content: center;
+  padding-left: 2rem;
+  border-left: 1px solid rgb(243 163 19 / 52%);
+}
+
+.eventPrimaryAction,
+.eventSecondaryAction {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.4rem;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+}
+
+.eventPrimaryAction {
+  border: 1px solid var(--gold-light);
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.eventSecondaryAction {
+  color: var(--ivory);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+}
+
+.eventPrimaryAction:hover,
+.eventPrimaryAction:focus-visible {
+  background: var(--ivory);
+  border-color: var(--ivory);
+}
+
+.eventSecondaryAction:hover,
+.eventSecondaryAction:focus-visible {
+  color: var(--gold-light);
+}
+
+.eventPrimaryAction:focus-visible,
+.eventSecondaryAction:focus-visible,
+.eventHeroLinks a:focus-visible,
+.eventSidebar a:focus-visible,
+.eventLinkList a:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+.eventPrimaryAction .rasterIcon,
+.eventSecondaryAction .rasterIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.eventPageColumns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 21rem);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: start;
+}
+
+.eventPageMain,
+.eventPageSidebar {
+  min-width: 0;
+}
+
+.eventPageSidebar {
+  position: sticky;
+  top: 1.5rem;
+}
+
+.eventSidebar {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.eventSidebarSection {
+  padding: 1.35rem;
+  border: 1px solid rgb(243 163 19 / 30%);
+  border-radius: 0.75rem;
+  background: rgb(3 29 46 / 74%);
+  box-shadow: 0 0.7rem 1.6rem rgb(0 0 0 / 18%);
+}
+
+.eventSidebarSection h2 {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgb(243 163 19 / 38%);
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+}
+
+.eventSidebarList,
+.eventSidebarContactChannels,
+.eventLinkList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.eventSidebarList {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.eventSidebarList > li + li {
+  padding-top: 1.15rem;
+  border-top: 1px solid rgb(243 163 19 / 18%);
+}
+
+.eventSidebarList h3 {
+  margin-bottom: 0.35rem;
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.eventSidebarList h3 a {
+  color: var(--ivory);
+}
+
+.eventSidebarList p {
+  margin-bottom: 0.65rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.eventSidebarList .eventSidebarRole {
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eventSidebarContactChannels {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.eventSidebarContactChannels a,
+.eventLinkList a {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  color: var(--gold-light);
+  overflow-wrap: anywhere;
+}
+
+.eventSidebarContactChannels .rasterIcon,
+.eventLinkList .rasterIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.eventSupplementary {
+  display: grid;
+  gap: clamp(2.5rem, 6vw, 4rem);
+  margin-top: clamp(3rem, 7vw, 5rem);
+}
+
+.eventSupplementarySection > h2 {
+  margin-bottom: 1.25rem;
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+}
+
+.eventLinkList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.googleMapEmbed {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}

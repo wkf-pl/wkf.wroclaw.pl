@@ -1,10 +1,10 @@
-import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 import { DocumentPdfPreview } from '@/app/(frontend)/_components/DocumentPdfPreview'
 import { getDocumentDisplayLabel } from '@/modules/documents/document-types'
+import { readFrontendStyles } from '../helpers/frontend-styles'
 
 describe('document detail', () => {
   it('formats the document type with an optional number', () => {
@@ -35,7 +35,7 @@ describe('document detail', () => {
   })
 
   it('keeps the embedded PDF interactive instead of covering it with the file link', () => {
-    const styles = readFileSync('src/app/(frontend)/styles.css', 'utf8')
+    const styles = readFrontendStyles()
 
     expect(styles).toMatch(/\.documentPdfPreview \{[^}]*overflow: hidden;/)
     expect(styles).not.toMatch(/\.documentPdfPreviewFrame \{[^}]*pointer-events: none;/)
@@ -49,7 +49,7 @@ describe('document detail', () => {
   })
 
   it('overlays the PDF across the hero boundary while reserving the body text column', () => {
-    const styles = readFileSync('src/app/(frontend)/styles.css', 'utf8')
+    const styles = readFrontendStyles()
 
     expect(styles).toMatch(/\.documentDetail \.contentHero \{[^}]*overflow: visible;/)
     expect(styles).toMatch(

@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 import type { BlocksField, Field } from 'payload'
 
@@ -12,6 +10,7 @@ import { Posts } from '@/collections/Posts'
 import { createBlockParameterSuffix } from '@/modules/content/block-parameter-name'
 import { createContentLayoutField } from '@/modules/content/layout-field'
 import { walkContentLeafBlocks } from '@/modules/content/walk-content-leaf-blocks'
+import { readFrontendStyles } from '../helpers/frontend-styles'
 
 function validate(columns: unknown): true | string {
   return validateColumnLayoutColumns(columns as never, {} as never) as true | string
@@ -145,7 +144,7 @@ describe('column layout', () => {
   })
 
   it('uses block-width breakpoints for every block that renders a grid', () => {
-    const frontendStyles = readFileSync('src/app/(frontend)/styles.css', 'utf8')
+    const frontendStyles = readFrontendStyles()
     const contentBlockQueryIndex = frontendStyles.indexOf(
       '@container content-block (width <= 48rem)',
     )
