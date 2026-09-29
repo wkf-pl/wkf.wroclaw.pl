@@ -80,24 +80,17 @@ describe('integration test environment', () => {
     const packageScripts = JSON.parse(packageConfiguration).scripts as Record<string, string>
     const runtimePackagingScript = readFileSync('scripts/package-e2e-runtime.sh', 'utf8')
     const playwrightConfiguration = readFileSync('playwright.config.ts', 'utf8')
-    const cacheCleanupScript = readFileSync('scripts/clear-e2e-cache.ts', 'utf8')
 
-    expect(packageScripts['prepare:e2e']).toContain('scripts/clear-e2e-cache.ts')
     expect(packageScripts['prepare:e2e']).toContain('scripts/seed.ts')
     expect(packageScripts['seed']).toContain('tsx ./scripts/seed.ts')
     expect(packageScripts['test:e2e:ci']).toContain('pnpm prepare:e2e')
-    expect(packageScripts['test:e2e:ci:production']).toContain('pnpm prepare:e2e')
-    expect(packageScripts['test:e2e:ci:production']).toContain(
-      'node tmp/wkf-next-runtime/server.js',
-    )
+    expect(packageScripts['test:e2e:ci']).toContain('WKF_E2E_RUNTIME_DIRECTORY')
+    expect(packageScripts['test:e2e:ci:production']).toBeUndefined()
     expect(packageScripts['package:e2e-runtime']).toBe('bash scripts/package-e2e-runtime.sh')
     expect(packageConfiguration).toContain('DOTENV_CONFIG_OVERRIDE=true')
     expect(packageConfiguration).toContain('DOTENV_CONFIG_PATH=test.env')
-    expect(packageConfiguration).toContain('NEXT_DIST_DIR=.next-e2e-ci')
     expect(packageConfiguration).toContain('PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100')
     expect(packageConfiguration).toContain('PLAYWRIGHT_REUSE_EXISTING_SERVER=false')
-    expect(cacheCleanupScript).toContain("resolve(process.cwd(), '.next-e2e-ci')")
-    expect(cacheCleanupScript).toContain('force: true, recursive: true')
     expect(runtimePackagingScript).toContain('NEXT_DIST_DIR:-.next-host')
     expect(runtimePackagingScript).toContain('standalone')
     expect(runtimePackagingScript).toContain('runtime_distribution_directory')
@@ -148,7 +141,7 @@ describe('integration test environment', () => {
     expect(continuousIntegrationWorkflow).toContain('run: pnpm package:e2e-runtime')
     expect(continuousIntegrationWorkflow).toContain('name: wkf-next-runtime-${{ github.sha }}')
     expect(continuousIntegrationWorkflow).toContain('uses: actions/download-artifact@v8')
-    expect(continuousIntegrationWorkflow).toContain('run: pnpm test:e2e:ci:production')
+    expect(continuousIntegrationWorkflow).toContain('run: pnpm test:e2e:ci')
     expect(continuousIntegrationWorkflow).toContain('shard: [1, 2, 3, 4]')
     expect(continuousIntegrationWorkflow).toContain('PLAYWRIGHT_SHARD: ${{ matrix.shard }}/4')
     expect(continuousIntegrationWorkflow).toContain('playwright-diagnostics-${{ matrix.shard }}')
@@ -156,6 +149,16 @@ describe('integration test environment', () => {
     const validateContainerJob = continuousIntegrationWorkflow.split('  validate-container:\n')[1]
     expect(validateContainerJob).toBeDefined()
     expect(validateContainerJob).not.toContain('needs:')
+  })
+
+  it('keeps local validation commands explicit', () => {
+    const packageConfiguration = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      scripts: Record<string, string>
+    }
+
+    expect(packageConfiguration.scripts.check).toBeUndefined()
+    expect(packageConfiguration.scripts.test).toBe('pnpm test:unit && pnpm test:integration')
+    expect(packageConfiguration.scripts['pre-push']).toBe('tsx ./scripts/pre-push.ts')
   })
 
   it('cancels superseded CI runs for the same pull request', () => {

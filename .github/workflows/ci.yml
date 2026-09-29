@@ -43,8 +43,14 @@ jobs:
           src/payload-types.ts
           'src/app/(payload)/admin/importMap.js'
 
-      - name: Run static checks and unit tests
-        run: pnpm check
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Run unit tests
+        run: pnpm test:unit
 
   build-e2e:
     runs-on: ubuntu-latest
@@ -116,7 +122,7 @@ jobs:
       - name: Run end-to-end tests
         env:
           PLAYWRIGHT_SHARD: ${{ matrix.shard }}/4
-        run: pnpm test:e2e:ci:production
+        run: pnpm test:e2e:ci
 
       - name: Upload Playwright diagnostics
         if: failure()
