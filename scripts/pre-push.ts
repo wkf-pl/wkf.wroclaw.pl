@@ -196,6 +196,31 @@ export function extractPlaywrightFailureNames(output: string): string[] {
   return uniqueValues(failureNames)
 }
 
+export function formatValidationFailureDetails(stage: ValidationStage): string {
+  if (staticValidationStageKeys.has(stage.key)) {
+    return (
+      formatFailureItems(extractAffectedFileNames(stage.output)) ??
+      formatCommandOutputTail(stage.output)
+    )
+  }
+
+  if (testValidationStageKeys.has(stage.key)) {
+    return (
+      formatFailureItems(extractVitestFailureNames(stage.output)) ??
+      formatCommandOutputTail(stage.output)
+    )
+  }
+
+  if (stage.key === 'endToEnd') {
+    return (
+      formatFailureItems(extractPlaywrightFailureNames(stage.output)) ??
+      formatCommandOutputTail(stage.output)
+    )
+  }
+
+  return formatCommandOutput(stage.output)
+}
+
 async function runPrePush(): Promise<void> {
   const stages = createInitialValidationStages()
   const dashboard = createDashboard(stages)
@@ -367,44 +392,16 @@ function printFailureOutput(failedStages: readonly ValidationStage[]): void {
 
   for (const stage of failedStages) {
     process.stderr.write(`\n${stage.label}\n`)
-
-    if (staticValidationStageKeys.has(stage.key)) {
-      printFailureItems(
-        extractAffectedFileNames(stage.output),
-        'No affected file name was reported.',
-      )
-      continue
-    }
-
-    if (testValidationStageKeys.has(stage.key)) {
-      printFailureItems(
-        extractVitestFailureNames(stage.output),
-        'No failing test name was reported.',
-      )
-      continue
-    }
-
-    if (stage.key === 'endToEnd') {
-      printFailureItems(
-        extractPlaywrightFailureNames(stage.output),
-        'No failing browser test name was reported.',
-      )
-      continue
-    }
-
-    process.stderr.write(`${formatCommandOutput(stage.output)}\n`)
+    process.stderr.write(`${formatValidationFailureDetails(stage)}\n`)
   }
 }
 
-function printFailureItems(items: readonly string[], fallback: string): void {
+function formatFailureItems(items: readonly string[]): string | undefined {
   if (items.length === 0) {
-    process.stderr.write(`  ${fallback}\n`)
-    return
+    return undefined
   }
 
-  for (const item of items) {
-    process.stderr.write(`  - ${item}\n`)
-  }
+  return items.map((item) => `  - ${item}`).join('\n')
 }
 
 function createDashboard(initialStages: ValidationStages): {
@@ -498,6 +495,17 @@ function formatStatus(status: ValidationStatus): string {
 function formatCommandOutput(output: string): string {
   const cleanedOutput = cleanOutput(output).trim()
   return cleanedOutput || '  No error output was captured.'
+}
+
+function formatCommandOutputTail(output: string, maximumLineCount = 80): string {
+  const cleanedOutput = cleanOutput(output).trim()
+  if (!cleanedOutput) return '  No error output was captured.'
+
+  const lines = cleanedOutput.split('\n')
+  if (lines.length <= maximumLineCount) return cleanedOutput
+
+  const omittedLineCount = lines.length - maximumLineCount
+  return `  ... ${omittedLineCount} earlier lines omitted.\n${lines.slice(-maximumLineCount).join('\n')}`
 }
 
 function cleanOutput(output: string): string {

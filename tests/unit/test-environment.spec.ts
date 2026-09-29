@@ -105,6 +105,14 @@ describe('integration test environment', () => {
     )
   })
 
+  it('provides the seed author when Payload validates filtered global relationships', () => {
+    const seedScript = readFileSync('scripts/seed.ts', 'utf8')
+    const globalUpdates = seedScript.match(/await payload\.updateGlobal\(\{[\s\S]*?^  \}\)/gm) ?? []
+
+    expect(globalUpdates).toHaveLength(4)
+    expect(globalUpdates.every((globalUpdate) => globalUpdate.includes('user: author'))).toBe(true)
+  })
+
   it('manages shared Playwright users once per complete run', () => {
     const playwrightConfiguration = readFileSync('playwright.config.ts', 'utf8')
     const endToEndSpecifications = readdirSync('tests/e2e').filter((fileName) =>

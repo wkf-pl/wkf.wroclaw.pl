@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Where } from 'payload'
 
 import {
   invalidateAllPublicDataAfterChange,
@@ -9,9 +9,10 @@ import { mediaDocumentMimeTypes, webRasterImageMimeTypes } from '@/modules/media
 
 const createMedia = createRolePermissionAccess({ operation: 'create', resource: 'media' })
 const deleteMedia = createRolePermissionAccess({ operation: 'delete', resource: 'media' })
+const publicMediaAccess: Where = { id: { exists: true } }
 const readMedia = createRolePermissionAccess({
   operation: 'read',
-  publicAccess: true,
+  publicAccess: publicMediaAccess,
   resource: 'media',
 })
 const updateMedia = createRolePermissionAccess({ operation: 'update', resource: 'media' })

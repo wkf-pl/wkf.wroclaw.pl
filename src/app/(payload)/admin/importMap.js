@@ -76,10 +76,10 @@ import { FooterColumnRowLabel as FooterColumnRowLabel_25248d319d0ee96f21b07bc4bd
 import { AdminNav as AdminNav_231477f0faa4368be46fd47ffb9da4d9 } from '../../../components/admin/AdminNav'
 import { AdminLogo as AdminLogo_27eed1898e8caadb2fd2266b54bb4509 } from '../../../components/admin/AdminLogo'
 import { UserMenu as UserMenu_7d91cf2f001cfbe17cc92d608056f98b } from '../../../components/admin/UserMenu'
-import { AzureClientUploadHandler as AzureClientUploadHandler_635fb302eaf52f6baca4f9f8ad9ce104 } from '@payloadcms/storage-azure/client'
 import { AccountView as AccountView_368b90cdbf59bfc4abaa6771bb6dcf15 } from '../../../components/admin/AccountView'
 import { MemberProfileView as MemberProfileView_043b7c5e54ac4fdf04b50df2b5796c23 } from '../../../components/admin/MemberProfileView'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
+import { AzureClientUploadHandler as AzureClientUploadHandler_635fb302eaf52f6baca4f9f8ad9ce104 } from '@payloadcms/storage-azure/client'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
@@ -161,8 +161,8 @@ export const importMap = {
   "/components/admin/AdminNav#AdminNav": AdminNav_231477f0faa4368be46fd47ffb9da4d9,
   "/components/admin/AdminLogo#AdminLogo": AdminLogo_27eed1898e8caadb2fd2266b54bb4509,
   "/components/admin/UserMenu#UserMenu": UserMenu_7d91cf2f001cfbe17cc92d608056f98b,
-  "@payloadcms/storage-azure/client#AzureClientUploadHandler": AzureClientUploadHandler_635fb302eaf52f6baca4f9f8ad9ce104,
   "/components/admin/AccountView#AccountView": AccountView_368b90cdbf59bfc4abaa6771bb6dcf15,
   "/components/admin/MemberProfileView#MemberProfileView": MemberProfileView_043b7c5e54ac4fdf04b50df2b5796c23,
-  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
+  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
+  "@payloadcms/storage-azure/client#AzureClientUploadHandler": AzureClientUploadHandler_635fb302eaf52f6baca4f9f8ad9ce104
 }

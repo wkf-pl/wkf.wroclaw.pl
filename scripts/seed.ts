@@ -326,7 +326,12 @@ async function ensureBlogPage(author: User): Promise<Page> {
   })
 }
 
-async function ensureNavigation(aboutPage: Page, blogPage: Page, logo: Media): Promise<void> {
+async function ensureNavigation(
+  aboutPage: Page,
+  blogPage: Page,
+  logo: Media,
+  author: User,
+): Promise<void> {
   const navigation = await payload.findGlobal({
     slug: 'navigation',
     depth: 0,
@@ -355,10 +360,11 @@ async function ensureNavigation(aboutPage: Page, blogPage: Page, logo: Media): P
       logo: navigation.logo || logo.id,
     },
     overrideAccess: true,
+    user: author,
   })
 }
 
-async function ensureHomepageGroups(backgroundImage?: Media): Promise<void> {
+async function ensureHomepageGroups(author: User, backgroundImage?: Media): Promise<void> {
   const homepageSections = await payload.findGlobal({
     slug: 'homepage-sections',
     depth: 0,
@@ -380,6 +386,7 @@ async function ensureHomepageGroups(backgroundImage?: Media): Promise<void> {
       ],
     } satisfies Partial<HomepageSection>,
     overrideAccess: true,
+    user: author,
   })
 }
 
@@ -399,8 +406,8 @@ try {
   const aboutPage = await ensureAboutPage(author)
   const blogPage = await ensureBlogPage(author)
   const siteLogo = await findOrCreateSiteLogo(author)
-  await ensureNavigation(aboutPage, blogPage, siteLogo)
-  await ensureHomepageGroups(rpgBackgroundImage)
+  await ensureNavigation(aboutPage, blogPage, siteLogo, author)
+  await ensureHomepageGroups(author, rpgBackgroundImage)
 
   await payload.updateGlobal({
     slug: 'site-settings',
@@ -408,6 +415,7 @@ try {
       siteDescription: 'Klub ludzi z wyobraźnią',
       siteName: 'Wrocławski Klub Fantastyki',
     },
+    user: author,
   })
 
   await payload.updateGlobal({
@@ -416,6 +424,7 @@ try {
       copyright: createLexicalDocument(['© 2026 Wrocławski Klub Fantastyki']),
     },
     overrideAccess: true,
+    user: author,
   })
 
   payload.logger.info('Seed completed: homepage settings, navigation, pages, posts and groups')

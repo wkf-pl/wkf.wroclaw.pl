@@ -11,6 +11,7 @@ import {
   extractPlaywrightFailureNames,
   extractVitestFailureNames,
   formatDuration,
+  formatValidationFailureDetails,
   getFailedValidationStages,
   validationStageOrder,
   type CommandResult,
@@ -131,6 +132,20 @@ describe('pre-push validation', () => {
 
     expect(extractVitestFailureNames(vitestOutput)).toEqual(['parser > rejects invalid input'])
     expect(extractPlaywrightFailureNames(playwrightOutput)).toEqual(['navigation › opens the page'])
+  })
+
+  it('shows command output when browser setup fails before Playwright reports a test', () => {
+    const stages = createInitialValidationStages()
+    stages.endToEnd.status = 'failure'
+    stages.endToEnd.output = [
+      '$ pnpm prepare:e2e',
+      'ValidationError: To pole jest nieprawidłowe: Logo',
+      '[ELIFECYCLE] Command failed with exit code 1.',
+    ].join('\n')
+
+    expect(formatValidationFailureDetails(stages.endToEnd)).toContain(
+      'ValidationError: To pole jest nieprawidłowe: Logo',
+    )
   })
 
   it('renders stage status and readable durations in the dashboard', () => {
