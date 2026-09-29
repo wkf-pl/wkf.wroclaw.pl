@@ -1,8 +1,8 @@
 {
   "name": "wkf-online",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "private": true,
-  "description": "Web application for Wroclawski Klub Fantastyki",
+  "description": "Web application for Wrocławski Klub Fantastyki",
   "type": "module",
   "scripts": {
     "build": "cross-env NODE_ENV=production NEXT_DIST_DIR=.next-host NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build --webpack",
@@ -34,22 +34,22 @@
     "verify:compose": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/verify-compose.ts"
   },
   "dependencies": {
-    "@payloadcms/db-postgres": "3.87.1",
-    "@payloadcms/email-nodemailer": "3.87.1",
-    "@payloadcms/next": "3.87.1",
-    "@payloadcms/plugin-nested-docs": "3.87.1",
-    "@payloadcms/richtext-lexical": "3.87.1",
-    "@payloadcms/storage-azure": "3.87.1",
-    "@payloadcms/translations": "3.87.1",
-    "@payloadcms/ui": "3.87.1",
-    "cross-env": "^7.0.3",
+    "@payloadcms/db-postgres": "3.89.0",
+    "@payloadcms/email-nodemailer": "3.89.0",
+    "@payloadcms/next": "3.89.0",
+    "@payloadcms/plugin-nested-docs": "3.89.0",
+    "@payloadcms/richtext-lexical": "3.89.0",
+    "@payloadcms/storage-azure": "3.89.0",
+    "@payloadcms/translations": "3.89.0",
+    "@payloadcms/ui": "3.89.0",
+    "cross-env": "7.0.3",
     "dotenv": "16.4.7",
-    "graphql": "^16.8.1",
-    "next": "16.2.6",
-    "payload": "3.87.1",
+    "graphql": "^16.14.2",
+    "next": "16.3.6",
+    "payload": "3.89.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
-    "sharp": "0.34.2",
+    "sharp": "0.35.5",
     "yet-another-react-lightbox": "3.32.2"
   },
   "devDependencies": {
@@ -58,20 +58,20 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "4.5.2",
-    "eslint": "^9.16.0",
-    "eslint-config-next": "16.2.6",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.3.6",
     "jsdom": "28.0.0",
-    "prettier": "^3.4.2",
+    "prettier": "^3.9.9",
     "tsx": "4.22.4",
     "typescript": "5.7.3",
     "vite-tsconfig-paths": "6.0.5",
-    "vitest": "4.0.18"
+    "vitest": "4.1.11"
   },
   "engines": {
     "node": "^22.18.0 || >=24.0.0",
     "pnpm": "^11"
   },
-  "packageManager": "pnpm@11.16.0",
+  "packageManager": "pnpm@11.28.2",
   "volta": {
     "node": "22.18.0"
   }
