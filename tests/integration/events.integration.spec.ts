@@ -1,10 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { getPayload, type Payload } from 'payload'
+import { getPayload, type Payload, type PayloadRequest } from 'payload'
 
 import config from '@/payload.config'
 import { createRichTextDocument, extractRichTextText } from '@/modules/content/rich-text'
-import type { Partner, User } from '@/payload-types'
+import type { Partner, Role, User } from '@/payload-types'
 import { findPublicContent } from '@/modules/content/content-listing'
+import { createEventFromCycleEndpoint } from '@/modules/events/create-event-from-cycle'
+import { createNextEventEndpoint } from '@/modules/events/create-next-event'
 import { findEventsForPartner, findPublishedPartnerBySlug } from '@/modules/events/public-events'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { GET as getCalendar } from '@/app/(frontend)/events/calendar.json/route'
@@ -17,6 +19,7 @@ const slugs = {
   cycleEvent: 'integration-cycle-event',
   cycleEventSecond: 'integration-cycle-event-second',
   draft: 'integration-draft-event',
+  endpointCycle: 'integration-endpoint-event-cycle',
   members: 'integration-members-event',
   partner: 'integration-events-partner',
   public: 'integration-public-event',
@@ -25,6 +28,26 @@ const slugs = {
 let payload: Payload
 let author: User
 let partner: Partner
+let userRole: Role
+
+function createEndpointRequest({
+  body,
+  id,
+  user,
+}: {
+  body?: Record<string, unknown>
+  id: number | string
+  user: null | User
+}): PayloadRequest {
+  return {
+    context: {},
+    headers: new Headers(),
+    json: async () => body ?? {},
+    payload,
+    routeParams: { id },
+    user,
+  } as unknown as PayloadRequest
+}
 
 function layout() {
   return [
@@ -89,7 +112,7 @@ async function cleanup() {
   await payload.delete({
     collection: 'event-cycles',
     overrideAccess: true,
-    where: { slug: { equals: slugs.cycle } },
+    where: { slug: { in: [slugs.cycle, slugs.endpointCycle] } },
   })
   await payload.delete({
     collection: 'partners',
@@ -102,6 +125,19 @@ beforeAll(async () => {
   payload = await getPayload({ config })
   await cleanup()
   author = await createIntegrationAuthor(payload, 'events')
+  const roles = await payload.find({
+    collection: 'roles',
+    depth: 0,
+    limit: 1,
+    overrideAccess: true,
+    pagination: false,
+    where: { key: { equals: 'user' } },
+  })
+  const migratedUserRole = roles.docs[0]
+  if (!migratedUserRole) {
+    throw new Error('Integration test requires the migrated user role.')
+  }
+  userRole = migratedUserRole
   partner = await payload.create({
     collection: 'partners',
     data: {
@@ -146,6 +182,99 @@ function eventData(
 }
 
 describe('events integration', () => {
+  it('enforces collection access in Event creation endpoints', async () => {
+    const anonymousCycleResponse = await createEventFromCycleEndpoint.handler(
+      createEndpointRequest({ id: -1, user: null }),
+    )
+    const anonymousNextResponse = await createNextEventEndpoint.handler(
+      createEndpointRequest({ body: { startAt: '2030-09-11T16:00:00.000Z' }, id: -1, user: null }),
+    )
+    expect(anonymousCycleResponse.status).toBe(401)
+    expect(anonymousNextResponse.status).toBe(401)
+
+    const cycle = await payload.create({
+      collection: 'event-cycles',
+      data: {
+        _status: 'published',
+        author: author.id,
+        eventDefaults: {
+          capacityMode: 'unlimited',
+          eventType: 1,
+          excerpt: createRichTextDocument(['Endpoint event excerpt']),
+          layout: layout(),
+          location: { city: 'Wrocław', country: 'Polska', venueName: 'WKF' },
+          participation: 'public',
+        },
+        excerpt: createRichTextDocument(['Endpoint integration cycle']),
+        layout: layout(),
+        slug: slugs.endpointCycle,
+        title: 'Endpoint integration cycle',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+    const restrictedUser: User = {
+      ...author,
+      displayName: 'Restricted integration user',
+      email: 'restricted-events@example.invalid',
+      id: -100,
+      roles: [userRole.id],
+    }
+    const createdEventIds: number[] = []
+
+    try {
+      const deniedCycleResponse = await createEventFromCycleEndpoint.handler(
+        createEndpointRequest({ id: cycle.id, user: restrictedUser }),
+      )
+      expect(deniedCycleResponse.status).toBe(403)
+
+      const allowedCycleResponse = await createEventFromCycleEndpoint.handler(
+        createEndpointRequest({ id: cycle.id, user: author }),
+      )
+      expect(allowedCycleResponse.status).toBe(201)
+      const allowedCycleBody = (await allowedCycleResponse.json()) as { doc: { id: number } }
+      createdEventIds.push(allowedCycleBody.doc.id)
+
+      const deniedNextResponse = await createNextEventEndpoint.handler(
+        createEndpointRequest({
+          body: { startAt: '2030-09-11T16:00:00.000Z' },
+          id: allowedCycleBody.doc.id,
+          user: restrictedUser,
+        }),
+      )
+      expect(deniedNextResponse.status).toBe(403)
+
+      const allowedNextResponse = await createNextEventEndpoint.handler(
+        createEndpointRequest({
+          body: { startAt: '2030-09-11T16:00:00.000Z' },
+          id: allowedCycleBody.doc.id,
+          user: author,
+        }),
+      )
+      expect(allowedNextResponse.status).toBe(201)
+      const allowedNextBody = (await allowedNextResponse.json()) as { doc: { id: number } }
+      createdEventIds.push(allowedNextBody.doc.id)
+
+      const missingSourceResponse = await createNextEventEndpoint.handler(
+        createEndpointRequest({
+          body: { startAt: '2030-09-11T16:00:00.000Z' },
+          id: 2_147_483_647,
+          user: author,
+        }),
+      )
+      expect(missingSourceResponse.status).toBe(404)
+
+      const invalidInputResponse = await createNextEventEndpoint.handler(
+        createEndpointRequest({ body: { startAt: 'not-a-date' }, id: cycle.id, user: author }),
+      )
+      expect(invalidInputResponse.status).toBe(400)
+    } finally {
+      for (const eventId of createdEventIds) {
+        await payload.delete({ collection: 'events', id: eventId, overrideAccess: true })
+      }
+    }
+  })
+
   it('shows all published events publicly while keeping drafts hidden', async () => {
     await Promise.all([
       payload.create({

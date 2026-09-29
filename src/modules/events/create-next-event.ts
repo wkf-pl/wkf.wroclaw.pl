@@ -1,17 +1,14 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 
-import type { Event } from '@/payload-types'
+import { getRelationshipId } from '@/lib/relationships'
+
+import { eventEndpointErrorResponse } from './endpoint-response'
 
 function parseStartAt(value: unknown): Date | null {
   if (typeof value !== 'string' || !value.trim()) return null
   const normalized = value.includes('T') ? value : value.replace(' ', 'T')
   const date = new Date(normalized)
   return Number.isNaN(date.getTime()) ? null : date
-}
-
-function relationshipID(value: Event['cycle']): number | null {
-  if (typeof value === 'number') return value
-  return value && typeof value === 'object' ? value.id : null
 }
 
 async function handler(req: PayloadRequest): Promise<Response> {
@@ -25,65 +22,90 @@ async function handler(req: PayloadRequest): Promise<Response> {
   if (!startAt)
     return Response.json({ message: 'Podaj poprawny początek wydarzenia.' }, { status: 400 })
 
-  const source = await req.payload.findByID({ collection: 'events', depth: 0, id, req })
-  const cycleID = relationshipID(source.cycle)
-  const cycle = cycleID
-    ? await req.payload.findByID({ collection: 'event-cycles', depth: 0, id: cycleID, req })
-    : null
-  const duration = source.endAt
-    ? new Date(source.endAt).getTime() - new Date(source.startAt).getTime()
-    : null
-  const endAt =
-    duration !== null && duration >= 0
-      ? new Date(startAt.getTime() + duration).toISOString()
-      : undefined
-  const dateLabel = new Intl.DateTimeFormat('pl-PL', {
-    dateStyle: 'long',
-    timeZone: 'Europe/Warsaw',
-  }).format(startAt)
+  try {
+    const source = await req.payload.findByID({
+      collection: 'events',
+      depth: 0,
+      id,
+      overrideAccess: false,
+      req,
+      user: req.user,
+    })
+    const cycleID = getRelationshipId(source.cycle)
+    const cycle = cycleID
+      ? await req.payload.findByID({
+          collection: 'event-cycles',
+          depth: 0,
+          id: cycleID,
+          overrideAccess: false,
+          req,
+          user: req.user,
+        })
+      : null
+    const duration = source.endAt
+      ? new Date(source.endAt).getTime() - new Date(source.startAt).getTime()
+      : null
+    const endAt =
+      duration !== null && duration >= 0
+        ? new Date(startAt.getTime() + duration).toISOString()
+        : undefined
+    const dateLabel = new Intl.DateTimeFormat('pl-PL', {
+      dateStyle: 'long',
+      timeZone: 'Europe/Warsaw',
+    }).format(startAt)
 
-  const data = cycleID
-    ? {
-        _status: 'draft' as const,
-        cycle: cycleID,
-        endAt,
-        startAt: startAt.toISOString(),
-        title: `${cycle?.title || source.title} — ${dateLabel}`,
-      }
-    : {
-        _status: 'draft' as const,
-        author: typeof source.author === 'object' ? source.author.id : source.author,
-        capacity: source.capacity,
-        capacityMode: source.capacityMode,
-        category:
-          source.category && typeof source.category === 'object'
-            ? source.category.id
-            : source.category,
-        endAt,
-        eventStatus: 'scheduled' as const,
-        eventType:
-          source.eventType && typeof source.eventType === 'object'
-            ? source.eventType.id
-            : source.eventType,
-        excerpt: source.excerpt,
-        externalLinks: source.externalLinks,
-        heroImage:
-          source.heroImage && typeof source.heroImage === 'object'
-            ? source.heroImage.id
-            : source.heroImage,
-        layout: source.layout,
-        location: source.location,
-        organizers: source.organizers,
-        participation: source.participation,
-        partners: source.partners,
-        startAt: startAt.toISOString(),
-        tags: source.tags?.map((item) => (typeof item === 'object' ? item.id : item)),
-        timeMode: source.timeMode,
-        title: source.title,
-      }
+    const data = cycleID
+      ? {
+          _status: 'draft' as const,
+          cycle: cycleID,
+          endAt,
+          startAt: startAt.toISOString(),
+          title: `${cycle?.title || source.title} — ${dateLabel}`,
+        }
+      : {
+          _status: 'draft' as const,
+          author: typeof source.author === 'object' ? source.author.id : source.author,
+          capacity: source.capacity,
+          capacityMode: source.capacityMode,
+          category:
+            source.category && typeof source.category === 'object'
+              ? source.category.id
+              : source.category,
+          endAt,
+          eventStatus: 'scheduled' as const,
+          eventType:
+            source.eventType && typeof source.eventType === 'object'
+              ? source.eventType.id
+              : source.eventType,
+          excerpt: source.excerpt,
+          externalLinks: source.externalLinks,
+          heroImage:
+            source.heroImage && typeof source.heroImage === 'object'
+              ? source.heroImage.id
+              : source.heroImage,
+          layout: source.layout,
+          location: source.location,
+          organizers: source.organizers,
+          participation: source.participation,
+          partners: source.partners,
+          startAt: startAt.toISOString(),
+          tags: source.tags?.map((item) => (typeof item === 'object' ? item.id : item)),
+          timeMode: source.timeMode,
+          title: source.title,
+        }
 
-  const doc = await req.payload.create({ collection: 'events', data, draft: true, req })
-  return Response.json({ doc: { id: doc.id } }, { status: 201 })
+    const doc = await req.payload.create({
+      collection: 'events',
+      data,
+      draft: true,
+      overrideAccess: false,
+      req,
+      user: req.user,
+    })
+    return Response.json({ doc: { id: doc.id } }, { status: 201 })
+  } catch (error) {
+    return eventEndpointErrorResponse(req, error)
+  }
 }
 
 export const createNextEventEndpoint: Endpoint = {
