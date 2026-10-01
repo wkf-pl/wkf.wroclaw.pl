@@ -25,3 +25,13 @@
 - The temporary preview helper must remain in the foreground. It limits the preview lifetime, records the process group, terminates the entire group on exit, verifies that the port is no longer listening, and removes the dedicated `tmp/wkf-preview-next-<port>` directory.
 - If a long-running process cannot use the helper, record its process group when starting it, install cleanup traps, terminate the entire process group before completing the task, and verify that every task-created listening port is closed.
 - Before completing a task that started local services, run `ss -ltnp | grep -E ':31[0-9][0-9]\\b'` and confirm that no task-created preview remains.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
