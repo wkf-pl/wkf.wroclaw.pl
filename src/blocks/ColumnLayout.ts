@@ -1,6 +1,7 @@
 import { APIError, type ArrayFieldValidation, type Block, type FieldHook } from 'payload'
 
 import { contentLeafBlocks } from './contentLeafBlocks'
+import { createContentSurfaceFields } from '@/modules/content/content-surface'
 
 const minimumColumnCount = 2
 const maximumColumnCount = 4
@@ -81,6 +82,36 @@ export const ColumnLayoutBlock: Block = {
   },
   fields: [
     {
+      type: 'row',
+      fields: [
+        {
+          name: 'verticalAlignment',
+          type: 'select',
+          admin: { isClearable: false, width: '50%' },
+          defaultValue: 'start',
+          label: 'Wyrównanie w pionie',
+          options: [
+            { label: 'Do początku', value: 'start' },
+            { label: 'Do środka', value: 'center' },
+            { label: 'Do końca', value: 'end' },
+          ],
+          required: true,
+        },
+        {
+          name: 'columnSeparators',
+          type: 'select',
+          admin: { isClearable: false, width: '50%' },
+          defaultValue: 'none',
+          label: 'Separatory kolumn',
+          options: [
+            { label: 'Bez separatorów', value: 'none' },
+            { label: 'Pomiędzy kolumnami', value: 'between' },
+          ],
+          required: true,
+        },
+      ],
+    },
+    {
       name: 'columns',
       type: 'array',
       admin: {
@@ -89,8 +120,8 @@ export const ColumnLayoutBlock: Block = {
         },
       },
       defaultValue: [
-        { blocks: [], width: 6 },
-        { blocks: [], width: 6 },
+        { blocks: [], surface: 'default', width: 6 },
+        { blocks: [], surface: 'default', width: 6 },
       ],
       hooks: {
         beforeValidate: [enforceColumnLayoutColumns],
@@ -106,6 +137,7 @@ export const ColumnLayoutBlock: Block = {
           min: minimumColumnWidth,
           required: true,
         },
+        ...createContentSurfaceFields(),
         {
           name: 'blocks',
           type: 'blocks',

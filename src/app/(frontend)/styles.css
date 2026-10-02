@@ -1,6 +1,7 @@
 @import './styles/foundation-shell-home.css';
 @import './styles/footer-privacy.css';
 @import './styles/content-listings.css';
+@import './styles/content-composition.css';
 @import './styles/content-responsive.css';
 @import './styles/members.css';
 @import './styles/events.css';

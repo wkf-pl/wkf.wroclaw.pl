@@ -79,13 +79,22 @@ export function ColumnLayoutField(properties: ArrayFieldClientProps) {
   )
   const widthSum = widths.reduce((sum, width) => sum + width, 0)
   const widthField = useMemo(() => getNamedField(field.fields, 'width'), [field.fields])
-  const blocksField = useMemo(() => getNamedField(field.fields, 'blocks'), [field.fields])
+  const contentFields = useMemo(
+    () => field.fields.filter((candidate) => !('name' in candidate) || candidate.name !== 'width'),
+    [field.fields],
+  )
   const renderedPermissions = getRenderedPermissions(permissions)
   const effectiveReadOnly = Boolean(readOnly || disabled)
   const modalSlug = `${path.replace(/[^a-zA-Z0-9_-]/g, '-')}-remove-column`
 
   function addColumn(): void {
     const subFieldState: FormState = {
+      surface: {
+        initialValue: 'default',
+        passesCondition: true,
+        valid: true,
+        value: 'default',
+      },
       width: {
         initialValue: 2,
         passesCondition: true,
@@ -297,7 +306,7 @@ export function ColumnLayoutField(properties: ArrayFieldClientProps) {
                   onToggle={(collapsed) => setColumnCollapsed(row.id, collapsed)}
                 >
                   <RenderFields
-                    fields={[blocksField]}
+                    fields={contentFields}
                     forceRender={forceRender}
                     margins={false}
                     parentIndexPath=""

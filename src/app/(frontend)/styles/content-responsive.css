@@ -10,6 +10,21 @@
   :is(.columnLayout--3, .columnLayout--4) .columnLayoutColumn--empty {
     display: none;
   }
+
+  :is(.columnLayout--3, .columnLayout--4) .columnLayoutColumnContent {
+    align-content: start;
+  }
+
+  :is(.columnLayout--3, .columnLayout--4).columnLayout--withSeparators
+    .columnLayoutColumn:not(.columnLayoutColumn--empty)
+    ~ .columnLayoutColumn:not(.columnLayoutColumn--empty)::before {
+    top: calc(var(--column-gap) / -2);
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: auto;
+    height: 1px;
+  }
 }
 
 @container column-layout (width <= 48rem) {
@@ -23,6 +38,21 @@
 
   .columnLayout--2 .columnLayoutColumn--empty {
     display: none;
+  }
+
+  .columnLayout--2 .columnLayoutColumnContent {
+    align-content: start;
+  }
+
+  .columnLayout--2.columnLayout--withSeparators
+    .columnLayoutColumn:not(.columnLayoutColumn--empty)
+    ~ .columnLayoutColumn:not(.columnLayoutColumn--empty)::before {
+    top: calc(var(--column-gap) / -2);
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: auto;
+    height: 1px;
   }
 }
 

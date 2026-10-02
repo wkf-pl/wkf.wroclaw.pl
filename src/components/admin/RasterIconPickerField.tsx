@@ -73,7 +73,12 @@ export function RasterIconPickerField(properties: SelectFieldClientProps) {
   const fieldId = `field-${path.replaceAll('.', '__')}`
 
   function handleChange(option: unknown) {
-    if (Array.isArray(option) || !option || typeof option !== 'object' || !('value' in option)) {
+    if (!option) {
+      setValue(null)
+      return
+    }
+
+    if (Array.isArray(option) || typeof option !== 'object' || !('value' in option)) {
       return
     }
 
@@ -92,7 +97,7 @@ export function RasterIconPickerField(properties: SelectFieldClientProps) {
           matchesRasterIconSearch(data as RasterIconPickerOption, search)
         }
         inputId={path}
-        isClearable={false}
+        isClearable={!properties.field.required}
         isSearchable
         noOptionsMessage={() => 'Nie znaleziono ikony.'}
         onChange={handleChange}

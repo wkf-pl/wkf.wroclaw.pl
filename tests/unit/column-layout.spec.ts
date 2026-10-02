@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { BlocksField, Field } from 'payload'
 
-import { ColumnLayoutBlock, contentLeafBlocks, validateColumnLayoutColumns } from '@/blocks'
+import {
+  ColumnLayoutBlock,
+  SectionGroupBlock,
+  contentLeafBlocks,
+  validateColumnLayoutColumns,
+} from '@/blocks'
 import { EventCycles } from '@/collections/EventCycles'
 import { Events } from '@/collections/Events'
 import { Pages } from '@/collections/Pages'
@@ -17,6 +22,34 @@ function validate(columns: unknown): true | string {
 }
 
 describe('column layout', () => {
+  it('offers only the supported vertical alignments and separator modes', () => {
+    const fields = ColumnLayoutBlock.fields.flatMap((field) =>
+      field.type === 'row' ? field.fields : [field],
+    )
+    const verticalAlignment = fields.find(
+      (field) => 'name' in field && field.name === 'verticalAlignment',
+    )
+    const columnSeparators = fields.find(
+      (field) => 'name' in field && field.name === 'columnSeparators',
+    )
+
+    expect(verticalAlignment).toMatchObject({
+      defaultValue: 'start',
+      options: [
+        { label: 'Do początku', value: 'start' },
+        { label: 'Do środka', value: 'center' },
+        { label: 'Do końca', value: 'end' },
+      ],
+    })
+    expect(columnSeparators).toMatchObject({
+      defaultValue: 'none',
+      options: [
+        { label: 'Bez separatorów', value: 'none' },
+        { label: 'Pomiędzy kolumnami', value: 'between' },
+      ],
+    })
+  })
+
   it.each([
     [[{ width: 6 }, { width: 6 }]],
     [[{ width: 10 }, { width: 2 }]],
@@ -63,6 +96,7 @@ describe('column layout', () => {
     expect(layoutField.blocks.map((block) => block.slug)).toEqual([
       ...contentLeafBlocks.map((block) => block.slug),
       'columnLayout',
+      'sectionGroup',
     ])
 
     const columnsField = ColumnLayoutBlock.fields.find(
@@ -97,20 +131,64 @@ describe('column layout', () => {
     ).toBe(true)
   })
 
+  it('keeps section groups top-level and the content grammar finite', () => {
+    const columnsField = ColumnLayoutBlock.fields.find(
+      (field) => 'name' in field && field.name === 'columns',
+    )
+    if (!columnsField || columnsField.type !== 'array') throw new Error('Missing columns field')
+    const nestedBlocksField = columnsField.fields.find(
+      (field) => 'name' in field && field.name === 'blocks',
+    )
+    if (!nestedBlocksField || nestedBlocksField.type !== 'blocks') {
+      throw new Error('Missing nested blocks field')
+    }
+
+    expect(nestedBlocksField.blocks.map((block) => block.slug)).toEqual(
+      contentLeafBlocks.map((block) => block.slug),
+    )
+
+    const sectionsField = SectionGroupBlock.fields.find(
+      (field) => 'name' in field && field.name === 'sections',
+    )
+    if (!sectionsField || sectionsField.type !== 'array') {
+      throw new Error('Missing sections field')
+    }
+    const sectionBlocksField = sectionsField.fields.find(
+      (field) => 'name' in field && field.name === 'blocks',
+    )
+    if (!sectionBlocksField || sectionBlocksField.type !== 'blocks') {
+      throw new Error('Missing section blocks field')
+    }
+    expect(sectionBlocksField.blocks.map((block) => block.slug)).toEqual([
+      ...contentLeafBlocks.map((block) => block.slug),
+      'columnLayout',
+    ])
+  })
+
   it('walks top-level and nested leaf blocks in reading order', () => {
     const references = [
       ...walkContentLeafBlocks([
         { blockType: 'richText', marker: 'top' },
         {
-          blockType: 'columnLayout',
-          columns: [
+          blockType: 'sectionGroup',
+          sections: [
             {
               blocks: [
-                { blockType: 'listing', marker: 'left-first' },
-                { blockType: 'mediaGallery', marker: 'left-second' },
+                { blockType: 'heading', marker: 'section-heading' },
+                {
+                  blockType: 'columnLayout',
+                  columns: [
+                    {
+                      blocks: [
+                        { blockType: 'listing', marker: 'left-first' },
+                        { blockType: 'mediaGallery', marker: 'left-second' },
+                      ],
+                    },
+                    { blocks: [{ blockType: 'documents', marker: 'right' }] },
+                  ],
+                },
               ],
             },
-            { blocks: [{ blockType: 'documents', marker: 'right' }] },
           ],
         },
         { blockType: 'attachments', marker: 'bottom' },
@@ -119,6 +197,7 @@ describe('column layout', () => {
 
     expect(references.map(({ block }) => block.marker)).toEqual([
       'top',
+      'section-heading',
       'left-first',
       'left-second',
       'right',
@@ -126,9 +205,10 @@ describe('column layout', () => {
     ])
     expect(references.map(({ path }) => path)).toEqual([
       'layout.0',
-      'layout.1.columns.0.blocks.0',
-      'layout.1.columns.0.blocks.1',
-      'layout.1.columns.1.blocks.0',
+      'layout.1.sections.0.blocks.0',
+      'layout.1.sections.0.blocks.1.columns.0.blocks.0',
+      'layout.1.sections.0.blocks.1.columns.0.blocks.1',
+      'layout.1.sections.0.blocks.1.columns.1.blocks.0',
       'layout.2',
     ])
   })

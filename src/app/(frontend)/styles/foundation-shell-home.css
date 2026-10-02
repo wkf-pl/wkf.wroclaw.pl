@@ -142,20 +142,6 @@ body:has(> .homePage) .siteHeader {
   padding: 0.65rem 0;
 }
 
-.siteHeader nav .headerMenuItem-button {
-  padding: 0.65rem 1rem;
-  border: 1px solid var(--gold);
-  border-radius: 0.45rem;
-}
-
-.siteHeader nav .headerMenuItem-icon {
-  display: grid;
-  width: 2.7rem;
-  height: 2.7rem;
-  padding: 0;
-  place-items: center;
-}
-
 .rasterIcon {
   display: inline-block;
   width: 1em;
@@ -166,11 +152,6 @@ body:has(> .homePage) .siteHeader {
   mask-position: center;
   mask-repeat: no-repeat;
   mask-size: contain;
-}
-
-.headerMenuItem-icon .rasterIcon {
-  width: 1.5rem;
-  height: 1.5rem;
 }
 
 .siteHeader nav a:hover,
@@ -772,23 +753,4 @@ body:has(> .homePage) .siteHeader {
 .sectionCardContent a:hover,
 .sectionCardContent a:focus-visible {
   color: var(--gold-light);
-}
-
-.menuIcon {
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  place-items: center;
-  border: 0;
-  color: var(--gold);
-}
-
-.menuIcon .rasterIcon {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.menuArrow {
-  display: grid;
-  place-items: center;
 }

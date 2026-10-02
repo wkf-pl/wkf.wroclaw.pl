@@ -7,6 +7,7 @@ export const RichTextBlock: Block = {
       Label: '/components/admin/ContentBlockLabel#RichTextBlockLabel',
     },
     disableBlockName: true,
+    group: 'Treści',
     images: {
       thumbnail: {
         alt: 'Schematyczna ikona dokumentu z tekstem i piórem',
@@ -15,6 +16,18 @@ export const RichTextBlock: Block = {
     },
   },
   fields: [
+    {
+      name: 'textStyle',
+      type: 'select',
+      admin: { isClearable: false },
+      defaultValue: 'default',
+      label: 'Skala tekstu',
+      options: [
+        { label: 'Standardowa', value: 'default' },
+        { label: 'Wprowadzenie', value: 'lead' },
+        { label: 'Notatka', value: 'note' },
+      ],
+    },
     {
       name: 'content',
       type: 'richText',

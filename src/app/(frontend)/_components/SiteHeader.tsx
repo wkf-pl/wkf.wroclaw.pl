@@ -2,9 +2,9 @@ import Link from 'next/link'
 
 import type { Navigation, SiteSetting } from '@/payload-types'
 import { getMediaURL } from '@/modules/media/media-url'
-import { hasRenderableIcon, resolveLink } from '@/modules/navigation/links'
+import { resolvePresentedLinks } from '@/modules/navigation/links'
 
-import { MenuIcon } from './MenuIcon'
+import { PresentedLink } from './PresentedLink'
 
 export function SiteHeader({
   navigation,
@@ -13,10 +13,7 @@ export function SiteHeader({
   navigation: Navigation
   siteSettings: SiteSetting
 }) {
-  const items = navigation.headerItems?.flatMap((item) => {
-    const link = resolveLink(item)
-    return link && (item.appearance !== 'icon' || hasRenderableIcon(item)) ? [{ item, link }] : []
-  })
+  const items = resolvePresentedLinks(navigation.headerItems ?? [])
   const logoURL = getMediaURL(navigation.logo) ?? '/assets/logo-color.webp'
   const logoAlternativeText =
     navigation.logo && typeof navigation.logo === 'object' ? navigation.logo.alt : ''
@@ -35,15 +32,12 @@ export function SiteHeader({
         </Link>
         {items?.length ? (
           <nav aria-label="Główna nawigacja">
-            {items.map(({ item, link }) => (
-              <Link
-                aria-label={item.appearance === 'icon' ? item.label : undefined}
-                className={`headerMenuItem headerMenuItem-${item.appearance}`}
-                key={item.id}
-                {...link}
-              >
-                {item.appearance === 'icon' ? <MenuIcon iconName={item.iconName} /> : item.label}
-              </Link>
+            {items.map((item, itemIndex) => (
+              <PresentedLink
+                className="headerMenuItem"
+                item={item}
+                key={`${item.link.href}-${itemIndex}`}
+              />
             ))}
           </nav>
         ) : null}

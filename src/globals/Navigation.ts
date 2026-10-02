@@ -3,7 +3,7 @@ import type { GlobalConfig } from 'payload'
 import { invalidateNavigationAfterChange } from '@/modules/cache/invalidate-public-data'
 import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
-import { createIconFields, createLinkFields } from '@/modules/navigation/fields'
+import { createPresentedLinkFields, validatePresentedLinkItems } from '@/modules/navigation/fields'
 
 const readNavigation = createRolePermissionAccess({
   anonymousAccess: true,
@@ -40,43 +40,13 @@ export const Navigation: GlobalConfig = {
           RowLabel: '/components/admin/DynamicRowLabel#NavigationItemRowLabel',
         },
       },
-      fields: [
-        {
-          type: 'row',
-          fields: [
-            {
-              name: 'label',
-              type: 'text',
-              admin: { width: '50%' },
-              label: 'Etykieta',
-              required: true,
-            },
-            {
-              name: 'appearance',
-              type: 'select',
-              admin: {
-                isClearable: false,
-                width: '50%',
-              },
-              defaultValue: 'link',
-              label: 'Wygląd',
-              options: [
-                { label: 'Link', value: 'link' },
-                { label: 'Ikona', value: 'icon' },
-                { label: 'Przycisk', value: 'button' },
-              ],
-              required: true,
-            },
-          ],
-        },
-        ...createLinkFields({ includeLabel: false }),
-        ...createIconFields({ showWhenAppearanceIcon: true }),
-      ],
+      fields: createPresentedLinkFields(),
       label: 'Elementy nagłówka',
       labels: {
         plural: 'Pozycje menu w nagłówku',
         singular: 'pozycję',
       },
+      validate: validatePresentedLinkItems,
     },
   ],
   hooks: { afterChange: [invalidateNavigationAfterChange] },

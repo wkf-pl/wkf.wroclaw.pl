@@ -198,6 +198,7 @@ describe('member profiles integration', () => {
         layout: [
           {
             blockType: 'columnLayout',
+            columnSeparators: 'none',
             columns: [
               {
                 blocks: [
@@ -208,10 +209,12 @@ describe('member profiles integration', () => {
                     view: 'grid',
                   },
                 ],
+                surface: 'default',
                 width: 6,
               },
-              { blocks: [], width: 6 },
+              { blocks: [], surface: 'default', width: 6 },
             ],
+            verticalAlignment: 'start',
           },
         ],
         slug: 'integration-member-profile-usage',

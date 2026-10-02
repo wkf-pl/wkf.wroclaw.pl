@@ -222,4 +222,60 @@ describe('media blocks', () => {
     ).rejects.toMatchObject({ status: 400 })
     expect(find).toHaveBeenCalledTimes(1)
   })
+
+  it('validates gallery and surface media in one query and rejects a PDF background', async () => {
+    const find = vi.fn().mockResolvedValue({
+      docs: [
+        { id: 7, mimeType: 'image/webp' },
+        { id: 9, mimeType: 'application/pdf' },
+      ],
+    })
+
+    await expect(
+      validateMediaBlocks({
+        data: {
+          layout: [
+            {
+              blockType: 'mediaGallery',
+              items: [{ media: 7 }],
+              selectionMode: 'manual',
+            },
+            {
+              blockType: 'sectionGroup',
+              sections: [
+                {
+                  blocks: [],
+                  surface: 'image',
+                  surfaceImage: 9,
+                },
+              ],
+            },
+          ],
+        },
+        req: { payload: { find } },
+      } as never),
+    ).rejects.toMatchObject({ status: 400 })
+
+    expect(find).toHaveBeenCalledTimes(1)
+    expect(find).toHaveBeenCalledWith(expect.objectContaining({ where: { id: { in: [7, 9] } } }))
+  })
+
+  it('rejects an image surface without a media relationship before querying', async () => {
+    const find = vi.fn()
+
+    await expect(
+      validateMediaBlocks({
+        data: {
+          layout: [
+            {
+              blockType: 'sectionGroup',
+              sections: [{ blocks: [], surface: 'image' }],
+            },
+          ],
+        },
+        req: { payload: { find } },
+      } as never),
+    ).rejects.toMatchObject({ status: 400 })
+    expect(find).not.toHaveBeenCalled()
+  })
 })

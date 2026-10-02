@@ -53,19 +53,23 @@ function columnLayout(leftText: string, rightText: string) {
   return [
     {
       blockType: 'columnLayout' as const,
+      columnSeparators: 'none' as const,
       columns: [
         {
           blocks: [
             { blockType: 'richText' as const, content: richTextContent(leftText) },
             { blockType: 'richText' as const, content: richTextContent(`${leftText} second`) },
           ],
+          surface: 'default' as const,
           width: 8,
         },
         {
           blocks: [{ blockType: 'richText' as const, content: richTextContent(rightText) }],
+          surface: 'default' as const,
           width: 4,
         },
       ],
+      verticalAlignment: 'start' as const,
     },
   ]
 }
