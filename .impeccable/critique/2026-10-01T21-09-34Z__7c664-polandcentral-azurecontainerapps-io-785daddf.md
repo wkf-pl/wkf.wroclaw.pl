@@ -1,31 +1,32 @@
 ---
-target: "https://wkf-staging.redmushroom-5037c664.polandcentral.azurecontainerapps.io"
+target: 'https://wkf-staging.redmushroom-5037c664.polandcentral.azurecontainerapps.io'
 total_score: 16
 max_score: 28
 na_heuristics: 7,9,10
 p0_count: 0
 p1_count: 4
-target_identity: "url:https://wkf-staging.redmushroom-5037c664.polandcentral.azurecontainerapps.io/"
+target_identity: 'url:https://wkf-staging.redmushroom-5037c664.polandcentral.azurecontainerapps.io/'
 timestamp: 2026-10-01T21-09-34Z
 slug: 7c664-polandcentral-azurecontainerapps-io-785daddf
 ---
+
 Method: dual-agent (A: /root/critique_design_a · B: /root/critique_detector_b)
 
 ## Design Health Score
 
-| # | Heurystyka | Ocena | Najważniejszy problem |
-|---|---|---:|---|
-| 1 | Widoczność stanu systemu | 2/4 | Zakładki i fokus są czytelne, ale nawigacja nie wskazuje bieżącej sekcji, a mobilny banner zgody zasłania pierwszy istotny stan strony. |
-| 2 | Zgodność systemu ze światem użytkownika | 2/4 | Treści wydarzeń są konkretne, lecz strona dołączenia nie daje realnego kroku i używa żartobliwego tonu, który osłabia zaufanie. |
-| 3 | Kontrola i swoboda użytkownika | 3/4 | Zgoda prywatności daje równorzędne wybory, ale linki prowadzące do `#top` zachowują się inaczej, niż obiecują. |
-| 4 | Spójność i standardy | 2/4 | Warstwa wizualna jest spójna, lecz „Aktualności”/„blog”, martwe cele oraz dwa landmarki `main` rozszczelniają wzorzec. |
-| 5 | Zapobieganie błędom | 3/4 | Mało ryzykownych operacji i uczciwy wybór cookies; pojedyncze cele nawigacyjne nadal udają gotowe miejsca docelowe. |
-| 6 | Rozpoznawanie zamiast przypominania | 2/4 | Etykiety zwykle są jawne, ale odwiedzający musi sam wywnioskować, czym jest WKF i jak faktycznie do niego dołączyć. |
-| 7 | Elastyczność i efektywność | n/a | Publiczna powierzchnia Persuade/Read bez zadania eksperckiego. |
-| 8 | Estetyka i minimalizm | 2/4 | System ma charakter, lecz 41% viewportu zajęte przez banner, powtarzana galaktyka i długie mobilne karty osłabiają priorytety. |
-| 9 | Rozpoznawanie i naprawianie błędów | n/a | W badanych ścieżkach nie wystąpił formularz ani stan błędu użytkownika. |
-| 10 | Pomoc i dokumentacja | n/a | Osobny system pomocy nie jest wymagany na tej informacyjno-perswazyjnej powierzchni. |
-| **Razem** |  | **16/28** | **Akceptowalne, ale przed produkcją wymaga znaczących poprawek ścieżki zaufania, mobile i semantyki.** |
+| #         | Heurystyka                              |     Ocena | Najważniejszy problem                                                                                                                   |
+| --------- | --------------------------------------- | --------: | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 1         | Widoczność stanu systemu                |       2/4 | Zakładki i fokus są czytelne, ale nawigacja nie wskazuje bieżącej sekcji, a mobilny banner zgody zasłania pierwszy istotny stan strony. |
+| 2         | Zgodność systemu ze światem użytkownika |       2/4 | Treści wydarzeń są konkretne, lecz strona dołączenia nie daje realnego kroku i używa żartobliwego tonu, który osłabia zaufanie.         |
+| 3         | Kontrola i swoboda użytkownika          |       3/4 | Zgoda prywatności daje równorzędne wybory, ale linki prowadzące do `#top` zachowują się inaczej, niż obiecują.                          |
+| 4         | Spójność i standardy                    |       2/4 | Warstwa wizualna jest spójna, lecz „Aktualności”/„blog”, martwe cele oraz dwa landmarki `main` rozszczelniają wzorzec.                  |
+| 5         | Zapobieganie błędom                     |       3/4 | Mało ryzykownych operacji i uczciwy wybór cookies; pojedyncze cele nawigacyjne nadal udają gotowe miejsca docelowe.                     |
+| 6         | Rozpoznawanie zamiast przypominania     |       2/4 | Etykiety zwykle są jawne, ale odwiedzający musi sam wywnioskować, czym jest WKF i jak faktycznie do niego dołączyć.                     |
+| 7         | Elastyczność i efektywność              |       n/a | Publiczna powierzchnia Persuade/Read bez zadania eksperckiego.                                                                          |
+| 8         | Estetyka i minimalizm                   |       2/4 | System ma charakter, lecz 41% viewportu zajęte przez banner, powtarzana galaktyka i długie mobilne karty osłabiają priorytety.          |
+| 9         | Rozpoznawanie i naprawianie błędów      |       n/a | W badanych ścieżkach nie wystąpił formularz ani stan błędu użytkownika.                                                                 |
+| 10        | Pomoc i dokumentacja                    |       n/a | Osobny system pomocy nie jest wymagany na tej informacyjno-perswazyjnej powierzchni.                                                    |
+| **Razem** |                                         | **16/28** | **Akceptowalne, ale przed produkcją wymaga znaczących poprawek ścieżki zaufania, mobile i semantyki.**                                  |
 
 ## Design Specificity Verdict
 
