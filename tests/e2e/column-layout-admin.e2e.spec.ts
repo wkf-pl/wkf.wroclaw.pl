@@ -77,12 +77,14 @@ test.beforeAll(async () => {
       layout: [
         {
           blockType: 'columnLayout',
+          columnSeparators: 'none',
           columns: [
-            { blocks: [richTextBlock('Left content')], width: 3 },
-            { blocks: [richTextBlock('Middle content')], width: 3 },
-            { blocks: [], width: 3 },
-            { blocks: [richTextBlock('Right content')], width: 3 },
+            { blocks: [richTextBlock('Left content')], surface: 'default', width: 3 },
+            { blocks: [richTextBlock('Middle content')], surface: 'default', width: 3 },
+            { blocks: [], surface: 'default', width: 3 },
+            { blocks: [richTextBlock('Right content')], surface: 'default', width: 3 },
           ],
+          verticalAlignment: 'start',
         },
       ],
       slug: fixtureSlug,
@@ -99,10 +101,12 @@ test.beforeAll(async () => {
       layout: [
         {
           blockType: 'columnLayout',
+          columnSeparators: 'none',
           columns: [
-            { blocks: [], width: 6 },
-            { blocks: [], width: 6 },
+            { blocks: [], surface: 'default', width: 6 },
+            { blocks: [], surface: 'default', width: 6 },
           ],
+          verticalAlignment: 'start',
         },
       ],
       slug: defaultFixtureSlug,
@@ -148,14 +152,30 @@ test('opens a 6+6 layout, keeps content visible while invalid and excludes neste
     .click()
   await expect(firstColumnContent).not.toHaveClass(/collapsible--collapsed/)
 
-  const configuratorTop = await field
-    .locator('.wkf-column-layout-configurator')
-    .evaluate((element) => element.getBoundingClientRect().top)
-  const firstContentTop = await field
-    .locator('.wkf-column-layout-content')
-    .first()
-    .evaluate((element) => element.getBoundingClientRect().top)
-  expect(configuratorTop).toBeLessThan(firstContentTop)
+  const spacing = await field.evaluate((element) => {
+    const configurator = element.querySelector('.wkf-column-layout-configurator')
+    const actions = element.querySelector('.wkf-column-layout-collapse-actions')
+    const firstContent = element.querySelector('.wkf-column-layout-content')
+    const surface = firstContent?.querySelector('.select')
+    const blocks = firstContent?.querySelector('.blocks-field')
+    if (!configurator || !actions || !firstContent || !surface || !blocks) return null
+
+    const configuratorRect = configurator.getBoundingClientRect()
+    const actionsRect = actions.getBoundingClientRect()
+    const firstContentRect = firstContent.getBoundingClientRect()
+    const surfaceRect = surface.getBoundingClientRect()
+    const blocksRect = blocks.getBoundingClientRect()
+    return {
+      actionsToContent: firstContentRect.top - actionsRect.bottom,
+      configuratorToActions: actionsRect.top - configuratorRect.bottom,
+      surfaceToBlocks: blocksRect.top - surfaceRect.bottom,
+    }
+  })
+  expect(spacing).not.toBeNull()
+  expect(spacing?.configuratorToActions).toBeGreaterThanOrEqual(0)
+  expect(spacing?.actionsToContent).toBeGreaterThanOrEqual(0)
+  expect(spacing?.actionsToContent).toBeLessThanOrEqual(8)
+  expect(spacing?.surfaceToBlocks).toBeGreaterThanOrEqual(16)
 
   await field.getByRole('button', { name: 'Dodaj kolumnę' }).click()
   await expectWidthValues(field, ['6', '6', '2'])
@@ -175,7 +195,8 @@ test('opens a 6+6 layout, keeps content visible while invalid and excludes neste
 
   await firstColumnContent.locator('.blocks-field__drawer-toggler').click()
   const innerDrawer = page.locator('.drawer--is-open')
-  await expect(innerDrawer.getByText('Treść', { exact: true })).toBeVisible()
+  const groupHeadings = await innerDrawer.getByRole('heading', { level: 3 }).allTextContents()
+  expect(groupHeadings).toEqual(['Treści', 'Elementy'])
   await expect(innerDrawer.getByText('Układ kolumnowy', { exact: true })).toHaveCount(0)
   await page.keyboard.press('Escape')
 

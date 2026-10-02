@@ -3,7 +3,7 @@ import type { GlobalConfig } from 'payload'
 import { invalidateSiteSettingsAfterChange } from '@/modules/cache/invalidate-public-data'
 import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
-import { createIconFields, createLinkFields } from '@/modules/navigation/fields'
+import { createPresentedLinkFields, validatePresentedLinkItems } from '@/modules/navigation/fields'
 
 const readHomepageSections = createRolePermissionAccess({
   anonymousAccess: true,
@@ -138,12 +138,13 @@ export const HomepageSections: GlobalConfig = {
                       RowLabel: '/components/admin/DynamicRowLabel#FooterColumnItemRowLabel',
                     },
                   },
-                  fields: [...createLinkFields(), ...createIconFields({ required: true })],
+                  fields: createPresentedLinkFields(),
                   label: 'Elementy menu',
                   labels: {
                     plural: 'Elementy menu',
                     singular: 'pozycję',
                   },
+                  validate: validatePresentedLinkItems,
                 },
               ],
               label: 'Grupy',

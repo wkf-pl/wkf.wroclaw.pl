@@ -8,15 +8,15 @@ import {
   getPublicHomepageHero,
   getPublicHomepageSections,
 } from '@/modules/content/public-content'
-import { hasRenderableIcon, resolveLink, resolvePageLink } from '@/modules/navigation/links'
+import { resolvePageLink, resolvePresentedLinks } from '@/modules/navigation/links'
 import { findHomepageEvents } from '@/modules/events/public-events'
 import { findCalendarMonth } from '@/modules/events/calendar-data'
 import { getWarsawCalendarMonth } from '@/modules/events/calendar-presentation'
 
 import { CmsImage } from './_components/CmsImage'
-import { MenuIcon } from './_components/MenuIcon'
 import { EventShowcase } from './_components/EventShowcase'
 import { HomepageHero } from './_components/HomepageHero'
+import { PresentedLink } from './_components/PresentedLink'
 
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric',
@@ -92,10 +92,7 @@ type HomepageGroup = NonNullable<HomepageSection['groups']>[number]
 
 function SectionCard({ section }: { section: HomepageGroup }) {
   const titleLink = resolvePageLink(section.destinationPage)
-  const menuItems = section.menuItems?.flatMap((item) => {
-    const link = resolveLink(item)
-    return link && hasRenderableIcon(item) ? [{ item, link }] : []
-  })
+  const menuItems = resolvePresentedLinks(section.menuItems ?? [])
 
   return (
     <article className="sectionCard">
@@ -109,17 +106,9 @@ function SectionCard({ section }: { section: HomepageGroup }) {
         <h3>{titleLink ? <Link {...titleLink}>{section.name}</Link> : section.name}</h3>
         {menuItems?.length ? (
           <ul>
-            {menuItems.map(({ item, link }) => (
-              <li key={item.id}>
-                <Link {...link}>
-                  <span aria-hidden="true" className="menuIcon">
-                    <MenuIcon iconName={item.iconName} />
-                  </span>
-                  <span>{item.label}</span>
-                  <span aria-hidden="true" className="menuArrow">
-                    <RasterIcon name="arrow-right" size="medium" />
-                  </span>
-                </Link>
+            {menuItems.map((item, itemIndex) => (
+              <li key={`${item.link.href}-${itemIndex}`}>
+                <PresentedLink item={item} trailingIconName="arrow-right" />
               </li>
             ))}
           </ul>

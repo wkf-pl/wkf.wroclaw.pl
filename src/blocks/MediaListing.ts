@@ -129,6 +129,7 @@ export const MediaGalleryBlock: Block = {
       Label: '/components/admin/ContentBlockLabel#MediaGalleryBlockLabel',
     },
     disableBlockName: true,
+    group: 'Treści',
     images: {
       thumbnail: {
         alt: 'Schematyczna ikona siatki zdjęć',
@@ -151,6 +152,7 @@ export const AttachmentsBlock: Block = {
       Label: '/components/admin/ContentBlockLabel#AttachmentsBlockLabel',
     },
     disableBlockName: true,
+    group: 'Treści',
     images: {
       thumbnail: {
         alt: 'Schematyczna ikona dokumentów połączonych spinaczem',

@@ -32,6 +32,7 @@ export const DocumentsBlock: Block = {
       Label: '/components/admin/ContentBlockLabel#DocumentsBlockLabel',
     },
     disableBlockName: true,
+    group: 'Treści',
     images: {
       thumbnail: {
         alt: 'Schematyczna ikona listy dokumentów',

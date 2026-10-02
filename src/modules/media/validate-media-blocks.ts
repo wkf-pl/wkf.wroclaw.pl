@@ -1,7 +1,10 @@
 import { APIError, type CollectionBeforeValidateHook } from 'payload'
 
 import { getRelationshipId, type RelationshipReference } from '@/lib/relationships'
-import { walkContentLeafBlocks } from '@/modules/content/walk-content-leaf-blocks'
+import {
+  walkContentLeafBlocks,
+  walkContentSurfaces,
+} from '@/modules/content/walk-content-leaf-blocks'
 import { isWebRasterImageMimeType } from '@/modules/media/media-categories'
 
 type ManualMediaItem = {
@@ -31,6 +34,7 @@ export const validateMediaBlocks: CollectionBeforeValidateHook = async ({ data, 
   }
 
   const galleryMediaByID = new Map<string, number | string>()
+  const surfaceMediaByID = new Map<string, number | string>()
 
   for (const layout of getContentLayouts(data)) {
     for (const { block: candidate } of walkContentLeafBlocks(layout)) {
@@ -70,29 +74,50 @@ export const validateMediaBlocks: CollectionBeforeValidateHook = async ({ data, 
         galleryMediaByID.set(String(mediaId), mediaId)
       }
     }
+
+    for (const { surface } of walkContentSurfaces(layout)) {
+      if (surface.surface !== 'image') {
+        continue
+      }
+
+      const mediaId = getRelationshipId(surface.surfaceImage as RelationshipReference)
+      if (mediaId === undefined) {
+        throw new APIError('Powierzchnia „Obraz” wymaga obrazu tła.', 400)
+      }
+
+      surfaceMediaByID.set(String(mediaId), mediaId)
+    }
   }
 
-  const galleryMediaIDs = [...galleryMediaByID.values()]
-  if (galleryMediaIDs.length === 0) {
+  const allMediaByID = new Map([...galleryMediaByID, ...surfaceMediaByID])
+  const allMediaIDs = [...allMediaByID.values()]
+  if (allMediaIDs.length === 0) {
     return data
   }
 
   const mediaResult = await req.payload.find({
     collection: 'media',
     depth: 0,
-    limit: galleryMediaIDs.length,
+    limit: allMediaIDs.length,
     overrideAccess: true,
     pagination: false,
     req,
     select: { id: true, mimeType: true },
-    where: { id: { in: galleryMediaIDs } },
+    where: { id: { in: allMediaIDs } },
   })
   const mediaByID = new Map(mediaResult.docs.map((media) => [String(media.id), media]))
 
-  for (const mediaId of galleryMediaIDs) {
+  for (const mediaId of galleryMediaByID.values()) {
     const media = mediaByID.get(String(mediaId))
     if (!isWebRasterImageMimeType(media?.mimeType)) {
       throw new APIError('Galeria mediów może zawierać wyłącznie obrazy.', 400)
+    }
+  }
+
+  for (const mediaId of surfaceMediaByID.values()) {
+    const media = mediaByID.get(String(mediaId))
+    if (!isWebRasterImageMimeType(media?.mimeType)) {
+      throw new APIError('Tło powierzchni może wykorzystywać wyłącznie obraz rastrowy.', 400)
     }
   }
 

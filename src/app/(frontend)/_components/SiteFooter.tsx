@@ -1,12 +1,11 @@
-import Link from 'next/link'
 import type { CSSProperties } from 'react'
 
 import { CmsRichText } from '@/components/CmsRichText'
 import type { Footer, Navigation, SiteSetting } from '@/payload-types'
 import { getMediaURL } from '@/modules/media/media-url'
-import { hasRenderableIcon, resolveLink } from '@/modules/navigation/links'
+import { resolvePresentedLinks } from '@/modules/navigation/links'
 
-import { MenuIcon } from './MenuIcon'
+import { PresentedLink } from './PresentedLink'
 
 export function SiteFooter({
   footer,
@@ -17,15 +16,9 @@ export function SiteFooter({
   navigation: Navigation
   siteSettings: SiteSetting
 }) {
-  const socialItems = footer.socialItems?.flatMap((item) => {
-    const link = resolveLink(item)
-    return link && hasRenderableIcon(item) ? [{ item, link }] : []
-  })
+  const socialItems = resolvePresentedLinks(footer.socialItems ?? [])
   const columns = footer.columns?.flatMap((column) => {
-    const items = column.items?.flatMap((item) => {
-      const link = resolveLink(item)
-      return link ? [{ item, link }] : []
-    })
+    const items = resolvePresentedLinks(column.items ?? [])
 
     return items?.length ? [{ ...column, items }] : []
   })
@@ -50,10 +43,12 @@ export function SiteFooter({
             {footer.contactHeading ? <strong>{footer.contactHeading}</strong> : null}
             {socialItems?.length ? (
               <nav aria-label="Media społecznościowe" className="socialLinks">
-                {socialItems.map(({ item, link }) => (
-                  <Link aria-label={item.label} key={item.id} {...link}>
-                    <MenuIcon iconName={item.iconName} />
-                  </Link>
+                {socialItems.map((item, itemIndex) => (
+                  <PresentedLink
+                    className="socialLink"
+                    item={item}
+                    key={`${item.link.href}-${itemIndex}`}
+                  />
                 ))}
               </nav>
             ) : null}
@@ -67,10 +62,12 @@ export function SiteFooter({
             {columns.map((column) => (
               <nav aria-label={`${column.title} w stopce`} key={column.id}>
                 <strong>{column.title}</strong>
-                {column.items.map(({ item, link }) => (
-                  <Link key={item.id} {...link}>
-                    {item.label}
-                  </Link>
+                {column.items.map((item, itemIndex) => (
+                  <PresentedLink
+                    className="footerMenuItem"
+                    item={item}
+                    key={`${item.link.href}-${itemIndex}`}
+                  />
                 ))}
               </nav>
             ))}

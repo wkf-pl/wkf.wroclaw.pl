@@ -87,41 +87,59 @@ test.beforeAll(async () => {
       layout: [
         {
           blockType: 'columnLayout',
+          columnSeparators: 'none',
           columns: [
-            { blocks: [richTextBlock('Two columns left')], width: 8 },
-            { blocks: [], width: 4 },
+            { blocks: [richTextBlock('Two columns left')], surface: 'default', width: 8 },
+            { blocks: [], surface: 'default', width: 4 },
           ],
+          verticalAlignment: 'start',
         },
         {
           blockType: 'columnLayout',
+          columnSeparators: 'none',
           columns: [
-            { blocks: [richTextBlock('Three columns left')], width: 2 },
-            { blocks: [richTextBlock('Three columns center')], width: 4 },
-            { blocks: [richTextBlock('Three columns right')], width: 6 },
+            { blocks: [richTextBlock('Three columns left')], surface: 'default', width: 2 },
+            { blocks: [richTextBlock('Three columns center')], surface: 'default', width: 4 },
+            { blocks: [richTextBlock('Three columns right')], surface: 'default', width: 6 },
           ],
+          verticalAlignment: 'start',
         },
         {
           blockType: 'columnLayout',
+          columnSeparators: 'none',
           columns: [
-            { blocks: [richTextBlock('Four columns first')], width: 3 },
-            { blocks: [richTextBlock('Four columns second')], width: 3 },
-            { blocks: [richTextBlock('Four columns third')], width: 3 },
-            { blocks: [richTextBlock('Four columns fourth')], width: 3 },
+            { blocks: [richTextBlock('Four columns first')], surface: 'default', width: 3 },
+            { blocks: [richTextBlock('Four columns second')], surface: 'default', width: 3 },
+            { blocks: [richTextBlock('Four columns third')], surface: 'default', width: 3 },
+            { blocks: [richTextBlock('Four columns fourth')], surface: 'default', width: 3 },
           ],
+          verticalAlignment: 'start',
         },
         {
           blockType: 'columnLayout',
+          columnSeparators: 'none',
           columns: [
-            { blocks: [], width: 6 },
-            { blocks: [], width: 6 },
+            { blocks: [], surface: 'default', width: 6 },
+            { blocks: [], surface: 'default', width: 6 },
           ],
+          verticalAlignment: 'start',
         },
         {
           blockType: 'columnLayout',
+          columnSeparators: 'none',
           columns: [
-            { blocks: [listingBlock('Left paginated listing', 'grid')], width: 6 },
-            { blocks: [listingBlock('Right paginated listing', 'grid')], width: 6 },
+            {
+              blocks: [listingBlock('Left paginated listing', 'grid')],
+              surface: 'default',
+              width: 6,
+            },
+            {
+              blocks: [listingBlock('Right paginated listing', 'grid')],
+              surface: 'default',
+              width: 6,
+            },
           ],
+          verticalAlignment: 'start',
         },
         listingBlock('Top-level grid listing', 'grid', false),
       ],

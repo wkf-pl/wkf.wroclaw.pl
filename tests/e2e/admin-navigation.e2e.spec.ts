@@ -106,9 +106,17 @@ test('presents raster icon choices as a grouped grid', async ({ page }) => {
     overrideAccess: true,
   })
   const originalHeaderItems = navigation.headerItems ?? []
-  const iconHeaderItems = originalHeaderItems.map((item, index) =>
-    index === 0 ? { ...item, appearance: 'icon' as const, iconName: 'larp' as const } : item,
-  )
+  const iconHeaderItems = [
+    {
+      appearance: 'link' as const,
+      customAddress: 'larp',
+      customScheme: 'path' as const,
+      iconName: 'larp' as const,
+      label: '',
+      targetType: 'custom' as const,
+    },
+    ...originalHeaderItems.slice(1),
+  ]
 
   await payload.updateGlobal({
     slug: 'navigation',
@@ -142,6 +150,12 @@ test('presents raster icon choices as a grouped grid', async ({ page }) => {
     ])
     await expect(iconGroups.first().locator(':scope > div:last-child')).toHaveCSS('display', 'grid')
     await expect(page.locator('.raster-icon-picker [role="option"]')).toHaveCount(63)
+    await page.keyboard.press('Escape')
+
+    const clearIconButton = iconField.locator('.clear-indicator')
+    await expect(clearIconButton).toBeVisible()
+    await clearIconButton.click()
+    await expect(iconField.locator('.raster-icon-picker__value')).toHaveCount(0)
   } finally {
     await payload.updateGlobal({
       slug: 'navigation',

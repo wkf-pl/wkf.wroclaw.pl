@@ -4,19 +4,26 @@ import type { Category, Document, Page, Post, Tag } from '@/payload-types'
 import { Footer, HomepageHero, HomepageSections, Navigation } from '@/globals'
 import {
   createLinkFields,
+  createPresentedLinkFields,
   isCategoryTarget,
   isCustomTarget,
   isPageTarget,
   isTagTarget,
   iconNameOptions,
-  usesIconAppearance,
+  presentedLinkAppearanceOptions,
+  validatePresentedLinkItems,
 } from '@/modules/navigation/fields'
 import {
   buildCustomTarget,
   parseCustomTarget,
   validateCustomAddressValue,
 } from '@/modules/navigation/custom-target'
-import { hasRenderableIcon, resolveLink } from '@/modules/navigation/links'
+import {
+  hasRenderableIcon,
+  resolveLink,
+  resolveLinkTargetName,
+  resolvePresentedLink,
+} from '@/modules/navigation/links'
 
 function findArrayField(fields: typeof Navigation.fields, name: string) {
   const result = findField(fields, name)
@@ -59,7 +66,7 @@ function createPage(overrides: Partial<Page> = {}): Page {
 }
 
 describe('navigation links', () => {
-  it('places the custom address first and each destination beside the selector', () => {
+  it('sorts link targets alphabetically and places each destination beside the selector', () => {
     const fields = createLinkFields()
     const targetRow = fields.find((field) => field.type === 'row')
 
@@ -73,13 +80,13 @@ describe('navigation links', () => {
     expect(targetType).toMatchObject({
       admin: { isClearable: false, width: '50%' },
       options: [
-        { label: 'Własny adres', value: 'custom' },
         { label: 'Cykl wydarzeń', value: 'eventCycle' },
         { label: 'Dokument', value: 'document' },
         { label: 'Kategoria', value: 'category' },
         { label: 'Partner', value: 'partner' },
         { label: 'Strona', value: 'page' },
         { label: 'Tag', value: 'tag' },
+        { label: 'Własny adres', value: 'custom' },
         { label: 'Wpis', value: 'post' },
         { label: 'Wydarzenie', value: 'event' },
       ],
@@ -96,6 +103,30 @@ describe('navigation links', () => {
         .filter((field) => 'name' in field && field.name !== 'targetType')
         .every((field) => field.admin?.width === '50%'),
     ).toBe(true)
+  })
+
+  it('sorts the site contact target alphabetically with the other destinations', () => {
+    const fields = createLinkFields({ includeSiteContactEmail: true })
+    const targetRow = fields.find((field) => field.type === 'row')
+    if (!targetRow || targetRow.type !== 'row') throw new Error('Missing link target row.')
+
+    const targetType = targetRow.fields.find(
+      (field) => 'name' in field && field.name === 'targetType',
+    )
+    if (!targetType || targetType.type !== 'select') throw new Error('Missing target selector.')
+
+    expect(targetType.options).toEqual([
+      { label: 'Cykl wydarzeń', value: 'eventCycle' },
+      { label: 'Dokument', value: 'document' },
+      { label: 'Główny adres serwisu', value: 'siteContactEmail' },
+      { label: 'Kategoria', value: 'category' },
+      { label: 'Partner', value: 'partner' },
+      { label: 'Strona', value: 'page' },
+      { label: 'Tag', value: 'tag' },
+      { label: 'Własny adres', value: 'custom' },
+      { label: 'Wpis', value: 'post' },
+      { label: 'Wydarzenie', value: 'event' },
+    ])
   })
 
   it('does not allow clearing a selected custom URL scheme', () => {
@@ -187,12 +218,74 @@ describe('navigation links', () => {
     )
   })
 
-  it('shows conditional target and icon fields only for the selected variants', () => {
+  it('shows fields for the selected target while keeping the optional icon independent', () => {
     expect(isPageTarget(null, { targetType: 'page' })).toBe(true)
     expect(isCategoryTarget(null, { targetType: 'category' })).toBe(true)
     expect(isTagTarget(null, { targetType: 'tag' })).toBe(true)
     expect(isCustomTarget(null, { targetType: 'page' })).toBe(false)
-    expect(usesIconAppearance(null, { appearance: 'icon' })).toBe(true)
+    const iconField = createPresentedLinkFields().find(
+      (field) => 'name' in field && field.name === 'iconName',
+    )
+    expect(iconField).toMatchObject({ admin: { components: expect.any(Object) } })
+    expect(iconField?.admin?.condition).toBeUndefined()
+  })
+
+  it('uses one appearance contract in every editable menu', () => {
+    for (const [fields, name] of [
+      [Navigation.fields, 'headerItems'],
+      [HomepageHero.fields, 'items'],
+      [HomepageSections.fields, 'menuItems'],
+      [Footer.fields, 'socialItems'],
+      [Footer.fields, 'items'],
+    ] as const) {
+      const arrayField = findArrayField(fields, name)
+      if (arrayField.type !== 'array') throw new Error(`Missing menu array: ${name}`)
+      const appearance = findField(arrayField.fields, 'appearance')
+      expect(appearance).toMatchObject({
+        defaultValue: 'link',
+        options: [...presentedLinkAppearanceOptions],
+        required: true,
+      })
+    }
+  })
+
+  it('allows at most one primary action in a presented-link group', () => {
+    expect(
+      validatePresentedLinkItems([
+        { appearance: 'primaryButton' },
+        { appearance: 'secondaryButton' },
+      ]),
+    ).toBe(true)
+    expect(
+      validatePresentedLinkItems([
+        { appearance: 'primaryButton' },
+        { appearance: 'primaryButton' },
+      ]),
+    ).toBe('W jednej grupie może znajdować się najwyżej jeden przycisk główny.')
+  })
+
+  it('requires an icon but no separate accessible-name field when visible text is empty', async () => {
+    const fields = createPresentedLinkFields()
+    const labelField = findField(fields, 'label')
+    const iconField = findField(fields, 'iconName')
+    const accessibleLabelField = findField(fields, 'accessibleLabel')
+    if (
+      !labelField ||
+      !('validate' in labelField) ||
+      typeof labelField.validate !== 'function' ||
+      !iconField ||
+      !('validate' in iconField) ||
+      typeof iconField.validate !== 'function'
+    ) {
+      throw new Error('Missing presented-link validators')
+    }
+
+    expect(await labelField.validate('', { siblingData: {} } as never)).toBeTypeOf('string')
+    expect(await labelField.validate('', { siblingData: { iconName: 'mail' } } as never)).toBe(true)
+    expect(await iconField.validate(null, { siblingData: { label: '' } } as never)).toBeTypeOf(
+      'string',
+    )
+    expect(accessibleLabelField).toBeUndefined()
   })
 
   it.each([
@@ -235,6 +328,64 @@ describe('navigation links', () => {
       rel: 'noopener noreferrer',
       target: '_blank',
     })
+  })
+
+  it('builds an encoded contact action from site settings and omits it without an address', () => {
+    const target = {
+      emailBody: 'Pierwsza linia\nDruga linia',
+      emailSubject: 'Dołączenie do WKF',
+      targetType: 'siteContactEmail',
+    }
+
+    expect(resolveLink(target, { siteContactEmail: 'kontakt@example.com' })).toEqual({
+      href: 'mailto:kontakt@example.com?subject=Do%C5%82%C4%85czenie+do+WKF&body=Pierwsza+linia%0ADruga+linia',
+    })
+    expect(resolveLink(target)).toBeNull()
+  })
+
+  it('resolves text, icon with text and icon-only links without placeholder targets', () => {
+    const target = {
+      appearance: 'link',
+      customAddress: 'kontakt',
+      customScheme: 'path',
+      targetType: 'custom',
+    }
+
+    expect(resolvePresentedLink({ ...target, label: 'Kontakt' })).toMatchObject({
+      accessibleName: 'Kontakt',
+      iconOnly: false,
+      label: 'Kontakt',
+    })
+    expect(resolvePresentedLink({ ...target, iconName: 'mail', label: 'Kontakt' })).toMatchObject({
+      iconName: 'mail',
+      iconOnly: false,
+    })
+    expect(
+      resolvePresentedLink({
+        ...target,
+        iconName: 'mail',
+        label: '',
+      }),
+    ).toMatchObject({ accessibleName: 'Kontakt', iconOnly: true, label: '' })
+    expect(resolvePresentedLink({ ...target, label: '' })).toBeNull()
+    expect(resolvePresentedLink({ ...target, customAddress: '', label: 'Brak celu' })).toBeNull()
+  })
+
+  it('derives icon-only accessible names from each target kind', () => {
+    expect(resolveLinkTargetName({ page: createPage(), targetType: 'page' })).toBe('O nas')
+    expect(
+      resolveLinkTargetName({
+        customAddress: 'www.wkf.example/spotkania',
+        customScheme: 'https',
+        targetType: 'custom',
+      }),
+    ).toBe('wkf.example')
+    expect(
+      resolveLinkTargetName(
+        { targetType: 'siteContactEmail' },
+        { siteContactEmail: 'kontakt@example.com' },
+      ),
+    ).toBe('kontakt@example.com')
   })
 
   it('resolves category and tag targets', () => {

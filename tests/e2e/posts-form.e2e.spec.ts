@@ -97,7 +97,7 @@ test('uses the shared target selector when editing a rich text link', async ({ p
 
   await targetField.getByRole('combobox').click()
   const options = page.locator('.rs__menu [role="option"]')
-  await expect(options.first()).toHaveText('Własny adres')
+  await expect(options.first()).toHaveText('Cykl wydarzeń')
   await options.filter({ hasText: 'Dokument' }).click()
 
   const documentField = drawer.locator('#field-document')

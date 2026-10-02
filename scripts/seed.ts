@@ -98,6 +98,17 @@ function createLexicalDocument(paragraphs: string[]): RichTextBlock['content'] {
   }
 }
 
+function createRichTextBlock(
+  paragraphs: string[],
+  textStyle: NonNullable<RichTextBlock['textStyle']> = 'default',
+): RichTextBlock {
+  return {
+    blockType: 'richText',
+    content: createLexicalDocument(paragraphs),
+    textStyle,
+  }
+}
+
 async function findOrCreateAuthor(): Promise<User> {
   const existingUsers = await payload.find({
     collection: 'users',
@@ -220,7 +231,7 @@ async function ensurePost(seedPost: SeedPost, author: User, media: Media): Promi
     data: {
       _status: 'published',
       author: author.id,
-      layout: [{ blockType: 'richText', content: createLexicalDocument(seedPost.paragraphs) }],
+      layout: [createRichTextBlock(seedPost.paragraphs)],
       excerpt: seedPost.excerpt,
       heroImage: media.id,
       publishedAt: seedPost.publishedAt,
@@ -251,17 +262,251 @@ async function ensureAboutPage(author: User): Promise<Page> {
       _status: 'published',
       author: author.id,
       layout: [
-        {
-          blockType: 'richText',
-          content: createLexicalDocument([
-            'Wrocławski Klub Fantastyki to społeczność osób, które łączy wyobraźnia oraz zamiłowanie do gier fabularnych, literatury i planszówek.',
-            'Spotykamy się, żeby grać, rozmawiać o fantastyce, dzielić się wiedzą i wspólnie tworzyć nowe przygody.',
-          ]),
-        },
+        createRichTextBlock([
+          'Wrocławski Klub Fantastyki to społeczność osób, które łączy wyobraźnia oraz zamiłowanie do gier fabularnych, literatury i planszówek.',
+          'Spotykamy się, żeby grać, rozmawiać o fantastyce, dzielić się wiedzą i wspólnie tworzyć nowe przygody.',
+        ]),
       ],
       publishedAt: '2026-05-01T10:00:00.000Z',
       slug: 'o-nas',
       title: 'O nas',
+    },
+    overrideAccess: true,
+  })
+}
+
+async function ensureJoinPage(author: User): Promise<Page> {
+  const existingPages = await payload.find({
+    collection: 'pages',
+    depth: 0,
+    limit: 1,
+    overrideAccess: true,
+    pagination: false,
+    where: { slug: { equals: 'dolacz-do-nas' } },
+  })
+
+  if (existingPages.docs[0]) {
+    return existingPages.docs[0]
+  }
+
+  return payload.create({
+    collection: 'pages',
+    data: {
+      _status: 'published',
+      author: author.id,
+      layout: [
+        {
+          blockType: 'sectionGroup',
+          frame: 'outline',
+          sections: [
+            {
+              blocks: [
+                {
+                  blockType: 'columnLayout',
+                  columnSeparators: 'none',
+                  columns: [
+                    {
+                      blocks: [
+                        {
+                          blockType: 'heading',
+                          role: 'section',
+                          text: 'Dołącz i współtwórz WKF',
+                        },
+                        createRichTextBlock(
+                          [
+                            'Czujesz się częścią fandomu i chcesz mieć wpływ na to, co dzieje się w Klubie? Napisz do nas i poznaj zasady członkostwa.',
+                          ],
+                          'lead',
+                        ),
+                      ],
+                      surface: 'default',
+                      width: 7,
+                    },
+                    {
+                      blocks: [
+                        {
+                          blockType: 'heading',
+                          iconName: 'users',
+                          role: 'item',
+                          text: 'Szczególnie zapraszamy osoby, które chcą działać',
+                        },
+                        createRichTextBlock([
+                          'Szczególnie zależy nam na osobach chętnych do organizowania wydarzeń i innych działań — dla członków Klubu i nie tylko. Nie jest to jednak formalny warunek członkostwa.',
+                        ]),
+                      ],
+                      surface: 'subtle',
+                      width: 5,
+                    },
+                  ],
+                  verticalAlignment: 'center',
+                },
+              ],
+              surface: 'default',
+            },
+            {
+              blocks: [
+                {
+                  blockType: 'columnLayout',
+                  columnSeparators: 'between',
+                  columns: [
+                    {
+                      blocks: [
+                        {
+                          blockType: 'heading',
+                          role: 'section',
+                          text: 'Kto może dołączyć?',
+                        },
+                        createRichTextBlock([
+                          'Do Klubu zapraszamy każdą osobę, która czuje się częścią fandomu, chce należeć do klubu fantastyki i mieć wpływ na jego działalność.',
+                        ]),
+                      ],
+                      surface: 'default',
+                      width: 7,
+                    },
+                    {
+                      blocks: [
+                        createRichTextBlock(
+                          [
+                            'Osoby poniżej 16. roku życia potrzebują pisemnej zgody rodzica lub opiekuna prawnego.',
+                          ],
+                          'note',
+                        ),
+                      ],
+                      surface: 'default',
+                      width: 5,
+                    },
+                  ],
+                  verticalAlignment: 'center',
+                },
+              ],
+              surface: 'inverse',
+            },
+            {
+              blocks: [
+                {
+                  blockType: 'heading',
+                  role: 'section',
+                  text: 'Jak wygląda dołączenie?',
+                },
+                {
+                  blockType: 'columnLayout',
+                  columnSeparators: 'none',
+                  columns: [
+                    {
+                      blocks: [
+                        {
+                          blockType: 'heading',
+                          iconName: 'mail',
+                          role: 'item',
+                          text: 'Napisz do nas',
+                        },
+                        createRichTextBlock([
+                          'Opowiedz krótko, czym się interesujesz oraz jakie wydarzenia lub działania chcesz współtworzyć.',
+                        ]),
+                      ],
+                      surface: 'default',
+                      width: 4,
+                    },
+                    {
+                      blocks: [
+                        {
+                          blockType: 'heading',
+                          iconName: 'time',
+                          role: 'item',
+                          text: 'Poznaj szczegóły',
+                        },
+                        createRichTextBlock([
+                          'Odpowiemy w ciągu kilku dni. Przekażemy bieżące informacje o deklaracji członkowskiej i składce oraz odpowiemy na pytania.',
+                        ]),
+                      ],
+                      surface: 'default',
+                      width: 4,
+                    },
+                    {
+                      blocks: [
+                        {
+                          blockType: 'heading',
+                          iconName: 'document',
+                          role: 'item',
+                          text: 'Złóż deklarację',
+                        },
+                        createRichTextBlock([
+                          'Członkostwo nadaje Zarząd uchwałą po złożeniu pisemnej deklaracji. Wysokość składki ustala Walne Zgromadzenie.',
+                        ]),
+                      ],
+                      surface: 'default',
+                      width: 4,
+                    },
+                  ],
+                  verticalAlignment: 'start',
+                },
+              ],
+              surface: 'default',
+            },
+            {
+              blocks: [
+                {
+                  blockType: 'columnLayout',
+                  columnSeparators: 'none',
+                  columns: [
+                    {
+                      blocks: [
+                        {
+                          blockType: 'heading',
+                          role: 'section',
+                          text: 'Gotowa lub gotowy, żeby zacząć?',
+                        },
+                        createRichTextBlock([
+                          'Napisz do nas. Przygotowaliśmy treść wiadomości, którą możesz swobodnie zmienić przed wysłaniem.',
+                        ]),
+                      ],
+                      surface: 'default',
+                      width: 7,
+                    },
+                    {
+                      blocks: [
+                        {
+                          alignment: 'start',
+                          blockType: 'actionLinks',
+                          items: [
+                            {
+                              appearance: 'primaryButton',
+                              emailBody:
+                                'Dzień dobry,\n\nchcę dowiedzieć się więcej o dołączeniu do WKF.\n\nInteresuję się:\n[uzupełnij]\n\nChcę włączyć się w:\n[uzupełnij]\n\nMam pytanie:\n[opcjonalnie]\n\nPozdrawiam',
+                              emailSubject: 'Chcę dołączyć do WKF',
+                              iconName: 'mail',
+                              label: 'Napisz, że chcesz dołączyć',
+                              targetType: 'siteContactEmail',
+                            },
+                            {
+                              appearance: 'secondaryButton',
+                              customAddress: 'dokumenty/statut-wroclawskiego-klubu-fantastyki',
+                              customScheme: 'path',
+                              iconName: 'document',
+                              label: 'Sprawdź zasady w Statucie',
+                              targetType: 'custom',
+                            },
+                          ],
+                          layout: 'stacked',
+                        },
+                      ],
+                      surface: 'default',
+                      width: 5,
+                    },
+                  ],
+                  verticalAlignment: 'center',
+                },
+              ],
+              surface: 'subtle',
+            },
+          ],
+        },
+      ],
+      listingExcerpt:
+        'Dowiedz się, kto może dołączyć do WKF, jak wygląda przyjęcie do Klubu i jak zacząć działać.',
+      publishedAt: '2026-10-01T10:00:00.000Z',
+      slug: 'dolacz-do-nas',
+      title: 'Dołącz do nas',
     },
     overrideAccess: true,
   })
@@ -301,12 +546,9 @@ async function ensureBlogPage(author: User): Promise<Page> {
       _status: 'published',
       author: author.id,
       layout: [
-        {
-          blockType: 'richText',
-          content: createLexicalDocument([
-            'Artykuły, aktualności i relacje z życia Wrocławskiego Klubu Fantastyki.',
-          ]),
-        },
+        createRichTextBlock([
+          'Artykuły, aktualności i relacje z życia Wrocławskiego Klubu Fantastyki.',
+        ]),
         {
           blockType: 'listing',
           pageSize: 12,
@@ -329,6 +571,7 @@ async function ensureBlogPage(author: User): Promise<Page> {
 async function ensureNavigation(
   aboutPage: Page,
   blogPage: Page,
+  joinPage: Page,
   logo: Media,
   author: User,
 ): Promise<void> {
@@ -349,6 +592,12 @@ async function ensureNavigation(
       appearance: 'link',
       label: 'O nas',
       page: aboutPage.id,
+      targetType: 'page',
+    },
+    {
+      appearance: 'secondaryButton',
+      label: 'Dołącz',
+      page: joinPage.id,
       targetType: 'page',
     },
   ]
@@ -405,13 +654,15 @@ try {
 
   const aboutPage = await ensureAboutPage(author)
   const blogPage = await ensureBlogPage(author)
+  const joinPage = await ensureJoinPage(author)
   const siteLogo = await findOrCreateSiteLogo(author)
-  await ensureNavigation(aboutPage, blogPage, siteLogo, author)
+  await ensureNavigation(aboutPage, blogPage, joinPage, siteLogo, author)
   await ensureHomepageGroups(author, rpgBackgroundImage)
 
   await payload.updateGlobal({
     slug: 'site-settings',
     data: {
+      contactEmail: 'kontakt@wkf.wroclaw.pl',
       siteDescription: 'Klub ludzi z wyobraźnią',
       siteName: 'Wrocławski Klub Fantastyki',
     },
@@ -427,7 +678,9 @@ try {
     user: author,
   })
 
-  payload.logger.info('Seed completed: homepage settings, navigation, pages, posts and groups')
+  payload.logger.info(
+    'Seed completed: homepage settings, navigation, pages, onboarding composition, posts and groups',
+  )
 } finally {
   await payload.destroy()
 }

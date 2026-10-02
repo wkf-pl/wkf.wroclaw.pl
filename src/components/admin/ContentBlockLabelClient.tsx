@@ -17,6 +17,12 @@ type RichTextBlockData = {
 
 type HeadingBlockData = {
   heading?: unknown
+  text?: unknown
+}
+
+type CountedBlockData = {
+  items?: unknown
+  sections?: unknown
 }
 
 type ColumnLayoutBlockData = {
@@ -155,6 +161,25 @@ export function MemberProfilesBlockLabelClient() {
   return (
     <BlockLabel prefix="Wizytówki" value={typeof data.heading === 'string' ? data.heading : ''} />
   )
+}
+
+export function HeadingBlockLabelClient() {
+  const { data } = useRowLabel<HeadingBlockData>()
+
+  return <BlockLabel prefix="Nagłówek" value={typeof data.text === 'string' ? data.text : ''} />
+}
+
+export function ActionLinksBlockLabelClient() {
+  const { data } = useRowLabel<CountedBlockData>()
+  const count = Array.isArray(data.items) ? data.items.length : 0
+  return <BlockLabel prefix="Odnośniki akcji" value={count ? `${count}` : ''} />
+}
+
+export function SectionGroupBlockLabelClient() {
+  const { data } = useRowLabel<CountedBlockData>()
+  const count = Array.isArray(data.sections) ? data.sections.length : 0
+  const noun = count === 1 ? 'sekcja' : count >= 2 && count <= 4 ? 'sekcje' : 'sekcji'
+  return <BlockLabel prefix="Grupa sekcji" value={count ? `${count} ${noun}` : ''} />
 }
 
 export function ColumnLayoutBlockLabelClient() {

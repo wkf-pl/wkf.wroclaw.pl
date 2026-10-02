@@ -1,10 +1,13 @@
 import {
   AttachmentsBlockLabelClient,
+  ActionLinksBlockLabelClient,
   ColumnLayoutBlockLabelClient,
   DocumentsBlockLabelClient,
   ListingBlockLabelClient,
   MediaGalleryBlockLabelClient,
   MemberProfilesBlockLabelClient,
+  HeadingBlockLabelClient,
+  SectionGroupBlockLabelClient,
   RichTextBlockLabelClient,
 } from './ContentBlockLabelClient'
 
@@ -63,6 +66,18 @@ export function DocumentsBlockLabel() {
 
 export function MemberProfilesBlockLabel() {
   return <MemberProfilesBlockLabelClient />
+}
+
+export function HeadingBlockLabel() {
+  return <HeadingBlockLabelClient />
+}
+
+export function ActionLinksBlockLabel() {
+  return <ActionLinksBlockLabelClient />
+}
+
+export function SectionGroupBlockLabel() {
+  return <SectionGroupBlockLabelClient />
 }
 
 export function ColumnLayoutBlockLabel() {

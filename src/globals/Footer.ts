@@ -2,7 +2,7 @@ import type { GlobalConfig } from 'payload'
 
 import { invalidateNavigationAfterChange } from '@/modules/cache/invalidate-public-data'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
-import { createIconFields, createLinkFields } from '@/modules/navigation/fields'
+import { createPresentedLinkFields, validatePresentedLinkItems } from '@/modules/navigation/fields'
 
 const readFooter = createRolePermissionAccess({
   anonymousAccess: true,
@@ -58,12 +58,13 @@ export const Footer: GlobalConfig = {
                   RowLabel: '/components/admin/DynamicRowLabel#SocialItemRowLabel',
                 },
               },
-              fields: [...createLinkFields(), ...createIconFields({ required: true })],
+              fields: createPresentedLinkFields(),
               label: 'Media społecznościowe',
               labels: {
                 plural: 'Media społecznościowe',
                 singular: 'medium społecznościowe',
               },
+              validate: validatePresentedLinkItems,
             },
           ],
         },
@@ -93,12 +94,13 @@ export const Footer: GlobalConfig = {
                       RowLabel: '/components/admin/DynamicRowLabel#FooterColumnItemRowLabel',
                     },
                   },
-                  fields: createLinkFields(),
+                  fields: createPresentedLinkFields(),
                   label: 'Odnośniki',
                   labels: {
                     plural: 'Pozycje menu',
                     singular: 'pozycję menu',
                   },
+                  validate: validatePresentedLinkItems,
                 },
               ],
               label: 'Menu kolumnowe',

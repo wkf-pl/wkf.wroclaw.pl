@@ -4,7 +4,7 @@ import { invalidateNavigationAfterChange } from '@/modules/cache/invalidate-publ
 import { defaultHomepageHeroTitle, homepageTitleEditor } from '@/modules/content/homepage-rich-text'
 import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
-import { createLinkFields } from '@/modules/navigation/fields'
+import { createPresentedLinkFields, validatePresentedLinkItems } from '@/modules/navigation/fields'
 
 const readHomepageHero = createRolePermissionAccess({
   anonymousAccess: true,
@@ -54,12 +54,13 @@ export const HomepageHero: GlobalConfig = {
           RowLabel: '/components/admin/DynamicRowLabel#NavigationItemRowLabel',
         },
       },
-      fields: createLinkFields(),
+      fields: createPresentedLinkFields(),
       label: 'Elementy Hero',
       labels: {
         plural: 'Pozycje menu w sekcji Hero',
         singular: 'pozycję menu w sekcji Hero',
       },
+      validate: validatePresentedLinkItems,
     },
   ],
   hooks: { afterChange: [invalidateNavigationAfterChange] },

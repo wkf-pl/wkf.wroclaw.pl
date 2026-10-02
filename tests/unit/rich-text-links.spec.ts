@@ -48,12 +48,12 @@ describe('rich text internal links', () => {
     expect(targetTypeField).toMatchObject({
       name: 'targetType',
       options: [
-        { label: 'Własny adres', value: 'custom' },
         { label: 'Cykl wydarzeń', value: 'eventCycle' },
         { label: 'Dokument', value: 'document' },
         { label: 'Kategoria', value: 'category' },
         { label: 'Strona', value: 'page' },
         { label: 'Tag', value: 'tag' },
+        { label: 'Własny adres', value: 'custom' },
         { label: 'Wpis', value: 'post' },
         { label: 'Wydarzenie', value: 'event' },
       ],

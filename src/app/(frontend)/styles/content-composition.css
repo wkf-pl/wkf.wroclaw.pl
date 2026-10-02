@@ -1,0 +1,389 @@
+/* Shared content surfaces and composable content blocks */
+.contentSurface {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  color: var(--surface-text, var(--ivory));
+}
+
+.contentSurface--subtle {
+  --surface-accent: var(--gold-light);
+  --surface-focus: var(--gold-light);
+  --surface-line: rgb(243 163 19 / 42%);
+  --surface-muted: var(--muted);
+  --surface-text: var(--ivory);
+  background: var(--panel-soft);
+}
+
+.contentSurface--inverse {
+  --surface-accent: #402600;
+  --surface-focus: #001422;
+  --surface-line: rgb(0 20 34 / 35%);
+  --surface-muted: #402e12;
+  --surface-text: var(--background-deep);
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+}
+
+.contentSurface--image,
+.contentSurface--missingImage {
+  --surface-accent: var(--gold-light);
+  --surface-focus: var(--gold-light);
+  --surface-line: rgb(243 163 19 / 42%);
+  --surface-muted: var(--muted);
+  --surface-text: var(--ivory);
+  background: var(--panel);
+}
+
+.contentSurfaceImage,
+.contentSurfaceShade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.contentSurfaceImage {
+  z-index: -2;
+  object-fit: cover;
+}
+
+.contentSurfaceShade {
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgb(0 13 23 / 88%), rgb(0 13 23 / 72%)),
+    linear-gradient(180deg, rgb(0 20 34 / 35%), rgb(0 13 23 / 82%));
+}
+
+.contentSurfaceContent {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.contentSurface :is(.richText, .contentHeading) {
+  color: var(--surface-text, var(--ivory));
+}
+
+.contentSurface :is(.richText, .contentHeading, .presentedLink) a,
+.contentSurface .richText a,
+.contentSurface .presentedLink--link {
+  color: var(--surface-accent);
+}
+
+.sectionGroup {
+  overflow: hidden;
+  width: min(70rem, 100%);
+  margin-inline: auto;
+  border-radius: 1rem;
+  background: var(--panel);
+}
+
+.sectionGroup--outline {
+  border: 1px solid rgb(243 163 19 / 38%);
+  box-shadow: 0 1.5rem 3.5rem rgb(0 0 0 / 18%);
+}
+
+.sectionGroup--none {
+  border-radius: 0;
+  background: transparent;
+}
+
+.sectionGroupSection + .sectionGroupSection {
+  border-top: 1px solid var(--surface-line, rgb(243 163 19 / 42%));
+}
+
+.sectionGroupSection > .contentSurfaceContent {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.sectionGroup--none .sectionGroupSection {
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+.sectionGroup--none .sectionGroupSection + .sectionGroupSection {
+  margin-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.columnLayout {
+  --column-gap: clamp(1.25rem, 3vw, 2rem);
+}
+
+.columnLayoutGrid {
+  gap: var(--column-gap);
+}
+
+.columnLayoutColumn {
+  display: block;
+  grid-column: span var(--column-width);
+  min-width: 0;
+}
+
+.columnLayoutColumn > .contentSurfaceContent {
+  height: 100%;
+}
+
+.columnLayoutColumn[data-surface='subtle'],
+.columnLayoutColumn[data-surface='inverse'],
+.columnLayoutColumn[data-surface='image'] {
+  overflow: hidden;
+  border-radius: 0.8rem;
+}
+
+.columnLayoutColumn:not([data-surface='default']) > .contentSurfaceContent {
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.columnLayoutColumnContent {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  min-width: 0;
+}
+
+.columnLayout--align-start .columnLayoutColumnContent {
+  align-content: start;
+}
+
+.columnLayout--align-center .columnLayoutColumnContent {
+  align-content: center;
+  min-height: 100%;
+}
+
+.columnLayout--align-end .columnLayoutColumnContent {
+  align-content: end;
+  min-height: 100%;
+}
+
+.columnLayoutColumnContent
+  > :is(
+    .richText,
+    .listingBlock,
+    .mediaBlock,
+    .documentsBlock,
+    .memberProfilesBlock,
+    .contentHeading,
+    .actionLinks
+  ) {
+  width: 100%;
+  min-width: 0;
+  margin-inline: 0;
+}
+
+.columnLayout--withSeparators
+  .columnLayoutColumn:not(.columnLayoutColumn--empty)
+  ~ .columnLayoutColumn:not(.columnLayoutColumn--empty)::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--column-gap) / -2);
+  width: 1px;
+  background: var(--surface-line, rgb(243 163 19 / 42%));
+  content: '';
+}
+
+.richText--lead {
+  font-size: clamp(1.18rem, 2vw, 1.38rem);
+  line-height: 1.7;
+}
+
+.richText--note {
+  color: var(--surface-muted, var(--muted));
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
+
+.richText--lead :is(h2, h3),
+.richText--note :is(h2, h3) {
+  font-size: revert;
+}
+
+.contentHeading {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.contentHeading--section {
+  font-size: clamp(1.7rem, 4vw, 2.6rem);
+}
+
+.contentHeading--item {
+  font-size: clamp(1.25rem, 2.5vw, 1.6rem);
+}
+
+.contentHeadingIcon {
+  display: grid;
+  flex: 0 0 auto;
+  color: var(--surface-accent);
+  place-items: center;
+}
+
+.contentHeading--section .contentHeadingIcon {
+  width: 2rem;
+  height: 2rem;
+}
+
+.contentHeading--item .contentHeadingIcon {
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 1px solid var(--surface-line, rgb(243 163 19 / 42%));
+  border-radius: 50%;
+  background: rgb(0 13 23 / 18%);
+}
+
+.contentHeadingIcon .rasterIcon {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.actionLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.actionLinks--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.actionLinks--align-center {
+  justify-content: center;
+}
+
+.actionLinks--align-end {
+  justify-content: flex-end;
+}
+
+.actionLinks--stacked.actionLinks--align-center {
+  align-items: center;
+}
+
+.actionLinks--stacked.actionLinks--align-end {
+  align-items: flex-end;
+}
+
+.presentedLink {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  color: inherit;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.2em;
+}
+
+.presentedLink--primaryButton,
+.presentedLink--secondaryButton {
+  padding: 0.72rem 1rem;
+  border: 1px solid var(--surface-accent, var(--gold));
+  border-radius: 0.45rem;
+  text-decoration: none;
+}
+
+.presentedLink--primaryButton {
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  color: var(--background-deep);
+}
+
+.presentedLink--secondaryButton {
+  background: rgb(0 13 23 / 18%);
+  color: var(--surface-text, var(--ivory));
+}
+
+.contentSurface--inverse .presentedLink--primaryButton {
+  border-color: var(--background-deep);
+  background: var(--background-deep);
+  color: var(--ivory);
+}
+
+.presentedLink--iconOnly {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+}
+
+.presentedLinkIcon,
+.presentedLinkTrailingIcon {
+  display: grid;
+  place-items: center;
+}
+
+.presentedLinkIcon .rasterIcon,
+.presentedLinkTrailingIcon .rasterIcon {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.presentedLink:hover {
+  color: var(--surface-accent, var(--gold-light));
+}
+
+.presentedLink--primaryButton:hover,
+.presentedLink--primaryButton:focus-visible {
+  filter: brightness(1.08);
+  color: var(--background-deep);
+}
+
+.presentedLink--secondaryButton:hover,
+.presentedLink--secondaryButton:focus-visible {
+  background: var(--surface-accent, var(--gold));
+  color: var(--background-deep);
+}
+
+.presentedLink:focus-visible {
+  border-radius: 0.3rem;
+  outline: 3px solid var(--surface-focus, var(--gold-light));
+  outline-offset: 3px;
+}
+
+.siteHeader nav .headerMenuItem {
+  min-height: 2.75rem;
+}
+
+.siteHeader nav .presentedLink--iconOnly {
+  padding: 0;
+}
+
+.heroTabs .presentedLink {
+  min-width: 9rem;
+  padding: 0.9rem 1.5rem;
+  border-right: 1px solid var(--gold);
+  border-radius: 0;
+  text-align: center;
+  text-decoration: none;
+}
+
+.heroTabs .presentedLink:last-child {
+  border-right: 0;
+}
+
+.sectionCardContent .presentedLink {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  justify-content: stretch;
+  text-align: left;
+}
+
+.sectionCardContent .presentedLinkIcon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--gold);
+}
+
+.socialLinks .presentedLink:not(.presentedLink--iconOnly) {
+  width: auto;
+  padding-inline: 1rem;
+  border-radius: 0.45rem;
+}

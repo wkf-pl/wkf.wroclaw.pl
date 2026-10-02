@@ -4,10 +4,13 @@ import type { CollectionConfig, Field } from 'payload'
 import { describe, expect, it } from 'vitest'
 
 import { AttachmentsBlock, MediaGalleryBlock } from '@/blocks/MediaListing'
+import { ActionLinksBlock } from '@/blocks/ActionLinks'
 import { ColumnLayoutBlock } from '@/blocks/ColumnLayout'
 import { DocumentsBlock } from '@/blocks/Documents'
+import { HeadingBlock } from '@/blocks/Heading'
 import { MemberProfilesBlock } from '@/blocks/MemberProfiles'
 import { RichTextBlock } from '@/blocks/RichText'
+import { SectionGroupBlock } from '@/blocks/SectionGroup'
 import { ListingBlock, validateListingSources, validateParentPage } from '@/blocks/Listing'
 import { Categories } from '@/collections/Categories'
 import { Documents } from '@/collections/Documents'
@@ -74,7 +77,7 @@ function describeFieldOrder(fields: typeof Pages.fields): (string | string[])[] 
 }
 
 describe('page configuration', () => {
-  it('uses semantic SVG thumbnails for every content block', () => {
+  it('uses semantic raster thumbnails for every content block', () => {
     expect([
       RichTextBlock.admin?.images?.thumbnail,
       ListingBlock.admin?.images?.thumbnail,
@@ -82,7 +85,10 @@ describe('page configuration', () => {
       DocumentsBlock.admin?.images?.thumbnail,
       AttachmentsBlock.admin?.images?.thumbnail,
       MemberProfilesBlock.admin?.images?.thumbnail,
+      HeadingBlock.admin?.images?.thumbnail,
+      ActionLinksBlock.admin?.images?.thumbnail,
       ColumnLayoutBlock.admin?.images?.thumbnail,
+      SectionGroupBlock.admin?.images?.thumbnail,
     ]).toEqual([
       {
         alt: 'Schematyczna ikona dokumentu z tekstem i piórem',
@@ -109,10 +115,59 @@ describe('page configuration', () => {
         url: '/assets/block-thumbnails/member-profiles.png',
       },
       {
+        alt: 'Schematyczna ikona nagłówka i krótkiej treści',
+        url: '/assets/block-thumbnails/heading.png',
+      },
+      {
+        alt: 'Schematyczna ikona przycisków i odnośnika akcji',
+        url: '/assets/block-thumbnails/action-links.png',
+      },
+      {
         alt: 'Schematyczna ikona układu kolumnowego',
         url: '/assets/block-thumbnails/column-layout.png',
       },
+      {
+        alt: 'Schematyczna ikona sekcji objętych wspólną ramką',
+        url: '/assets/block-thumbnails/section-group.png',
+      },
     ])
+  })
+
+  it('orders block-picker groups from content through elements to layout', () => {
+    expect([
+      RichTextBlock.admin?.group,
+      ListingBlock.admin?.group,
+      MediaGalleryBlock.admin?.group,
+      DocumentsBlock.admin?.group,
+      AttachmentsBlock.admin?.group,
+      MemberProfilesBlock.admin?.group,
+      HeadingBlock.admin?.group,
+      ActionLinksBlock.admin?.group,
+      ColumnLayoutBlock.admin?.group,
+      SectionGroupBlock.admin?.group,
+    ]).toEqual([
+      'Treści',
+      'Treści',
+      'Treści',
+      'Treści',
+      'Treści',
+      'Treści',
+      'Elementy',
+      'Elementy',
+      'Układ',
+      'Układ',
+    ])
+  })
+
+  it('places heading text and role in a two-thirds to one-third row', () => {
+    const headingRow = HeadingBlock.fields[0]
+    expect(headingRow).toMatchObject({
+      fields: [
+        { admin: { width: '66.666%' }, name: 'text', type: 'text' },
+        { admin: { width: '33.333%' }, name: 'role', type: 'select' },
+      ],
+      type: 'row',
+    })
   })
 
   it('offers card, list and grid views for embedded member profiles', () => {

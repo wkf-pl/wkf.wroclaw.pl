@@ -97,6 +97,7 @@ test.beforeAll(async ({ browser }) => {
         backgroundImage: heroMedia.id,
         menuItems: [
           {
+            appearance: 'link',
             customAddress: 'blog',
             customScheme: 'path',
             iconName: 'dice',
@@ -172,17 +173,17 @@ test('renders editable menus and configured groups on the home page', async ({ p
   await expect(page.getByRole('navigation', { name: 'Główna nawigacja' })).toContainText(
     'Aktualności',
   )
-  await expect(page.getByRole('link', { name: 'E-mail' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'kontakt@example.invalid' })).toHaveAttribute(
     'href',
     'mailto:kontakt@example.invalid',
   )
   await expect(
-    page.getByRole('link', { name: 'E-mail' }).locator('[data-icon-name="mail"]'),
+    page.getByRole('link', { name: 'kontakt@example.invalid' }).locator('[data-icon-name="mail"]'),
   ).toHaveAttribute('data-icon-size', 'medium')
   const aboutHeaderLink = page
     .getByRole('navigation', { name: 'Główna nawigacja' })
     .getByRole('link', { name: 'O nas' })
-  await expect(aboutHeaderLink).toHaveClass(/headerMenuItem-button/)
+  await expect(aboutHeaderLink).toHaveClass(/presentedLink--secondaryButton/)
   await expect(aboutHeaderLink).toHaveAttribute('href', '/o-nas')
   await expect(page.getByRole('navigation', { name: 'Obszary klubu' })).toContainText('Gry RPG')
   await expect(page.getByRole('heading', { name: 'E2E RPG' })).toBeVisible()
@@ -191,12 +192,14 @@ test('renders editable menus and configured groups on the home page', async ({ p
   ).toHaveAttribute('data-icon-size', 'medium')
   await expect(page.getByRole('heading', { name: 'E2E LARP' })).toHaveCount(0)
   await expect(page.getByRole('navigation', { name: 'Media społecznościowe' })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Slack' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'slack.example.invalid' })).toHaveAttribute(
     'href',
     'https://slack.example.invalid',
   )
   await expect(
-    page.getByRole('link', { name: 'Slack' }).locator('[data-icon-name="facebook"]'),
+    page
+      .getByRole('link', { name: 'slack.example.invalid' })
+      .locator('[data-icon-name="facebook"]'),
   ).toHaveAttribute('data-icon-size', 'medium')
   await expect(page.getByRole('navigation', { name: 'Nawigacja w stopce' })).toContainText('O nas')
   await expect(
@@ -289,15 +292,15 @@ function createTestNavigation(aboutPageID: number): Partial<Navigation> {
         targetType: 'custom',
       },
       {
-        appearance: 'icon',
+        appearance: 'link',
         customAddress: 'kontakt@example.invalid',
         customScheme: 'mailto',
         iconName: 'mail',
-        label: 'E-mail',
+        label: '',
         targetType: 'custom',
       },
       {
-        appearance: 'button',
+        appearance: 'secondaryButton',
         label: 'O nas',
         page: aboutPageID,
         targetType: 'page',
@@ -309,6 +312,7 @@ function createTestNavigation(aboutPageID: number): Partial<Navigation> {
 function createTestHeroItems(): NonNullable<HomepageHero['items']> {
   return [
     {
+      appearance: 'link',
       customAddress: 'blog',
       customScheme: 'path',
       label: 'Gry RPG',
@@ -321,17 +325,18 @@ function createTestFooter(aboutPageID: number): Partial<Footer> {
   return {
     columns: [
       {
-        items: [{ label: 'O nas', page: aboutPageID, targetType: 'page' }],
+        items: [{ appearance: 'link', label: 'O nas', page: aboutPageID, targetType: 'page' }],
         title: 'Nawigacja',
       },
     ],
     contactHeading: 'E2E Kontakt',
     socialItems: [
       {
+        appearance: 'link',
         customAddress: 'slack.example.invalid',
         customScheme: 'https',
         iconName: 'facebook',
-        label: 'Slack',
+        label: '',
         targetType: 'custom',
       },
     ],
