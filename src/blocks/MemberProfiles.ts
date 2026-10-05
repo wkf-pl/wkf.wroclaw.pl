@@ -1,5 +1,7 @@
 import type { Block } from 'payload'
 
+import { createContentPresentationFields } from '@/modules/content/content-presentation'
+
 export const MemberProfilesBlock: Block = {
   slug: 'memberProfiles',
   admin: {
@@ -16,25 +18,21 @@ export const MemberProfilesBlock: Block = {
     },
   },
   fields: [
-    {
-      name: 'heading',
-      type: 'text',
-      label: 'Nagłówek',
-      maxLength: 160,
-    },
-    {
-      name: 'view',
-      type: 'select',
-      admin: { isClearable: false },
-      defaultValue: 'grid',
-      label: 'Widok',
-      options: [
-        { label: 'Karta', value: 'card' },
-        { label: 'Lista', value: 'list' },
-        { label: 'Siatka', value: 'grid' },
-      ],
-      required: true,
-    },
+    ...createContentPresentationFields({
+      leadingField: {
+        name: 'view',
+        type: 'select',
+        admin: { isClearable: false, width: '33.333%' },
+        defaultValue: 'grid',
+        label: 'Widok',
+        options: [
+          { label: 'Karta', value: 'card' },
+          { label: 'Lista', value: 'list' },
+          { label: 'Siatka', value: 'grid' },
+        ],
+        required: true,
+      },
+    }),
     {
       name: 'entries',
       type: 'array',

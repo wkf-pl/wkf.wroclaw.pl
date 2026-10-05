@@ -21,11 +21,25 @@ function validate(columns: unknown): true | string {
   return validateColumnLayoutColumns(columns as never, {} as never) as true | string
 }
 
+function flattenFields(fields: Field[]): Field[] {
+  return fields.flatMap((field) => {
+    if (field.type === 'tabs') {
+      return field.tabs.flatMap((tab) => flattenFields(tab.fields))
+    }
+    if ('fields' in field && Array.isArray(field.fields)) {
+      return [field, ...flattenFields(field.fields)]
+    }
+    return [field]
+  })
+}
+
+function findNamedField(fields: Field[], name: string): Field | undefined {
+  return flattenFields(fields).find((field) => 'name' in field && field.name === name)
+}
+
 describe('column layout', () => {
   it('offers only the supported vertical alignments and separator modes', () => {
-    const fields = ColumnLayoutBlock.fields.flatMap((field) =>
-      field.type === 'row' ? field.fields : [field],
-    )
+    const fields = flattenFields(ColumnLayoutBlock.fields)
     const verticalAlignment = fields.find(
       (field) => 'name' in field && field.name === 'verticalAlignment',
     )
@@ -99,9 +113,7 @@ describe('column layout', () => {
       'sectionGroup',
     ])
 
-    const columnsField = ColumnLayoutBlock.fields.find(
-      (field) => 'name' in field && field.name === 'columns',
-    )
+    const columnsField = findNamedField(ColumnLayoutBlock.fields, 'columns')
     expect(columnsField?.type).toBe('array')
     if (!columnsField || columnsField.type !== 'array') throw new Error('Missing columns field')
     const blocksField = columnsField.fields.find(
@@ -132,9 +144,7 @@ describe('column layout', () => {
   })
 
   it('keeps section groups top-level and the content grammar finite', () => {
-    const columnsField = ColumnLayoutBlock.fields.find(
-      (field) => 'name' in field && field.name === 'columns',
-    )
+    const columnsField = findNamedField(ColumnLayoutBlock.fields, 'columns')
     if (!columnsField || columnsField.type !== 'array') throw new Error('Missing columns field')
     const nestedBlocksField = columnsField.fields.find(
       (field) => 'name' in field && field.name === 'blocks',
@@ -147,9 +157,7 @@ describe('column layout', () => {
       contentLeafBlocks.map((block) => block.slug),
     )
 
-    const sectionsField = SectionGroupBlock.fields.find(
-      (field) => 'name' in field && field.name === 'sections',
-    )
+    const sectionsField = findNamedField(SectionGroupBlock.fields, 'sections')
     if (!sectionsField || sectionsField.type !== 'array') {
       throw new Error('Missing sections field')
     }

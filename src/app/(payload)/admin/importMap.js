@@ -1,3 +1,4 @@
+import { ContentSurfacePreview as ContentSurfacePreview_2d1684ff15a8c01dcfb8f45de029b3fe } from '../../../components/admin/ContentSurfacePreview'
 import { RscEntryLexicalCell as RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { RscEntryLexicalField as RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { LexicalDiffComponent as LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
@@ -36,10 +37,9 @@ import { DocumentsBlockLabel as DocumentsBlockLabel_d53c993bb109710411f82eaaf564
 import { AttachmentsBlockLabel as AttachmentsBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { MemberProfileEntryRowLabel as MemberProfileEntryRowLabel_d89d5b210a246731bf987576398d455f } from '../../../components/admin/MemberProfileEntryRowLabel'
 import { MemberProfilesBlockLabel as MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
-import { ContentSurfacePreview as ContentSurfacePreview_2d1684ff15a8c01dcfb8f45de029b3fe } from '../../../components/admin/ContentSurfacePreview'
-import { ColumnLayoutField as ColumnLayoutField_22a13d07a182b85ab9ac566ada2dd12f } from '../../../components/admin/ColumnLayoutField'
+import { ColumnLayoutTabsField as ColumnLayoutTabsField_432a355624980b16474727ea268404c1 } from '../../../components/admin/TabbedLayoutField'
 import { ColumnLayoutBlockLabel as ColumnLayoutBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
-import { SectionGroupSectionRowLabel as SectionGroupSectionRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
+import { SectionGroupTabsField as SectionGroupTabsField_432a355624980b16474727ea268404c1 } from '../../../components/admin/TabbedLayoutField'
 import { SectionGroupBlockLabel as SectionGroupBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { HierarchyPath as HierarchyPath_6311b6033928ec6e076fdd24567b1bb0 } from '../../../components/admin/HierarchyPath'
 import { UserRelationshipCell as UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
@@ -89,6 +89,7 @@ import { AzureClientUploadHandler as AzureClientUploadHandler_635fb302eaf52f6bac
 
 /** @type import('payload').ImportMap */
 export const importMap = {
+  "/components/admin/ContentSurfacePreview#ContentSurfacePreview": ContentSurfacePreview_2d1684ff15a8c01dcfb8f45de029b3fe,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalCell": RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalField": RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#LexicalDiffComponent": LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e,
@@ -127,10 +128,9 @@ export const importMap = {
   "/components/admin/ContentBlockLabel#AttachmentsBlockLabel": AttachmentsBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/MemberProfileEntryRowLabel#MemberProfileEntryRowLabel": MemberProfileEntryRowLabel_d89d5b210a246731bf987576398d455f,
   "/components/admin/ContentBlockLabel#MemberProfilesBlockLabel": MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff,
-  "/components/admin/ContentSurfacePreview#ContentSurfacePreview": ContentSurfacePreview_2d1684ff15a8c01dcfb8f45de029b3fe,
-  "/components/admin/ColumnLayoutField#ColumnLayoutField": ColumnLayoutField_22a13d07a182b85ab9ac566ada2dd12f,
+  "/components/admin/TabbedLayoutField#ColumnLayoutTabsField": ColumnLayoutTabsField_432a355624980b16474727ea268404c1,
   "/components/admin/ContentBlockLabel#ColumnLayoutBlockLabel": ColumnLayoutBlockLabel_d53c993bb109710411f82eaaf564eeff,
-  "/components/admin/DynamicRowLabel#SectionGroupSectionRowLabel": SectionGroupSectionRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
+  "/components/admin/TabbedLayoutField#SectionGroupTabsField": SectionGroupTabsField_432a355624980b16474727ea268404c1,
   "/components/admin/ContentBlockLabel#SectionGroupBlockLabel": SectionGroupBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/HierarchyPath#HierarchyPath": HierarchyPath_6311b6033928ec6e076fdd24567b1bb0,
   "/components/admin/UserIdentity#UserRelationshipCell": UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53,

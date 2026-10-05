@@ -51,7 +51,9 @@ describe('media blocks', () => {
     expect(MediaGalleryBlock.slug).toBe('mediaGallery')
     expect(AttachmentsBlock.slug).toBe('attachments')
     expect(describeFieldOrder()).toEqual([
-      'heading',
+      ['frame', 'surface'],
+      ['surfaceImage', 'surfaceHorizontalPosition', 'surfaceVerticalPosition'],
+      'surfacePreview',
       'selectionMode',
       'items',
       ['category', 'tag'],

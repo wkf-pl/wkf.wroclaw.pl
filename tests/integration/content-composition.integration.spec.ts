@@ -129,17 +129,35 @@ describe('content composition integration', () => {
                 blocks: [
                   {
                     blockType: 'heading',
-                    iconName: 'image',
-                    role: 'section',
-                    text: 'Obrazowa sekcja',
+                    heading: 'Obrazowa sekcja',
+                    headingIconName: 'image',
+                    headingLevel: 'h2',
+                    iconInverted: true,
                   },
                   {
                     blockType: 'columnLayout',
                     columnSeparators: 'between',
                     columns: [
-                      { blocks: [richText('Lewa kolumna')], surface: 'default', width: 7 },
+                      {
+                        blocks: [
+                          {
+                            blockType: 'heading',
+                            heading: 'Lewa kolumna',
+                            headingLevel: 'h3',
+                          },
+                          {
+                            ...richText('Lewa kolumna'),
+                            frame: 'outline',
+                            surface: 'inverse' as const,
+                          },
+                        ],
+                        frame: 'outline',
+                        surface: 'default',
+                        width: 7,
+                      },
                       { blocks: [richText('Prawa kolumna')], surface: 'subtle', width: 5 },
                     ],
+                    surface: 'transparent',
                     verticalAlignment: 'center',
                   },
                 ],
@@ -149,6 +167,7 @@ describe('content composition integration', () => {
                 surfaceVerticalPosition: 'bottom',
               },
             ],
+            surface: 'default',
           },
         ],
         slug: pageSlug,
@@ -168,16 +187,47 @@ describe('content composition integration', () => {
     expect(sectionGroup?.blockType).toBe('sectionGroup')
     if (sectionGroup?.blockType !== 'sectionGroup') throw new Error('Missing section group')
 
+    expect(sectionGroup).toMatchObject({
+      frame: 'outline',
+      surface: 'default',
+    })
+
     expect(sectionGroup.sections[0]).toMatchObject({
       surface: 'image',
       surfaceHorizontalPosition: 'right',
       surfaceVerticalPosition: 'bottom',
       surfaceImage: { id: image.id, mimeType: 'image/png' },
     })
-    expect(sectionGroup.sections[0]?.blocks[1]).toMatchObject({
+    expect(sectionGroup.sections[0]?.blocks[0]).toMatchObject({
+      blockType: 'heading',
+      heading: 'Obrazowa sekcja',
+      headingIconName: 'image',
+      headingLevel: 'h2',
+      iconInverted: true,
+    })
+    const columnLayout = sectionGroup.sections[0]?.blocks[1]
+    expect(columnLayout).toMatchObject({
       blockType: 'columnLayout',
       columnSeparators: 'between',
+      surface: 'transparent',
       verticalAlignment: 'center',
+    })
+    if (columnLayout?.blockType !== 'columnLayout') throw new Error('Missing column layout')
+    expect(columnLayout.columns[0]).toMatchObject({
+      frame: 'outline',
+      surface: 'default',
+    })
+    const firstColumn = columnLayout.columns[0]
+    if (!firstColumn) throw new Error('Missing first column')
+    expect(firstColumn.blocks?.[0]).toMatchObject({
+      blockType: 'heading',
+      heading: 'Lewa kolumna',
+      headingLevel: 'h3',
+    })
+    expect(firstColumn.blocks?.[1]).toMatchObject({
+      blockType: 'richText',
+      frame: 'outline',
+      surface: 'inverse',
     })
 
     const versions = await payload.findVersions({
@@ -210,6 +260,7 @@ describe('content composition integration', () => {
                   surfaceVerticalPosition: 'middle',
                 },
               ],
+              surface: 'default',
             },
           ],
           slug: invalidPageSlug,

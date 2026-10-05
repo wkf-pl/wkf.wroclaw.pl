@@ -18,6 +18,7 @@
     "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
     "package:e2e-runtime": "bash scripts/package-e2e-runtime.sh",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "postinstall": "node scripts/patch-payload-ui-client.mjs",
     "seed": "cross-env NODE_OPTIONS=\"--no-deprecation --require dotenv/config\" tsx ./scripts/seed.ts",
     "staging:pull": "bash scripts/pull-staging-data.sh",
     "prepare:integration": "tsx ./scripts/prepare-test-environment.ts",

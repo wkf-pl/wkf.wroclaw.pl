@@ -130,6 +130,27 @@ describe('deployment workflows', () => {
     expect(dockerfile).toContain('COPY --from=production-dependencies')
   })
 
+  it('copies pnpm dependency patches before installing Docker dependencies', () => {
+    const dockerfile = readFileSync('Dockerfile', 'utf8')
+    const dependenciesStage = dockerfile
+      .split('FROM base AS dependencies')[1]
+      ?.split('FROM base AS development')[0]
+
+    expect(dependenciesStage).toBeDefined()
+    expect(dependenciesStage).toContain('COPY patches ./patches')
+    expect(dependenciesStage).toContain(
+      'COPY scripts/patch-payload-ui-client.mjs ./scripts/patch-payload-ui-client.mjs',
+    )
+    expect(dependenciesStage!.indexOf('COPY patches ./patches')).toBeLessThan(
+      dependenciesStage!.indexOf('RUN pnpm install --frozen-lockfile'),
+    )
+    expect(
+      dependenciesStage!.indexOf(
+        'COPY scripts/patch-payload-ui-client.mjs ./scripts/patch-payload-ui-client.mjs',
+      ),
+    ).toBeLessThan(dependenciesStage!.indexOf('RUN pnpm install --frozen-lockfile'))
+  })
+
   it('never starts a Next development server during staging or production operations', () => {
     const deploymentFiles = [
       '.github/workflows/deploy-staging.yml',

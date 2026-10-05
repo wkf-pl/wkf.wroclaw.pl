@@ -1,8 +1,10 @@
 'use client'
 
 import { FieldError, FieldLabel, ReactSelect, useField } from '@payloadcms/ui'
+import { mergeFieldStyles } from '@payloadcms/ui/shared'
 import type { SelectFieldClientProps } from 'payload'
 import type { HTMLAttributes, Ref } from 'react'
+import { useMemo } from 'react'
 
 import { RasterIcon } from '@/components/RasterIcon'
 import { isSelectableRasterIconName, rasterIconCategoryLabels } from '@/modules/icons/icon-registry'
@@ -71,6 +73,7 @@ export function RasterIconPickerField(properties: SelectFieldClientProps) {
   })
   const selectedOption = rasterIconPickerOptions.find((option) => option.value === value)
   const fieldId = `field-${path.replaceAll('.', '__')}`
+  const fieldStyles = useMemo(() => mergeFieldStyles(properties.field), [properties.field])
 
   function handleChange(option: unknown) {
     if (!option) {
@@ -88,7 +91,7 @@ export function RasterIconPickerField(properties: SelectFieldClientProps) {
   }
 
   return (
-    <div className="field-type raster-icon-picker" id={fieldId}>
+    <div className="field-type raster-icon-picker" id={fieldId} style={fieldStyles}>
       <FieldLabel label={properties.field.label} path={path} required={properties.field.required} />
       <ReactSelect
         components={{ Option: IconOptionComponent, SingleValue: IconSingleValue }}

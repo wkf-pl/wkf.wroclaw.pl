@@ -1,6 +1,6 @@
 import type { Block } from 'payload'
 
-import { createIconFields } from '@/modules/navigation/fields'
+import { createContentHeadingFields } from '@/modules/content/content-presentation'
 
 export const HeadingBlock: Block = {
   slug: 'heading',
@@ -17,33 +17,7 @@ export const HeadingBlock: Block = {
       },
     },
   },
-  fields: [
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'text',
-          type: 'text',
-          admin: { width: '66.666%' },
-          label: 'Tekst',
-          required: true,
-        },
-        {
-          name: 'role',
-          type: 'select',
-          admin: { isClearable: false, width: '33.333%' },
-          defaultValue: 'section',
-          label: 'Rola',
-          options: [
-            { label: 'Nagłówek sekcji', value: 'section' },
-            { label: 'Nagłówek elementu', value: 'item' },
-          ],
-          required: true,
-        },
-      ],
-    },
-    ...createIconFields(),
-  ],
+  fields: createContentHeadingFields({ requireContent: true }),
   interfaceName: 'HeadingBlock',
   labels: {
     plural: 'Nagłówki',

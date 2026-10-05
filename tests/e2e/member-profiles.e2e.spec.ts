@@ -152,9 +152,13 @@ test.beforeAll(async () => {
       author: owner.id,
       layout: [
         {
+          blockType: 'heading',
+          heading: 'Władze testowe',
+          headingLevel: 'h2',
+        },
+        {
           blockType: 'memberProfiles',
           entries: [{ contextLabel: 'Prezes Zarządu', profile: ownerProfile.id }],
-          heading: 'Władze testowe',
           view: 'grid',
         },
       ],

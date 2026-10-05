@@ -2,6 +2,11 @@
 
 import { useFormFields, useRowLabel } from '@payloadcms/ui'
 
+import {
+  getSelectableRasterIconLabel,
+  isSelectableRasterIconName,
+} from '@/modules/icons/icon-registry'
+
 const previewCharacterLimit = 96
 
 type LexicalNode = {
@@ -13,20 +18,54 @@ type LexicalNode = {
 
 type RichTextBlockData = {
   content?: unknown
+  frame?: unknown
+  surface?: unknown
 }
 
 type HeadingBlockData = {
   heading?: unknown
-  text?: unknown
+  headingIconName?: unknown
+  headingLevel?: unknown
+}
+
+type PresentedBlockData = {
+  frame?: unknown
+  surface?: unknown
 }
 
 type CountedBlockData = {
+  frame?: unknown
   items?: unknown
   sections?: unknown
+  surface?: unknown
 }
 
 type ColumnLayoutBlockData = {
   columns?: Array<{ width?: unknown }>
+  frame?: unknown
+  surface?: unknown
+}
+
+const surfaceLabels: Record<string, string> = {
+  default: 'domyślna',
+  image: 'obraz',
+  inverse: 'odwrócona',
+  subtle: 'subtelna',
+  transparent: 'przezroczysta',
+}
+
+function getText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function getPresentationDescription(data: { frame?: unknown; surface?: unknown }): string {
+  const surface = getText(data.surface) || 'transparent'
+  return [
+    surfaceLabels[surface] ?? surface,
+    data.frame === true || data.frame === 'outline' ? 'obrys' : 'bez ramki',
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 function getTextFromLexicalValue(value: unknown): string {
@@ -116,57 +155,60 @@ export function RichTextBlockLabelClient({ initialContent }: { initialContent?: 
   const contentPreview = truncateAtWordBoundary(
     liveContentPreview || rowContentPreview || initialContentPreview,
   )
-
-  return <BlockLabel prefix="Treść" value={contentPreview} />
-}
-
-export function ListingBlockLabelClient() {
-  const { data } = useRowLabel<HeadingBlockData>()
-
-  return (
-    <BlockLabel prefix="Listing" value={typeof data.heading === 'string' ? data.heading : ''} />
-  )
-}
-
-export function MediaGalleryBlockLabelClient() {
-  const { data } = useRowLabel<HeadingBlockData>()
+  const presentationDescription = getPresentationDescription(data)
 
   return (
     <BlockLabel
-      prefix="Galeria mediów"
-      value={typeof data.heading === 'string' ? data.heading : ''}
+      prefix="Treść"
+      value={[presentationDescription, contentPreview].filter(Boolean).join(' — ')}
     />
   )
 }
 
-export function AttachmentsBlockLabelClient() {
-  const { data } = useRowLabel<HeadingBlockData>()
+export function ListingBlockLabelClient() {
+  const { data } = useRowLabel<PresentedBlockData>()
 
-  return (
-    <BlockLabel prefix="Załączniki" value={typeof data.heading === 'string' ? data.heading : ''} />
-  )
+  return <BlockLabel prefix="Listing" value={getPresentationDescription(data)} />
+}
+
+export function MediaGalleryBlockLabelClient() {
+  const { data } = useRowLabel<PresentedBlockData>()
+
+  return <BlockLabel prefix="Galeria mediów" value={getPresentationDescription(data)} />
+}
+
+export function AttachmentsBlockLabelClient() {
+  const { data } = useRowLabel<PresentedBlockData>()
+
+  return <BlockLabel prefix="Załączniki" value={getPresentationDescription(data)} />
 }
 
 export function DocumentsBlockLabelClient() {
-  const { data } = useRowLabel<HeadingBlockData>()
+  const { data } = useRowLabel<PresentedBlockData>()
 
-  return (
-    <BlockLabel prefix="Dokumenty" value={typeof data.heading === 'string' ? data.heading : ''} />
-  )
+  return <BlockLabel prefix="Dokumenty" value={getPresentationDescription(data)} />
 }
 
 export function MemberProfilesBlockLabelClient() {
-  const { data } = useRowLabel<HeadingBlockData>()
+  const { data } = useRowLabel<PresentedBlockData>()
 
-  return (
-    <BlockLabel prefix="Wizytówki" value={typeof data.heading === 'string' ? data.heading : ''} />
-  )
+  return <BlockLabel prefix="Wizytówki" value={getPresentationDescription(data)} />
 }
 
 export function HeadingBlockLabelClient() {
   const { data } = useRowLabel<HeadingBlockData>()
 
-  return <BlockLabel prefix="Nagłówek" value={typeof data.text === 'string' ? data.text : ''} />
+  const heading = getText(data.heading)
+  const iconLabel = isSelectableRasterIconName(data.headingIconName)
+    ? getSelectableRasterIconLabel(data.headingIconName)
+    : ''
+  const level = getText(data.headingLevel).toUpperCase()
+  return (
+    <BlockLabel
+      prefix="Nagłówek"
+      value={[level, heading || iconLabel].filter(Boolean).join(' · ')}
+    />
+  )
 }
 
 export function ActionLinksBlockLabelClient() {
@@ -179,7 +221,13 @@ export function SectionGroupBlockLabelClient() {
   const { data } = useRowLabel<CountedBlockData>()
   const count = Array.isArray(data.sections) ? data.sections.length : 0
   const noun = count === 1 ? 'sekcja' : count >= 2 && count <= 4 ? 'sekcje' : 'sekcji'
-  return <BlockLabel prefix="Grupa sekcji" value={count ? `${count} ${noun}` : ''} />
+  const countLabel = count ? `${count} ${noun}` : ''
+  return (
+    <BlockLabel
+      prefix="Grupa sekcji"
+      value={[getPresentationDescription(data), countLabel].filter(Boolean).join(' — ')}
+    />
+  )
 }
 
 export function ColumnLayoutBlockLabelClient() {
@@ -201,7 +249,8 @@ export function ColumnLayoutBlockLabelClient() {
     ? data.columns.flatMap((column) => (typeof column.width === 'number' ? [column.width] : []))
     : []
   const widths = liveWidthEntries.length ? liveWidthEntries.map(([, width]) => width) : rowWidths
-  const value = widths.length ? widths.map((width) => `${width}/12`).join(' + ') : ''
+  const widthsLabel = widths.length ? widths.map((width) => `${width}/12`).join(' + ') : ''
+  const value = [getPresentationDescription(data), widthsLabel].filter(Boolean).join(' — ')
 
   return <BlockLabel prefix="Układ kolumnowy" value={value} />
 }

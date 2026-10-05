@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { SiteFooter } from '@/app/(frontend)/_components/SiteFooter'
 import type { Footer, Navigation, SiteSetting } from '@/payload-types'
+import { readFrontendStyles } from '../helpers/frontend-styles'
 
 describe('SiteFooter', () => {
   it('renders the editable logo, footer text and contact heading', () => {
@@ -62,6 +63,51 @@ describe('SiteFooter', () => {
     expect(markup).toContain('class="footerContent"')
     expect(markup).toContain('<p>KRS i adres</p>')
     expect(markup).toContain('Znajdź nas')
+  })
+
+  it('applies the configured alignment to each menu column', () => {
+    const footer = {
+      columns: [
+        {
+          alignment: 'center',
+          items: [
+            {
+              appearance: 'link',
+              customAddress: 'o-nas',
+              customScheme: 'path',
+              label: 'O nas',
+              targetType: 'custom',
+            },
+          ],
+          title: 'Klub',
+        },
+      ],
+      id: 1,
+    } satisfies Footer
+    const navigation = { id: 1 } satisfies Navigation
+    const siteSettings = { id: 1, siteName: 'WKF' } satisfies SiteSetting
+
+    const markup = renderToStaticMarkup(
+      <SiteFooter footer={footer} navigation={navigation} siteSettings={siteSettings} />,
+    )
+
+    expect(markup).toContain('class="footerMenu footerMenu--align-center"')
+    expect(markup).toContain('>Klub</strong>')
+  })
+
+  it('aligns footer links together with their menu column', () => {
+    const styles = readFrontendStyles()
+
+    expect(styles).toContain('.footerMenu--align-left {\n  align-items: flex-start;')
+    expect(styles).toContain(
+      '.footerMenu--align-left .footerMenuItem {\n  justify-content: flex-start;',
+    )
+    expect(styles).toContain(
+      '.footerMenu--align-center .footerMenuItem {\n  justify-content: center;',
+    )
+    expect(styles).toContain(
+      '.footerMenu--align-right .footerMenuItem {\n  justify-content: flex-end;',
+    )
   })
 })
 

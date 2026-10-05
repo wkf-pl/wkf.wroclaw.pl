@@ -159,24 +159,51 @@ describe('page configuration', () => {
     ])
   })
 
-  it('places heading text and role in a two-thirds to one-third row', () => {
+  it('places standalone heading controls in two compact rows', () => {
     const headingRow = HeadingBlock.fields[0]
+    const iconRow = HeadingBlock.fields[1]
     expect(headingRow).toMatchObject({
       fields: [
-        { admin: { width: '66.666%' }, name: 'text', type: 'text' },
-        { admin: { width: '33.333%' }, name: 'role', type: 'select' },
+        { admin: { width: '75%' }, name: 'heading', type: 'text' },
+        {
+          admin: { width: '25%' },
+          defaultValue: 'h2',
+          name: 'headingLevel',
+          options: [
+            { label: 'H2', value: 'h2' },
+            { label: 'H3', value: 'h3' },
+            { label: 'H4', value: 'h4' },
+          ],
+          type: 'select',
+        },
+      ],
+      type: 'row',
+    })
+    expect(iconRow).toMatchObject({
+      fields: [
+        {
+          admin: { width: '75%' },
+          label: 'Ikona',
+          name: 'headingIconName',
+          type: 'select',
+        },
+        {
+          admin: { width: '25%' },
+          defaultValue: false,
+          label: 'Inwersja',
+          name: 'iconInverted',
+          type: 'checkbox',
+        },
       ],
       type: 'row',
     })
   })
 
   it('offers card, list and grid views for embedded member profiles', () => {
-    const viewField = MemberProfilesBlock.fields.find(
-      (field) => 'name' in field && field.name === 'view',
-    )
+    const viewField = findField(MemberProfilesBlock.fields, 'view')
 
     expect(viewField).toMatchObject({
-      admin: { isClearable: false },
+      admin: { isClearable: false, width: '33.333%' },
       defaultValue: 'grid',
       label: 'Widok',
       options: [
@@ -214,7 +241,8 @@ describe('page configuration', () => {
   })
 
   it('arranges listing controls into the requested rows', () => {
-    const rows = ListingBlock.fields.filter((field) => field.type === 'row')
+    const listingFields = ListingBlock.fields.slice(3)
+    const rows = listingFields.filter((field) => field.type === 'row')
     const rowFieldNames = rows.map((row) =>
       row.fields.map((field) => ('name' in field ? field.name : undefined)),
     )
@@ -222,7 +250,13 @@ describe('page configuration', () => {
       (field) => 'name' in field && field.name === 'parentPage',
     )
 
-    expect(ListingBlock.fields[0]).toMatchObject({ label: 'Nagłówek', name: 'heading' })
+    expect(ListingBlock.fields[0]).toMatchObject({
+      fields: [
+        { admin: { width: '50%' }, name: 'frame', type: 'select' },
+        { admin: { width: '50%' }, name: 'surface', type: 'select' },
+      ],
+      type: 'row',
+    })
     expect(rowFieldNames).toEqual([
       ['sources', 'parentPage'],
       ['category', 'tag'],
@@ -230,8 +264,7 @@ describe('page configuration', () => {
       ['eventTimeFilter', 'eventCycle'],
       ['pageSize', 'pagination'],
     ])
-    expect(describeFieldOrder(ListingBlock.fields)).toEqual([
-      'heading',
+    expect(describeFieldOrder(listingFields)).toEqual([
       ['sources', 'parentPage'],
       ['category', 'tag'],
       ['sort', 'view'],

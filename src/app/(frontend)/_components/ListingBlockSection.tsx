@@ -54,8 +54,7 @@ export async function ListingBlockSection({
   }
 
   return (
-    <section className="listingBlock">
-      {block.heading ? <h2 className="listingBlockHeading">{block.heading}</h2> : null}
+    <div className="listingBlock">
       <ContentList emptyMessage={block.emptyMessage} items={result.items} view={block.view} />
       {block.pagination ? (
         <ContentPagination
@@ -66,7 +65,7 @@ export async function ListingBlockSection({
           totalPages={result.totalPages}
         />
       ) : null}
-    </section>
+    </div>
   )
 }
 

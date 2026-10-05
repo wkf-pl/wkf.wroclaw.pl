@@ -20,7 +20,7 @@ import {
 } from '../../scripts/pre-push'
 
 describe('pre-push validation', () => {
-  it('runs each concurrent phase behind the expected barriers', async () => {
+  it('runs static checks concurrently and resource-heavy test suites sequentially', async () => {
     const controlledExecutor = createControlledExecutor()
     const stages = createInitialValidationStages()
     const execution = executeValidationStages(stages, controlledExecutor.execute)
@@ -31,6 +31,9 @@ describe('pre-push validation', () => {
     controlledExecutor.complete('format')
     controlledExecutor.complete('lint')
     controlledExecutor.complete('typecheck')
+    await expectStartedStages(controlledExecutor.started, ['format', 'lint', 'typecheck', 'unit'])
+
+    controlledExecutor.complete('unit')
     await expectStartedStages(controlledExecutor.started, [
       'format',
       'lint',
@@ -39,7 +42,6 @@ describe('pre-push validation', () => {
       'integration',
     ])
 
-    controlledExecutor.complete('unit')
     controlledExecutor.complete('integration')
     await expectStartedStages(controlledExecutor.started, [
       'format',

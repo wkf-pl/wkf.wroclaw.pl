@@ -205,7 +205,6 @@ describe('member profiles integration', () => {
                   {
                     blockType: 'memberProfiles',
                     entries: [{ contextLabel: 'Prezes Zarządu', profile: profile.id }],
-                    heading: 'Zarząd',
                     view: 'grid',
                   },
                 ],

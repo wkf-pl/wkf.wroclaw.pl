@@ -79,8 +79,10 @@ export function resolveLink(
     if (normalizedEmail) {
       const parameters = new URLSearchParams()
       if (item.emailSubject?.trim()) parameters.set('subject', item.emailSubject.trim())
-      if (item.emailBody?.trim()) parameters.set('body', item.emailBody.trim())
-      const query = parameters.toString()
+      if (item.emailBody?.trim()) {
+        parameters.set('body', normalizeMailtoLineEndings(item.emailBody.trim()))
+      }
+      const query = parameters.toString().replaceAll('+', '%20')
       href = `mailto:${normalizedEmail}${query ? `?${query}` : ''}`
     }
   } else {
@@ -96,6 +98,10 @@ export function resolveLink(
   return item.targetType !== 'siteContactEmail' && item.openInNewTab
     ? { href, rel: 'noopener noreferrer', target: '_blank' }
     : { href }
+}
+
+function normalizeMailtoLineEndings(value: string): string {
+  return value.replace(/\r\n|\r|\n/g, '\r\n')
 }
 
 export type PresentedLinkAppearance = 'link' | 'primaryButton' | 'secondaryButton'

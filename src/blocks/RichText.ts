@@ -1,5 +1,7 @@
 import type { Block } from 'payload'
 
+import { createContentPresentationFields } from '@/modules/content/content-presentation'
+
 export const RichTextBlock: Block = {
   slug: 'richText',
   admin: {
@@ -16,18 +18,20 @@ export const RichTextBlock: Block = {
     },
   },
   fields: [
-    {
-      name: 'textStyle',
-      type: 'select',
-      admin: { isClearable: false },
-      defaultValue: 'default',
-      label: 'Skala tekstu',
-      options: [
-        { label: 'Standardowa', value: 'default' },
-        { label: 'Wprowadzenie', value: 'lead' },
-        { label: 'Notatka', value: 'note' },
-      ],
-    },
+    ...createContentPresentationFields({
+      leadingField: {
+        name: 'textStyle',
+        type: 'select',
+        admin: { isClearable: false, width: '33.333%' },
+        defaultValue: 'default',
+        label: 'Skala tekstu',
+        options: [
+          { label: 'Standardowa', value: 'default' },
+          { label: 'Wprowadzenie', value: 'lead' },
+          { label: 'Notatka', value: 'note' },
+        ],
+      },
+    }),
     {
       name: 'content',
       type: 'richText',

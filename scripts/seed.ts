@@ -309,8 +309,8 @@ async function ensureJoinPage(author: User): Promise<Page> {
                       blocks: [
                         {
                           blockType: 'heading',
-                          role: 'section',
-                          text: 'Dołącz i współtwórz WKF',
+                          heading: 'Dołącz i współtwórz WKF',
+                          headingLevel: 'h2',
                         },
                         createRichTextBlock(
                           [
@@ -319,16 +319,16 @@ async function ensureJoinPage(author: User): Promise<Page> {
                           'lead',
                         ),
                       ],
-                      surface: 'default',
+                      surface: 'transparent',
                       width: 7,
                     },
                     {
                       blocks: [
                         {
                           blockType: 'heading',
-                          iconName: 'users',
-                          role: 'item',
-                          text: 'Szczególnie zapraszamy osoby, które chcą działać',
+                          heading: 'Szczególnie zapraszamy osoby, które chcą działać',
+                          headingIconName: 'users',
+                          headingLevel: 'h2',
                         },
                         createRichTextBlock([
                           'Szczególnie zależy nam na osobach chętnych do organizowania wydarzeń i innych działań — dla członków Klubu i nie tylko. Nie jest to jednak formalny warunek członkostwa.',
@@ -341,7 +341,7 @@ async function ensureJoinPage(author: User): Promise<Page> {
                   verticalAlignment: 'center',
                 },
               ],
-              surface: 'default',
+              surface: 'transparent',
             },
             {
               blocks: [
@@ -353,14 +353,14 @@ async function ensureJoinPage(author: User): Promise<Page> {
                       blocks: [
                         {
                           blockType: 'heading',
-                          role: 'section',
-                          text: 'Kto może dołączyć?',
+                          heading: 'Kto może dołączyć?',
+                          headingLevel: 'h2',
                         },
                         createRichTextBlock([
                           'Do Klubu zapraszamy każdą osobę, która czuje się częścią fandomu, chce należeć do klubu fantastyki i mieć wpływ na jego działalność.',
                         ]),
                       ],
-                      surface: 'default',
+                      surface: 'transparent',
                       width: 7,
                     },
                     {
@@ -372,7 +372,7 @@ async function ensureJoinPage(author: User): Promise<Page> {
                           'note',
                         ),
                       ],
-                      surface: 'default',
+                      surface: 'transparent',
                       width: 5,
                     },
                   ],
@@ -385,8 +385,8 @@ async function ensureJoinPage(author: User): Promise<Page> {
               blocks: [
                 {
                   blockType: 'heading',
-                  role: 'section',
-                  text: 'Jak wygląda dołączenie?',
+                  heading: 'Jak wygląda dołączenie?',
+                  headingLevel: 'h2',
                 },
                 {
                   blockType: 'columnLayout',
@@ -396,52 +396,52 @@ async function ensureJoinPage(author: User): Promise<Page> {
                       blocks: [
                         {
                           blockType: 'heading',
-                          iconName: 'mail',
-                          role: 'item',
-                          text: 'Napisz do nas',
+                          heading: 'Napisz do nas',
+                          headingIconName: 'mail',
+                          headingLevel: 'h3',
                         },
                         createRichTextBlock([
                           'Opowiedz krótko, czym się interesujesz oraz jakie wydarzenia lub działania chcesz współtworzyć.',
                         ]),
                       ],
-                      surface: 'default',
+                      surface: 'transparent',
                       width: 4,
                     },
                     {
                       blocks: [
                         {
                           blockType: 'heading',
-                          iconName: 'time',
-                          role: 'item',
-                          text: 'Poznaj szczegóły',
+                          heading: 'Poznaj szczegóły',
+                          headingIconName: 'time',
+                          headingLevel: 'h3',
                         },
                         createRichTextBlock([
                           'Odpowiemy w ciągu kilku dni. Przekażemy bieżące informacje o deklaracji członkowskiej i składce oraz odpowiemy na pytania.',
                         ]),
                       ],
-                      surface: 'default',
+                      surface: 'transparent',
                       width: 4,
                     },
                     {
                       blocks: [
                         {
                           blockType: 'heading',
-                          iconName: 'document',
-                          role: 'item',
-                          text: 'Złóż deklarację',
+                          heading: 'Złóż deklarację',
+                          headingIconName: 'document',
+                          headingLevel: 'h3',
                         },
                         createRichTextBlock([
                           'Członkostwo nadaje Zarząd uchwałą po złożeniu pisemnej deklaracji. Wysokość składki ustala Walne Zgromadzenie.',
                         ]),
                       ],
-                      surface: 'default',
+                      surface: 'transparent',
                       width: 4,
                     },
                   ],
                   verticalAlignment: 'start',
                 },
               ],
-              surface: 'default',
+              surface: 'transparent',
             },
             {
               blocks: [
@@ -453,14 +453,14 @@ async function ensureJoinPage(author: User): Promise<Page> {
                       blocks: [
                         {
                           blockType: 'heading',
-                          role: 'section',
-                          text: 'Gotowa lub gotowy, żeby zacząć?',
+                          heading: 'Gotowa lub gotowy, żeby zacząć?',
+                          headingLevel: 'h2',
                         },
                         createRichTextBlock([
                           'Napisz do nas. Przygotowaliśmy treść wiadomości, którą możesz swobodnie zmienić przed wysłaniem.',
                         ]),
                       ],
-                      surface: 'default',
+                      surface: 'transparent',
                       width: 7,
                     },
                     {
@@ -490,7 +490,7 @@ async function ensureJoinPage(author: User): Promise<Page> {
                           layout: 'stacked',
                         },
                       ],
-                      surface: 'default',
+                      surface: 'transparent',
                       width: 5,
                     },
                   ],
@@ -500,6 +500,7 @@ async function ensureJoinPage(author: User): Promise<Page> {
               surface: 'subtle',
             },
           ],
+          surface: 'default',
         },
       ],
       listingExcerpt:

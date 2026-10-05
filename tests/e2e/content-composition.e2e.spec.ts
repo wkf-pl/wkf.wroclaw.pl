@@ -96,9 +96,10 @@ test.beforeAll(async () => {
               blocks: [
                 {
                   blockType: 'heading',
-                  iconName: 'image',
-                  role: 'section',
-                  text: 'Powierzchnia obrazowa',
+                  heading: 'Powierzchnia obrazowa',
+                  headingIconName: 'image',
+                  headingLevel: 'h2',
+                  iconInverted: true,
                 },
                 {
                   blockType: 'columnLayout',
@@ -132,8 +133,8 @@ test.beforeAll(async () => {
               blocks: [
                 {
                   blockType: 'heading',
-                  role: 'section',
-                  text: 'Odnośniki prezentacyjne',
+                  heading: 'Odnośniki prezentacyjne',
+                  headingLevel: 'h2',
                 },
                 {
                   alignment: 'start',
@@ -141,7 +142,7 @@ test.beforeAll(async () => {
                   items: [
                     {
                       appearance: 'primaryButton',
-                      emailBody: 'Chcę porozmawiać o dołączeniu.',
+                      emailBody: 'Cześć!\n\nChcę porozmawiać o dołączeniu.',
                       emailSubject: 'Kontakt z WKF',
                       iconName: 'mail',
                       label: 'Napisz do nas',
@@ -169,6 +170,7 @@ test.beforeAll(async () => {
               surface: 'inverse',
             },
           ],
+          surface: 'default',
         },
       ],
       slug: pageSlug,
@@ -192,24 +194,33 @@ test('renders finite composition, decorative cover image and presented links', a
   await expect(page.locator('.membershipOnboarding')).toHaveCount(0)
 
   const imageSurface = group.locator('[data-surface="image"]')
-  const image = imageSurface.locator(':scope > .contentSurfaceImage')
+  const image = imageSurface.locator(':scope > .contentPresentationImage')
   await expect(image).toHaveAttribute('alt', '')
   await expect(image).toHaveAttribute('aria-hidden', 'true')
   await expect(image).toHaveCSS('object-fit', 'cover')
   await expect(image).toHaveCSS('object-position', '100% 100%')
-  await expect(imageSurface.locator(':scope > .contentSurfaceShade')).toBeVisible()
+  await expect(imageSurface.locator(':scope > .contentPresentationShade')).toBeVisible()
   await expect(group.locator('[data-surface="subtle"]')).toHaveCount(1)
   await expect(group.locator('[data-surface="inverse"]')).toHaveCount(1)
+  const imageHeading = page.getByRole('heading', { level: 2, name: 'Powierzchnia obrazowa' })
+  await expect(imageHeading).toBeVisible()
+  await expect(imageHeading.locator('.contentHeadingIcon')).toHaveClass(
+    /contentHeadingIcon--inverted/,
+  )
 
   const primaryAction = page.getByRole('link', { name: 'Napisz do nas' })
   await expect(primaryAction).toHaveClass(/presentedLink--primaryButton/)
   await expect(primaryAction).toHaveAttribute(
     'href',
-    /mailto:.*subject=Kontakt(?:\+|%20)z(?:\+|%20)WKF.*body=/,
+    /mailto:.*subject=Kontakt%20z%20WKF.*body=Cze%C5%9B%C4%87%21%0D%0A%0D%0AChc%C4%99%20porozmawia%C4%87%20o%20do%C5%82%C4%85czeniu\./,
   )
-  await expect(page.getByRole('link', { name: 'Zobacz aktualności' })).toHaveClass(
-    /presentedLink--secondaryButton/,
-  )
+  expect(await primaryAction.getAttribute('href')).not.toContain('+')
+  const secondaryAction = page.getByRole('link', { name: 'Zobacz aktualności' })
+  await expect(secondaryAction).toHaveClass(/presentedLink--secondaryButton/)
+  await primaryAction.hover()
+  await expect(primaryAction).toHaveCSS('color', 'rgb(255, 189, 56)')
+  await secondaryAction.hover()
+  await expect(secondaryAction).toHaveCSS('color', 'rgb(244, 239, 229)')
   const iconOnly = group.locator('.actionLinks').getByRole('link', { name: 'O nas', exact: true })
   await expect(iconOnly).toHaveAttribute('href', '/o-nas')
   const iconOnlyBox = await iconOnly.boundingBox()
@@ -223,6 +234,14 @@ test('renders finite composition, decorative cover image and presented links', a
     'Pierwsza kolumna ma dwa akapity.Drugi akapit wydłuża kolumnę.',
     'Druga kolumna kończy się na tej samej linii.',
   ])
+  const separatedColumns = page.locator('.columnLayout--withSeparators .columnLayoutColumn')
+  const firstColumnBox = await separatedColumns.nth(0).boundingBox()
+  const secondColumnBox = await separatedColumns.nth(1).boundingBox()
+  expect(firstColumnBox).not.toBeNull()
+  expect(secondColumnBox).not.toBeNull()
+  expect(secondColumnBox!.x - (firstColumnBox!.x + firstColumnBox!.width)).toBeGreaterThanOrEqual(
+    40,
+  )
 })
 
 test('turns the separator horizontal without changing DOM order on mobile', async ({ page }) => {
@@ -243,24 +262,117 @@ test('turns the separator horizontal without changing DOM order on mobile', asyn
   ])
 })
 
-test('shows the image controls, crop preview and descriptive section label in admin', async ({
+test('shows compact presentation and heading controls with the crop preview in admin', async ({
   page,
 }) => {
   await login({ page, user: editorTestUser })
   await page.goto(`/admin/collections/pages/${pageDocument.id}`)
 
-  const firstSection = page.locator('#field-layout__0__sections .array-field__row').first()
-  await firstSection.getByRole('button', { name: 'Przełącz blok' }).click()
+  const layoutField = page.locator('#field-layout')
+  const showAllButton = layoutField
+    .locator(':scope > .blocks-field__header')
+    .getByRole('button', { name: 'Pokaż wszystkie' })
+  await showAllButton.click()
+  const sectionTabs = layoutField
+    .locator('.blocks-field__row')
+    .first()
+    .locator('.wkf-layout-tabs[data-layout-kind="sections"]')
+  await expect(sectionTabs.getByRole('tab')).toHaveText(['Prezentacja', 'Sekcja 1', 'Sekcja 2'])
+  await sectionTabs.getByRole('tab', { name: 'Sekcja 1' }).click()
+  const firstSection = sectionTabs.getByRole('tabpanel')
 
-  await expect(
-    page.getByText('Sekcja 1: obraz · Powierzchnia obrazowa', { exact: true }),
-  ).toBeVisible()
+  const frameField = firstSection.locator('[id$="__frame"]').first()
   const surfaceField = firstSection.locator('[id$="__surface"]').first()
   const surfaceImageField = firstSection.locator('[id$="__surfaceImage"]').first()
   const horizontalPositionField = firstSection
     .locator('[id$="__surfaceHorizontalPosition"]')
     .first()
   const verticalPositionField = firstSection.locator('[id$="__surfaceVerticalPosition"]').first()
+  const presentationLayout = await Promise.all(
+    [frameField, surfaceField].map((field) =>
+      field.evaluate((element) => {
+        const fieldContainer = element.closest('.field-type') ?? element
+        const rectangle = fieldContainer.getBoundingClientRect()
+        return { height: rectangle.height, width: rectangle.width, x: rectangle.x, y: rectangle.y }
+      }),
+    ),
+  )
+  const [frameBox, surfaceBox] = presentationLayout
+  expect(Math.abs(frameBox.y - surfaceBox.y)).toBeLessThanOrEqual(2)
+  expect(Math.abs(frameBox.width - surfaceBox.width)).toBeLessThanOrEqual(2)
+
+  const headingField = firstSection.locator('[id$="__heading"]').first()
+  const headingLevelField = firstSection.locator('[id$="__headingLevel"]').first()
+  const headingIconField = firstSection.locator('[id$="__headingIconName"]').first()
+  const iconInvertedField = firstSection.locator('[id$="__iconInverted"]').first()
+  const headingLayout = await Promise.all(
+    [headingField, headingLevelField, headingIconField, iconInvertedField].map((field) =>
+      field.evaluate((element) => {
+        const fieldContainer = element.closest('.field-type') ?? element
+        const rectangle = fieldContainer.getBoundingClientRect()
+        return { width: rectangle.width, y: rectangle.y }
+      }),
+    ),
+  )
+  const [headingBox, headingLevelBox, headingIconBox, iconInvertedBox] = headingLayout
+  expect(Math.abs(headingBox.y - headingLevelBox.y)).toBeLessThanOrEqual(2)
+  expect(Math.abs(headingIconBox.y - iconInvertedBox.y)).toBeLessThanOrEqual(2)
+  expect(headingIconBox.y).toBeGreaterThan(headingBox.y)
+  expect(headingBox.width / headingLevelBox.width).toBeGreaterThan(2.5)
+  expect(headingIconBox.width / iconInvertedBox.width).toBeGreaterThan(2.5)
+  await expect(iconInvertedField).toBeChecked()
+  const [iconControlHeight, levelControlHeight] = await Promise.all(
+    [headingIconField, headingLevelField].map((field) =>
+      field.locator('.rs__control').evaluate((element) => element.getBoundingClientRect().height),
+    ),
+  )
+  expect(Math.abs(iconControlHeight - levelControlHeight)).toBeLessThanOrEqual(1)
+  const selectedIconGeometry = await headingIconField.evaluate((element) => {
+    const control = element.querySelector('.rs__control')
+    const selectedIcon = element.querySelector('.raster-icon-picker__value .rasterIcon')
+    if (!control || !selectedIcon) return null
+
+    const controlRectangle = control.getBoundingClientRect()
+    const iconRectangle = selectedIcon.getBoundingClientRect()
+    return {
+      bottomOverflow: iconRectangle.bottom - controlRectangle.bottom,
+      centerOffset:
+        iconRectangle.top +
+        iconRectangle.height / 2 -
+        (controlRectangle.top + controlRectangle.height / 2),
+      topOverflow: controlRectangle.top - iconRectangle.top,
+    }
+  })
+  expect(selectedIconGeometry).not.toBeNull()
+  expect(selectedIconGeometry?.topOverflow).toBeLessThanOrEqual(0)
+  expect(selectedIconGeometry?.bottomOverflow).toBeLessThanOrEqual(0)
+  expect(
+    Math.abs(selectedIconGeometry?.centerOffset ?? Number.POSITIVE_INFINITY),
+  ).toBeLessThanOrEqual(1)
+  const indicatorCenterOffset = await Promise.all(
+    [headingIconField, headingLevelField].map((field) =>
+      field.evaluate((element) => {
+        const control = element.querySelector('.rs__control')
+        const indicators = element.querySelector('.rs__indicators')
+        if (!control || !indicators) return null
+        const controlRectangle = control.getBoundingClientRect()
+        const indicatorRectangle = indicators.getBoundingClientRect()
+        return (
+          indicatorRectangle.top +
+          indicatorRectangle.height / 2 -
+          (controlRectangle.top + controlRectangle.height / 2)
+        )
+      }),
+    ),
+  )
+  expect(indicatorCenterOffset.every((offset) => offset !== null && Math.abs(offset) <= 1)).toBe(
+    true,
+  )
+  await expect(frameField.getByRole('combobox')).toBeVisible()
+  await frameField.getByRole('combobox').click()
+  await expect(page.getByRole('option', { name: 'Brak', exact: true })).toBeVisible()
+  await expect(page.getByRole('option', { name: 'Obrys', exact: true })).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(surfaceField).toContainText('Obraz')
   await expect(firstSection.locator('.wkf-surface-preview')).toBeVisible()
   await expect(horizontalPositionField.getByRole('combobox')).toBeVisible()
@@ -275,6 +387,35 @@ test('shows the image controls, crop preview and descriptive section label in ad
   await page.getByRole('option', { name: 'Obraz', exact: true }).click()
   await expect(firstSection.locator('.wkf-surface-preview')).toBeVisible()
   await expect(surfaceImageField).toContainText(imageFilename)
+
+  await headingIconField.locator('.clear-indicator').click()
+  await expect(headingIconField).toContainText('Wyszukaj ikonę po nazwie…')
+  const placeholderCenterOffset = await headingIconField.evaluate((element) => {
+    const control = element.querySelector('.rs__control')
+    const placeholder = element.querySelector('.rs__placeholder')
+    if (!control || !placeholder) return null
+    const controlRectangle = control.getBoundingClientRect()
+    const placeholderRectangle = placeholder.getBoundingClientRect()
+    return (
+      placeholderRectangle.top +
+      placeholderRectangle.height / 2 -
+      (controlRectangle.top + controlRectangle.height / 2)
+    )
+  })
+  expect(placeholderCenterOffset).not.toBeNull()
+  expect(Math.abs(placeholderCenterOffset ?? Number.POSITIVE_INFINITY)).toBeLessThanOrEqual(1)
+
+  await expect(sectionTabs.getByRole('button', { name: /^Przeciągnij: Sekcja / })).toHaveCount(2)
+  await sectionTabs.getByRole('button', { name: 'Dodaj sekcję' }).click()
+  await expect(sectionTabs.getByRole('tab', { name: 'Sekcja 3' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  await expect(
+    sectionTabs.getByRole('tabpanel').getByRole('button', { name: 'Duplikuj sekcję' }),
+  ).toHaveCount(0)
+  await sectionTabs.getByRole('button', { name: 'Usuń: Sekcja 3' }).click()
+  await expect(sectionTabs.getByRole('tab')).toHaveText(['Prezentacja', 'Sekcja 1', 'Sekcja 2'])
 })
 
 async function cleanup(): Promise<void> {

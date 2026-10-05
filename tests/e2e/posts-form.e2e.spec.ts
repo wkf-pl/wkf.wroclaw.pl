@@ -48,7 +48,7 @@ test('renders dynamic labels for post content blocks', async ({ page }) => {
   await expect(label).toBeVisible({ timeout: 15_000 })
   await expect(label.locator('strong')).toHaveText('Treść')
   await expect(label).toHaveText(
-    'Treść: Erpegowe wtorki to regularne spotkania dla osób, które chcą zagrać, poprowadzić albo po prostu…',
+    'Treść: przezroczysta · bez ramki — Erpegowe wtorki to regularne spotkania dla osób, które chcą zagrać, poprowadzić albo po prostu…',
   )
 })
 

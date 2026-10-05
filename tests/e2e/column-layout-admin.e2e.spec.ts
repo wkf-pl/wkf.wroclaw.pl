@@ -12,11 +12,15 @@ test.describe.configure({ mode: 'serial' })
 const fixtureRunID = Date.now()
 const fixtureSlug = `e2e-column-layout-admin-${fixtureRunID}`
 const defaultFixtureSlug = `e2e-column-layout-default-${fixtureRunID}`
+const addedFixtureSlug = `e2e-column-layout-added-${fixtureRunID}`
+const clipboardFixtureSlug = `e2e-column-layout-clipboard-${fixtureRunID}`
 
 let payload: Payload
 let author: User
 let fixturePage: PageDocument
 let defaultFixturePage: PageDocument
+let addedFixturePage: PageDocument
+let clipboardFixturePage: PageDocument
 
 function richTextBlock(text: string) {
   return {
@@ -115,6 +119,55 @@ test.beforeAll(async () => {
     draft: true,
     overrideAccess: true,
   })
+  addedFixturePage = await payload.create({
+    collection: 'pages',
+    data: {
+      _status: 'draft',
+      author: author.id,
+      layout: [richTextBlock('Existing content')],
+      slug: addedFixtureSlug,
+      title: 'E2E added column layout admin',
+    },
+    draft: true,
+    overrideAccess: true,
+  })
+  clipboardFixturePage = await payload.create({
+    collection: 'pages',
+    data: {
+      _status: 'draft',
+      author: author.id,
+      layout: [
+        {
+          blockType: 'columnLayout',
+          columnSeparators: 'none',
+          columns: [
+            { blocks: [], surface: 'transparent', width: 6 },
+            { blocks: [], surface: 'transparent', width: 6 },
+          ],
+          surface: 'transparent',
+          verticalAlignment: 'start',
+        },
+        {
+          blockType: 'sectionGroup',
+          sections: [
+            {
+              blocks: [richTextBlock('Existing section content')],
+              surface: 'transparent',
+            },
+            {
+              blocks: [richTextBlock('Second section content')],
+              surface: 'transparent',
+            },
+          ],
+          surface: 'transparent',
+        },
+      ],
+      slug: clipboardFixtureSlug,
+      title: 'E2E column layout clipboard',
+    },
+    draft: true,
+    overrideAccess: true,
+  })
 })
 
 test.afterAll(async () => {
@@ -128,85 +181,180 @@ test('opens a 6+6 layout, keeps content visible while invalid and excludes neste
   await page.goto(`/admin/collections/pages/${defaultFixturePage.id}`)
 
   const field = await openColumnLayoutField(page)
-  await expect(field.getByText('Suma szerokości: 12/12', { exact: true })).toBeVisible()
-  await expectWidthValues(field, ['6', '6'])
-  await expect(field.locator('.wkf-column-layout-content')).toHaveCount(2)
-
-  const firstColumnContent = field.locator('.wkf-column-layout-content').first()
-  await expect(firstColumnContent.locator('.wkf-column-layout-content__title')).toHaveText(
-    'Kolumna 1 - 6/12',
+  await expect(
+    field.getByText('Kolumny: 2 · suma szerokości: 12/12', { exact: true }),
+  ).toBeVisible()
+  await expect(field.getByRole('tab')).toHaveText([
+    'Prezentacja',
+    'Kolumna 1 - 6c',
+    'Kolumna 2 - 6c',
+  ])
+  const firstColumnTabContainer = field.locator('.wkf-layout-tabs__sortable-tab').first()
+  await expect(firstColumnTabContainer.locator(':scope > button').nth(0)).toHaveAttribute(
+    'aria-label',
+    'Przeciągnij: Kolumna 1 - 6c',
   )
-  await expect(field.locator('.wkf-column-layout-content > .collapsible__toggle-wrap')).toHaveCount(
-    2,
+  await expect(firstColumnTabContainer.locator(':scope > button').nth(1)).toHaveAttribute(
+    'role',
+    'tab',
   )
-  await field.getByRole('button', { exact: true, name: 'Zwiń wszystkie' }).click()
-  await expect(field.locator('.wkf-column-layout-content.collapsible--collapsed')).toHaveCount(2)
-  await field.getByRole('button', { exact: true, name: 'Rozwiń wszystkie' }).click()
-  await expect(field.locator('.wkf-column-layout-content.collapsible--collapsed')).toHaveCount(0)
-  await firstColumnContent
-    .locator(':scope > .collapsible__toggle-wrap > .collapsible__toggle')
-    .click()
-  await expect(firstColumnContent).toHaveClass(/collapsible--collapsed/)
-  await firstColumnContent
-    .locator(':scope > .collapsible__toggle-wrap > .collapsible__toggle')
-    .click()
-  await expect(firstColumnContent).not.toHaveClass(/collapsible--collapsed/)
-
-  const spacing = await field.evaluate((element) => {
-    const configurator = element.querySelector('.wkf-column-layout-configurator')
-    const actions = element.querySelector('.wkf-column-layout-collapse-actions')
-    const firstContent = element.querySelector('.wkf-column-layout-content')
-    const surface = firstContent?.querySelector('.select')
-    const blocks = firstContent?.querySelector('.blocks-field')
-    if (!configurator || !actions || !firstContent || !surface || !blocks) return null
-
-    const configuratorRect = configurator.getBoundingClientRect()
-    const actionsRect = actions.getBoundingClientRect()
-    const firstContentRect = firstContent.getBoundingClientRect()
-    const surfaceRect = surface.getBoundingClientRect()
-    const blocksRect = blocks.getBoundingClientRect()
+  await expect(firstColumnTabContainer.locator(':scope > button').nth(2)).toHaveAttribute(
+    'aria-label',
+    'Usuń: Kolumna 1 - 6c',
+  )
+  await expect(field.getByRole('tab', { name: 'Prezentacja' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  const presentationRows = await activePanel(field).evaluate((element) => {
+    const fieldRectangle = (suffix: string) =>
+      element.querySelector(`[id$="__${suffix}"]`)?.getBoundingClientRect()
+    const frame = fieldRectangle('frame')
+    const surface = fieldRectangle('surface')
+    const verticalAlignment = fieldRectangle('verticalAlignment')
+    const columnSeparators = fieldRectangle('columnSeparators')
+    if (!frame || !surface || !verticalAlignment || !columnSeparators) return null
     return {
-      actionsToContent: firstContentRect.top - actionsRect.bottom,
-      configuratorToActions: actionsRect.top - configuratorRect.bottom,
-      surfaceToBlocks: blocksRect.top - surfaceRect.bottom,
+      firstRowOffset: frame.top - surface.top,
+      secondRowOffset: verticalAlignment.top - columnSeparators.top,
+      verticalGap: verticalAlignment.top - frame.top,
     }
   })
-  expect(spacing).not.toBeNull()
-  expect(spacing?.configuratorToActions).toBeGreaterThanOrEqual(0)
-  expect(spacing?.actionsToContent).toBeGreaterThanOrEqual(0)
-  expect(spacing?.actionsToContent).toBeLessThanOrEqual(8)
-  expect(spacing?.surfaceToBlocks).toBeGreaterThanOrEqual(16)
+  expect(presentationRows).not.toBeNull()
+  expect(
+    Math.abs(presentationRows?.firstRowOffset ?? Number.POSITIVE_INFINITY),
+  ).toBeLessThanOrEqual(2)
+  expect(
+    Math.abs(presentationRows?.secondRowOffset ?? Number.POSITIVE_INFINITY),
+  ).toBeLessThanOrEqual(2)
+  expect(presentationRows?.verticalGap).toBeGreaterThan(20)
+  await expectColumnWidths(field, ['6', '6'])
+
+  const firstColumnTab = field.getByRole('tab', { name: 'Kolumna 1' })
+  await firstColumnTab.click()
+  await expect(activePanel(field).locator('input[type="number"]')).toHaveValue('6')
+  const columnPresentationRow = await activePanel(field).evaluate((element) => {
+    const fieldRectangle = (suffix: string) => {
+      const field = element.querySelector(`[id$="__${suffix}"]`)
+      return (field?.closest('.field-type') ?? field)?.getBoundingClientRect()
+    }
+    const width = fieldRectangle('width')
+    const frame = fieldRectangle('frame')
+    const surface = fieldRectangle('surface')
+    if (!width || !frame || !surface) return null
+    return {
+      frameOffset: width.top - frame.top,
+      surfaceOffset: width.top - surface.top,
+      widths: [width.width, frame.width, surface.width],
+    }
+  })
+  expect(columnPresentationRow).not.toBeNull()
+  expect(
+    Math.abs(columnPresentationRow?.frameOffset ?? Number.POSITIVE_INFINITY),
+  ).toBeLessThanOrEqual(2)
+  expect(
+    Math.abs(columnPresentationRow?.surfaceOffset ?? Number.POSITIVE_INFINITY),
+  ).toBeLessThanOrEqual(2)
+  expect(Math.max(...(columnPresentationRow?.widths ?? []))).toBeLessThanOrEqual(
+    Math.min(...(columnPresentationRow?.widths ?? [])) + 2,
+  )
+  await expect(firstColumnTabContainer).toHaveAttribute('data-active', 'true')
+
+  const firstColumnControls = firstColumnTabContainer.locator(':scope > button')
+  const underlineColors = await firstColumnControls.evaluateAll((controls) =>
+    controls.map((control) => getComputedStyle(control).borderBottomColor),
+  )
+  expect(new Set(underlineColors).size).toBe(1)
+  expect(underlineColors[0]).not.toBe('rgba(0, 0, 0, 0)')
+
+  const iconSpacing = await firstColumnTabContainer.evaluate((element) => {
+    const handleIcon = element.querySelector('.wkf-layout-tabs__drag-handle svg')
+    const label = element.querySelector('[role="tab"] > span')
+    const removeIcon = element.querySelector('.wkf-layout-tabs__remove-tab svg')
+    if (!handleIcon || !label || !removeIcon) return null
+
+    const handleRectangle = handleIcon.getBoundingClientRect()
+    const labelRectangle = label.getBoundingClientRect()
+    const removeRectangle = removeIcon.getBoundingClientRect()
+    return {
+      afterHandle: labelRectangle.left - handleRectangle.right,
+      beforeRemove: removeRectangle.left - labelRectangle.right,
+    }
+  })
+  expect(iconSpacing).not.toBeNull()
+  expect(iconSpacing?.afterHandle).toBeLessThanOrEqual(12)
+  expect(iconSpacing?.beforeRemove).toBeLessThanOrEqual(12)
+
+  const firstColumnRemoveButton = firstColumnTabContainer.getByRole('button', {
+    name: 'Usuń: Kolumna 1 - 6c',
+  })
+  await expect(firstColumnRemoveButton).toBeDisabled()
+  const disabledDeleteColors = await firstColumnRemoveButton.evaluate((element) => {
+    const styles = getComputedStyle(element)
+    return {
+      action: styles.getPropertyValue('--wkf-action-color').trim(),
+      disabled: styles.getPropertyValue('--theme-elevation-400').trim(),
+    }
+  })
+  expect(disabledDeleteColors.action).toBe(disabledDeleteColors.disabled)
+
+  await firstColumnTab.press('ArrowRight')
+  await expect(field.getByRole('tab', { name: 'Kolumna 2' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+
+  const spacing = await activePanel(field).evaluate((element) => {
+    const surface = element.querySelector('[id$="__surface"]')
+    const blocks = element.querySelector('.blocks-field')
+    if (!surface || !blocks) return null
+    return blocks.getBoundingClientRect().top - surface.getBoundingClientRect().bottom
+  })
+  expect(spacing).toBeGreaterThanOrEqual(16)
 
   await field.getByRole('button', { name: 'Dodaj kolumnę' }).click()
-  await expectWidthValues(field, ['6', '6', '2'])
-  await expect(page.getByText('Układ kolumnowy: 6/12 + 6/12 + 2/12', { exact: true })).toBeVisible()
-  await expect(field.getByText('Suma szerokości: 14/12', { exact: true })).toBeVisible()
+  await expectColumnWidths(field, ['6', '6', '2'])
   await expect(
-    field.getByText('Szerokości kolumn muszą sumować się do 12.', { exact: true }),
+    page.getByText('Układ kolumnowy: przezroczysta · bez ramki — 6/12 + 6/12 + 2/12', {
+      exact: true,
+    }),
   ).toBeVisible()
-  await expect(field.locator('.wkf-column-layout-content')).toHaveCount(3)
+  await expect(
+    field.getByText('Kolumny: 3 · suma szerokości: 14/12', { exact: true }),
+  ).toBeVisible()
+  await expect(field.getByRole('tab')).toHaveText([
+    'Prezentacja',
+    'Kolumna 1 - 6c',
+    'Kolumna 2 - 6c',
+    'Kolumna 3 - 2c',
+  ])
 
   await field.getByRole('button', { name: 'Dodaj kolumnę' }).click()
-  await expect(field.locator('.wkf-column-layout-content')).toHaveCount(4)
+  await expect(field.getByRole('tab')).toHaveCount(5)
   await expect(field.getByRole('button', { name: 'Dodaj kolumnę' })).toHaveCount(0)
-  await field.getByRole('button', { name: 'Usuń kolumnę 4' }).click()
-  await expect(field.locator('.wkf-column-layout-content')).toHaveCount(3)
+  await field.getByRole('button', { name: 'Usuń: Kolumna 4 - 2c' }).click()
+  await expect(field.getByRole('tab')).toHaveCount(4)
   await expect(page.getByRole('heading', { name: 'Usunąć kolumnę 4?' })).toHaveCount(0)
 
-  await firstColumnContent.locator('.blocks-field__drawer-toggler').click()
+  await field.getByRole('tab', { name: 'Kolumna 1' }).click()
+  await activePanel(field).locator('.blocks-field__drawer-toggler').click()
   const innerDrawer = page.locator('.drawer--is-open')
   const groupHeadings = await innerDrawer.getByRole('heading', { level: 3 }).allTextContents()
   expect(groupHeadings).toEqual(['Treści', 'Elementy'])
   await expect(innerDrawer.getByText('Układ kolumnowy', { exact: true })).toHaveCount(0)
   await page.keyboard.press('Escape')
 
-  await widthInputs(field).first().fill('5')
-  await expect(firstColumnContent.locator('.wkf-column-layout-content__title')).toHaveText(
-    'Kolumna 1 - 5/12',
-  )
-  await expect(page.getByText('Układ kolumnowy: 5/12 + 6/12 + 2/12', { exact: true })).toBeVisible()
-  await expect(field.getByText('Suma szerokości: 13/12', { exact: true })).toBeVisible()
-  await expect(firstColumnContent).toBeVisible()
+  await activePanel(field).locator('input[type="number"]').fill('5')
+  await expect(field.getByRole('tab', { name: 'Kolumna 1' })).toHaveText('Kolumna 1 - 5c')
+  await expect(
+    page.getByText('Układ kolumnowy: przezroczysta · bez ramki — 5/12 + 6/12 + 2/12', {
+      exact: true,
+    }),
+  ).toBeVisible()
+  await expect(
+    field.getByText('Kolumny: 3 · suma szerokości: 13/12', { exact: true }),
+  ).toBeVisible()
+  await expect(activePanel(field)).toBeVisible()
   await page.getByRole('button', { name: 'Zapisz szkic' }).click()
   await expect(
     field.getByText('Szerokości kolumn muszą sumować się do 12.', { exact: true }),
@@ -222,57 +370,60 @@ test('moves whole columns, confirms destructive deletion and reloads the persist
 
   const field = await openColumnLayoutField(page)
   await expect(
-    page.getByText('Układ kolumnowy: 3/12 + 3/12 + 3/12 + 3/12', { exact: true }),
+    page.getByText('Układ kolumnowy: przezroczysta · bez ramki — 3/12 + 3/12 + 3/12 + 3/12', {
+      exact: true,
+    }),
   ).toBeVisible()
   await expect(field.getByRole('button', { name: 'Dodaj kolumnę' })).toHaveCount(0)
 
-  for (const columnIndex of [0, 1]) {
-    const column = field.locator('.wkf-column-layout-content').nth(columnIndex)
-    if (
-      !(await column.evaluate((element) => element.classList.contains('collapsible--collapsed')))
-    ) {
-      await column.locator(':scope > .collapsible__toggle-wrap > .collapsible__toggle').click()
-    }
-  }
-
   const secondColumnDragHandle = field
-    .locator('.wkf-column-layout-content')
+    .locator('.wkf-layout-tabs__sortable-tab')
     .nth(1)
-    .locator(':scope > .collapsible__toggle-wrap .collapsible__drag')
+    .getByRole('button', { name: 'Przeciągnij: Kolumna 2 - 3c' })
   await dragToColumn(
     page,
     secondColumnDragHandle,
-    field.locator('.wkf-column-layout-content-row').nth(0),
+    field.locator('.wkf-layout-tabs__sortable-tab').nth(0),
   )
-  await expect(field.locator('.wkf-column-layout-content').nth(0)).toContainText('Middle content')
-  await expect(field.locator('.wkf-column-layout-content').nth(1)).toContainText('Left content')
+  const presentationTab = field.getByRole('tab', { name: 'Prezentacja' })
+  await presentationTab.focus()
+  await presentationTab.press('ArrowRight')
+  await expect(field.getByRole('tab', { name: 'Kolumna 1' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  await expect(activePanel(field)).toContainText('Middle content')
+  await field.getByRole('tab', { name: 'Kolumna 2' }).click()
+  await expect(activePanel(field)).toContainText('Left content')
 
-  await field.getByRole('button', { name: 'Przesuń kolumnę 1 w prawo' }).click()
-  await expect(field.locator('.wkf-column-layout-content').nth(0)).toContainText('Left content')
-  await field.getByRole('button', { name: 'Przesuń kolumnę 2 w lewo' }).click()
-  await expect(field.locator('.wkf-column-layout-content').nth(0)).toContainText('Middle content')
+  await expect(activePanel(field).getByRole('button', { name: 'Przesuń w lewo' })).toHaveCount(0)
+  await expect(activePanel(field).getByRole('button', { name: 'Przesuń w prawo' })).toHaveCount(0)
+  await expect(activePanel(field).getByRole('button', { name: 'Usuń' })).toHaveCount(0)
 
-  await field.getByRole('button', { name: 'Usuń kolumnę 3' }).click()
-  await expect(field.locator('.wkf-column-layout-content')).toHaveCount(3)
+  await field.getByRole('button', { name: 'Usuń: Kolumna 3 - 3c' }).click()
+  await expect(field.getByRole('tab')).toHaveCount(4)
   await expect(page.getByRole('heading', { name: 'Usunąć kolumnę 3?' })).toHaveCount(0)
 
-  await field.getByRole('button', { name: 'Usuń kolumnę 2' }).click()
+  await field.getByRole('tab', { name: 'Kolumna 2' }).click()
+  await field.getByRole('button', { name: 'Usuń: Kolumna 2 - 3c' }).click()
   const modal = page.locator('.confirmation-modal')
   await expect(modal.getByRole('heading', { name: 'Usunąć kolumnę 2?' })).toBeVisible()
   await expect(modal).toContainText(
-    'Ta kolumna zawiera bloki. Usunięcie kolumny trwale usunie również całą jej zawartość z bieżącego dokumentu.',
+    'Ta kolumna zawiera bloki. Usunięcie trwale usunie również całą jej zawartość z bieżącego dokumentu.',
   )
   await modal.getByRole('button', { name: 'Anuluj' }).click()
-  await expect(field.locator('.wkf-column-layout-content')).toHaveCount(3)
-  await expect(field.locator('.wkf-column-layout-content').nth(1)).toContainText('Left content')
+  await expect(field.getByRole('tab')).toHaveCount(4)
+  await expect(activePanel(field)).toContainText('Left content')
 
-  await field.getByRole('button', { name: 'Usuń kolumnę 2' }).click()
-  await modal.getByRole('button', { name: 'Usuń kolumnę' }).click()
-  await expect(field.locator('.wkf-column-layout-content')).toHaveCount(2)
+  await field.getByRole('button', { name: 'Usuń: Kolumna 2 - 3c' }).click()
+  await modal.getByRole('button', { name: 'Usuń', exact: true }).click()
+  await expect(field.getByRole('tab')).toHaveCount(3)
   await expect(field).not.toContainText('Left content')
-  await widthInputs(field).nth(0).fill('6')
-  await widthInputs(field).nth(1).fill('6')
-  await expect(field.getByText('Suma szerokości: 12/12', { exact: true })).toBeVisible()
+  await fillColumnWidth(field, 0, '6')
+  await fillColumnWidth(field, 1, '6')
+  await expect(
+    field.getByText('Kolumny: 2 · suma szerokości: 12/12', { exact: true }),
+  ).toBeVisible()
   const sourceLayout = fixturePage.layout?.[0]
   if (!sourceLayout || sourceLayout.blockType !== 'columnLayout') {
     throw new Error('Missing source column layout fixture.')
@@ -297,33 +448,130 @@ test('moves whole columns, confirms destructive deletion and reloads the persist
   await page.reload()
 
   const reloadedField = await openColumnLayoutField(page)
-  await expandColumn(reloadedField, 0)
-  await expandColumn(reloadedField, 1)
-  await expectWidthValues(reloadedField, ['6', '6'])
-  await expect(reloadedField.locator('.wkf-column-layout-content').nth(0)).toContainText(
-    'Middle content',
-  )
-  await expect(reloadedField.locator('.wkf-column-layout-content').nth(1)).toContainText(
-    'Right content',
-  )
+  await expectColumnWidths(reloadedField, ['6', '6'])
+  await reloadedField.getByRole('tab', { name: 'Kolumna 1' }).click()
+  await expect(activePanel(reloadedField)).toContainText('Middle content')
+  await reloadedField.getByRole('tab', { name: 'Kolumna 2' }).click()
+  await expect(activePanel(reloadedField)).toContainText('Right content')
   await expect(reloadedField).not.toContainText('Left content')
 })
 
-function widthInputs(field: import('@playwright/test').Locator) {
-  return field.locator('.wkf-column-layout-width input[type="number"]')
+test('saves a page after adding a default column layout in the admin', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto(`/admin/collections/pages/${addedFixturePage.id}`)
+
+  const layoutField = page.locator('#field-layout')
+  await layoutField.locator(':scope > .blocks-field__drawer-toggler').click()
+  const blockDrawer = page.locator('.drawer--is-open')
+  await blockDrawer.getByRole('button', { name: /Układ kolumnowy$/ }).click()
+
+  await expect(layoutField.locator('.blocks-field__row')).toHaveCount(2)
+
+  const saveResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'PATCH' &&
+      response.url().includes(`/api/pages/${addedFixturePage.id}`),
+  )
+  await page.getByRole('button', { name: 'Zapisz szkic' }).click()
+  const saveResponse = await saveResponsePromise
+  const responseBody = await saveResponse.text()
+
+  expect(saveResponse.ok(), responseBody).toBe(true)
+  await expect(page.getByText('Something went wrong', { exact: true })).toHaveCount(0)
+
+  const savedPage = await payload.findByID({
+    collection: 'pages',
+    depth: 0,
+    draft: true,
+    id: addedFixturePage.id,
+    overrideAccess: true,
+  })
+  expect(savedPage.layout?.[1]).toMatchObject({
+    blockType: 'columnLayout',
+    columns: [{ width: 6 }, { width: 6 }],
+  })
+})
+
+test('appends an allowed copied block to section blocks and rejects a forbidden one', async ({
+  page,
+}) => {
+  await login({ page, user: editorTestUser })
+  await page.goto(`/admin/collections/pages/${clipboardFixturePage.id}`)
+
+  const layoutField = page.locator('#field-layout')
+  const showAllButton = layoutField
+    .locator(':scope > .blocks-field__header')
+    .getByRole('button', { name: 'Pokaż wszystkie' })
+  await expect(showAllButton).toHaveCount(1)
+  await showAllButton.click()
+
+  const topLevelRows = layoutField.locator('.blocks-field__row')
+  await expect(topLevelRows).toHaveCount(2)
+  await layoutField
+    .locator('#layout-row-0 > div > div > .collapsible__actions-wrap .array-actions__button')
+    .click()
+  await page.getByRole('button', { name: 'Kopiuj wiersz' }).click()
+
+  const sectionTabs = topLevelRows.nth(1).locator('.wkf-layout-tabs[data-layout-kind="sections"]')
+  await sectionTabs.getByRole('tab', { name: 'Sekcja 1' }).click()
+  const sectionBlocks = page.locator('#field-layout__1__sections__0__blocks')
+  await expect(sectionBlocks.locator('.blocks-field__row')).toHaveCount(1)
+
+  await sectionBlocks.locator(':scope > .blocks-field__header .clipboard-action__popup').click()
+  await page.getByRole('button', { name: 'Wklej pole' }).click()
+
+  const sectionRows = sectionBlocks.locator('.blocks-field__row')
+  await expect(sectionRows).toHaveCount(2)
+  await expect(sectionRows.nth(0)).toContainText('Treść')
+  await expect(sectionRows.nth(1)).toContainText(
+    'Układ kolumnowy: przezroczysta · bez ramki — 6/12 + 6/12',
+  )
+
+  await layoutField
+    .locator('#layout-row-0 > div > div > .collapsible__actions-wrap .array-actions__button')
+    .click()
+  await page.getByRole('button', { exact: true, name: 'Usuń' }).click()
+  await expect(layoutField.locator('.blocks-field__row')).toHaveCount(1)
+  await expect(page.getByText(/Grupa sekcji: .* — 2 sekcje/)).toBeVisible()
+  await layoutField.getByRole('tab', { exact: true, name: 'Sekcja 1' }).click()
+  const movedSectionBlocks = page.locator('#field-layout__0__sections__0__blocks')
+  const movedSectionRows = movedSectionBlocks.locator('.blocks-field__row')
+  await expect(movedSectionRows).toHaveCount(2)
+  await expect(movedSectionRows.nth(1)).toContainText('Układ kolumnowy')
+
+  await layoutField
+    .locator('#layout-row-0 > div > div > .collapsible__actions-wrap .array-actions__button')
+    .click()
+  await page.getByRole('button', { name: 'Kopiuj wiersz' }).click()
+  await movedSectionBlocks
+    .locator(':scope > .blocks-field__header .clipboard-action__popup')
+    .click()
+  await page.getByRole('button', { name: 'Wklej pole' }).click()
+  await expect(page.getByText('Nieprawidłowe dane schowka.', { exact: true })).toBeVisible()
+  await expect(movedSectionRows).toHaveCount(2)
+})
+
+function activePanel(field: import('@playwright/test').Locator) {
+  return field.getByRole('tabpanel')
 }
 
-async function expectWidthValues(
+async function expectColumnWidths(
   field: import('@playwright/test').Locator,
   expectedValues: string[],
 ): Promise<void> {
-  await expect
-    .poll(() =>
-      widthInputs(field).evaluateAll((inputs) =>
-        inputs.map((input) => (input as HTMLInputElement).value),
-      ),
-    )
-    .toEqual(expectedValues)
+  for (const [columnIndex, expectedValue] of expectedValues.entries()) {
+    await field.getByRole('tab', { name: `Kolumna ${columnIndex + 1}` }).click()
+    await expect(activePanel(field).locator('input[type="number"]')).toHaveValue(expectedValue)
+  }
+}
+
+async function fillColumnWidth(
+  field: import('@playwright/test').Locator,
+  columnIndex: number,
+  value: string,
+): Promise<void> {
+  await field.getByRole('tab', { name: `Kolumna ${columnIndex + 1}` }).click()
+  await activePanel(field).locator('input[type="number"]').fill(value)
 }
 
 async function openColumnLayoutField(
@@ -338,7 +586,7 @@ async function openColumnLayoutField(
   await expect(showAllButton).toHaveCount(1)
   await showAllButton.click()
   const layoutBlock = layoutField.locator('.blocks-field__row').first()
-  const field = layoutBlock.locator('.wkf-column-layout-field')
+  const field = layoutBlock.locator('.wkf-layout-tabs[data-layout-kind="columns"]')
 
   await expect(field).toBeVisible()
   return field
@@ -370,22 +618,15 @@ async function dragToColumn(
   await page.mouse.up()
 }
 
-async function expandColumn(
-  field: import('@playwright/test').Locator,
-  columnIndex: number,
-): Promise<void> {
-  const column = field.locator('.wkf-column-layout-content').nth(columnIndex)
-  if (await column.evaluate((element) => element.classList.contains('collapsible--collapsed'))) {
-    await column.locator(':scope > .collapsible__toggle-wrap > .collapsible__toggle').click()
-  }
-  await expect(column).not.toHaveClass(/collapsible--collapsed/)
-}
-
 async function cleanup(): Promise<void> {
   if (!payload) return
   await payload.delete({
     collection: 'pages',
     overrideAccess: true,
-    where: { slug: { in: [fixtureSlug, defaultFixtureSlug] } },
+    where: {
+      slug: {
+        in: [fixtureSlug, defaultFixtureSlug, addedFixtureSlug, clipboardFixtureSlug],
+      },
+    },
   })
 }
