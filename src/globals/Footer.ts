@@ -81,10 +81,29 @@ export const Footer: GlobalConfig = {
               },
               fields: [
                 {
-                  name: 'title',
-                  type: 'text',
-                  label: 'Tytuł kolumny',
-                  required: true,
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'title',
+                      type: 'text',
+                      admin: { width: '50%' },
+                      label: 'Tytuł kolumny',
+                      required: true,
+                    },
+                    {
+                      name: 'alignment',
+                      type: 'select',
+                      admin: { isClearable: false, width: '50%' },
+                      defaultValue: 'left',
+                      label: 'Wyrównanie',
+                      options: [
+                        { label: 'Do lewej', value: 'left' },
+                        { label: 'Wycentrowane', value: 'center' },
+                        { label: 'Do prawej', value: 'right' },
+                      ],
+                      required: true,
+                    },
+                  ],
                 },
                 {
                   name: 'items',

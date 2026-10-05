@@ -15,8 +15,7 @@ export function MemberProfilesSection({ block }: { block: MemberProfilesBlockTyp
   const view = block.view ?? 'grid'
 
   return (
-    <section className="memberProfilesBlock">
-      {block.heading ? <h2>{block.heading}</h2> : null}
+    <div className="memberProfilesBlock">
       <div className={`memberGrid memberGrid-${view}`}>
         {entries.map((entry) => (
           <MemberProfileCard
@@ -26,6 +25,6 @@ export function MemberProfilesSection({ block }: { block: MemberProfilesBlockTyp
           />
         ))}
       </div>
-    </section>
+    </div>
   )
 }

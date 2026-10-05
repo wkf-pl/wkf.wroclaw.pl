@@ -194,6 +194,29 @@ describe('navigation links', () => {
     })
   })
 
+  it('places the footer column title and alignment beside each other', () => {
+    const columns = findArrayField(Footer.fields, 'columns')
+    if (columns.type !== 'array') throw new Error('Missing footer columns array.')
+
+    const firstRow = columns.fields.find((field) => field.type === 'row')
+    if (!firstRow || firstRow.type !== 'row') throw new Error('Missing footer column row.')
+
+    expect(firstRow.fields).toMatchObject([
+      { admin: { width: '50%' }, name: 'title', type: 'text' },
+      {
+        admin: { isClearable: false, width: '50%' },
+        defaultValue: 'left',
+        name: 'alignment',
+        options: [
+          { label: 'Do lewej', value: 'left' },
+          { label: 'Wycentrowane', value: 'center' },
+          { label: 'Do prawej', value: 'right' },
+        ],
+        type: 'select',
+      },
+    ])
+  })
+
   it('places the header label and appearance beside each other', () => {
     const headerItems = findArrayField(Navigation.fields, 'headerItems')
     if (headerItems.type !== 'array') throw new Error('Missing header items array.')
@@ -332,14 +355,17 @@ describe('navigation links', () => {
 
   it('builds an encoded contact action from site settings and omits it without an address', () => {
     const target = {
-      emailBody: 'Pierwsza linia\nDruga linia',
+      emailBody: 'Cześć!\n\nChcę dołączyć do Wrocławskiego Klubu Fantastyki. \nInteresuję się ...',
       emailSubject: 'Dołączenie do WKF',
       targetType: 'siteContactEmail',
     }
 
     expect(resolveLink(target, { siteContactEmail: 'kontakt@example.com' })).toEqual({
-      href: 'mailto:kontakt@example.com?subject=Do%C5%82%C4%85czenie+do+WKF&body=Pierwsza+linia%0ADruga+linia',
+      href: 'mailto:kontakt@example.com?subject=Do%C5%82%C4%85czenie%20do%20WKF&body=Cze%C5%9B%C4%87%21%0D%0A%0D%0AChc%C4%99%20do%C5%82%C4%85czy%C4%87%20do%20Wroc%C5%82awskiego%20Klubu%20Fantastyki.%20%0D%0AInteresuj%C4%99%20si%C4%99%20...',
     })
+    expect(resolveLink(target, { siteContactEmail: 'kontakt@example.com' })?.href).not.toContain(
+      '+',
+    )
     expect(resolveLink(target)).toBeNull()
   })
 

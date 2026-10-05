@@ -105,7 +105,8 @@ body:has(> .homePage) .siteHeader {
   border-bottom: 0;
 }
 
-.siteHeader a {
+.siteBrand,
+.siteHeader nav .presentedLink--link {
   color: var(--ivory);
   font-weight: 600;
   text-decoration: none;
@@ -138,7 +139,7 @@ body:has(> .homePage) .siteHeader {
   font-size: 1.08rem;
 }
 
-.siteHeader nav a {
+.siteHeader nav .presentedLink--link {
   padding: 0.65rem 0;
 }
 
@@ -154,8 +155,8 @@ body:has(> .homePage) .siteHeader {
   mask-size: contain;
 }
 
-.siteHeader nav a:hover,
-.siteHeader nav a:focus-visible {
+.siteHeader nav .presentedLink--link:hover,
+.siteHeader nav .presentedLink--link:focus-visible {
   color: var(--gold-light);
 }
 

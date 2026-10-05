@@ -46,8 +46,7 @@ export async function DocumentBlockSection({
   }
 
   return (
-    <section className="documentsBlock">
-      {block.heading ? <h2 className="listingBlockHeading">{block.heading}</h2> : null}
+    <div className="documentsBlock">
       <DocumentItems
         documents={result.items}
         emptyMessage={block.emptyMessage}
@@ -62,7 +61,7 @@ export async function DocumentBlockSection({
           totalPages={result.totalPages}
         />
       ) : null}
-    </section>
+    </div>
   )
 }
 

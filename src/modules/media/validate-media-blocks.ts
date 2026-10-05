@@ -3,7 +3,7 @@ import { APIError, type CollectionBeforeValidateHook } from 'payload'
 import { getRelationshipId, type RelationshipReference } from '@/lib/relationships'
 import {
   walkContentLeafBlocks,
-  walkContentSurfaces,
+  walkContentPresentations,
 } from '@/modules/content/walk-content-leaf-blocks'
 import { isWebRasterImageMimeType } from '@/modules/media/media-categories'
 
@@ -75,12 +75,12 @@ export const validateMediaBlocks: CollectionBeforeValidateHook = async ({ data, 
       }
     }
 
-    for (const { surface } of walkContentSurfaces(layout)) {
-      if (surface.surface !== 'image') {
+    for (const { presentation } of walkContentPresentations(layout)) {
+      if (presentation.surface !== 'image') {
         continue
       }
 
-      const mediaId = getRelationshipId(surface.surfaceImage as RelationshipReference)
+      const mediaId = getRelationshipId(presentation.surfaceImage as RelationshipReference)
       if (mediaId === undefined) {
         throw new APIError('Powierzchnia „Obraz” wymaga obrazu tła.', 400)
       }

@@ -1,5 +1,7 @@
 import type { Block, Validate } from 'payload'
 
+import { createContentPresentationFields } from '@/modules/content/content-presentation'
+
 import { createListingPaginationRow, createListingTaxonomyRow } from './listing-fields'
 
 type ListingSiblingData = {
@@ -51,11 +53,7 @@ export const ListingBlock: Block = {
     },
   },
   fields: [
-    {
-      name: 'heading',
-      type: 'text',
-      label: 'Nagłówek',
-    },
+    ...createContentPresentationFields(),
     {
       type: 'row',
       fields: [

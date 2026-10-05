@@ -1,5 +1,6 @@
 import type { Block, Field, Validate } from 'payload'
 
+import { createContentPresentationFields } from '@/modules/content/content-presentation'
 import { createListingPaginationRow, createListingTaxonomyRow } from './listing-fields'
 import { validateUniqueRelationshipIds } from '@/modules/content/listing-window'
 import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
@@ -30,11 +31,7 @@ function createMediaListingFields(
   imagesOnly: boolean,
 ): Field[] {
   return [
-    {
-      name: 'heading',
-      type: 'text',
-      label: 'Nagłówek',
-    },
+    ...createContentPresentationFields(),
     {
       name: 'selectionMode',
       type: 'select',

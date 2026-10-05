@@ -209,6 +209,12 @@ export function isSelectableRasterIconName(value: unknown): value is SelectableR
   )
 }
 
+export function getSelectableRasterIconLabel(name: SelectableRasterIconName): string {
+  return (
+    selectableRasterIconDefinitions.find((definition) => definition.name === name)?.label ?? name
+  )
+}
+
 export function getRasterIconURL(name: RasterIconName, size: RasterIconSize): string {
   return `/assets/icons/${size}/${name}.png`
 }

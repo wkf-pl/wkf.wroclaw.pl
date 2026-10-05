@@ -1,6 +1,6 @@
 import type { Field, Validate } from 'payload'
 
-import { rasterIconDefinitions, type SelectableRasterIconName } from '@/modules/icons/icon-registry'
+import { createRasterIconField, iconNameOptions } from '@/modules/icons/fields'
 
 import { normalizeCustomAddress, validateCustomAddress } from './custom-target'
 
@@ -35,11 +35,7 @@ function isNotSiteContactTarget(_data: unknown, siblingData: NavigationSiblingDa
   return siblingData.targetType !== 'siteContactEmail'
 }
 
-export const iconNameOptions: { label: string; value: SelectableRasterIconName }[] =
-  rasterIconDefinitions
-    .filter((definition) => definition.selectable)
-    .map(({ label, name }) => ({ label, value: name }))
-    .sort((first, second) => first.label.localeCompare(second.label, 'pl'))
+export { iconNameOptions }
 
 export const validatePageTarget: Validate<unknown, unknown, NavigationSiblingData> = (
   value,
@@ -304,20 +300,7 @@ export function createIconFields({
     { siblingData },
   ) => (!iconIsRequired(siblingData) || value ? true : 'Wybierz ikonę.')
 
-  return [
-    {
-      name: 'iconName',
-      type: 'select',
-      admin: {
-        components: {
-          Field: '/components/admin/RasterIconPickerField#RasterIconPickerField',
-        },
-      },
-      label: 'Ikona',
-      options: [...iconNameOptions],
-      validate: validateIconName,
-    },
-  ]
+  return [createRasterIconField<NavigationSiblingData>({ validate: validateIconName })]
 }
 
 export const presentedLinkAppearanceOptions = [

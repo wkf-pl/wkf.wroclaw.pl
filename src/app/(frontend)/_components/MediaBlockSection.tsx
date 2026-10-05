@@ -47,8 +47,7 @@ export async function MediaBlockSection({
   }
 
   return (
-    <section className={`mediaBlock mediaBlock-${kind}`}>
-      {block.heading ? <h2 className="mediaBlockHeading">{block.heading}</h2> : null}
+    <div className={`mediaBlock mediaBlock-${kind}`}>
       {result.items.length ? (
         kind === 'mediaGallery' ? (
           <MediaGallery items={result.items} view={block.view} />
@@ -67,7 +66,7 @@ export async function MediaBlockSection({
           totalPages={result.totalPages}
         />
       ) : null}
-    </section>
+    </div>
   )
 }
 

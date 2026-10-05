@@ -1,6 +1,6 @@
 import type { Block } from 'payload'
 
-import { createContentSurfaceFields } from '@/modules/content/content-surface'
+import { createContentPresentationFields } from '@/modules/content/content-presentation'
 
 import { ColumnLayoutBlock } from './ColumnLayout'
 import { contentLeafBlocks } from './contentLeafBlocks'
@@ -22,50 +22,43 @@ export const SectionGroupBlock: Block = {
   },
   fields: [
     {
-      name: 'frame',
-      type: 'select',
-      admin: { isClearable: false },
-      defaultValue: 'outline',
-      label: 'Ramka',
-      options: [
-        { label: 'Obrys', value: 'outline' },
-        { label: 'Bez ramki', value: 'none' },
-      ],
-      required: true,
-    },
-    {
-      name: 'sections',
-      type: 'array',
       admin: {
         components: {
-          RowLabel: '/components/admin/DynamicRowLabel#SectionGroupSectionRowLabel',
+          Field: '/components/admin/TabbedLayoutField#SectionGroupTabsField',
         },
-        initCollapsed: true,
       },
+      type: 'group',
       fields: [
-        ...createContentSurfaceFields(),
+        ...createContentPresentationFields(),
         {
-          name: 'blocks',
-          type: 'blocks',
-          admin: { initCollapsed: false },
-          blocks: [...contentLeafBlocks, ColumnLayoutBlock],
-          label: 'Bloki sekcji',
+          name: 'sections',
+          type: 'array',
+          fields: [
+            ...createContentPresentationFields(),
+            {
+              name: 'blocks',
+              type: 'blocks',
+              admin: { initCollapsed: false },
+              blocks: [...contentLeafBlocks, ColumnLayoutBlock],
+              label: 'Bloki sekcji',
+              labels: {
+                plural: 'Bloki sekcji',
+                singular: 'blok sekcji',
+              },
+              minRows: 1,
+              required: true,
+            },
+          ],
+          label: 'Sekcje',
           labels: {
-            plural: 'Bloki sekcji',
-            singular: 'blok sekcji',
+            plural: 'Sekcje',
+            singular: 'sekcję',
           },
+          maxRows: 8,
           minRows: 1,
           required: true,
         },
       ],
-      label: 'Sekcje',
-      labels: {
-        plural: 'Sekcje',
-        singular: 'sekcję',
-      },
-      maxRows: 8,
-      minRows: 1,
-      required: true,
     },
   ],
   interfaceName: 'SectionGroupBlock',

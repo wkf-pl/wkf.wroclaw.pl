@@ -1,5 +1,6 @@
 import type { Block, Validate } from 'payload'
 
+import { createContentPresentationFields } from '@/modules/content/content-presentation'
 import { createListingPaginationRow, createListingTaxonomyRow } from './listing-fields'
 import { validateUniqueRelationshipIds } from '@/modules/content/listing-window'
 
@@ -41,11 +42,7 @@ export const DocumentsBlock: Block = {
     },
   },
   fields: [
-    {
-      name: 'heading',
-      type: 'text',
-      label: 'Nagłówek',
-    },
+    ...createContentPresentationFields(),
     {
       name: 'selectionMode',
       type: 'select',

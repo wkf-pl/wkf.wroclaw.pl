@@ -185,6 +185,27 @@ test('renders editable menus and configured groups on the home page', async ({ p
     .getByRole('link', { name: 'O nas' })
   await expect(aboutHeaderLink).toHaveClass(/presentedLink--secondaryButton/)
   await expect(aboutHeaderLink).toHaveAttribute('href', '/o-nas')
+  const joinHeaderLink = page
+    .getByRole('navigation', { name: 'Główna nawigacja' })
+    .getByRole('link', { name: 'Dołącz!' })
+  await expect(joinHeaderLink).toHaveClass(/presentedLink--primaryButton/)
+  await expect(joinHeaderLink).toHaveAttribute('href', '/dolacz')
+
+  for (const buttonLink of [aboutHeaderLink, joinHeaderLink]) {
+    await expect(buttonLink).toHaveCSS('min-height', '44px')
+    await expect(buttonLink).toHaveCSS('padding-left', '16px')
+    await expect(buttonLink).toHaveCSS('padding-right', '16px')
+  }
+  await expect(aboutHeaderLink).toHaveCSS('border-top-width', '2px')
+  await expect(aboutHeaderLink).toHaveCSS('border-top-color', 'rgb(243, 163, 19)')
+  await expect(joinHeaderLink).toHaveCSS('border-top-width', '1px')
+  await expect(aboutHeaderLink).toHaveCSS('color', 'rgb(244, 239, 229)')
+  await expect(joinHeaderLink).toHaveCSS('color', 'rgb(0, 13, 23)')
+
+  await aboutHeaderLink.hover()
+  await expect(aboutHeaderLink).toHaveCSS('color', 'rgb(0, 13, 23)')
+  await joinHeaderLink.hover()
+  await expect(joinHeaderLink).toHaveCSS('color', 'rgb(0, 13, 23)')
   await expect(page.getByRole('navigation', { name: 'Obszary klubu' })).toContainText('Gry RPG')
   await expect(page.getByRole('heading', { name: 'E2E RPG' })).toBeVisible()
   await expect(
@@ -202,11 +223,29 @@ test('renders editable menus and configured groups on the home page', async ({ p
       .locator('[data-icon-name="facebook"]'),
   ).toHaveAttribute('data-icon-size', 'medium')
   await expect(page.getByRole('navigation', { name: 'Nawigacja w stopce' })).toContainText('O nas')
+  await expect(page.getByRole('navigation', { name: 'Nawigacja w stopce' })).toHaveClass(
+    /footerMenu--align-center/,
+  )
   await expect(
     page
       .getByRole('navigation', { name: 'Nawigacja w stopce' })
       .getByRole('link', { name: 'O nas' }),
   ).toHaveAttribute('href', '/o-nas')
+  await expect(page.getByRole('navigation', { name: 'Lewa w stopce' })).toHaveCSS(
+    'align-items',
+    'flex-start',
+  )
+  await expect(page.getByRole('navigation', { name: 'Lewa w stopce' }).getByRole('link')).toHaveCSS(
+    'justify-content',
+    'flex-start',
+  )
+  await expect(page.getByRole('navigation', { name: 'Prawa w stopce' })).toHaveCSS(
+    'align-items',
+    'flex-end',
+  )
+  await expect(
+    page.getByRole('navigation', { name: 'Prawa w stopce' }).getByRole('link'),
+  ).toHaveCSS('justify-content', 'flex-end')
 })
 
 test('searches, selects with the keyboard and persists a named icon in a nested array', async ({
@@ -305,6 +344,13 @@ function createTestNavigation(aboutPageID: number): Partial<Navigation> {
         page: aboutPageID,
         targetType: 'page',
       },
+      {
+        appearance: 'primaryButton',
+        customAddress: 'dolacz',
+        customScheme: 'path',
+        label: 'Dołącz!',
+        targetType: 'custom',
+      },
     ],
   }
 }
@@ -325,8 +371,35 @@ function createTestFooter(aboutPageID: number): Partial<Footer> {
   return {
     columns: [
       {
+        alignment: 'left',
+        items: [
+          {
+            appearance: 'link',
+            customAddress: 'blog',
+            customScheme: 'path',
+            label: 'Aktualności',
+            targetType: 'custom',
+          },
+        ],
+        title: 'Lewa',
+      },
+      {
+        alignment: 'center',
         items: [{ appearance: 'link', label: 'O nas', page: aboutPageID, targetType: 'page' }],
         title: 'Nawigacja',
+      },
+      {
+        alignment: 'right',
+        items: [
+          {
+            appearance: 'link',
+            customAddress: 'kontakt',
+            customScheme: 'path',
+            label: 'Kontakt',
+            targetType: 'custom',
+          },
+        ],
+        title: 'Prawa',
       },
     ],
     contactHeading: 'E2E Kontakt',

@@ -60,7 +60,11 @@ export function SiteFooter({
             style={{ '--footer-column-count': columns.length } as CSSProperties}
           >
             {columns.map((column) => (
-              <nav aria-label={`${column.title} w stopce`} key={column.id}>
+              <nav
+                aria-label={`${column.title} w stopce`}
+                className={`footerMenu footerMenu--align-${column.alignment ?? 'left'}`}
+                key={column.id}
+              >
                 <strong>{column.title}</strong>
                 {column.items.map((item, itemIndex) => (
                   <PresentedLink

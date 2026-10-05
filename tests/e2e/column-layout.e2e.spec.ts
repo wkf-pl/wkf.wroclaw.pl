@@ -129,19 +129,20 @@ test.beforeAll(async () => {
           columnSeparators: 'none',
           columns: [
             {
-              blocks: [listingBlock('Left paginated listing', 'grid')],
+              blocks: [headingBlock('Left paginated listing'), listingBlock('grid')],
               surface: 'default',
               width: 6,
             },
             {
-              blocks: [listingBlock('Right paginated listing', 'grid')],
+              blocks: [headingBlock('Right paginated listing'), listingBlock('grid')],
               surface: 'default',
               width: 6,
             },
           ],
           verticalAlignment: 'start',
         },
-        listingBlock('Top-level grid listing', 'grid', false),
+        headingBlock('Top-level grid listing'),
+        listingBlock('grid', false),
       ],
       slug: pageSlug,
       title: 'E2E column layout',
@@ -238,7 +239,9 @@ test('collapses grid blocks according to their own width in every layout context
     .filter({ hasText: 'Left paginated listing' })
     .locator('.contentList-grid')
     .first()
-  const topLevelGrid = page.locator('.pageBlocks > .listingBlock .contentList-grid')
+  const topLevelGrid = page.locator(
+    '.pageBlocks > .contentPresentation--block .listingBlock .contentList-grid',
+  )
 
   expect(await getGridTrackCount(nestedGrid)).toBe(1)
   expect(await getGridTrackCount(topLevelGrid)).toBe(3)
@@ -247,11 +250,14 @@ test('collapses grid blocks according to their own width in every layout context
   expect(await getGridTrackCount(topLevelGrid)).toBe(1)
 })
 
-function listingBlock(heading: string, view: 'compact' | 'grid' = 'compact', pagination = true) {
+function headingBlock(heading: string) {
+  return { blockType: 'heading' as const, heading, headingLevel: 'h2' as const }
+}
+
+function listingBlock(view: 'compact' | 'grid' = 'compact', pagination = true) {
   return {
     blockType: 'listing' as const,
     eventTimeFilter: 'all' as const,
-    heading,
     pageSize: pagination ? 1 : 3,
     pagination,
     parentFilter: 'none' as const,

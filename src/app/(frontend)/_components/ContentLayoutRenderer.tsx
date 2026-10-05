@@ -1,10 +1,13 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
 import { CmsRichText } from '@/components/CmsRichText'
-import { RasterIcon } from '@/components/RasterIcon'
+import {
+  normalizeContentHeading,
+  normalizeContentPresentation,
+  type ContentHeadingData,
+  type ContentPresentationData,
+} from '@/modules/content/content-presentation'
 import { getPublicSiteSettings } from '@/modules/content/public-content'
-import { normalizeContentSurface } from '@/modules/content/content-surface'
-import { isSelectableRasterIconName } from '@/modules/icons/icon-registry'
 import { resolvePresentedLinks } from '@/modules/navigation/links'
 import type {
   ActionLinksBlock,
@@ -24,7 +27,7 @@ import type {
   SectionGroupBlock,
 } from '@/payload-types'
 
-import { ContentSurface } from './ContentSurface'
+import { ContentHeading, ContentPresentation } from './ContentPresentation'
 import { DocumentBlockSection } from './DocumentBlockSection'
 import { ListingBlockSection } from './ListingBlockSection'
 import { MediaBlockSection } from './MediaBlockSection'
@@ -41,6 +44,7 @@ type ContentLeafBlock =
   | MediaGalleryBlock
   | MemberProfilesBlock
   | RichTextBlock
+type PresentedContentLeafBlock = Exclude<ContentLeafBlock, ActionLinksBlock | HeadingBlock>
 type SectionContentBlock = ColumnLayoutBlock | ContentLeafBlock
 type ContentLayoutBlock = ColumnLayoutBlock | SectionGroupBlock | ContentLeafBlock
 
@@ -48,6 +52,10 @@ type ContentRendererProperties = {
   document: ContentDocument
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
+}
+
+type PositionedRendererProperties = ContentRendererProperties & {
+  path: string
 }
 
 export async function ContentLayoutRenderer({
@@ -79,7 +87,7 @@ async function ContentBlockRenderer({
   path,
   pathname,
   searchParams,
-}: ContentRendererProperties & { block: ContentLayoutBlock; path: string }) {
+}: PositionedRendererProperties & { block: ContentLayoutBlock }) {
   if (block.blockType === 'sectionGroup') {
     return (
       <SectionGroupRenderer
@@ -121,51 +129,61 @@ async function SectionGroupRenderer({
   path,
   pathname,
   searchParams,
-}: ContentRendererProperties & { block: SectionGroupBlock; path: string }) {
+}: PositionedRendererProperties & { block: SectionGroupBlock }) {
   const sections = block.sections ?? []
+  const presentation = normalizeContentPresentation(block as ContentPresentationData)
   if (!sections.length) {
     return null
   }
 
   return (
-    <div className={`sectionGroup sectionGroup--${block.frame ?? 'outline'}`}>
-      {sections.map((section, sectionIndex) => {
-        const sectionPath = `${path}.sections.${sectionIndex}`
-        const blocks = (section.blocks ?? []) as SectionContentBlock[]
+    <ContentPresentation
+      className="sectionGroup"
+      placement="sectionGroup"
+      presentation={presentation}
+    >
+      <div className="sectionGroupSections">
+        {sections.map((section, sectionIndex) => {
+          const sectionPath = `${path}.sections.${sectionIndex}`
+          const blocks = (section.blocks ?? []) as SectionContentBlock[]
+          const sectionPresentation = normalizeContentPresentation(
+            section as ContentPresentationData,
+          )
 
-        return (
-          <ContentSurface
-            as="section"
-            className="sectionGroupSection"
-            key={section.id ?? sectionPath}
-            surface={normalizeContentSurface(section)}
-          >
-            {blocks.map((nestedBlock, nestedBlockIndex) => {
-              const nestedPath = `${sectionPath}.blocks.${nestedBlockIndex}`
-              return nestedBlock.blockType === 'columnLayout' ? (
-                <ColumnLayoutRenderer
-                  block={nestedBlock}
-                  document={document}
-                  key={nestedBlock.id ?? nestedPath}
-                  path={nestedPath}
-                  pathname={pathname}
-                  searchParams={searchParams}
-                />
-              ) : (
-                <ContentLeafBlockRenderer
-                  block={nestedBlock}
-                  document={document}
-                  key={nestedBlock.id ?? nestedPath}
-                  path={nestedPath}
-                  pathname={pathname}
-                  searchParams={searchParams}
-                />
-              )
-            })}
-          </ContentSurface>
-        )
-      })}
-    </div>
+          return (
+            <ContentPresentation
+              className="sectionGroupSection"
+              key={section.id ?? sectionPath}
+              placement="section"
+              presentation={sectionPresentation}
+            >
+              {blocks.map((nestedBlock, nestedBlockIndex) => {
+                const nestedPath = `${sectionPath}.blocks.${nestedBlockIndex}`
+                return nestedBlock.blockType === 'columnLayout' ? (
+                  <ColumnLayoutRenderer
+                    block={nestedBlock}
+                    document={document}
+                    key={nestedBlock.id ?? nestedPath}
+                    path={nestedPath}
+                    pathname={pathname}
+                    searchParams={searchParams}
+                  />
+                ) : (
+                  <ContentLeafBlockRenderer
+                    block={nestedBlock}
+                    document={document}
+                    key={nestedBlock.id ?? nestedPath}
+                    path={nestedPath}
+                    pathname={pathname}
+                    searchParams={searchParams}
+                  />
+                )
+              })}
+            </ContentPresentation>
+          )
+        })}
+      </div>
+    </ContentPresentation>
   )
 }
 
@@ -175,12 +193,13 @@ async function ColumnLayoutRenderer({
   path,
   pathname,
   searchParams,
-}: ContentRendererProperties & { block: ColumnLayoutBlock; path: string }) {
+}: PositionedRendererProperties & { block: ColumnLayoutBlock }) {
   const columns = block.columns ?? []
-  if (!columns.some((column) => column.blocks?.length)) {
+  const presentation = normalizeContentPresentation(block as ContentPresentationData)
+  const hasColumnContent = columns.some((column) => Boolean(column.blocks?.length))
+  if (!hasColumnContent) {
     return null
   }
-
   const classes = [
     'columnLayout',
     `columnLayout--${columns.length}`,
@@ -191,20 +210,22 @@ async function ColumnLayoutRenderer({
     .join(' ')
 
   return (
-    <section className={classes}>
+    <ContentPresentation className={classes} placement="layout" presentation={presentation}>
       <div className="columnLayoutGrid">
         {columns.map((column, columnIndex) => {
           const columnPath = `${path}.columns.${columnIndex}`
           const blocks = (column.blocks ?? []) as ContentLeafBlock[]
           const style = { '--column-width': column.width } as CSSProperties
+          const columnPresentation = normalizeContentPresentation(column as ContentPresentationData)
 
           return (
-            <ContentSurface
+            <ContentPresentation
               className={`columnLayoutColumn${blocks.length ? '' : ' columnLayoutColumn--empty'}`}
               columnWidth={column.width}
               key={column.id ?? columnPath}
+              placement="column"
+              presentation={columnPresentation}
               style={style}
-              surface={normalizeContentSurface(column)}
             >
               <div className="columnLayoutColumnContent">
                 {blocks.map((nestedBlock, nestedBlockIndex) => {
@@ -221,11 +242,11 @@ async function ColumnLayoutRenderer({
                   )
                 })}
               </div>
-            </ContentSurface>
+            </ContentPresentation>
           )
         })}
       </div>
-    </section>
+    </ContentPresentation>
   )
 }
 
@@ -235,7 +256,67 @@ export async function ContentLeafBlockRenderer({
   path,
   pathname,
   searchParams,
-}: ContentRendererProperties & { block: ContentLeafBlock; path: string }) {
+}: ContentRendererProperties & {
+  block: ContentLeafBlock
+  path: string
+}) {
+  if (block.blockType === 'heading') {
+    return <ContentHeading heading={normalizeContentHeading(block as ContentHeadingData)} />
+  }
+
+  if (block.blockType === 'actionLinks') {
+    const siteSettings = await getPublicSiteSettings()
+    const items = resolvePresentedLinks(block.items ?? [], {
+      siteContactEmail: siteSettings.contactEmail,
+    })
+    if (!items.length) {
+      return null
+    }
+
+    return (
+      <ul
+        className={`actionLinks actionLinks--${block.layout ?? 'inline'} actionLinks--align-${block.alignment ?? 'start'}`}
+      >
+        {items.map((item, itemIndex) => (
+          <li key={`${item.link.href}-${itemIndex}`}>
+            <PresentedLink item={item} />
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  const content = await renderPresentedLeafBlock({
+    block,
+    document,
+    path,
+    pathname,
+    searchParams,
+  })
+  if (!content) {
+    return null
+  }
+
+  return (
+    <ContentPresentation
+      placement="block"
+      presentation={normalizeContentPresentation(block as ContentPresentationData)}
+    >
+      {content}
+    </ContentPresentation>
+  )
+}
+
+async function renderPresentedLeafBlock({
+  block,
+  document,
+  path,
+  pathname,
+  searchParams,
+}: ContentRendererProperties & {
+  block: PresentedContentLeafBlock
+  path: string
+}): Promise<ReactNode> {
   switch (block.blockType) {
     case 'richText':
       return (
@@ -244,73 +325,30 @@ export async function ContentLeafBlockRenderer({
           data={block.content}
         />
       )
-    case 'heading': {
-      const HeadingElement = block.role === 'item' ? 'h3' : 'h2'
-      const iconName = isSelectableRasterIconName(block.iconName) ? block.iconName : undefined
-      return (
-        <HeadingElement className={`contentHeading contentHeading--${block.role ?? 'section'}`}>
-          {iconName ? (
-            <span aria-hidden="true" className="contentHeadingIcon">
-              <RasterIcon name={iconName} size="medium" />
-            </span>
-          ) : null}
-          <span>{block.text}</span>
-        </HeadingElement>
-      )
-    }
-    case 'actionLinks': {
-      const siteSettings = await getPublicSiteSettings()
-      const items = resolvePresentedLinks(block.items ?? [], {
-        siteContactEmail: siteSettings.contactEmail,
-      })
-      if (!items.length) {
-        return null
-      }
-
-      return (
-        <ul
-          className={`actionLinks actionLinks--${block.layout ?? 'inline'} actionLinks--align-${block.alignment ?? 'start'}`}
-        >
-          {items.map((item, itemIndex) => (
-            <li key={`${item.link.href}-${itemIndex}`}>
-              <PresentedLink item={item} />
-            </li>
-          ))}
-        </ul>
-      )
-    }
     case 'memberProfiles':
-      return <MemberProfilesSection block={block} />
+      return MemberProfilesSection({ block })
     case 'mediaGallery':
     case 'attachments':
-      return (
-        <MediaBlockSection
-          block={block}
-          blockPath={path}
-          pathname={pathname}
-          searchParams={searchParams}
-        />
-      )
+      return MediaBlockSection({
+        block,
+        blockPath: path,
+        pathname,
+        searchParams,
+      })
     case 'documents':
-      return (
-        <DocumentBlockSection
-          block={block}
-          blockPath={path}
-          pathname={pathname}
-          searchParams={searchParams}
-        />
-      )
+      return DocumentBlockSection({
+        block,
+        blockPath: path,
+        pathname,
+        searchParams,
+      })
     case 'listing':
-      return (
-        <ListingBlockSection
-          block={block}
-          blockPath={path}
-          document={document}
-          pathname={pathname}
-          searchParams={searchParams}
-        />
-      )
-    default:
-      return null
+      return ListingBlockSection({
+        block,
+        blockPath: path,
+        document,
+        pathname,
+        searchParams,
+      })
   }
 }

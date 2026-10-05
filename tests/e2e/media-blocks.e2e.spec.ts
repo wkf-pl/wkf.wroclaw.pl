@@ -64,8 +64,12 @@ test.beforeAll(async () => {
         author: author.id,
         layout: [
           {
-            blockType: 'mediaGallery',
+            blockType: 'heading',
             heading: 'Galeria testowa',
+            headingLevel: 'h2',
+          },
+          {
+            blockType: 'mediaGallery',
             items: [{ media: firstImage.id }, { media: secondImage.id }],
             pageSize: 12,
             pagination: false,
@@ -73,8 +77,12 @@ test.beforeAll(async () => {
             view: 'grid',
           },
           {
-            blockType: 'attachments',
+            blockType: 'heading',
             heading: 'Pliki testowe',
+            headingLevel: 'h2',
+          },
+          {
+            blockType: 'attachments',
             items: [{ media: attachment.id }],
             pageSize: 12,
             pagination: false,
@@ -95,8 +103,12 @@ test.beforeAll(async () => {
         excerpt: 'E2E media block pagination.',
         layout: [
           {
-            blockType: 'attachments',
+            blockType: 'heading',
             heading: 'Pliki we wpisie',
+            headingLevel: 'h2',
+          },
+          {
+            blockType: 'attachments',
             items: [{ media: firstImage.id }, { media: attachment.id }],
             pageSize: 1,
             pagination: true,

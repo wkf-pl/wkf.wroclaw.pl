@@ -1,7 +1,8 @@
 import { APIError, type ArrayFieldValidation, type Block, type FieldHook } from 'payload'
 
+import { createContentPresentationFields } from '@/modules/content/content-presentation'
+
 import { contentLeafBlocks } from './contentLeafBlocks'
-import { createContentSurfaceFields } from '@/modules/content/content-surface'
 
 const minimumColumnCount = 2
 const maximumColumnCount = 4
@@ -82,83 +83,94 @@ export const ColumnLayoutBlock: Block = {
   },
   fields: [
     {
-      type: 'row',
-      fields: [
-        {
-          name: 'verticalAlignment',
-          type: 'select',
-          admin: { isClearable: false, width: '50%' },
-          defaultValue: 'start',
-          label: 'Wyrównanie w pionie',
-          options: [
-            { label: 'Do początku', value: 'start' },
-            { label: 'Do środka', value: 'center' },
-            { label: 'Do końca', value: 'end' },
-          ],
-          required: true,
-        },
-        {
-          name: 'columnSeparators',
-          type: 'select',
-          admin: { isClearable: false, width: '50%' },
-          defaultValue: 'none',
-          label: 'Separatory kolumn',
-          options: [
-            { label: 'Bez separatorów', value: 'none' },
-            { label: 'Pomiędzy kolumnami', value: 'between' },
-          ],
-          required: true,
-        },
-      ],
-    },
-    {
-      name: 'columns',
-      type: 'array',
       admin: {
         components: {
-          Field: '/components/admin/ColumnLayoutField#ColumnLayoutField',
+          Field: '/components/admin/TabbedLayoutField#ColumnLayoutTabsField',
         },
       },
-      defaultValue: [
-        { blocks: [], surface: 'default', width: 6 },
-        { blocks: [], surface: 'default', width: 6 },
-      ],
-      hooks: {
-        beforeValidate: [enforceColumnLayoutColumns],
-      },
+      type: 'group',
       fields: [
+        ...createContentPresentationFields(),
         {
-          name: 'width',
-          type: 'number',
-          admin: { step: 1 },
-          defaultValue: 2,
-          label: 'Szerokość',
-          max: maximumColumnWidth,
-          min: minimumColumnWidth,
-          required: true,
+          type: 'row',
+          fields: [
+            {
+              name: 'verticalAlignment',
+              type: 'select',
+              admin: { isClearable: false, width: '50%' },
+              defaultValue: 'start',
+              label: 'Wyrównanie w pionie',
+              options: [
+                { label: 'Do początku', value: 'start' },
+                { label: 'Do środka', value: 'center' },
+                { label: 'Do końca', value: 'end' },
+              ],
+              required: true,
+            },
+            {
+              name: 'columnSeparators',
+              type: 'select',
+              admin: { isClearable: false, width: '50%' },
+              defaultValue: 'none',
+              label: 'Separatory kolumn',
+              options: [
+                { label: 'Bez separatorów', value: 'none' },
+                { label: 'Pomiędzy kolumnami', value: 'between' },
+              ],
+              required: true,
+            },
+          ],
         },
-        ...createContentSurfaceFields(),
         {
-          name: 'blocks',
-          type: 'blocks',
-          admin: { initCollapsed: false },
-          blocks: contentLeafBlocks,
-          label: 'Bloki w kolumnie',
-          labels: {
-            plural: 'Bloki w kolumnie',
-            singular: 'blok w kolumnie',
+          name: 'columns',
+          type: 'array',
+          defaultValue: [
+            { blocks: [], frame: 'none', surface: 'transparent', width: 6 },
+            { blocks: [], frame: 'none', surface: 'transparent', width: 6 },
+          ],
+          hooks: {
+            beforeValidate: [enforceColumnLayoutColumns],
           },
+          fields: [
+            ...createContentPresentationFields({
+              leadingField: {
+                name: 'width',
+                type: 'number',
+                admin: {
+                  className: 'wkf-column-width-field',
+                  step: 1,
+                  width: '33.333%',
+                },
+                defaultValue: 2,
+                label: 'Szerokość',
+                max: maximumColumnWidth,
+                min: minimumColumnWidth,
+                required: true,
+              },
+            }),
+            {
+              name: 'blocks',
+              type: 'blocks',
+              admin: { initCollapsed: false },
+              blocks: contentLeafBlocks,
+              label: 'Bloki w kolumnie',
+              labels: {
+                plural: 'Bloki w kolumnie',
+                singular: 'blok w kolumnie',
+              },
+            },
+          ],
+          label: 'Kolumny',
+          labels: {
+            plural: 'Kolumny',
+            singular: 'kolumnę',
+          },
+          maxRows: maximumColumnCount,
+          minRows: minimumColumnCount,
+          required: true,
+          validate: validateColumnLayoutColumns,
         },
       ],
-      label: 'Kolumny',
-      labels: {
-        plural: 'Kolumny',
-        singular: 'kolumnę',
-      },
-      maxRows: maximumColumnCount,
-      minRows: minimumColumnCount,
-      required: true,
-      validate: validateColumnLayoutColumns,
     },
   ],
   interfaceName: 'ColumnLayoutBlock',

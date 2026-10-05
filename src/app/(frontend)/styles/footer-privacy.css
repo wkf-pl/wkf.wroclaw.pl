@@ -120,6 +120,33 @@
   gap: 0.65rem;
 }
 
+.footerMenu--align-left {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.footerMenu--align-center {
+  align-items: center;
+  text-align: center;
+}
+
+.footerMenu--align-right {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.footerMenu--align-left .footerMenuItem {
+  justify-content: flex-start;
+}
+
+.footerMenu--align-center .footerMenuItem {
+  justify-content: center;
+}
+
+.footerMenu--align-right .footerMenuItem {
+  justify-content: flex-end;
+}
+
 .footerMenus strong {
   color: var(--gold-light);
   font-size: 1.05rem;

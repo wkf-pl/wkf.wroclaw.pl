@@ -1,12 +1,21 @@
-/* Shared content surfaces and composable content blocks */
-.contentSurface {
+/* Shared content presentation and composable content blocks */
+.contentPresentation {
   position: relative;
   isolation: isolate;
   min-width: 0;
   color: var(--surface-text, var(--ivory));
 }
 
-.contentSurface--subtle {
+.contentPresentation--default {
+  --surface-accent: var(--gold-light);
+  --surface-focus: var(--gold-light);
+  --surface-line: rgb(243 163 19 / 42%);
+  --surface-muted: var(--muted);
+  --surface-text: var(--ivory);
+  background: var(--panel);
+}
+
+.contentPresentation--subtle {
   --surface-accent: var(--gold-light);
   --surface-focus: var(--gold-light);
   --surface-line: rgb(243 163 19 / 42%);
@@ -15,7 +24,7 @@
   background: var(--panel-soft);
 }
 
-.contentSurface--inverse {
+.contentPresentation--inverse {
   --surface-accent: #402600;
   --surface-focus: #001422;
   --surface-line: rgb(0 20 34 / 35%);
@@ -24,8 +33,8 @@
   background: linear-gradient(135deg, var(--gold-light), var(--gold));
 }
 
-.contentSurface--image,
-.contentSurface--missingImage {
+.contentPresentation--image,
+.contentPresentation--missingImage {
   --surface-accent: var(--gold-light);
   --surface-focus: var(--gold-light);
   --surface-line: rgb(243 163 19 / 42%);
@@ -34,81 +43,110 @@
   background: var(--panel);
 }
 
-.contentSurfaceImage,
-.contentSurfaceShade {
+.contentPresentationImage,
+.contentPresentationShade {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
-.contentSurfaceImage {
+.contentPresentationImage {
   z-index: -2;
   object-fit: cover;
 }
 
-.contentSurfaceShade {
+.contentPresentationShade {
   z-index: -1;
   background:
     linear-gradient(90deg, rgb(0 13 23 / 88%), rgb(0 13 23 / 72%)),
     linear-gradient(180deg, rgb(0 20 34 / 35%), rgb(0 13 23 / 82%));
 }
 
-.contentSurfaceContent {
+.contentPresentationContent {
   position: relative;
   z-index: 1;
   min-width: 0;
 }
 
-.contentSurface :is(.richText, .contentHeading) {
+.contentPresentation :is(.richText, .contentHeading) {
   color: var(--surface-text, var(--ivory));
 }
 
-.contentSurface :is(.richText, .contentHeading, .presentedLink) a,
-.contentSurface .richText a,
-.contentSurface .presentedLink--link {
+.contentPresentation :is(.richText, .contentHeading, .presentedLink) a,
+.contentPresentation .richText a,
+.contentPresentation .presentedLink--link {
   color: var(--surface-accent);
 }
 
-.sectionGroup {
-  overflow: hidden;
+.contentPresentation--block,
+.contentPresentation--layout,
+.contentPresentation--sectionGroup {
   width: min(70rem, 100%);
   margin-inline: auto;
-  border-radius: 1rem;
-  background: var(--panel);
 }
 
-.sectionGroup--outline {
-  border: 1px solid rgb(243 163 19 / 38%);
+.contentPresentation--decorated {
+  overflow: hidden;
+  border-radius: 0.9rem;
+}
+
+.contentPresentation--frame-outline {
+  border: 1px solid var(--surface-line, rgb(243 163 19 / 38%));
   box-shadow: 0 1.5rem 3.5rem rgb(0 0 0 / 18%);
 }
 
-.sectionGroup--none {
-  border-radius: 0;
-  background: transparent;
+.contentPresentation--decorated > .contentPresentationContent {
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.contentPresentationBody {
+  min-width: 0;
+}
+
+.contentPresentation--block
+  > .contentPresentationContent
+  > .contentPresentationBody
+  > :is(.richText, .listingBlock, .documentsBlock, .mediaBlock, .memberProfilesBlock) {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+.contentPresentation--sectionGroup > .contentPresentationContent {
+  padding: 0;
+}
+
+.sectionGroupSections {
+  display: grid;
+}
+
+.contentPresentation--sectionGroup:not(.contentPresentation--decorated) .sectionGroupSections {
+  gap: clamp(1.5rem, 3vw, 2.5rem);
 }
 
 .sectionGroupSection + .sectionGroupSection {
   border-top: 1px solid var(--surface-line, rgb(243 163 19 / 42%));
 }
 
-.sectionGroupSection > .contentSurfaceContent {
+.contentPresentation--sectionGroup:not(.contentPresentation--decorated)
+  .sectionGroupSection
+  + .sectionGroupSection {
+  border-top: 0;
+}
+
+.sectionGroupSection > .contentPresentationContent {
   display: grid;
-  gap: clamp(1.5rem, 3vw, 2.5rem);
   padding: clamp(1.5rem, 4vw, 3rem);
 }
 
-.sectionGroup--none .sectionGroupSection {
-  overflow: hidden;
-  border-radius: 1rem;
-}
-
-.sectionGroup--none .sectionGroupSection + .sectionGroupSection {
-  margin-top: clamp(1.5rem, 3vw, 2.5rem);
+.sectionGroupSection > .contentPresentationContent > .contentPresentationBody {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
 }
 
 .columnLayout {
-  --column-gap: clamp(1.25rem, 3vw, 2rem);
+  --column-gap: clamp(1.5rem, 3.5vw, 2.5rem);
 }
 
 .columnLayoutGrid {
@@ -121,19 +159,9 @@
   min-width: 0;
 }
 
-.columnLayoutColumn > .contentSurfaceContent {
+.columnLayoutColumn > .contentPresentationContent,
+.columnLayoutColumn > .contentPresentationContent > .contentPresentationBody {
   height: 100%;
-}
-
-.columnLayoutColumn[data-surface='subtle'],
-.columnLayoutColumn[data-surface='inverse'],
-.columnLayoutColumn[data-surface='image'] {
-  overflow: hidden;
-  border-radius: 0.8rem;
-}
-
-.columnLayoutColumn:not([data-surface='default']) > .contentSurfaceContent {
-  padding: clamp(1.25rem, 3vw, 2rem);
 }
 
 .columnLayoutColumnContent {
@@ -156,16 +184,7 @@
   min-height: 100%;
 }
 
-.columnLayoutColumnContent
-  > :is(
-    .richText,
-    .listingBlock,
-    .mediaBlock,
-    .documentsBlock,
-    .memberProfilesBlock,
-    .contentHeading,
-    .actionLinks
-  ) {
+.columnLayoutColumnContent > :is(.contentPresentation, .contentHeading, .actionLinks) {
   width: 100%;
   min-width: 0;
   margin-inline: 0;
@@ -207,32 +226,28 @@
   line-height: 1.2;
 }
 
-.contentHeading--section {
+.contentHeading--major {
   font-size: clamp(1.7rem, 4vw, 2.6rem);
 }
 
-.contentHeading--item {
+.contentHeading--minor {
   font-size: clamp(1.25rem, 2.5vw, 1.6rem);
 }
 
 .contentHeadingIcon {
   display: grid;
   flex: 0 0 auto;
-  color: var(--surface-accent);
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  color: var(--gold-light);
   place-items: center;
 }
 
-.contentHeading--section .contentHeadingIcon {
-  width: 2rem;
-  height: 2rem;
-}
-
-.contentHeading--item .contentHeadingIcon {
-  width: 2.6rem;
-  height: 2.6rem;
-  border: 1px solid var(--surface-line, rgb(243 163 19 / 42%));
-  border-radius: 50%;
-  background: rgb(0 13 23 / 18%);
+.contentHeadingIcon--inverted {
+  background: var(--gold);
+  color: var(--background-deep);
 }
 
 .contentHeadingIcon .rasterIcon {
@@ -301,7 +316,7 @@
   color: var(--surface-text, var(--ivory));
 }
 
-.contentSurface--inverse .presentedLink--primaryButton {
+.contentPresentation--inverse .presentedLink--primaryButton {
   border-color: var(--background-deep);
   background: var(--background-deep);
   color: var(--ivory);
@@ -342,6 +357,16 @@
   color: var(--background-deep);
 }
 
+.contentPresentation--inverse .presentedLink--primaryButton:hover,
+.contentPresentation--inverse .presentedLink--primaryButton:focus-visible {
+  color: var(--gold-light);
+}
+
+.contentPresentation--inverse .presentedLink--secondaryButton:hover,
+.contentPresentation--inverse .presentedLink--secondaryButton:focus-visible {
+  color: var(--ivory);
+}
+
 .presentedLink:focus-visible {
   border-radius: 0.3rem;
   outline: 3px solid var(--surface-focus, var(--gold-light));
@@ -350,6 +375,10 @@
 
 .siteHeader nav .headerMenuItem {
   min-height: 2.75rem;
+}
+
+.siteHeader nav .presentedLink--secondaryButton {
+  border-width: 2px;
 }
 
 .siteHeader nav .presentedLink--iconOnly {

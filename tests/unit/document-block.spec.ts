@@ -70,7 +70,9 @@ describe('documents block', () => {
   it('uses controls matching the media gallery layout and registers the block', () => {
     expect(DocumentsBlock.slug).toBe('documents')
     expect(describeFieldOrder()).toEqual([
-      'heading',
+      ['frame', 'surface'],
+      ['surfaceImage', 'surfaceHorizontalPosition', 'surfaceVerticalPosition'],
+      'surfacePreview',
       'selectionMode',
       'items',
       ['category', 'tag'],

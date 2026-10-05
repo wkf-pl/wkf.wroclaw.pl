@@ -34,6 +34,9 @@ import * as migration_20260928_085059 from './20260928_085059'
 import * as migration_20260929_175646_payload_3_90_system_fields from './20260929_175646_payload_3_90_system_fields'
 import * as migration_20261002_005947_universal_content_composition from './20261002_005947_universal_content_composition'
 import * as migration_20261002_100150_remove_presented_link_accessible_label from './20261002_100150_remove_presented_link_accessible_label'
+import * as migration_20261002_224408_unified_content_presentation from './20261002_224408_unified_content_presentation'
+import * as migration_20261003_122622_content_presentation_frame_style from './20261003_122622_content_presentation_frame_style'
+import * as migration_20261004_202800_content_presentation_compaction from './20261004_202800_content_presentation_compaction'
 
 export const migrations = [
   {
@@ -215,5 +218,20 @@ export const migrations = [
     up: migration_20261002_100150_remove_presented_link_accessible_label.up,
     down: migration_20261002_100150_remove_presented_link_accessible_label.down,
     name: '20261002_100150_remove_presented_link_accessible_label',
+  },
+  {
+    up: migration_20261002_224408_unified_content_presentation.up,
+    down: migration_20261002_224408_unified_content_presentation.down,
+    name: '20261002_224408_unified_content_presentation',
+  },
+  {
+    up: migration_20261003_122622_content_presentation_frame_style.up,
+    down: migration_20261003_122622_content_presentation_frame_style.down,
+    name: '20261003_122622_content_presentation_frame_style',
+  },
+  {
+    up: migration_20261004_202800_content_presentation_compaction.up,
+    down: migration_20261004_202800_content_presentation_compaction.down,
+    name: '20261004_202800_content_presentation_compaction',
   },
 ]

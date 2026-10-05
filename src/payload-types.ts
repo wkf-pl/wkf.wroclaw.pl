@@ -339,6 +339,14 @@ export interface Page {
  */
 export interface RichTextBlock {
   textStyle?: ('default' | 'lead' | 'note') | null;
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   content: {
     root: {
       type: string;
@@ -363,9 +371,9 @@ export interface RichTextBlock {
  * via the `definition` "HeadingBlock".
  */
 export interface HeadingBlock {
-  text: string;
-  role: 'section' | 'item';
-  iconName?:
+  heading?: string | null;
+  headingLevel: 'h2' | 'h3' | 'h4';
+  headingIconName?:
     | (
         | 'astronaut'
         | 'bluesky'
@@ -432,6 +440,7 @@ export interface HeadingBlock {
         | 'youtube'
       )
     | null;
+  iconInverted?: boolean | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'heading';
@@ -710,7 +719,14 @@ export interface EventCycle {
  * via the `definition` "ListingBlock".
  */
 export interface ListingBlock {
-  heading?: string | null;
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   sources: ('pages' | 'posts' | 'events' | 'event-cycles')[];
   parentPage?: (number | null) | Page;
   category?: (number | null) | Category;
@@ -1026,7 +1042,14 @@ export interface EventType {
  * via the `definition` "MediaGalleryBlock".
  */
 export interface MediaGalleryBlock {
-  heading?: string | null;
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   selectionMode: 'manual' | 'filters';
   items?:
     | {
@@ -1050,7 +1073,14 @@ export interface MediaGalleryBlock {
  * via the `definition` "DocumentsBlock".
  */
 export interface DocumentsBlock {
-  heading?: string | null;
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   selectionMode: 'manual' | 'filters';
   items?:
     | {
@@ -1219,7 +1249,14 @@ export interface Role {
  * via the `definition` "AttachmentsBlock".
  */
 export interface AttachmentsBlock {
-  heading?: string | null;
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   selectionMode: 'manual' | 'filters';
   items?:
     | {
@@ -1243,8 +1280,15 @@ export interface AttachmentsBlock {
  * via the `definition` "MemberProfilesBlock".
  */
 export interface MemberProfilesBlock {
-  heading?: string | null;
   view: 'card' | 'list' | 'grid';
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   entries: {
     profile: number | MemberProfile;
     /**
@@ -1393,11 +1437,20 @@ export interface MemberProfileImage {
  * via the `definition` "ColumnLayoutBlock".
  */
 export interface ColumnLayoutBlock {
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   verticalAlignment: 'start' | 'center' | 'end';
   columnSeparators: 'none' | 'between';
   columns: {
     width: number;
-    surface: 'default' | 'subtle' | 'inverse' | 'image';
+    frame?: ('none' | 'outline') | null;
+    surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
     /**
      * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
      */
@@ -1427,9 +1480,17 @@ export interface ColumnLayoutBlock {
  * via the `definition` "SectionGroupBlock".
  */
 export interface SectionGroupBlock {
-  frame: 'outline' | 'none';
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   sections: {
-    surface: 'default' | 'subtle' | 'inverse' | 'image';
+    frame?: ('none' | 'outline') | null;
+    surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
     /**
      * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
      */
@@ -1818,6 +1879,11 @@ export interface PagesSelect<T extends boolean = true> {
  */
 export interface RichTextBlockSelect<T extends boolean = true> {
   textStyle?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
   content?: T;
   id?: T;
   blockName?: T;
@@ -1827,9 +1893,10 @@ export interface RichTextBlockSelect<T extends boolean = true> {
  * via the `definition` "HeadingBlock_select".
  */
 export interface HeadingBlockSelect<T extends boolean = true> {
-  text?: T;
-  role?: T;
-  iconName?: T;
+  heading?: T;
+  headingLevel?: T;
+  headingIconName?: T;
+  iconInverted?: T;
   id?: T;
   blockName?: T;
 }
@@ -1870,7 +1937,11 @@ export interface ActionLinksBlockSelect<T extends boolean = true> {
  * via the `definition` "ListingBlock_select".
  */
 export interface ListingBlockSelect<T extends boolean = true> {
-  heading?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
   sources?: T;
   parentPage?: T;
   category?: T;
@@ -1891,7 +1962,11 @@ export interface ListingBlockSelect<T extends boolean = true> {
  * via the `definition` "MediaGalleryBlock_select".
  */
 export interface MediaGalleryBlockSelect<T extends boolean = true> {
-  heading?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
   selectionMode?: T;
   items?:
     | T
@@ -1914,7 +1989,11 @@ export interface MediaGalleryBlockSelect<T extends boolean = true> {
  * via the `definition` "DocumentsBlock_select".
  */
 export interface DocumentsBlockSelect<T extends boolean = true> {
-  heading?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
   selectionMode?: T;
   items?:
     | T
@@ -1937,7 +2016,11 @@ export interface DocumentsBlockSelect<T extends boolean = true> {
  * via the `definition` "AttachmentsBlock_select".
  */
 export interface AttachmentsBlockSelect<T extends boolean = true> {
-  heading?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
   selectionMode?: T;
   items?:
     | T
@@ -1960,8 +2043,12 @@ export interface AttachmentsBlockSelect<T extends boolean = true> {
  * via the `definition` "MemberProfilesBlock_select".
  */
 export interface MemberProfilesBlockSelect<T extends boolean = true> {
-  heading?: T;
   view?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
   entries?:
     | T
     | {
@@ -1977,12 +2064,18 @@ export interface MemberProfilesBlockSelect<T extends boolean = true> {
  * via the `definition` "ColumnLayoutBlock_select".
  */
 export interface ColumnLayoutBlockSelect<T extends boolean = true> {
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
   verticalAlignment?: T;
   columnSeparators?: T;
   columns?:
     | T
     | {
         width?: T;
+        frame?: T;
         surface?: T;
         surfaceImage?: T;
         surfaceHorizontalPosition?: T;
@@ -2010,9 +2103,14 @@ export interface ColumnLayoutBlockSelect<T extends boolean = true> {
  */
 export interface SectionGroupBlockSelect<T extends boolean = true> {
   frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
   sections?:
     | T
     | {
+        frame?: T;
         surface?: T;
         surfaceImage?: T;
         surfaceHorizontalPosition?: T;
@@ -3165,6 +3263,7 @@ export interface Footer {
   columns?:
     | {
         title: string;
+        alignment: 'left' | 'center' | 'right';
         items?:
           | {
               /**
@@ -3414,6 +3513,7 @@ export interface FooterSelect<T extends boolean = true> {
     | T
     | {
         title?: T;
+        alignment?: T;
         items?:
           | T
           | {

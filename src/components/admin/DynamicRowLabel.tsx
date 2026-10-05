@@ -129,49 +129,26 @@ const surfaceLabels: Record<string, string> = {
   image: 'obraz',
   inverse: 'odwrócona',
   subtle: 'subtelna',
+  transparent: 'przezroczysta',
 }
 
 export function SectionGroupSectionRowLabel() {
   const { data, path, rowNumber } = useRowLabel<RowData>()
   const liveData = useFormFields(([fields]) => {
+    const frame = fields[`${path}.frame`]?.value
     const surface = fields[`${path}.surface`]?.value
-    const firstHeadingPath = Object.entries(fields)
-      .flatMap(([fieldPath, field]) =>
-        fieldPath.startsWith(`${path}.blocks.`) &&
-        fieldPath.endsWith('.blockType') &&
-        field.value === 'heading'
-          ? [fieldPath.slice(0, -'.blockType'.length)]
-          : [],
-      )
-      .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }))[0]
-    const heading = firstHeadingPath ? fields[`${firstHeadingPath}.text`]?.value : undefined
-    return { heading, surface }
+    return { frame, surface }
   })
-  const surface = getText(liveData.surface) || getText(data.surface) || 'default'
-  const blocks = Array.isArray(data.blocks) ? data.blocks : []
-  const heading = getText(liveData.heading) || findFirstHeadingText(blocks)
-  const value = [surfaceLabels[surface] ?? surface, heading].filter(Boolean).join(' · ')
+  const surface = getText(liveData.surface) || getText(data.surface) || 'transparent'
+  const frame = liveData.frame ?? data.frame
+  const value = [
+    surfaceLabels[surface] ?? surface,
+    frame === true || frame === 'outline' ? 'obrys' : 'bez ramki',
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return <DynamicLabel prefix={`Sekcja ${(rowNumber ?? 0) + 1}`} value={value} />
-}
-
-function findFirstHeadingText(blocks: unknown[]): string {
-  for (const block of blocks) {
-    if (!block || typeof block !== 'object') continue
-    const candidate = block as RowData
-    if (candidate.blockType === 'heading') return getText(candidate.text)
-    if (candidate.blockType !== 'columnLayout' || !Array.isArray(candidate.columns)) continue
-
-    for (const column of candidate.columns) {
-      if (!column || typeof column !== 'object') continue
-      const nestedBlocks = (column as RowData).blocks
-      if (!Array.isArray(nestedBlocks)) continue
-      const nestedHeading = findFirstHeadingText(nestedBlocks)
-      if (nestedHeading) return nestedHeading
-    }
-  }
-
-  return ''
 }
 
 export function ContactChannelRowLabel() {

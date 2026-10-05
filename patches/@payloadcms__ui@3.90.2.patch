@@ -1,0 +1,128 @@
+diff --git a/dist/elements/ClipboardAction/isClipboardDataValid.js b/dist/elements/ClipboardAction/isClipboardDataValid.js
+index ea14aa7a4d6c737e04280ce3923b66075ee61a55..d8ce18e8d3543c382093066e3adac1ce6f9fb023 100644
+--- a/dist/elements/ClipboardAction/isClipboardDataValid.js
++++ b/dist/elements/ClipboardAction/isClipboardDataValid.js
+@@ -15,8 +15,18 @@ export function isClipboardDataValid({
+     return false;
+   }
+   if (args.type === 'blocks') {
++    let blocksFromClipboard = args.blocks;
++    if (typeof args.rowIndex === 'number') {
++      const copiedRowPath = `${path}.${args.rowIndex}`;
++      const copiedBlockType = data[`${copiedRowPath}.blockType`]?.value ?? data[copiedRowPath]?.value;
++      const copiedBlock = typeof copiedBlockType === 'string' ? args.blocks.find(block => block.slug === copiedBlockType) : undefined;
++      if (!copiedBlock) {
++        return false;
++      }
++      blocksFromClipboard = [copiedBlock];
++    }
+     return isClipboardBlocksValid({
+-      blocksFromClipboard: args.blocks,
++      blocksFromClipboard,
+       blocksFromConfig: args.schemaBlocks
+     });
+   } else {
+diff --git a/dist/elements/ClipboardAction/mergeFormStateFromClipboard.js b/dist/elements/ClipboardAction/mergeFormStateFromClipboard.js
+index 1f81629d77f976c88253e9707be5dcd30fb75b95..de2798e6d20f12cf8e8b33e4c45fab3d2b387381 100644
+--- a/dist/elements/ClipboardAction/mergeFormStateFromClipboard.js
++++ b/dist/elements/ClipboardAction/mergeFormStateFromClipboard.js
+@@ -55,6 +55,9 @@ export function mergeFormStateFromClipboard({
+   const pasteIntoField = typeof rowIndex !== 'number';
+   const fromRowToField = !copyFromField && pasteIntoField;
+   const isArray = typeFromClipboard === 'array';
++  const existingTargetRows = Array.isArray(formState[path]?.rows) ? formState[path].rows : [];
++  const appendedRowIndex = existingTargetRows.length;
++  const sourceRow = typeof rowIndexFromClipboard === 'number' && Array.isArray(formState[pathFromClipboard]?.rows) ? formState[pathFromClipboard].rows[rowIndexFromClipboard] : undefined;
+   let pathToReplace;
+   if (copyFromField && pasteIntoField) {
+     pathToReplace = pathFromClipboard;
+@@ -67,28 +70,29 @@ export function mergeFormStateFromClipboard({
+   if (!pasteIntoField) {
+     targetSegment = `${path}.${rowIndex}`;
+   } else if (fromRowToField) {
+-    targetSegment = `${path}.0`;
++    targetSegment = `${path}.${appendedRowIndex}`;
+   } else {
+     targetSegment = path;
+   }
+   if (fromRowToField) {
+-    const lastRenderedPath = `${path}.0`;
+     const rowIDFromClipboard = dataFromClipboard[`${pathToReplace}.id`]?.value;
+-    const hasRows = formState[path].rows?.length;
+-    formState[path].rows = [{
+-      ...(hasRows && isArray ? formState[path].rows[0] : {}),
++    const blockTypeFromClipboard = dataFromClipboard[`${pathToReplace}.blockType`]?.value ?? dataFromClipboard[pathToReplace]?.value;
++    const appendedRow = {
+       id: rowIDFromClipboard,
+       isLoading: false,
+-      lastRenderedPath
+-    }];
+-    formState[path].value = 1;
+-    formState[path].initialValue = 1;
+-    formState[path].disableFormData = true;
+-    for (const fieldPath in formState) {
+-      if (fieldPath !== path && !isStrictPathPrefix(fieldPath, lastRenderedPath) && isStrictPathPrefix(fieldPath, path)) {
+-        delete formState[fieldPath];
+-      }
++      lastRenderedPath: targetSegment
++    };
++    if (sourceRow?.customComponents?.RowLabel) {
++      appendedRow.customComponents = {
++        RowLabel: sourceRow.customComponents.RowLabel
++      };
++    }
++    if (!isArray && typeof blockTypeFromClipboard === 'string') {
++      appendedRow.blockType = blockTypeFromClipboard;
+     }
++    formState[path].rows = [...existingTargetRows, appendedRow];
++    formState[path].value = formState[path].rows.length;
++    formState[path].disableFormData = true;
+   }
+   // Map to track old IDs to new IDs for regenerating nested IDs
+   const idReplacements = new Map();
+@@ -103,20 +107,17 @@ export function mergeFormStateFromClipboard({
+     const customComponents = isArray ? formState[newPath]?.customComponents : undefined;
+     const validate = isArray ? formState[newPath]?.validate : undefined;
+     // If this is an ID field, generate a new ID to prevent duplicates
+-    if (clipboardPath.endsWith('.id') && dataFromClipboard[clipboardPath]?.value) {
+-      const oldID = dataFromClipboard[clipboardPath].value;
+-      if (typeof oldID === 'string' && ObjectId.isValid(oldID)) {
+-        const newID = new ObjectId().toHexString();
+-        idReplacements.set(clipboardPath, newID);
+-        formState[newPath] = {
+-          customComponents,
+-          validate,
+-          ...dataFromClipboard[clipboardPath],
+-          initialValue: newID,
+-          value: newID
+-        };
+-        continue;
+-      }
++    if (clipboardPath.endsWith('.id') && dataFromClipboard[clipboardPath]?.value != null) {
++      const newID = new ObjectId().toHexString();
++      idReplacements.set(clipboardPath, newID);
++      formState[newPath] = {
++        customComponents,
++        validate,
++        ...dataFromClipboard[clipboardPath],
++        initialValue: newID,
++        value: newID
++      };
++      continue;
+     }
+     formState[newPath] = {
+       customComponents,
+diff --git a/dist/exports/client/index.js b/dist/exports/client/index.js
+index dee03b8a76c0ea3941bc92e0e87592ad0f3dc932..b280695c1e7de002e479a9f0a75a1b865de57bf9 100644
+--- a/dist/exports/client/index.js
++++ b/dist/exports/client/index.js
+@@ -95,3 +95,9 @@ focus-trap/dist/focus-trap.esm.js:
+   *)
+ */
+ //# sourceMappingURL=index.js.map
++
++// Keep the bundled client entry aligned with the patched clipboard helpers.
++import { isClipboardDataValid as patchedIsClipboardDataValid } from '../../elements/ClipboardAction/isClipboardDataValid.js';
++import { mergeFormStateFromClipboard as patchedMergeFormStateFromClipboard } from '../../elements/ClipboardAction/mergeFormStateFromClipboard.js';
++h2 = patchedIsClipboardDataValid;
++ul = patchedMergeFormStateFromClipboard;
