@@ -112,17 +112,3 @@ index 1f81629d77f976c88253e9707be5dcd30fb75b95..de2798e6d20f12cf8e8b33e4c45fab3d
      }
      formState[newPath] = {
        customComponents,
-diff --git a/dist/exports/client/index.js b/dist/exports/client/index.js
-index dee03b8a76c0ea3941bc92e0e87592ad0f3dc932..b280695c1e7de002e479a9f0a75a1b865de57bf9 100644
---- a/dist/exports/client/index.js
-+++ b/dist/exports/client/index.js
-@@ -95,3 +95,9 @@ focus-trap/dist/focus-trap.esm.js:
-   *)
- */
- //# sourceMappingURL=index.js.map
-+
-+// Keep the bundled client entry aligned with the patched clipboard helpers.
-+import { isClipboardDataValid as patchedIsClipboardDataValid } from '../../elements/ClipboardAction/isClipboardDataValid.js';
-+import { mergeFormStateFromClipboard as patchedMergeFormStateFromClipboard } from '../../elements/ClipboardAction/mergeFormStateFromClipboard.js';
-+h2 = patchedIsClipboardDataValid;
-+ul = patchedMergeFormStateFromClipboard;

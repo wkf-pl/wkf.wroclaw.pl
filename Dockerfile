@@ -13,6 +13,7 @@ RUN apk add --no-cache libc6-compat
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches ./patches
+COPY scripts/patch-payload-ui-client.mjs ./scripts/patch-payload-ui-client.mjs
 RUN pnpm install --frozen-lockfile
 
 FROM base AS development

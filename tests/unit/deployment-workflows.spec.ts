@@ -138,9 +138,17 @@ describe('deployment workflows', () => {
 
     expect(dependenciesStage).toBeDefined()
     expect(dependenciesStage).toContain('COPY patches ./patches')
+    expect(dependenciesStage).toContain(
+      'COPY scripts/patch-payload-ui-client.mjs ./scripts/patch-payload-ui-client.mjs',
+    )
     expect(dependenciesStage!.indexOf('COPY patches ./patches')).toBeLessThan(
       dependenciesStage!.indexOf('RUN pnpm install --frozen-lockfile'),
     )
+    expect(
+      dependenciesStage!.indexOf(
+        'COPY scripts/patch-payload-ui-client.mjs ./scripts/patch-payload-ui-client.mjs',
+      ),
+    ).toBeLessThan(dependenciesStage!.indexOf('RUN pnpm install --frozen-lockfile'))
   })
 
   it('never starts a Next development server during staging or production operations', () => {

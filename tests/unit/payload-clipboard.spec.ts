@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+
 import type { ClientBlock, FormState } from 'payload'
 import { describe, expect, it } from 'vitest'
 
@@ -15,6 +17,22 @@ const sectionGroupBlock = {
 } as ClientBlock
 
 describe('Payload row clipboard compatibility', () => {
+  it('keeps clipboard overrides inside the existing Payload client bundle', () => {
+    const payloadClientBundle = readFileSync(
+      'node_modules/@payloadcms/ui/dist/exports/client/index.js',
+      'utf8',
+    )
+
+    expect(payloadClientBundle).toContain('let n=o.blocks;if(typeof o.rowIndex==="number")')
+    expect(payloadClientBundle).toContain('f=Array.isArray(e[o]?.rows)?e[o].rows:[]')
+    expect(payloadClientBundle).not.toContain(
+      "from '../../elements/ClipboardAction/isClipboardDataValid.js'",
+    )
+    expect(payloadClientBundle).not.toContain(
+      "from '../../elements/ClipboardAction/mergeFormStateFromClipboard.js'",
+    )
+  })
+
   it('accepts a copied block row when that block type is allowed by the target field', () => {
     expect(
       isClipboardDataValid({

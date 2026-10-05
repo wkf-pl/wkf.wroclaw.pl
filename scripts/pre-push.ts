@@ -71,7 +71,9 @@ export async function executeValidationStages(
   onUpdate: (stages: ValidationStages) => void = () => undefined,
 ): Promise<ValidationStages> {
   await executeValidationStageGroup(validationStageGroups[0], stages, executor, onUpdate)
-  await executeValidationStageGroup(validationStageGroups[1], stages, executor, onUpdate)
+  for (const stageKey of validationStageGroups[1]) {
+    await executeValidationStage(stageKey, stages, executor, onUpdate)
+  }
 
   if (validationStageGroups[1].some((stageKey) => stages[stageKey].status === 'failure')) {
     markStageSkipped(stages.build, 'Unit or integration tests failed.')
