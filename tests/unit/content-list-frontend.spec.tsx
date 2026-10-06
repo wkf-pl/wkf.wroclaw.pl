@@ -23,16 +23,54 @@ function createListItem(kind: PublicContentListItem['kind'], date: string): Publ
 }
 
 describe('frontend content listing', () => {
-  it('renders card images in a widescreen frame', () => {
+  it('limits widescreen card images to the grid view', () => {
     const frontendStyles = readFrontendStyles()
     const cardImageRule = frontendStyles.match(/\.contentCardImage\s*\{(?<declarations>[^}]*)\}/)
     const cardImageDeclarations = cardImageRule?.groups?.declarations
+    const gridCardImageSelector = '.contentList-grid > article.contentCard > .contentCardImage'
+    const gridCardImageRule = frontendStyles.match(
+      /\.contentList-grid > article\.contentCard > \.contentCardImage\s*\{(?<declarations>[^}]*)\}/,
+    )
+    const gridCardImageDeclarations = gridCardImageRule?.groups?.declarations
+    const contentCardImageAspectRatioSelectors = [
+      ...frontendStyles.matchAll(
+        /(?<selector>[^{}]*\.contentCardImage[^{}]*)\{(?<declarations>[^}]*)\}/g,
+      ),
+    ]
+      .filter((match) => match.groups?.declarations.includes('aspect-ratio'))
+      .map((match) => match.groups?.selector.trim())
 
     expect(cardImageDeclarations).toBeDefined()
-    expect(cardImageDeclarations).toContain('display: block')
-    expect(cardImageDeclarations).toContain('aspect-ratio: 16 / 9')
-    expect(frontendStyles).not.toMatch(
-      /[^{}]*\.contentCardImage[^{}]*\{[^}]*(?:min-height|max-height):/,
+    expect(cardImageDeclarations).toContain('min-height: 15rem')
+    expect(cardImageDeclarations).not.toContain('aspect-ratio')
+    expect(gridCardImageDeclarations).toContain('min-height: 0')
+    expect(gridCardImageDeclarations).toContain('max-height: none')
+    expect(gridCardImageDeclarations).toContain('aspect-ratio: 16 / 9')
+    expect(contentCardImageAspectRatioSelectors).toEqual([gridCardImageSelector])
+  })
+
+  it('renders the shared image fallback for grid and card views without media', () => {
+    const item = createListItem('events', '2026-09-07T18:00:00.000Z')
+    const gridMarkup = renderToStaticMarkup(
+      createElement(ContentList, { items: [item], view: 'grid' }),
+    )
+    const cardsMarkup = renderToStaticMarkup(
+      createElement(ContentList, { items: [item], view: 'cards' }),
+    )
+    const compactMarkup = renderToStaticMarkup(
+      createElement(ContentList, { items: [item], view: 'compact' }),
+    )
+    const frontendStyles = readFrontendStyles()
+
+    expect(gridMarkup).toContain('class="contentCardImageFallback"')
+    expect(gridMarkup).toContain('aria-hidden="true"')
+    expect(cardsMarkup).toContain('class="contentCardImageFallback"')
+    expect(compactMarkup).not.toContain('contentCardImageFallback')
+    expect(frontendStyles).toMatch(
+      /\.newsImageFallback,\s*\.sectionCardImageFallback,\s*\.contentCardImageFallback\s*\{[^}]*placeholder-nebula\.webp/,
+    )
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-grid, \.contentList-cards\)[^{]*> \.contentCardImageFallback\s*\{[^}]*height: 100%;/,
     )
   })
 

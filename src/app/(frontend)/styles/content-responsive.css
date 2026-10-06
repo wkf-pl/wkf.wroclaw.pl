@@ -279,6 +279,11 @@
   .attachmentList.mediaList-list .attachmentPreview {
     flex-basis: 6rem;
   }
+
+  .contentCardImage {
+    min-height: 12rem;
+    max-height: 20rem;
+  }
 }
 
 @media (width <= 34rem) {

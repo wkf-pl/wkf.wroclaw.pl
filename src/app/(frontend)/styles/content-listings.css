@@ -491,16 +491,11 @@
 }
 
 .contentCardImage {
-  display: block;
-  align-self: start;
-  overflow: hidden;
-  width: 100%;
-  aspect-ratio: 16 / 9;
+  min-height: 15rem;
   background: var(--panel);
 }
 
 .contentCardImage img {
-  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -548,6 +543,29 @@
 .contentList-grid .contentCard {
   display: flex;
   flex-direction: column;
+}
+
+.contentList-grid > article.contentCard > .contentCardImage {
+  display: block;
+  align-self: start;
+  overflow: hidden;
+  width: 100%;
+  min-height: 0;
+  max-height: none;
+  aspect-ratio: 16 / 9;
+}
+
+.contentList-grid > article.contentCard > .contentCardImage img {
+  display: block;
+}
+
+:is(.contentList-grid, .contentList-cards)
+  > article.contentCard
+  > .contentCardImage
+  > .contentCardImageFallback {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .contentList-grid .contentCardContent {

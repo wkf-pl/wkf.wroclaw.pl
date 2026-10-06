@@ -572,7 +572,8 @@ body:has(> .homePage) .siteHeader {
 }
 
 .newsImageFallback,
-.sectionCardImageFallback {
+.sectionCardImageFallback,
+.contentCardImageFallback {
   background:
     url('/assets/placeholder-nebula.webp') center / cover no-repeat,
     #00111e;

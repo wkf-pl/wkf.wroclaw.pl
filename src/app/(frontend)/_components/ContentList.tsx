@@ -31,13 +31,19 @@ export function ContentList({ emptyMessage, items, view }: ContentListProperties
     return <p className="emptyState">{emptyMessage || 'Nie ma opublikowanych treści.'}</p>
   }
 
+  const showsImageFallback = view === 'cards' || view === 'grid'
+
   return (
     <div className={`contentList contentList-${view}`}>
       {items.map((item) => (
         <article className="contentCard" key={`${item.kind}-${item.id}`}>
           {view !== 'compact' ? (
             <Link aria-label={item.title} className="contentCardImage" href={item.url}>
-              <CmsImage media={item.image} />
+              {item.image ? (
+                <CmsImage media={item.image} />
+              ) : showsImageFallback ? (
+                <span aria-hidden="true" className="contentCardImageFallback" />
+              ) : null}
             </Link>
           ) : null}
           <div className="contentCardContent">
