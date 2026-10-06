@@ -5,6 +5,7 @@ import { getRelationshipId } from '@/lib/relationships'
 import { createPaginatedURL, resolveBlockPagination } from '@/modules/content/pagination'
 import {
   findPublicContent,
+  type ManualContentReference,
   type TaxonomizableCollectionSlug,
 } from '@/modules/content/content-listing'
 
@@ -40,12 +41,14 @@ export async function ListingBlockSection({
       getRelationshipId(block.eventCycle) ??
       ('calendarFeedKey' in document ? document.id : undefined),
     eventTimeFilter: block.eventTimeFilter ?? 'all',
+    manualItems: getManualItems(block),
     page: requestedPage,
     pageSize: block.pageSize,
     pagination: Boolean(block.pagination),
     parentId,
-    sort: block.sort,
-    sources: block.sources as TaxonomizableCollectionSlug[],
+    selectionMode: block.selectionMode,
+    sort: block.sort ?? 'newest',
+    sources: (block.sources ?? []) as TaxonomizableCollectionSlug[],
     tagId: getRelationshipId(block.tag),
   })
 
@@ -67,6 +70,10 @@ export async function ListingBlockSection({
       ) : null}
     </div>
   )
+}
+
+function getManualItems(block: ListingBlock): ManualContentReference[] {
+  return (block.items?.map(({ item }) => item) ?? []) as ManualContentReference[]
 }
 
 function getListingParentId(

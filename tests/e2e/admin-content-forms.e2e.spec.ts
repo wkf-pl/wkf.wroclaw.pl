@@ -73,6 +73,7 @@ test.beforeAll(async () => {
           pageSize: 12,
           pagination: true,
           parentFilter: 'none',
+          selectionMode: 'filters',
           sort: 'newest',
           sources: ['pages'],
           view: 'cards',

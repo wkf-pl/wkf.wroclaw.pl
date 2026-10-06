@@ -38,6 +38,7 @@ import * as migration_20261002_224408_unified_content_presentation from './20261
 import * as migration_20261003_122622_content_presentation_frame_style from './20261003_122622_content_presentation_frame_style'
 import * as migration_20261004_202800_content_presentation_compaction from './20261004_202800_content_presentation_compaction'
 import * as migration_20261006_204500_repair_content_listing_relationships from './20261006_204500_repair_content_listing_relationships'
+import * as migration_20261006_231853 from './20261006_231853'
 
 export const migrations = [
   {
@@ -239,5 +240,10 @@ export const migrations = [
     up: migration_20261006_204500_repair_content_listing_relationships.up,
     down: migration_20261006_204500_repair_content_listing_relationships.down,
     name: '20261006_204500_repair_content_listing_relationships',
+  },
+  {
+    up: migration_20261006_231853.up,
+    down: migration_20261006_231853.down,
+    name: '20261006_231853',
   },
 ]

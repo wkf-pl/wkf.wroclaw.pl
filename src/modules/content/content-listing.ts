@@ -12,8 +12,13 @@ import type {
   Post,
   Tag,
 } from '@/payload-types'
-import { getPopulatedRelationship, getPopulatedRelationships } from '@/lib/relationships'
-import { normalizeListingWindow } from '@/modules/content/listing-window'
+import {
+  getFormRelationshipId,
+  getPopulatedRelationship,
+  getPopulatedRelationships,
+  type RelationshipID,
+} from '@/lib/relationships'
+import { normalizeListingWindow, paginateInMemory } from '@/modules/content/listing-window'
 import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
@@ -40,13 +45,20 @@ export type FindPublicContentOptions = {
   categoryId?: number
   eventCycleId?: number
   eventTimeFilter?: 'all' | 'past' | 'upcoming'
+  manualItems?: ManualContentReference[]
   page: number
   pageSize: number
   pagination: boolean
   parentId?: number
+  selectionMode?: 'filters' | 'manual'
   sort: ContentListingSort
   sources: TaxonomizableCollectionSlug[]
   tagId?: number
+}
+
+export type ManualContentReference = {
+  relationTo: TaxonomizableCollectionSlug
+  value: RelationshipID | TaxonomizableDocument
 }
 
 export type PublicContentResult = {
@@ -115,6 +127,10 @@ const findPublicContentCached = cachePublicData(
 export async function findPublicContent(
   options: FindPublicContentOptions,
 ): Promise<PublicContentResult> {
+  if (options.selectionMode === 'manual') {
+    return findManualPublicContent(options)
+  }
+
   const categoryIds =
     options.categoryId === undefined ? undefined : await findCategorySubtreeIDs(options.categoryId)
 
@@ -129,6 +145,72 @@ export async function findPublicContent(
     sources: [...new Set(options.sources)].sort(),
     tagId: options.tagId,
   })
+}
+
+async function findManualPublicContent(
+  options: FindPublicContentOptions,
+): Promise<PublicContentResult> {
+  const references = getManualContentReferences(options.manualItems)
+  let items: PublicContentListItem[] = []
+
+  if (references.length > 0) {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'content-listing-items',
+      context: publicRequestContext,
+      depth: 1,
+      limit: references.length,
+      overrideAccess: false,
+      pagination: false,
+      populate: {
+        categories: { name: true, slug: true },
+        media: { alt: true, filename: true, height: true, url: true, width: true },
+        tags: { name: true, slug: true },
+      },
+      select: {
+        category: true,
+        excerpt: true,
+        heroImage: true,
+        sortDate: true,
+        source: true,
+        sourceDocumentId: true,
+        tags: true,
+        title: true,
+        url: true,
+      },
+      user: null,
+      where: {
+        or: references.map<Where>(({ id, source }) => {
+          const conditions: Where[] = [
+            { source: { equals: source } },
+            { sourceDocumentId: { equals: id } },
+          ]
+          return { and: conditions }
+        }),
+      },
+    })
+
+    const itemsByReference = new Map(
+      result.docs.map((item) => [`${item.source}:${String(item.sourceDocumentId)}`, item]),
+    )
+    items = references.flatMap(({ id, source }) => {
+      const item = itemsByReference.get(`${source}:${String(id)}`)
+      return item ? [mapIndexItem(item)] : []
+    })
+  }
+
+  return paginateInMemory(items, options)
+}
+
+function getManualContentReferences(
+  values: readonly ManualContentReference[] | null | undefined,
+): { id: RelationshipID; source: TaxonomizableCollectionSlug }[] {
+  return (
+    values?.flatMap((value) => {
+      const id = getFormRelationshipId(value.value)
+      return id === undefined ? [] : [{ id, source: value.relationTo }]
+    }) ?? []
+  )
 }
 
 function createListingWhere(options: CachedFindPublicContentOptions): Where {

@@ -555,6 +555,7 @@ async function ensureBlogPage(author: User): Promise<Page> {
           pageSize: 12,
           pagination: true,
           parentFilter: 'none',
+          selectionMode: 'filters',
           sort: 'newest',
           sources: ['posts'],
           view: 'cards',

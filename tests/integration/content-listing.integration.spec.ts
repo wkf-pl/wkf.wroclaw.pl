@@ -47,6 +47,77 @@ describe('content listing and pagination', () => {
     expect(childResult.items.map((item) => item.id)).toEqual([fixture.childPage.id])
   })
 
+  it('preserves manual mixed-content order before pagination', async () => {
+    const result = await findPublicContent({
+      manualItems: [
+        { relationTo: 'posts', value: fixture.post.id },
+        { relationTo: 'pages', value: fixture.page.id },
+        { relationTo: 'pages', value: fixture.childPage.id },
+      ],
+      page: 2,
+      pageSize: 2,
+      pagination: true,
+      selectionMode: 'manual',
+      sort: 'titleAscending',
+      sources: [],
+    })
+
+    expect(result.items.map(({ kind, title }) => [kind, title])).toEqual([
+      ['pages', fixture.childPage.title],
+    ])
+    expect(result.totalDocs).toBe(3)
+    expect(result.totalPages).toBe(2)
+  })
+
+  it('stores ordered polymorphic relationships in a manual Listing block', async () => {
+    const containerPage = await fixture.payload.create({
+      collection: 'pages',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        layout: [
+          {
+            blockType: 'listing',
+            items: [
+              { item: { relationTo: 'posts', value: fixture.post.id } },
+              { item: { relationTo: 'pages', value: fixture.page.id } },
+            ],
+            pageSize: 12,
+            pagination: false,
+            parentFilter: 'none',
+            selectionMode: 'manual',
+            sort: 'newest',
+            view: 'cards',
+          },
+        ],
+        slug: fixture.slugs.lifecyclePage,
+        title: 'Integration manual listing container',
+      },
+      overrideAccess: true,
+    })
+
+    try {
+      const storedPage = await fixture.payload.findByID({
+        collection: 'pages',
+        depth: 0,
+        id: containerPage.id,
+        overrideAccess: true,
+      })
+      const listing = storedPage.layout?.find((block) => block.blockType === 'listing')
+
+      expect(listing?.items?.map(({ item }) => [item.relationTo, item.value])).toEqual([
+        ['posts', fixture.post.id],
+        ['pages', fixture.page.id],
+      ])
+    } finally {
+      await fixture.payload.delete({
+        collection: 'pages',
+        id: containerPage.id,
+        overrideAccess: true,
+      })
+    }
+  })
+
   it('exposes both collection relations through reverse Join fields', async () => {
     const populatedCategory = await fixture.payload.findByID({
       collection: 'categories',

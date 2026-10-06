@@ -261,6 +261,7 @@ function listingBlock(view: 'compact' | 'grid' = 'compact', pagination = true) {
     pageSize: pagination ? 1 : 3,
     pagination,
     parentFilter: 'none' as const,
+    selectionMode: 'filters' as const,
     sort: 'newest' as const,
     sources: ['posts' as const],
     view,

@@ -727,11 +727,34 @@ export interface ListingBlock {
   surfaceImage?: (number | null) | Media;
   surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
   surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
-  sources: ('pages' | 'posts' | 'events' | 'event-cycles')[];
+  selectionMode: 'manual' | 'filters';
+  items?:
+    | {
+        item:
+          | {
+              relationTo: 'pages';
+              value: number | Page;
+            }
+          | {
+              relationTo: 'posts';
+              value: number | Post;
+            }
+          | {
+              relationTo: 'events';
+              value: number | Event;
+            }
+          | {
+              relationTo: 'event-cycles';
+              value: number | EventCycle;
+            };
+        id?: string | null;
+      }[]
+    | null;
+  sources?: ('pages' | 'posts' | 'events' | 'event-cycles')[] | null;
   parentPage?: (number | null) | Page;
   category?: (number | null) | Category;
   tag?: (number | null) | Tag;
-  sort: 'newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending';
+  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending') | null;
   view: 'cards' | 'compact' | 'grid';
   eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
   eventCycle?: (number | null) | EventCycle;
@@ -742,46 +765,6 @@ export interface ListingBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'listing';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "tags".
- */
-export interface Tag {
-  id: number;
-  name: string;
-  /**
-   * Adres jest tworzony automatycznie z nazwy.
-   */
-  slug: string;
-  description?: string | null;
-  relatedPages?: {
-    docs?: (number | Page)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  relatedPosts?: {
-    docs?: (number | Post)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  relatedEvents?: {
-    docs?: (number | Event)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  relatedEventCycles?: {
-    docs?: (number | EventCycle)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  relatedDocuments?: {
-    docs?: (number | Document)[];
-    hasNextPage?: boolean;
-    totalDocs?: number;
-  };
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1070,34 +1053,43 @@ export interface MediaGalleryBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "DocumentsBlock".
+ * via the `definition` "tags".
  */
-export interface DocumentsBlock {
-  frame?: ('none' | 'outline') | null;
-  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+export interface Tag {
+  id: number;
+  name: string;
   /**
-   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   * Adres jest tworzony automatycznie z nazwy.
    */
-  surfaceImage?: (number | null) | Media;
-  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
-  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
-  selectionMode: 'manual' | 'filters';
-  items?:
-    | {
-        document: number | Document;
-        id?: string | null;
-      }[]
-    | null;
-  category?: (number | null) | Category;
-  tag?: (number | null) | Tag;
-  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
-  view: 'cards' | 'list' | 'grid';
-  pageSize: number;
-  pagination?: boolean | null;
-  emptyMessage?: string | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'documents';
+  slug: string;
+  description?: string | null;
+  relatedPages?: {
+    docs?: (number | Page)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  relatedPosts?: {
+    docs?: (number | Post)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  relatedEvents?: {
+    docs?: (number | Event)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  relatedEventCycles?: {
+    docs?: (number | EventCycle)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  relatedDocuments?: {
+    docs?: (number | Document)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1243,6 +1235,37 @@ export interface Role {
     | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "DocumentsBlock".
+ */
+export interface DocumentsBlock {
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  selectionMode: 'manual' | 'filters';
+  items?:
+    | {
+        document: number | Document;
+        id?: string | null;
+      }[]
+    | null;
+  category?: (number | null) | Category;
+  tag?: (number | null) | Tag;
+  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
+  view: 'cards' | 'list' | 'grid';
+  pageSize: number;
+  pagination?: boolean | null;
+  emptyMessage?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'documents';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1942,6 +1965,13 @@ export interface ListingBlockSelect<T extends boolean = true> {
   surfaceImage?: T;
   surfaceHorizontalPosition?: T;
   surfaceVerticalPosition?: T;
+  selectionMode?: T;
+  items?:
+    | T
+    | {
+        item?: T;
+        id?: T;
+      };
   sources?: T;
   parentPage?: T;
   category?: T;

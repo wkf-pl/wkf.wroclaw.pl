@@ -11,7 +11,12 @@ import { HeadingBlock } from '@/blocks/Heading'
 import { MemberProfilesBlock } from '@/blocks/MemberProfiles'
 import { RichTextBlock } from '@/blocks/RichText'
 import { SectionGroupBlock } from '@/blocks/SectionGroup'
-import { ListingBlock, validateListingSources, validateParentPage } from '@/blocks/Listing'
+import {
+  ListingBlock,
+  validateListingSources,
+  validateManualListingItems,
+  validateParentPage,
+} from '@/blocks/Listing'
 import { Categories } from '@/collections/Categories'
 import { Documents } from '@/collections/Documents'
 import { EventCycles } from '@/collections/EventCycles'
@@ -265,6 +270,8 @@ describe('page configuration', () => {
       ['pageSize', 'pagination'],
     ])
     expect(describeFieldOrder(listingFields)).toEqual([
+      'selectionMode',
+      'items',
       ['sources', 'parentPage'],
       ['category', 'tag'],
       ['sort', 'view'],
@@ -274,6 +281,61 @@ describe('page configuration', () => {
       'emptyMessage',
     ])
     expect(parentPageField).toMatchObject({ label: 'Strona nadrzędna', type: 'relationship' })
+  })
+
+  it('supports ordered manual Listing items from every content source', () => {
+    const selectionModeField = findField(ListingBlock.fields, 'selectionMode')
+    const itemsField = findField(ListingBlock.fields, 'items')
+    const itemField =
+      itemsField.type === 'array'
+        ? itemsField.fields.find((field) => 'name' in field && field.name === 'item')
+        : null
+
+    expect(selectionModeField).toMatchObject({
+      defaultValue: 'filters',
+      label: 'Tryb wyboru',
+      options: [
+        { label: 'Ręczny', value: 'manual' },
+        { label: 'Filtry', value: 'filters' },
+      ],
+      required: true,
+      type: 'select',
+    })
+    expect(itemsField).toMatchObject({
+      label: 'Treści',
+      type: 'array',
+    })
+    expect(itemField).toMatchObject({
+      label: 'Treść',
+      relationTo: ['pages', 'posts', 'events', 'event-cycles'],
+      required: true,
+      type: 'relationship',
+    })
+    expect(itemsField.admin?.condition?.({}, { selectionMode: 'manual' }, {} as never)).toBe(true)
+    expect(itemsField.admin?.condition?.({}, { selectionMode: 'filters' }, {} as never)).toBe(false)
+  })
+
+  it('requires unique manual Listing items within each content source', () => {
+    expect(
+      validateManualListingItems([], {
+        siblingData: { selectionMode: 'manual' },
+      } as never),
+    ).toBeTypeOf('string')
+    expect(
+      validateManualListingItems(
+        [
+          { item: { relationTo: 'pages', value: 7 } },
+          { item: { relationTo: 'pages', value: { id: 7 } } },
+        ],
+        { siblingData: { selectionMode: 'manual' } } as never,
+      ),
+    ).toBeTypeOf('string')
+    expect(
+      validateManualListingItems(
+        [{ item: { relationTo: 'pages', value: 7 } }, { item: { relationTo: 'posts', value: 7 } }],
+        { siblingData: { selectionMode: 'manual' } } as never,
+      ),
+    ).toBe(true)
   })
 
   it('puts SEO in a separate tab in every SEO-enabled collection', () => {
