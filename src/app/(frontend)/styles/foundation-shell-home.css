@@ -425,7 +425,7 @@ body:has(> .homePage) .siteHeader {
 }
 
 .contentPageBody {
-  padding-top: clamp(4rem, 8vw, 6.5rem);
+  padding-top: 4rem;
 }
 
 .heroContent {
@@ -572,7 +572,8 @@ body:has(> .homePage) .siteHeader {
 }
 
 .newsImageFallback,
-.sectionCardImageFallback {
+.sectionCardImageFallback,
+.contentCardImageFallback {
   background:
     url('/assets/placeholder-nebula.webp') center / cover no-repeat,
     #00111e;

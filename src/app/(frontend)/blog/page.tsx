@@ -29,7 +29,12 @@ export default async function BlogPage({ searchParams }: BlogPageProperties) {
   return (
     <>
       {isDraftPreview ? <DraftPreviewBanner pathname="/blog" /> : null}
-      <CmsPageDocument document={page} pathname="/blog" searchParams={resolvedSearchParams} />
+      <CmsPageDocument
+        collection="pages"
+        document={page}
+        pathname="/blog"
+        searchParams={resolvedSearchParams}
+      />
     </>
   )
 }

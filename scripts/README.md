@@ -4,6 +4,76 @@ This directory contains the repository entry points for local development, test 
 deployment, staging data operations, and smoke verification. Prefer the documented `pnpm` command
 or GitHub Actions workflow when one exists: those callers provide the expected environment.
 
+## pnpm command reference
+
+These are all scripts exposed by `package.json`. Commands marked as supporting commands are normally
+called by another script, a container, or CI, but remain useful for focused diagnostics.
+
+### Development, validation, and operations
+
+| Command                                        | Purpose                                                                                                                                                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                                     | Starts the host development server through `run-development-server.sh`; requires `WKF_ALLOW_NEXT_DEV=1`.                                                                                                   |
+| `pnpm preview:temporary -- <port>`             | Starts a foreground-only development preview on a port from 3100 to 3199 and removes its runtime on exit.                                                                                                  |
+| `pnpm build`                                   | Creates the production Next.js build in `.next-host`. The directory remains available after the command.                                                                                                   |
+| `pnpm start`                                   | Starts the production build from `.next-host`; it does not build first.                                                                                                                                    |
+| `pnpm format`                                  | Formats the repository with Prettier.                                                                                                                                                                      |
+| `pnpm format:check`                            | Checks formatting without changing files.                                                                                                                                                                  |
+| `pnpm lint`                                    | Runs ESLint for the repository.                                                                                                                                                                            |
+| `pnpm typecheck`                               | Runs TypeScript without emitting files.                                                                                                                                                                    |
+| `pnpm test`                                    | Runs unit tests and then integration tests. It does not run browser tests.                                                                                                                                 |
+| `pnpm test:unit`                               | Runs the unit test suite.                                                                                                                                                                                  |
+| `pnpm test:integration`                        | Recreates the isolated `wkf_test` database from migrations and runs integration tests with one worker.                                                                                                     |
+| `pnpm test:e2e`                                | Runs Playwright against `PLAYWRIGHT_BASE_URL`, or the development server at port 3000 by default. It does not recreate or seed the test database.                                                          |
+| `pnpm test:e2e:ci`                             | Recreates and seeds `wkf_test`, then runs Chromium against a previously prepared production runtime. It does not run `pnpm build`. See [diagnosing E2E failures](#diagnosing-e2e-failures-after-pre-push). |
+| `pnpm pre-push`                                | Runs formatting check, lint, typecheck, unit tests, integration tests, a production build, and production-mode E2E tests.                                                                                  |
+| `pnpm generate:types`                          | Regenerates Payload TypeScript types.                                                                                                                                                                      |
+| `pnpm generate:importmap`                      | Regenerates the Payload admin import map.                                                                                                                                                                  |
+| `pnpm migrate:create`                          | Creates a Payload migration from the current schema difference. Review and commit both generated migration artifacts and the index registration.                                                           |
+| `pnpm migrate`                                 | Applies pending Payload migrations to the configured database.                                                                                                                                             |
+| `pnpm seed`                                    | Adds idempotent demonstration content to the configured database.                                                                                                                                          |
+| `pnpm staging:pull <checkpoint-name> [IMPORT]` | Imports a named staging checkpoint into the local Docker Compose database and Azurite.                                                                                                                     |
+| `pnpm verify:compose`                          | Smoke-tests the running local Compose application, storage, administrator bootstrap, and email delivery.                                                                                                   |
+
+### Supporting commands
+
+| Command                    | Caller and purpose                                                                                                                                             |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm build:container`     | Builds Next.js inside the production container without the host-specific `.next-host` directory.                                                               |
+| `pnpm dev:container`       | Starts the development server with the container-specific `.next-container` distribution directory.                                                            |
+| `pnpm prepare:integration` | Starts test dependencies, recreates `wkf_test`, applies all committed migrations, and verifies migration history. Called by integration and CI-like E2E tests. |
+| `pnpm prepare:e2e`         | Runs integration preparation and then seeds browser-test content. Called by `test:e2e:ci`.                                                                     |
+| `pnpm package:e2e-runtime` | Packages `.next-host/standalone`, `.next-host/static`, and `public/` as `tmp/wkf-next-runtime.tar.gz`. It does not build or extract the archive.               |
+| `pnpm payload`             | Runs the Payload CLI with the repository configuration.                                                                                                        |
+| `pnpm postinstall`         | Applies the version-guarded Payload UI patch after dependency installation; package managers call it automatically.                                            |
+
+### Diagnosing E2E failures after `pre-push`
+
+`pnpm pre-push` intentionally prints a compact list of failing browser test names. Its production
+build remains in `.next-host`. Before Playwright starts, the runner also packages that build and
+publishes the complete runtime to `tmp/wkf-next-runtime`, including `public/` and
+`.next-host/static`. This directory is ignored by Git and is not removed when `pre-push` finishes or
+the browser tests fail.
+
+Run the following command immediately after an E2E failure to recreate the isolated database and
+rerun the complete browser suite with the same production runtime:
+
+```bash
+CI=1 pnpm test:e2e:ci
+```
+
+To focus on one failure, pass a Playwright title pattern:
+
+```bash
+CI=1 pnpm test:e2e:ci --grep "part of the failing test title"
+```
+
+`test:e2e:ci` deliberately consumes an existing runtime instead of building one. CI builds and
+packages the application once, then gives the same immutable artifact to all four Playwright
+shards. Locally, `pre-push` refreshes `tmp/wkf-next-runtime` from the build it just created. If source
+code changes after that run, execute `pnpm pre-push` again before treating a later E2E result as
+evidence for the current source.
+
 ## Deployment and Azure operations
 
 ### `classify-deployment.sh`
@@ -111,9 +181,10 @@ browser tests, while a build failure skips browser tests. Error details are prin
 pipeline finishes or stops: static checks list affected files, test phases list failing test names,
 and the build prints its captured error output.
 
-The browser stage packages the production build, extracts it into a unique system temporary
-directory, and removes that directory on completion. Set `WKF_PRE_PUSH_STATIC=1` to disable dynamic
-terminal redraw.
+The browser stage packages the production build in a unique system temporary directory and
+publishes the extracted runtime to `tmp/wkf-next-runtime` before starting Playwright. The temporary
+packaging directory is removed on completion, while the published runtime remains available for a
+detailed `test:e2e:ci` rerun. Set `WKF_PRE_PUSH_STATIC=1` to disable dynamic terminal redraw.
 
 ### `package-e2e-runtime.sh`
 

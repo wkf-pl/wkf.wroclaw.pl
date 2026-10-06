@@ -41,8 +41,8 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
   const post = source === 'posts' ? (document as Post) : null
 
   return {
-    category: getRelationshipId(document.category),
-    eventCycle: event ? getRelationshipId(event.cycle) : null,
+    category: getRelationshipId(document.category) ?? null,
+    eventCycle: event ? (getRelationshipId(event.cycle) ?? null) : null,
     eventEndAt: event?.endAt ?? null,
     eventStartAt: event?.startAt ?? null,
     excerpt:
@@ -50,8 +50,8 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
       post?.excerpt ||
       extractRichTextText(event?.excerpt ?? cycle?.excerpt) ||
       null,
-    heroImage: getRelationshipId(document.heroImage),
-    parentPage: page ? getRelationshipId(page.parent) : null,
+    heroImage: getRelationshipId(document.heroImage) ?? null,
+    parentPage: page ? (getRelationshipId(page.parent) ?? null) : null,
     sortDate: event?.startAt ?? document.publishedAt ?? document.createdAt,
     source,
     sourceDocumentId: document.id,

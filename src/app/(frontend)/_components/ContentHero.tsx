@@ -27,6 +27,7 @@ type ContentHeroProperties = {
 
 type ContentHeroMetaProperties = {
   authorName?: null | string
+  collection?: 'documents' | 'event-cycles' | 'events' | 'pages' | 'partners' | 'posts'
   date?: {
     dateTime: string
     label: string
@@ -95,17 +96,19 @@ export function ContentHeroCategory({ category }: { category?: Category | number
   return <Link href={`/category/${category.slug}`}>{category.name}</Link>
 }
 
-export function ContentHeroMeta({ authorName, date }: ContentHeroMetaProperties) {
-  if (!date && !authorName) {
+export function ContentHeroMeta({ authorName, collection, date }: ContentHeroMetaProperties) {
+  const visibleDate = collection === 'event-cycles' || collection === 'pages' ? undefined : date
+
+  if (collection === 'pages' || (!visibleDate && !authorName)) {
     return null
   }
 
   return (
     <p className="contentHeroMeta">
-      {date ? (
+      {visibleDate ? (
         <span className="contentHeroMetaItem">
           <RasterIcon name="calendar" size="small" />
-          <time dateTime={date.dateTime}>{date.label}</time>
+          <time dateTime={visibleDate.dateTime}>{visibleDate.label}</time>
         </span>
       ) : null}
       {authorName ? (

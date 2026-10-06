@@ -52,6 +52,37 @@ describe('content hero', () => {
     expect(markup).toContain('Autor: Zarząd WKF')
   })
 
+  it('does not render editorial metadata for pages', () => {
+    const markup = renderToStaticMarkup(
+      createElement(ContentHeroMeta, {
+        authorName: 'Zarząd WKF',
+        collection: 'pages',
+        date: {
+          dateTime: '2026-09-07T18:00:00.000Z',
+          label: '7 września 2026',
+        },
+      }),
+    )
+
+    expect(markup).toBe('')
+  })
+
+  it('does not render a publication date for event cycles', () => {
+    const markup = renderToStaticMarkup(
+      createElement(ContentHeroMeta, {
+        authorName: 'Zarząd WKF',
+        collection: 'event-cycles',
+        date: {
+          dateTime: '2026-09-07T18:00:00.000Z',
+          label: '7 września 2026',
+        },
+      }),
+    )
+
+    expect(markup).toContain('Autor: Zarząd WKF')
+    expect(markup).not.toContain('<time')
+  })
+
   it('shows a linked category above the title and only tags below it', () => {
     const category = { id: 1, name: 'Spotkania klubowe', slug: 'spotkania' } as Category
     const tag = { id: 2, name: 'RPG', slug: 'rpg' } as Tag

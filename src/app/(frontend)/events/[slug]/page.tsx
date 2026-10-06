@@ -82,6 +82,7 @@ export default async function EventPage({ params, searchParams }: Properties) {
           { label: 'Wydarzenia', url: '/events' },
           { label: event.title, url: null },
         ]}
+        collection="events"
         description={extractRichTextText(event.excerpt)}
         document={event}
         eyebrow={<EventHeroEyebrow eventStatus={event.eventStatus} eventType={event.eventType} />}

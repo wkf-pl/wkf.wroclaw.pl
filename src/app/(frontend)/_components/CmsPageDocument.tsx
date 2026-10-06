@@ -14,6 +14,7 @@ import { ContentLayoutRenderer } from './ContentLayoutRenderer'
 import { TaxonomyLinks } from './TaxonomyLinks'
 
 type CmsPageDocumentProperties = {
+  collection: 'event-cycles' | 'events' | 'pages' | 'partners' | 'posts'
   document: Event | EventCycle | Page | Partner | Post
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
@@ -39,6 +40,7 @@ const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
 })
 
 export async function CmsPageDocument({
+  collection,
   document,
   pathname,
   searchParams,
@@ -82,7 +84,9 @@ export async function CmsPageDocument({
         >
           {heroContent}
           <TaxonomyLinks tags={tags} />
-          {showHeroMeta ? <ContentHeroMeta authorName={authorName} date={date} /> : null}
+          {showHeroMeta ? (
+            <ContentHeroMeta authorName={authorName} collection={collection} date={date} />
+          ) : null}
         </ContentHero>
 
         <div

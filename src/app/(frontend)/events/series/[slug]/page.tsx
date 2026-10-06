@@ -125,6 +125,7 @@ export default async function EventCyclePage({ params, searchParams }: Propertie
           { label: 'Wydarzenia', url: '/events' },
           { label: cycle.title, url: null },
         ]}
+        collection="event-cycles"
         document={cycle}
         pathname={`/events/series/${cycle.slug}`}
         searchParams={await searchParams}

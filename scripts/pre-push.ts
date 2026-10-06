@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import { rmSync } from 'node:fs'
-import { mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, rename, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { performance } from 'node:perf_hooks'
@@ -50,6 +50,7 @@ export const validationStageGroups = [
 ] as const satisfies readonly (readonly ValidationStageKey[])[]
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const reusableEndToEndRuntimeDirectory = join(projectRoot, 'tmp', 'wkf-next-runtime')
 const staticValidationStageKeys = new Set<ValidationStageKey>(['format', 'lint', 'typecheck'])
 const testValidationStageKeys = new Set<ValidationStageKey>(['unit', 'integration'])
 
@@ -328,17 +329,41 @@ async function runProductionEndToEndTests(): Promise<CommandResult> {
       }
     }
 
+    await replaceReusableEndToEndRuntime(runtimeDirectory, reusableEndToEndRuntimeDirectory)
+
     const testResult = await runPackageScript('test:e2e:ci', {
       CI: '1',
-      WKF_E2E_RUNTIME_DIRECTORY: runtimeDirectory,
+      WKF_E2E_RUNTIME_DIRECTORY: reusableEndToEndRuntimeDirectory,
     })
     return {
       code: testResult.code,
-      output: `${packagingResult.output}\n${extractionResult.output}\n${testResult.output}`,
+      output: [
+        packagingResult.output,
+        extractionResult.output,
+        testResult.output,
+        `Reusable E2E runtime: ${relative(projectRoot, reusableEndToEndRuntimeDirectory)}`,
+      ].join('\n'),
     }
   } finally {
     process.removeListener('exit', cleanupOnExit)
     await rm(temporaryDirectory, { force: true, recursive: true })
+  }
+}
+
+export async function replaceReusableEndToEndRuntime(
+  sourceDirectory: string,
+  destinationDirectory: string,
+): Promise<void> {
+  const destinationParentDirectory = dirname(destinationDirectory)
+  await mkdir(destinationParentDirectory, { recursive: true })
+  const stagedDirectory = await mkdtemp(join(destinationParentDirectory, '.wkf-next-runtime-'))
+
+  try {
+    await cp(sourceDirectory, stagedDirectory, { recursive: true })
+    await rm(destinationDirectory, { force: true, recursive: true })
+    await rename(stagedDirectory, destinationDirectory)
+  } finally {
+    await rm(stagedDirectory, { force: true, recursive: true })
   }
 }
 
