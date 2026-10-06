@@ -5,27 +5,28 @@ max_score: 20
 na_heuristics: 1,3,5,7,9
 p0_count: 0
 p1_count: 3
-target_identity: "file:/home/forseti/Kod/wkf.wroclaw.pl/inline-text:Sekcja RPG"
+target_identity: 'file:/home/forseti/Kod/wkf.wroclaw.pl/inline-text:Sekcja RPG'
 timestamp: 2026-10-05T17-57-44Z
 slug: inline-text-sekcja-rpg
 ---
+
 # Critique tekstu „Sekcja RPG” w ścieżce „O nas” → „Sekcja RPG”
 
 ## Design Health Score
 
-| # | Heurystyka | Wynik | Główny problem |
-|---|---|---:|---|
-| 1 | Widoczność statusu | n/a | Statyczny tekst nie ma stanów ani operacji. |
-| 2 | Zgodność z językiem odbiorcy | 3/4 | Ton jest naturalny, lecz początkujący mogą potrzebować objaśnienia roli Mistrza Gry. |
-| 3 | Kontrola i swoboda | n/a | Brak interaktywnego procesu w ocenianym materiale. |
-| 4 | Spójność i standardy | 3/4 | Głos marki jest spójny, ale konstrukcja wygląda jak ponowne użycie tego samego szablonu. |
-| 5 | Zapobieganie błędom | n/a | Brak formularza lub ryzykownej czynności. |
-| 6 | Rozpoznawanie zamiast przypominania | 2/4 | Inicjatywy nie mają opisów ani rozpoznawalnych ścieżek udziału. |
-| 7 | Elastyczność i efektywność | n/a | Nie dotyczy statycznej strony Persuade/Read. |
-| 8 | Estetyka i minimalizm | 2/4 | Prawie dwukrotnie dłuższy tekst powtarza dużą część argumentacji „O nas”. |
-| 9 | Rozpoznawanie i naprawa błędów | n/a | Brak stanów błędu. |
-| 10 | Pomoc i dokumentacja | 1/4 | Brakuje odpowiedzi, którą inicjatywę wybrać i jak wykonać pierwszy krok. |
-| **Suma** |  | **11/20** | **Akceptowalne, lecz wymaga istotnej zmiany struktury.** |
+| #        | Heurystyka                          |     Wynik | Główny problem                                                                           |
+| -------- | ----------------------------------- | --------: | ---------------------------------------------------------------------------------------- |
+| 1        | Widoczność statusu                  |       n/a | Statyczny tekst nie ma stanów ani operacji.                                              |
+| 2        | Zgodność z językiem odbiorcy        |       3/4 | Ton jest naturalny, lecz początkujący mogą potrzebować objaśnienia roli Mistrza Gry.     |
+| 3        | Kontrola i swoboda                  |       n/a | Brak interaktywnego procesu w ocenianym materiale.                                       |
+| 4        | Spójność i standardy                |       3/4 | Głos marki jest spójny, ale konstrukcja wygląda jak ponowne użycie tego samego szablonu. |
+| 5        | Zapobieganie błędom                 |       n/a | Brak formularza lub ryzykownej czynności.                                                |
+| 6        | Rozpoznawanie zamiast przypominania |       2/4 | Inicjatywy nie mają opisów ani rozpoznawalnych ścieżek udziału.                          |
+| 7        | Elastyczność i efektywność          |       n/a | Nie dotyczy statycznej strony Persuade/Read.                                             |
+| 8        | Estetyka i minimalizm               |       2/4 | Prawie dwukrotnie dłuższy tekst powtarza dużą część argumentacji „O nas”.                |
+| 9        | Rozpoznawanie i naprawa błędów      |       n/a | Brak stanów błędu.                                                                       |
+| 10       | Pomoc i dokumentacja                |       1/4 | Brakuje odpowiedzi, którą inicjatywę wybrać i jak wykonać pierwszy krok.                 |
+| **Suma** |                                     | **11/20** | **Akceptowalne, lecz wymaga istotnej zmiany struktury.**                                 |
 
 ## Werdykt specyficzności
 
@@ -43,14 +44,14 @@ Tekst daje nową wartość, ale zdecydowanie za małą jak na niemal dwukrotnie 
 
 ## Porównanie struktury
 
-| „O nas” | „Sekcja RPG” | Efekt w sekwencji |
-|---|---|---|
-| klub to przede wszystkim społeczność | sekcja to przede wszystkim ludzie | natychmiastowe poczucie powtórki |
-| wspólna pasja rozwija się przez dzielenie | RPG rozwija się jako doświadczenie wspólnotowe | ta sama teza w węższej domenie |
-| inspirujemy się, uczymy i pomagamy sobie | wymieniamy doświadczenia, uczymy się i inspirujemy | niemal identyczna obietnica |
-| miejsce dla weteranów i początkujących | otwartość dla doświadczonych i zaczynających | spójne, ale ponownie obszernie wyjaśnione |
-| tworzymy inicjatywy, wydarzenia i projekty | inicjujemy sesje, spotkania i projekty | ponowienie modelu aktywnej wspólnoty |
-| zaproszenie do znalezienia ludzi i dołączenia | zaproszenie do znalezienia ludzi i poznania społeczności | brak nowego, wykonalnego kroku |
+| „O nas”                                       | „Sekcja RPG”                                             | Efekt w sekwencji                         |
+| --------------------------------------------- | -------------------------------------------------------- | ----------------------------------------- |
+| klub to przede wszystkim społeczność          | sekcja to przede wszystkim ludzie                        | natychmiastowe poczucie powtórki          |
+| wspólna pasja rozwija się przez dzielenie     | RPG rozwija się jako doświadczenie wspólnotowe           | ta sama teza w węższej domenie            |
+| inspirujemy się, uczymy i pomagamy sobie      | wymieniamy doświadczenia, uczymy się i inspirujemy       | niemal identyczna obietnica               |
+| miejsce dla weteranów i początkujących        | otwartość dla doświadczonych i zaczynających             | spójne, ale ponownie obszernie wyjaśnione |
+| tworzymy inicjatywy, wydarzenia i projekty    | inicjujemy sesje, spotkania i projekty                   | ponowienie modelu aktywnej wspólnoty      |
+| zaproszenie do znalezienia ludzi i dołączenia | zaproszenie do znalezienia ludzi i poznania społeczności | brak nowego, wykonalnego kroku            |
 
 Korzystne jest zachowanie wspólnotowego, niekomercyjnego tonu oraz otwartości na nowych uczestników. Niekorzystne jest ponowne rozwinięcie całej filozofii klubu zamiast krótkiego pomostu do treści charakterystycznej dla RPG.
 

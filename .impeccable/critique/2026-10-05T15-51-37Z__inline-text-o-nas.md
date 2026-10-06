@@ -5,27 +5,28 @@ max_score: 16
 na_heuristics: 1,3,5,7,9,10
 p0_count: 0
 p1_count: 2
-target_identity: "file:/home/forseti/Kod/wkf.wroclaw.pl/inline-text:O nas"
+target_identity: 'file:/home/forseti/Kod/wkf.wroclaw.pl/inline-text:O nas'
 timestamp: 2026-10-05T15-51-37Z
 slug: inline-text-o-nas
 ---
+
 # Ocena tekstu strony „O nas”
 
 ## Design Health Score
 
-| # | Heurystyka | Wynik | Główny problem |
-|---|---|---:|---|
-| 1 | Widoczność statusu | n/a | Statyczny tekst nie ma stanu systemu. |
-| 2 | Zgodność z językiem odbiorcy | 3/4 | Język jest naturalny, lecz opis organizacji pozostaje abstrakcyjny. |
-| 3 | Kontrola i swoboda | n/a | Brak interaktywnego procesu w ocenianym materiale. |
-| 4 | Spójność i standardy | 2/4 | Otwartość wobec początkujących zderza się z warunkiem „więcej niż hobby”. |
-| 5 | Zapobieganie błędom | n/a | Brak formularza lub ryzykownej czynności. |
-| 6 | Rozpoznawanie zamiast przypominania | 2/4 | Łatwo rozpoznać zainteresowania, trudno rozpoznać realną ofertę i kolejny krok. |
-| 7 | Elastyczność i efektywność | n/a | Nie dotyczy statycznego tekstu Persuade/Read. |
-| 8 | Estetyka i minimalizm | 2/4 | Powtórzenia oraz dwa długie wyliczenia spłaszczają hierarchię. |
-| 9 | Rozpoznawanie i naprawa błędów | n/a | Brak stanów błędu. |
-| 10 | Pomoc i dokumentacja | n/a | Nie jest to mechanizm pomocy dla zadania. |
-| **Suma** |  | **9/16** | **Akceptowalna podstawa, wymagająca konkretyzacji.** |
+| #        | Heurystyka                          |    Wynik | Główny problem                                                                  |
+| -------- | ----------------------------------- | -------: | ------------------------------------------------------------------------------- |
+| 1        | Widoczność statusu                  |      n/a | Statyczny tekst nie ma stanu systemu.                                           |
+| 2        | Zgodność z językiem odbiorcy        |      3/4 | Język jest naturalny, lecz opis organizacji pozostaje abstrakcyjny.             |
+| 3        | Kontrola i swoboda                  |      n/a | Brak interaktywnego procesu w ocenianym materiale.                              |
+| 4        | Spójność i standardy                |      2/4 | Otwartość wobec początkujących zderza się z warunkiem „więcej niż hobby”.       |
+| 5        | Zapobieganie błędom                 |      n/a | Brak formularza lub ryzykownej czynności.                                       |
+| 6        | Rozpoznawanie zamiast przypominania |      2/4 | Łatwo rozpoznać zainteresowania, trudno rozpoznać realną ofertę i kolejny krok. |
+| 7        | Elastyczność i efektywność          |      n/a | Nie dotyczy statycznego tekstu Persuade/Read.                                   |
+| 8        | Estetyka i minimalizm               |      2/4 | Powtórzenia oraz dwa długie wyliczenia spłaszczają hierarchię.                  |
+| 9        | Rozpoznawanie i naprawa błędów      |      n/a | Brak stanów błędu.                                                              |
+| 10       | Pomoc i dokumentacja                |      n/a | Nie jest to mechanizm pomocy dla zadania.                                       |
+| **Suma** |                                     | **9/16** | **Akceptowalna podstawa, wymagająca konkretyzacji.**                            |
 
 ## Werdykt specyficzności
 

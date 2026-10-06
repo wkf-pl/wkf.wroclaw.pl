@@ -477,7 +477,7 @@
 .contentList {
   display: grid;
   gap: 1.5rem;
-  width: min(62rem, 100%);
+  /*width: min(62rem, 100%);*/
   margin: 0 auto;
 }
 

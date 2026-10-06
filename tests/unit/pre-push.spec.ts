@@ -1,3 +1,5 @@
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import process from 'node:process'
 
@@ -13,6 +15,7 @@ import {
   formatDuration,
   formatValidationFailureDetails,
   getFailedValidationStages,
+  replaceReusableEndToEndRuntime,
   validationStageOrder,
   type CommandResult,
   type ValidationStageExecutor,
@@ -20,6 +23,31 @@ import {
 } from '../../scripts/pre-push'
 
 describe('pre-push validation', () => {
+  it('replaces a stale reusable E2E runtime with the runtime used by pre-push', async () => {
+    const temporaryDirectory = await mkdtemp(join(tmpdir(), 'wkf-pre-push-runtime-test-'))
+    const sourceDirectory = join(temporaryDirectory, 'source')
+    const reusableDirectory = join(temporaryDirectory, 'reusable')
+
+    try {
+      await mkdir(sourceDirectory)
+      await mkdir(reusableDirectory)
+      await writeFile(join(sourceDirectory, 'server.js'), 'current runtime')
+      await writeFile(join(reusableDirectory, 'server.js'), 'stale runtime')
+      await writeFile(join(reusableDirectory, 'stale.txt'), 'remove me')
+
+      await replaceReusableEndToEndRuntime(sourceDirectory, reusableDirectory)
+
+      await expect(readFile(join(reusableDirectory, 'server.js'), 'utf8')).resolves.toBe(
+        'current runtime',
+      )
+      await expect(readFile(join(reusableDirectory, 'stale.txt'), 'utf8')).rejects.toMatchObject({
+        code: 'ENOENT',
+      })
+    } finally {
+      await rm(temporaryDirectory, { force: true, recursive: true })
+    }
+  })
+
   it('runs static checks concurrently and resource-heavy test suites sequentially', async () => {
     const controlledExecutor = createControlledExecutor()
     const stages = createInitialValidationStages()

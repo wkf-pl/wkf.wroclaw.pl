@@ -78,7 +78,9 @@ describe('integration test environment', () => {
   it('runs CI end-to-end tests against the isolated test environment', () => {
     const packageConfiguration = readFileSync('package.json', 'utf8')
     const packageScripts = JSON.parse(packageConfiguration).scripts as Record<string, string>
+    const prePushScript = readFileSync('scripts/pre-push.ts', 'utf8')
     const runtimePackagingScript = readFileSync('scripts/package-e2e-runtime.sh', 'utf8')
+    const scriptsDocumentation = readFileSync('scripts/README.md', 'utf8')
     const playwrightConfiguration = readFileSync('playwright.config.ts', 'utf8')
 
     expect(packageScripts['prepare:e2e']).toContain('scripts/seed.ts')
@@ -95,6 +97,18 @@ describe('integration test environment', () => {
     expect(runtimePackagingScript).toContain('standalone')
     expect(runtimePackagingScript).toContain('runtime_distribution_directory')
     expect(runtimePackagingScript).toContain('public')
+    expect(prePushScript).toContain(
+      'replaceReusableEndToEndRuntime(runtimeDirectory, reusableEndToEndRuntimeDirectory)',
+    )
+    expect(prePushScript).toContain('WKF_E2E_RUNTIME_DIRECTORY: reusableEndToEndRuntimeDirectory')
+    expect(scriptsDocumentation).toContain(
+      '`test:e2e:ci` deliberately consumes an existing runtime instead of building one.',
+    )
+    expect(scriptsDocumentation).toContain('pnpm test:e2e:ci --grep')
+    expect(scriptsDocumentation).not.toContain('pnpm test:e2e:ci -- --grep')
+    for (const scriptName of Object.keys(packageScripts)) {
+      expect(scriptsDocumentation).toContain(`pnpm ${scriptName}`)
+    }
     expect(playwrightConfiguration).toContain('PLAYWRIGHT_OUTPUT_DIR')
     expect(playwrightConfiguration).toContain('PLAYWRIGHT_HTML_OUTPUT_DIR')
     expect(playwrightConfiguration).toContain("join(tmpdir(), 'wkf-online-playwright-results')")

@@ -63,8 +63,9 @@ pnpm verify:compose
 pipeline with a terminal dashboard: formatting check, lint, typecheck, unit and integration tests,
 production build, and production-mode browser tests.
 
-See the [operational scripts reference](scripts/README.md) for the implementation entry points
-behind development, test preparation, staging data operations, and Azure deployments.
+See the [pnpm command and operational scripts reference](scripts/README.md#pnpm-command-reference)
+for every `package.json` command, including how to rerun detailed E2E diagnostics against the
+production runtime created by `pnpm pre-push`.
 
 ## Structure
 
