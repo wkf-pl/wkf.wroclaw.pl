@@ -125,10 +125,6 @@
   gap: clamp(1.5rem, 3vw, 2.5rem);
 }
 
-.sectionGroupSection + .sectionGroupSection {
-  border-top: 1px solid var(--surface-line, rgb(243 163 19 / 42%));
-}
-
 .contentPresentation--sectionGroup:not(.contentPresentation--decorated)
   .sectionGroupSection
   + .sectionGroupSection {
@@ -138,6 +134,13 @@
 .sectionGroupSection > .contentPresentationContent {
   display: grid;
   padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.sectionGroupSections
+  > .sectionGroupSection.contentPresentation--transparent
+  + .sectionGroupSection.contentPresentation--transparent
+  > .contentPresentationContent {
+  padding-top: 0;
 }
 
 .sectionGroupSection > .contentPresentationContent > .contentPresentationBody {

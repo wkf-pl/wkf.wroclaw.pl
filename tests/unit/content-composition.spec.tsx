@@ -75,6 +75,18 @@ describe('content composition', () => {
     expect(frontendStyles).toContain('--column-gap: clamp(1.5rem, 3.5vw, 2.5rem)')
   })
 
+  it('removes top padding from content in subsequent transparent grouped sections', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(
+      /\.sectionGroupSections\s*>\s*\.sectionGroupSection\.contentPresentation--transparent\s*\+\s*\.sectionGroupSection\.contentPresentation--transparent\s*>\s*\.contentPresentationContent\s*{\s*padding-top: 0;\s*}/,
+    )
+    expect(frontendStyles).not.toContain(
+      '.contentPresentationContent + .contentPresentationContent',
+    )
+    expect(frontendStyles).not.toContain('padding-top: 0 !important')
+  })
+
   it('creates one stable surface-field contract for every consumer', () => {
     const describeFields = () =>
       createContentPresentationFields().map((field) => ({

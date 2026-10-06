@@ -15,6 +15,7 @@ export function CmsDocument({ document, searchParams }: CmsDocumentProperties) {
         { label: 'Aktualności', url: '/blog' },
         { label: document.title, url: null },
       ]}
+      collection="posts"
       document={document}
       pathname={`/blog/${document.slug}`}
       searchParams={searchParams}

@@ -24,7 +24,12 @@ export default async function EventsPage({
     findPastEvents(page),
   ])
   const introduction = systemPage ? (
-    <CmsPageDocument document={systemPage} pathname="/events" searchParams={parameters} />
+    <CmsPageDocument
+      collection="pages"
+      document={systemPage}
+      pathname="/events"
+      searchParams={parameters}
+    />
   ) : null
 
   return (

@@ -408,7 +408,7 @@
 
 .pageBlocks {
   display: grid;
-  gap: clamp(2.5rem, 6vw, 5rem);
+  gap: 2rem;
 }
 
 :is(.listingBlock, .documentsBlock, .mediaBlock, .memberProfilesBlock) {
@@ -491,11 +491,16 @@
 }
 
 .contentCardImage {
-  min-height: 15rem;
+  display: block;
+  align-self: start;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 16 / 9;
   background: var(--panel);
 }
 
 .contentCardImage img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -543,10 +548,6 @@
 .contentList-grid .contentCard {
   display: flex;
   flex-direction: column;
-}
-
-.contentList-grid .contentCardImage {
-  min-height: 12rem;
 }
 
 .contentList-grid .contentCardContent {

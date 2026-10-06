@@ -63,6 +63,7 @@ export default async function PartnerPage({ params, searchParams }: Properties) 
           { label: 'Strona główna', url: '/' },
           { label: partner.name, url: null },
         ]}
+        collection="partners"
         document={partner}
         eyebrow="Partner"
         pathname={`/partners/${partner.slug}`}

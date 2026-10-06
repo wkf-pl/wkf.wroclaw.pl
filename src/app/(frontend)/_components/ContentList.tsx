@@ -43,7 +43,7 @@ export function ContentList({ emptyMessage, items, view }: ContentListProperties
           <div className="contentCardContent">
             <p className="contentCardMeta">
               <span>{contentKindLabels[item.kind]}</span>
-              {item.date ? (
+              {item.kind !== 'event-cycles' && item.kind !== 'pages' && item.date ? (
                 <time dateTime={item.date}>{dateFormatter.format(new Date(item.date))}</time>
               ) : null}
             </p>

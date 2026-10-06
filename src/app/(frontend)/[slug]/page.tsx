@@ -33,7 +33,12 @@ export default async function StaticPage({ params, searchParams }: PagePropertie
   return (
     <>
       {isDraftPreview ? <DraftPreviewBanner pathname={pathname} /> : null}
-      <CmsPageDocument document={page} pathname={pathname} searchParams={resolvedSearchParams} />
+      <CmsPageDocument
+        collection="pages"
+        document={page}
+        pathname={pathname}
+        searchParams={resolvedSearchParams}
+      />
     </>
   )
 }
