@@ -11,7 +11,7 @@ type ContentPresentationProperties = {
   children: ReactNode
   className?: string
   columnWidth?: number | null
-  placement: 'block' | 'column' | 'layout' | 'section' | 'sectionGroup'
+  placement: 'block' | 'column' | 'layout' | 'section' | 'sectionGroup' | 'tab'
   presentation: ResolvedContentPresentation
   style?: CSSProperties
 }

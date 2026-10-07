@@ -10,6 +10,13 @@ import type { CardBlock as CardBlockData, Page } from '@/payload-types'
 import { readFrontendStyles } from '../helpers/frontend-styles'
 
 describe('card block', () => {
+  it('uses a dedicated semantic block thumbnail', () => {
+    expect(CardBlock.admin?.images?.thumbnail).toEqual({
+      alt: 'Schematyczna ikona karty z obrazem i odnośnikami',
+      url: '/assets/block-thumbnails/card.png',
+    })
+  })
+
   it('defines a title, optional linked page, raster image and configurable links', () => {
     expect(CardBlock.fields).toMatchObject([
       { label: 'Tytuł', name: 'title', required: true, type: 'text' },

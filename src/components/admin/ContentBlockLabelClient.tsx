@@ -176,6 +176,12 @@ export function ListingBlockLabelClient() {
   return <BlockLabel prefix="Listing" value={getPresentationDescription(data)} />
 }
 
+export function ContentCalendarBlockLabelClient() {
+  const { data } = useRowLabel<PresentedBlockData>()
+
+  return <BlockLabel prefix="Kalendarz" value={getPresentationDescription(data)} />
+}
+
 export function MediaGalleryBlockLabelClient() {
   const { data } = useRowLabel<PresentedBlockData>()
 

@@ -14,6 +14,7 @@ import type {
   AttachmentsBlock,
   CardBlock,
   ColumnLayoutBlock,
+  ContentCalendarBlock,
   DocumentsBlock,
   Event,
   EventCycle,
@@ -32,6 +33,7 @@ import type {
 
 import { ContentHeading, ContentPresentation } from './ContentPresentation'
 import { CardBlockSection } from './CardBlockSection'
+import { ContentCalendarBlockSection } from './ContentCalendarBlockSection'
 import { DocumentBlockSection } from './DocumentBlockSection'
 import { ListingBlockSection } from './ListingBlockSection'
 import { MediaBlockSection } from './MediaBlockSection'
@@ -44,6 +46,7 @@ type ContentLeafBlock =
   | ActionLinksBlock
   | AttachmentsBlock
   | CardBlock
+  | ContentCalendarBlock
   | DocumentsBlock
   | HeadingBlock
   | ListingBlock
@@ -189,6 +192,7 @@ async function TabbedContentRenderer({
             key={nestedBlock.id ?? nestedPath}
             path={nestedPath}
             pathname={pathname}
+            presentationPlacement="tab"
             searchParams={searchParams}
           />
         )
@@ -355,10 +359,12 @@ export async function ContentLeafBlockRenderer({
   document,
   path,
   pathname,
+  presentationPlacement = 'block',
   searchParams,
 }: ContentRendererProperties & {
   block: ContentLeafBlock
   path: string
+  presentationPlacement?: 'block' | 'tab'
 }) {
   if (block.blockType === 'heading') {
     return <ContentHeading heading={normalizeContentHeading(block as ContentHeadingData)} />
@@ -403,7 +409,7 @@ export async function ContentLeafBlockRenderer({
 
   return (
     <ContentPresentation
-      placement="block"
+      placement={presentationPlacement}
       presentation={normalizeContentPresentation(block as ContentPresentationData)}
     >
       {content}
@@ -454,5 +460,7 @@ async function renderPresentedLeafBlock({
         pathname,
         searchParams,
       })
+    case 'contentCalendar':
+      return ContentCalendarBlockSection({ block })
   }
 }

@@ -1,7 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-import { EventCalendar } from '@/app/(frontend)/_components/EventCalendar'
+import { ContentCalendar, EventCalendar } from '@/app/(frontend)/_components/EventCalendar'
+import type { ContentCalendarMonthPayload } from '@/modules/content/content-calendar-presentation'
 import {
   getCalendarEventDate,
   getCalendarMonthBounds,
@@ -44,6 +45,55 @@ const calendarData: CalendarMonthPayload = {
 }
 
 describe('Event calendar', () => {
+  it('renders mixed Event and Post content without an unrelated calendar subscription', () => {
+    const mixedData: ContentCalendarMonthPayload = {
+      itemTypes: [
+        { id: 'event-type:1', iconColor: 'lantern-glow', iconName: 'dice', name: 'Sesje RPG' },
+        { id: 'posts', iconColor: 'mist-silver', iconName: 'book', name: 'Wpisy' },
+      ],
+      items: [
+        {
+          dateTime: '2026-09-08T16:00:00.000Z',
+          id: 'events:1',
+          kind: 'events',
+          summary: { kind: 'richText', value: firstExcerpt },
+          title: 'Erpegowy Wtorek',
+          type: {
+            id: 'event-type:1',
+            iconColor: 'lantern-glow',
+            iconName: 'dice',
+            name: 'Sesje RPG',
+          },
+          url: '/events/erpegowy-wtorek',
+        },
+        {
+          dateTime: '2026-09-08T09:00:00.000Z',
+          id: 'posts:1',
+          kind: 'posts',
+          summary: { kind: 'text', value: 'Aktualność klubowa.' },
+          title: 'Nowy wpis',
+          type: { id: 'posts', iconColor: 'mist-silver', iconName: 'book', name: 'Wpisy' },
+          url: '/blog/nowy-wpis',
+        },
+      ],
+      truncated: false,
+    }
+    const markup = renderToStaticMarkup(
+      <ContentCalendar
+        endpoint="/content/calendar.json?source=events&amp;source=posts"
+        initialData={mixedData}
+        initialMonth="2026-09"
+      />,
+    )
+
+    expect(markup).toContain('aria-label="8, treści: 2: Erpegowy Wtorek, Nowy wpis"')
+    expect(markup).toContain('href="/events/erpegowy-wtorek"')
+    expect(markup).toContain('href="/blog/nowy-wpis"')
+    expect(markup).toContain('Aktualność klubowa.')
+    expect(markup).toContain('Czytaj wpis')
+    expect(markup).not.toContain('Subskrybuj kalendarz WKF')
+  })
+
   it('renders the month, weekday grid, type legend and all types for an occupied day', () => {
     const markup = renderToStaticMarkup(
       <EventCalendar initialData={calendarData} initialMonth="2026-09" />,

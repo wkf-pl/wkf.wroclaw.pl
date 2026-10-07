@@ -62,7 +62,7 @@ export const TabbedContentBlock: Block = {
     images: {
       thumbnail: {
         alt: 'Schematyczna ikona treści przełączanej zakładkami',
-        url: '/assets/block-thumbnails/section-group.png',
+        url: '/assets/block-thumbnails/tabbed-content.png',
       },
     },
   },

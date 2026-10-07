@@ -12,6 +12,7 @@ export type ContentPresentationReference = {
 
 const presentedLeafBlockTypes = new Set([
   'attachments',
+  'contentCalendar',
   'documents',
   'listing',
   'mediaGallery',

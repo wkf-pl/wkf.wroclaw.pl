@@ -41,6 +41,7 @@ import * as migration_20261006_204500_repair_content_listing_relationships from 
 import * as migration_20261006_231853 from './20261006_231853'
 import * as migration_20261006_235915_card_block_and_homepage_content from './20261006_235915_card_block_and_homepage_content'
 import * as migration_20261007_125027_tabbed_content_block from './20261007_125027_tabbed_content_block'
+import * as migration_20261007_133416_content_calendar_block from './20261007_133416_content_calendar_block'
 
 export const migrations = [
   {
@@ -257,5 +258,10 @@ export const migrations = [
     up: migration_20261007_125027_tabbed_content_block.up,
     down: migration_20261007_125027_tabbed_content_block.down,
     name: '20261007_125027_tabbed_content_block',
+  },
+  {
+    up: migration_20261007_133416_content_calendar_block.up,
+    down: migration_20261007_133416_content_calendar_block.down,
+    name: '20261007_133416_content_calendar_block',
   },
 ]

@@ -5,7 +5,12 @@ import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-conf
 const filtersCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.selectionMode === 'filters'
 
-export function createListingTaxonomyRow({ conditional = false } = {}): Field {
+export function createListingTaxonomyRow({
+  conditional = false,
+  trailingField,
+}: { conditional?: boolean; trailingField?: Field } = {}): Field {
+  const taxonomyFieldWidth = trailingField ? '33.333%' : '50%'
+
   return {
     type: 'row',
     fields: [
@@ -15,7 +20,7 @@ export function createListingTaxonomyRow({ conditional = false } = {}): Field {
         admin: {
           condition: conditional ? filtersCondition : undefined,
           placeholder: '<brak>',
-          width: '50%',
+          width: taxonomyFieldWidth,
         },
         label: 'Kategoria',
         relationTo: 'categories',
@@ -26,11 +31,12 @@ export function createListingTaxonomyRow({ conditional = false } = {}): Field {
         admin: {
           condition: conditional ? filtersCondition : undefined,
           placeholder: '<brak>',
-          width: '50%',
+          width: taxonomyFieldWidth,
         },
         label: 'Tag',
         relationTo: 'tags',
       },
+      ...(trailingField ? [trailingField] : []),
     ],
   }
 }

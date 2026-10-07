@@ -1,6 +1,7 @@
 import type { Block } from 'payload'
 
 import { DocumentsBlock } from './Documents'
+import { ContentCalendarBlock } from './ContentCalendar'
 import { ListingBlock } from './Listing'
 import { AttachmentsBlock, MediaGalleryBlock } from './MediaListing'
 import { MemberProfilesBlock } from './MemberProfiles'
@@ -15,6 +16,7 @@ export const contentLeafBlocks: Block[] = [
   ActionLinksBlock,
   CardBlock,
   ListingBlock,
+  ContentCalendarBlock,
   MediaGalleryBlock,
   DocumentsBlock,
   AttachmentsBlock,

@@ -35,6 +35,13 @@ function getTabBlocksField(): BlocksField {
 }
 
 describe('tabbed content block', () => {
+  it('uses a dedicated semantic block thumbnail', () => {
+    expect(TabbedContentBlock.admin?.images?.thumbnail).toEqual({
+      alt: 'Schematyczna ikona treści przełączanej zakładkami',
+      url: '/assets/block-thumbnails/tabbed-content.png',
+    })
+  })
+
   it('defines two default tabs and excludes nested section groups', () => {
     const tabsField = getTabsField()
     const blockSlugs = getTabBlocksField().blocks.map((block) => block.slug)

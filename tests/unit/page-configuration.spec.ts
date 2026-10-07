@@ -6,12 +6,14 @@ import { describe, expect, it } from 'vitest'
 import { AttachmentsBlock, MediaGalleryBlock } from '@/blocks/MediaListing'
 import { ActionLinksBlock } from '@/blocks/ActionLinks'
 import { CardBlock } from '@/blocks/Card'
+import { ContentCalendarBlock, validateContentCalendarSources } from '@/blocks/ContentCalendar'
 import { ColumnLayoutBlock } from '@/blocks/ColumnLayout'
 import { DocumentsBlock } from '@/blocks/Documents'
 import { HeadingBlock } from '@/blocks/Heading'
 import { MemberProfilesBlock } from '@/blocks/MemberProfiles'
 import { RichTextBlock } from '@/blocks/RichText'
 import { SectionGroupBlock } from '@/blocks/SectionGroup'
+import { TabbedContentBlock } from '@/blocks/TabbedContent'
 import {
   ListingBlock,
   validateListingSources,
@@ -94,8 +96,10 @@ describe('page configuration', () => {
       HeadingBlock.admin?.images?.thumbnail,
       ActionLinksBlock.admin?.images?.thumbnail,
       CardBlock.admin?.images?.thumbnail,
+      ContentCalendarBlock.admin?.images?.thumbnail,
       ColumnLayoutBlock.admin?.images?.thumbnail,
       SectionGroupBlock.admin?.images?.thumbnail,
+      TabbedContentBlock.admin?.images?.thumbnail,
     ]).toEqual([
       {
         alt: 'Schematyczna ikona dokumentu z tekstem i piórem',
@@ -131,7 +135,11 @@ describe('page configuration', () => {
       },
       {
         alt: 'Schematyczna ikona karty z obrazem i odnośnikami',
-        url: '/assets/block-thumbnails/listing.png',
+        url: '/assets/block-thumbnails/card.png',
+      },
+      {
+        alt: 'Schematyczna ikona kalendarza z siatką dni',
+        url: '/assets/block-thumbnails/calendar.png',
       },
       {
         alt: 'Schematyczna ikona układu kolumnowego',
@@ -140,6 +148,10 @@ describe('page configuration', () => {
       {
         alt: 'Schematyczna ikona sekcji objętych wspólną ramką',
         url: '/assets/block-thumbnails/section-group.png',
+      },
+      {
+        alt: 'Schematyczna ikona treści przełączanej zakładkami',
+        url: '/assets/block-thumbnails/tabbed-content.png',
       },
     ])
   })
@@ -155,6 +167,7 @@ describe('page configuration', () => {
       HeadingBlock.admin?.group,
       ActionLinksBlock.admin?.group,
       CardBlock.admin?.group,
+      ContentCalendarBlock.admin?.group,
       ColumnLayoutBlock.admin?.group,
       SectionGroupBlock.admin?.group,
     ]).toEqual([
@@ -164,6 +177,7 @@ describe('page configuration', () => {
       'Treści',
       'Treści',
       'Treści',
+      'Elementy',
       'Elementy',
       'Elementy',
       'Elementy',
@@ -299,6 +313,35 @@ describe('page configuration', () => {
         { admin: { width: '33.333%' }, name: 'pagination' },
       ],
     })
+  })
+
+  it('configures the content calendar with Listing-compatible filters', () => {
+    const sourceField = findField(ContentCalendarBlock.fields, 'sources')
+    const eventCycleField = findField(ContentCalendarBlock.fields, 'eventCycle')
+
+    expect(describeFieldOrder(ContentCalendarBlock.fields.slice(3))).toEqual([
+      'sources',
+      ['category', 'tag', 'eventCycle'],
+    ])
+    expect(sourceField).toMatchObject({
+      defaultValue: ['events', 'posts'],
+      hasMany: true,
+      label: 'Typy treści',
+      options: [
+        { label: 'Wydarzenia', value: 'events' },
+        { label: 'Wpisy', value: 'posts' },
+      ],
+      required: true,
+      type: 'select',
+    })
+    expect(eventCycleField).toMatchObject({
+      admin: { width: '33.333%' },
+      label: 'Cykl wydarzeń',
+      relationTo: 'event-cycles',
+      type: 'relationship',
+    })
+    expect(validateContentCalendarSources([], {} as never)).toBeTypeOf('string')
+    expect(validateContentCalendarSources(['events', 'posts'], {} as never)).toBe(true)
   })
 
   it('supports ordered manual Listing items from every content source', () => {

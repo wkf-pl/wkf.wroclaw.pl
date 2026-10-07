@@ -14,7 +14,7 @@ export const CardBlock: Block = {
     images: {
       thumbnail: {
         alt: 'Schematyczna ikona karty z obrazem i odnośnikami',
-        url: '/assets/block-thumbnails/listing.png',
+        url: '/assets/block-thumbnails/card.png',
       },
     },
   },
