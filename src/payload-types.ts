@@ -292,6 +292,7 @@ export interface Page {
     | ActionLinksBlock
     | CardBlock
     | ListingBlock
+    | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
     | DocumentsBlock
@@ -590,6 +591,7 @@ export interface EventCycle {
     | ActionLinksBlock
     | CardBlock
     | ListingBlock
+    | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
     | DocumentsBlock
@@ -635,6 +637,7 @@ export interface EventCycle {
       | ActionLinksBlock
       | CardBlock
       | ListingBlock
+      | CarouselBlock
       | ContentCalendarBlock
       | MediaGalleryBlock
       | DocumentsBlock
@@ -1044,6 +1047,7 @@ export interface Post {
     | ActionLinksBlock
     | CardBlock
     | ListingBlock
+    | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
     | DocumentsBlock
@@ -1110,6 +1114,7 @@ export interface Event {
     | ActionLinksBlock
     | CardBlock
     | ListingBlock
+    | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
     | DocumentsBlock
@@ -1335,6 +1340,56 @@ export interface ListingBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'listing';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CarouselBlock".
+ */
+export interface CarouselBlock {
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  selectionMode: 'manual' | 'filters';
+  items?:
+    | {
+        item:
+          | {
+              relationTo: 'pages';
+              value: number | Page;
+            }
+          | {
+              relationTo: 'posts';
+              value: number | Post;
+            }
+          | {
+              relationTo: 'events';
+              value: number | Event;
+            }
+          | {
+              relationTo: 'event-cycles';
+              value: number | EventCycle;
+            };
+        id?: string | null;
+      }[]
+    | null;
+  sources?: ('pages' | 'posts' | 'events' | 'event-cycles')[] | null;
+  parentPage?: (number | null) | Page;
+  category?: (number | null) | Category;
+  tag?: (number | null) | Tag;
+  eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
+  eventCycle?: (number | null) | EventCycle;
+  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending') | null;
+  slideLimit: number;
+  parentFilter: 'none' | 'current' | 'specific';
+  emptyMessage?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'carousel';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1639,6 +1694,7 @@ export interface ColumnLayoutBlock {
           | ActionLinksBlock
           | CardBlock
           | ListingBlock
+          | CarouselBlock
           | ContentCalendarBlock
           | MediaGalleryBlock
           | DocumentsBlock
@@ -1680,6 +1736,7 @@ export interface SectionGroupBlock {
       | ActionLinksBlock
       | CardBlock
       | ListingBlock
+      | CarouselBlock
       | ContentCalendarBlock
       | MediaGalleryBlock
       | DocumentsBlock
@@ -2020,6 +2077,7 @@ export interface TabbedContentBlock {
           | ActionLinksBlock
           | CardBlock
           | ListingBlock
+          | CarouselBlock
           | ContentCalendarBlock
           | MediaGalleryBlock
           | DocumentsBlock
@@ -2050,6 +2108,7 @@ export interface Partner {
     | ActionLinksBlock
     | CardBlock
     | ListingBlock
+    | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
     | DocumentsBlock
@@ -2365,6 +2424,7 @@ export interface PagesSelect<T extends boolean = true> {
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         documents?: T | DocumentsBlockSelect<T>;
@@ -2525,6 +2585,36 @@ export interface ListingBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CarouselBlock_select".
+ */
+export interface CarouselBlockSelect<T extends boolean = true> {
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
+  selectionMode?: T;
+  items?:
+    | T
+    | {
+        item?: T;
+        id?: T;
+      };
+  sources?: T;
+  parentPage?: T;
+  category?: T;
+  tag?: T;
+  eventTimeFilter?: T;
+  eventCycle?: T;
+  sort?: T;
+  slideLimit?: T;
+  parentFilter?: T;
+  emptyMessage?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ContentCalendarBlock_select".
  */
 export interface ContentCalendarBlockSelect<T extends boolean = true> {
@@ -2671,6 +2761,7 @@ export interface ColumnLayoutBlockSelect<T extends boolean = true> {
               actionLinks?: T | ActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
               listing?: T | ListingBlockSelect<T>;
+              carousel?: T | CarouselBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               documents?: T | DocumentsBlockSelect<T>;
@@ -2708,6 +2799,7 @@ export interface SectionGroupBlockSelect<T extends boolean = true> {
               actionLinks?: T | ActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
               listing?: T | ListingBlockSelect<T>;
+              carousel?: T | CarouselBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               documents?: T | DocumentsBlockSelect<T>;
@@ -2804,6 +2896,7 @@ export interface TabbedContentBlockSelect<T extends boolean = true> {
               actionLinks?: T | ActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
               listing?: T | ListingBlockSelect<T>;
+              carousel?: T | CarouselBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               documents?: T | DocumentsBlockSelect<T>;
@@ -2834,6 +2927,7 @@ export interface PostsSelect<T extends boolean = true> {
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         documents?: T | DocumentsBlockSelect<T>;
@@ -2877,6 +2971,7 @@ export interface EventsSelect<T extends boolean = true> {
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         documents?: T | DocumentsBlockSelect<T>;
@@ -2978,6 +3073,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         documents?: T | DocumentsBlockSelect<T>;
@@ -3009,6 +3105,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
               actionLinks?: T | ActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
               listing?: T | ListingBlockSelect<T>;
+              carousel?: T | CarouselBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               documents?: T | DocumentsBlockSelect<T>;
@@ -3301,6 +3398,7 @@ export interface PartnersSelect<T extends boolean = true> {
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         documents?: T | DocumentsBlockSelect<T>;
@@ -3742,6 +3840,7 @@ export interface HomepageSection {
     | ActionLinksBlock
     | CardBlock
     | ListingBlock
+    | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
     | DocumentsBlock
@@ -4092,6 +4191,7 @@ export interface HomepageSectionsSelect<T extends boolean = true> {
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         documents?: T | DocumentsBlockSelect<T>;

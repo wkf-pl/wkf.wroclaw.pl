@@ -107,7 +107,14 @@
 .contentPresentation--block
   > .contentPresentationContent
   > .contentPresentationBody
-  > :is(.richText, .listingBlock, .documentsBlock, .mediaBlock, .memberProfilesBlock) {
+  > :is(
+    .richText,
+    .listingBlock,
+    .contentCarousel,
+    .documentsBlock,
+    .mediaBlock,
+    .memberProfilesBlock
+  ) {
   width: 100%;
   max-width: none;
   margin-inline: 0;

@@ -512,6 +512,12 @@
   }
 }
 
+@media (min-width: 1441px) {
+  .blocks-drawer__blocks {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+
 .wkf-content-block-label {
   display: inline-flex;
   min-width: 0;

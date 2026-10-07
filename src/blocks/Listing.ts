@@ -11,7 +11,7 @@ type ListingSiblingData = {
   sources?: unknown
 }
 
-const listingSources = ['pages', 'posts', 'events', 'event-cycles'] as const
+export const listingSources = ['pages', 'posts', 'events', 'event-cycles'] as const
 
 const filtersCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.selectionMode === 'filters'

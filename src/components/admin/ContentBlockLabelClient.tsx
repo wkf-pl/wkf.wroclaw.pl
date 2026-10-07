@@ -176,6 +176,12 @@ export function ListingBlockLabelClient() {
   return <BlockLabel prefix="Listing" value={getPresentationDescription(data)} />
 }
 
+export function CarouselBlockLabelClient() {
+  const { data } = useRowLabel<PresentedBlockData>()
+
+  return <BlockLabel prefix="Karuzela" value={getPresentationDescription(data)} />
+}
+
 export function ContentCalendarBlockLabelClient() {
   const { data } = useRowLabel<PresentedBlockData>()
 

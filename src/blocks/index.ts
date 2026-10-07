@@ -1,6 +1,7 @@
 export { ColumnLayoutBlock, validateColumnLayoutColumns } from './ColumnLayout'
 export { ActionLinksBlock } from './ActionLinks'
 export { CardBlock } from './Card'
+export { CarouselBlock } from './Carousel'
 export { contentLeafBlocks } from './contentLeafBlocks'
 export { ListingBlock } from './Listing'
 export { ContentCalendarBlock } from './ContentCalendar'

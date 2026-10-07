@@ -118,6 +118,67 @@ describe('content listing and pagination', () => {
     }
   })
 
+  it('stores a limited manual Carousel without pagination fields', async () => {
+    const containerPage = await fixture.payload.create({
+      collection: 'pages',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        layout: [
+          {
+            blockType: 'carousel',
+            items: [
+              { item: { relationTo: 'posts', value: fixture.post.id } },
+              { item: { relationTo: 'pages', value: fixture.page.id } },
+            ],
+            parentFilter: 'none',
+            selectionMode: 'manual',
+            slideLimit: 1,
+          },
+        ],
+        slug: `${fixture.slugs.lifecyclePage}-carousel`,
+        title: 'Integration manual carousel container',
+      },
+      overrideAccess: true,
+    })
+
+    try {
+      const storedPage = await fixture.payload.findByID({
+        collection: 'pages',
+        depth: 0,
+        id: containerPage.id,
+        overrideAccess: true,
+      })
+      const carousel = storedPage.layout?.find((block) => block.blockType === 'carousel')
+      const result = await findPublicContent({
+        manualItems: carousel?.items?.map(({ item }) => item),
+        page: 1,
+        pageSize: carousel?.slideLimit ?? 5,
+        pagination: false,
+        selectionMode: carousel?.selectionMode,
+        sort: carousel?.sort ?? 'newest',
+        sources: [],
+      })
+
+      expect(carousel?.items?.map(({ item }) => [item.relationTo, item.value])).toEqual([
+        ['posts', fixture.post.id],
+        ['pages', fixture.page.id],
+      ])
+      expect(carousel).not.toHaveProperty('pagination')
+      expect(carousel).not.toHaveProperty('pageSize')
+      expect(result.items.map(({ kind, title }) => [kind, title])).toEqual([
+        ['posts', fixture.post.title],
+      ])
+      expect(result.totalDocs).toBe(2)
+    } finally {
+      await fixture.payload.delete({
+        collection: 'pages',
+        id: containerPage.id,
+        overrideAccess: true,
+      })
+    }
+  })
+
   it('exposes both collection relations through reverse Join fields', async () => {
     const populatedCategory = await fixture.payload.findByID({
       collection: 'categories',

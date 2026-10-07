@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { AttachmentsBlock, MediaGalleryBlock } from '@/blocks/MediaListing'
 import { ActionLinksBlock } from '@/blocks/ActionLinks'
 import { CardBlock } from '@/blocks/Card'
+import { CarouselBlock } from '@/blocks/Carousel'
 import { ContentCalendarBlock, validateContentCalendarSources } from '@/blocks/ContentCalendar'
 import { ColumnLayoutBlock } from '@/blocks/ColumnLayout'
 import { DocumentsBlock } from '@/blocks/Documents'
@@ -89,6 +90,7 @@ describe('page configuration', () => {
     expect([
       RichTextBlock.admin?.images?.thumbnail,
       ListingBlock.admin?.images?.thumbnail,
+      CarouselBlock.admin?.images?.thumbnail,
       MediaGalleryBlock.admin?.images?.thumbnail,
       DocumentsBlock.admin?.images?.thumbnail,
       AttachmentsBlock.admin?.images?.thumbnail,
@@ -108,6 +110,10 @@ describe('page configuration', () => {
       {
         alt: 'Schematyczna ikona uporządkowanych kart i filtra',
         url: '/assets/block-thumbnails/listing.png',
+      },
+      {
+        alt: 'Schematyczna ikona slajdów karuzeli z przełącznikiem',
+        url: '/assets/block-thumbnails/carousel.png',
       },
       {
         alt: 'Schematyczna ikona siatki zdjęć',
@@ -160,6 +166,7 @@ describe('page configuration', () => {
     expect([
       RichTextBlock.admin?.group,
       ListingBlock.admin?.group,
+      CarouselBlock.admin?.group,
       MediaGalleryBlock.admin?.group,
       DocumentsBlock.admin?.group,
       AttachmentsBlock.admin?.group,
@@ -171,6 +178,7 @@ describe('page configuration', () => {
       ColumnLayoutBlock.admin?.group,
       SectionGroupBlock.admin?.group,
     ]).toEqual([
+      'Treści',
       'Treści',
       'Treści',
       'Treści',
@@ -379,6 +387,54 @@ describe('page configuration', () => {
     })
     expect(itemsField.admin?.condition?.({}, { selectionMode: 'manual' }, {} as never)).toBe(true)
     expect(itemsField.admin?.condition?.({}, { selectionMode: 'filters' }, {} as never)).toBe(false)
+  })
+
+  it('configures Carousel selection like Listing without pagination', () => {
+    const selectionModeField = findField(CarouselBlock.fields, 'selectionMode')
+    const itemsField = findField(CarouselBlock.fields, 'items')
+    const sourcesField = findField(CarouselBlock.fields, 'sources')
+    const slideLimitField = findField(CarouselBlock.fields, 'slideLimit')
+    const paginationField = flattenFields(CarouselBlock.fields).find(
+      (field) => 'name' in field && field.name === 'pagination',
+    )
+    const pageSizeField = flattenFields(CarouselBlock.fields).find(
+      (field) => 'name' in field && field.name === 'pageSize',
+    )
+    const itemField =
+      itemsField.type === 'array'
+        ? itemsField.fields.find((field) => 'name' in field && field.name === 'item')
+        : null
+
+    expect(CarouselBlock.fields[0]).toMatchObject({
+      fields: [
+        { admin: { width: '50%' }, name: 'frame', type: 'select' },
+        { admin: { width: '50%' }, name: 'surface', type: 'select' },
+      ],
+      type: 'row',
+    })
+    expect(selectionModeField).toMatchObject({
+      defaultValue: 'filters',
+      label: 'Tryb wyboru',
+      required: true,
+      type: 'select',
+    })
+    expect(itemsField).toMatchObject({ label: 'Treści', type: 'array' })
+    expect(itemField).toMatchObject({
+      relationTo: ['pages', 'posts', 'events', 'event-cycles'],
+      required: true,
+      type: 'relationship',
+    })
+    expect(sourcesField).toMatchObject({ hasMany: true, label: 'Źródła', type: 'select' })
+    expect(slideLimitField).toMatchObject({
+      defaultValue: 5,
+      label: 'Maksymalna liczba slajdów',
+      max: 20,
+      min: 1,
+      required: true,
+      type: 'number',
+    })
+    expect(paginationField).toBeUndefined()
+    expect(pageSizeField).toBeUndefined()
   })
 
   it('requires unique manual Listing items within each content source', () => {

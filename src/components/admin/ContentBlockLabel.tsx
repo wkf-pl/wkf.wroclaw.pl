@@ -2,6 +2,7 @@ import {
   AttachmentsBlockLabelClient,
   ActionLinksBlockLabelClient,
   CardBlockLabelClient,
+  CarouselBlockLabelClient,
   ContentCalendarBlockLabelClient,
   ColumnLayoutBlockLabelClient,
   DocumentsBlockLabelClient,
@@ -53,6 +54,10 @@ export function RichTextBlockLabel({
 
 export function ListingBlockLabel() {
   return <ListingBlockLabelClient />
+}
+
+export function CarouselBlockLabel() {
+  return <CarouselBlockLabelClient />
 }
 
 export function ContentCalendarBlockLabel() {

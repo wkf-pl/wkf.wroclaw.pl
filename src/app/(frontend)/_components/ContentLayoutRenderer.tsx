@@ -13,6 +13,7 @@ import type {
   ActionLinksBlock,
   AttachmentsBlock,
   CardBlock,
+  CarouselBlock,
   ColumnLayoutBlock,
   ContentCalendarBlock,
   DocumentsBlock,
@@ -33,6 +34,7 @@ import type {
 
 import { ContentHeading, ContentPresentation } from './ContentPresentation'
 import { CardBlockSection } from './CardBlockSection'
+import { CarouselBlockSection } from './CarouselBlockSection'
 import { ContentCalendarBlockSection } from './ContentCalendarBlockSection'
 import { DocumentBlockSection } from './DocumentBlockSection'
 import { ListingBlockSection } from './ListingBlockSection'
@@ -46,6 +48,7 @@ type ContentLeafBlock =
   | ActionLinksBlock
   | AttachmentsBlock
   | CardBlock
+  | CarouselBlock
   | ContentCalendarBlock
   | DocumentsBlock
   | HeadingBlock
@@ -460,6 +463,8 @@ async function renderPresentedLeafBlock({
         pathname,
         searchParams,
       })
+    case 'carousel':
+      return CarouselBlockSection({ block, document })
     case 'contentCalendar':
       return ContentCalendarBlockSection({ block })
   }
