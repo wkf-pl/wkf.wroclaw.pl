@@ -9,6 +9,7 @@ import {
   MemberProfilesBlockLabelClient,
   HeadingBlockLabelClient,
   SectionGroupBlockLabelClient,
+  TabbedContentBlockLabelClient,
   RichTextBlockLabelClient,
 } from './ContentBlockLabelClient'
 
@@ -83,6 +84,10 @@ export function CardBlockLabel() {
 
 export function SectionGroupBlockLabel() {
   return <SectionGroupBlockLabelClient />
+}
+
+export function TabbedContentBlockLabel() {
+  return <TabbedContentBlockLabelClient />
 }
 
 export function ColumnLayoutBlockLabel() {

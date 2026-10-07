@@ -1,8 +1,21 @@
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-import type { Category, Document, Page, Post, Tag } from '@/payload-types'
+import { SiteFooter } from '@/app/(frontend)/_components/SiteFooter'
+import { SiteHeader } from '@/app/(frontend)/_components/SiteHeader'
 import { CardBlock } from '@/blocks/Card'
 import { Footer, HomepageHero, Navigation } from '@/globals'
+import type {
+  Category,
+  Document,
+  Footer as FooterData,
+  Navigation as NavigationData,
+  Page,
+  Post,
+  SiteSetting,
+  Tag,
+} from '@/payload-types'
 import {
   createLinkFields,
   createPresentedLinkFields,
@@ -128,6 +141,26 @@ describe('navigation links', () => {
       { label: 'Wpis', value: 'post' },
       { label: 'Wydarzenie', value: 'event' },
     ])
+  })
+
+  it('uses the site-menu destination contract in the topbar and footer menus', () => {
+    for (const [fields, name] of [
+      [Navigation.fields, 'headerItems'],
+      [Footer.fields, 'items'],
+    ] as const) {
+      const menuField = findArrayField(fields, name)
+      if (menuField.type !== 'array') throw new Error(`Missing menu array: ${name}`)
+
+      const targetType = findField(menuField.fields, 'targetType')
+      if (!targetType || targetType.type !== 'select') {
+        throw new Error(`Missing target selector: ${name}`)
+      }
+
+      expect(targetType.options).toContainEqual({
+        label: 'Główny adres serwisu',
+        value: 'siteContactEmail',
+      })
+    }
   })
 
   it('does not allow clearing a selected custom URL scheme', () => {
@@ -368,6 +401,51 @@ describe('navigation links', () => {
       '+',
     )
     expect(resolveLink(target)).toBeNull()
+  })
+
+  it('renders the main site address in topbar and footer menus', () => {
+    const navigation: NavigationData = {
+      headerItems: [
+        {
+          appearance: 'link',
+          label: 'Kontakt w nagłówku',
+          targetType: 'siteContactEmail',
+        },
+      ],
+      id: 1,
+    }
+    const footer: FooterData = {
+      columns: [
+        {
+          alignment: 'left',
+          id: 'contact-column',
+          items: [
+            {
+              appearance: 'link',
+              label: 'Kontakt w stopce',
+              targetType: 'siteContactEmail',
+            },
+          ],
+          title: 'Kontakt',
+        },
+      ],
+      id: 1,
+    }
+    const siteSettings: SiteSetting = {
+      contactEmail: 'kontakt@example.com',
+      id: 1,
+      siteName: 'WKF',
+    }
+
+    const headerMarkup = renderToStaticMarkup(
+      createElement(SiteHeader, { navigation, siteSettings }),
+    )
+    const footerMarkup = renderToStaticMarkup(
+      createElement(SiteFooter, { footer, navigation, siteSettings }),
+    )
+
+    expect(headerMarkup).toContain('href="mailto:kontakt@example.com"')
+    expect(footerMarkup).toContain('href="mailto:kontakt@example.com"')
   })
 
   it('resolves text, icon with text and icon-only links without placeholder targets', () => {

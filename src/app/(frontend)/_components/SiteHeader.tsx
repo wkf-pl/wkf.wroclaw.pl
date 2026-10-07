@@ -13,7 +13,9 @@ export function SiteHeader({
   navigation: Navigation
   siteSettings: SiteSetting
 }) {
-  const items = resolvePresentedLinks(navigation.headerItems ?? [])
+  const items = resolvePresentedLinks(navigation.headerItems ?? [], {
+    siteContactEmail: siteSettings.contactEmail,
+  })
   const logoURL = getMediaURL(navigation.logo) ?? '/assets/logo-color.webp'
   const logoAlternativeText =
     navigation.logo && typeof navigation.logo === 'object' ? navigation.logo.alt : ''

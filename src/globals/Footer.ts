@@ -2,7 +2,11 @@ import type { GlobalConfig } from 'payload'
 
 import { invalidateNavigationAfterChange } from '@/modules/cache/invalidate-public-data'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
-import { createPresentedLinkFields, validatePresentedLinkItems } from '@/modules/navigation/fields'
+import {
+  createPresentedLinkFields,
+  createSiteMenuLinkFields,
+  validatePresentedLinkItems,
+} from '@/modules/navigation/fields'
 
 const readFooter = createRolePermissionAccess({
   anonymousAccess: true,
@@ -113,7 +117,7 @@ export const Footer: GlobalConfig = {
                       RowLabel: '/components/admin/DynamicRowLabel#FooterColumnItemRowLabel',
                     },
                   },
-                  fields: createPresentedLinkFields(),
+                  fields: createSiteMenuLinkFields(),
                   label: 'Odnośniki',
                   labels: {
                     plural: 'Pozycje menu',

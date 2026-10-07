@@ -1,6 +1,11 @@
 import type { BlocksField } from 'payload'
 
-import { ColumnLayoutBlock, SectionGroupBlock, contentLeafBlocks } from '@/blocks'
+import {
+  ColumnLayoutBlock,
+  SectionGroupBlock,
+  TabbedContentBlock,
+  contentLeafBlocks,
+} from '@/blocks'
 
 const emptyRichTextDocument = {
   root: {
@@ -31,7 +36,7 @@ export function createContentLayoutField(label: string): BlocksField {
     admin: {
       initCollapsed: false,
     },
-    blocks: [...contentLeafBlocks, ColumnLayoutBlock, SectionGroupBlock],
+    blocks: [...contentLeafBlocks, ColumnLayoutBlock, SectionGroupBlock, TabbedContentBlock],
     defaultValue: [
       {
         blockType: 'richText',

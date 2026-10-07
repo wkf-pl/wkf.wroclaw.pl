@@ -120,6 +120,10 @@ export function FooterColumnItemRowLabel() {
   return <DynamicLabel prefix="Pozycja" value={usePresentedLinkDescription()} />
 }
 
+export function TabbedContentTabRowLabel() {
+  return <DynamicLabel prefix="Zakładka" value={useRowValue('label')} />
+}
+
 const surfaceLabels: Record<string, string> = {
   default: 'domyślna',
   image: 'obraz',

@@ -42,6 +42,7 @@ type CountedBlockData = {
   items?: unknown
   sections?: unknown
   surface?: unknown
+  tabs?: unknown
 }
 
 type ColumnLayoutBlockData = {
@@ -238,6 +239,14 @@ export function SectionGroupBlockLabelClient() {
       value={[getPresentationDescription(data), countLabel].filter(Boolean).join(' — ')}
     />
   )
+}
+
+export function TabbedContentBlockLabelClient() {
+  const { data } = useRowLabel<CountedBlockData>()
+  const count = Array.isArray(data.tabs) ? data.tabs.length : 0
+  const noun = count === 1 ? 'zakładka' : count >= 2 && count <= 4 ? 'zakładki' : 'zakładek'
+
+  return <BlockLabel prefix="Treść w zakładkach" value={count ? `${count} ${noun}` : ''} />
 }
 
 export function ColumnLayoutBlockLabelClient() {

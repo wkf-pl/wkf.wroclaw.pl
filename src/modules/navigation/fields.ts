@@ -366,6 +366,17 @@ export function createPresentedLinkFields({
   ]
 }
 
+export function createSiteMenuLinkFields({
+  compactDatabaseNames = false,
+}: {
+  compactDatabaseNames?: boolean
+} = {}): Field[] {
+  return createPresentedLinkFields({
+    compactDatabaseNames,
+    includeSiteContactEmail: true,
+  })
+}
+
 export function validatePresentedLinkItems(value: unknown): true | string {
   if (!Array.isArray(value)) {
     return true
