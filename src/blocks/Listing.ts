@@ -99,7 +99,21 @@ export const ListingBlock: Block = {
     },
   },
   fields: [
-    ...createContentPresentationFields(),
+    ...createContentPresentationFields({
+      leadingField: {
+        name: 'view',
+        type: 'select',
+        admin: { isClearable: false, width: '33.333%' },
+        defaultValue: 'cards',
+        label: 'Widok',
+        options: [
+          { label: 'Karty', value: 'cards' },
+          { label: 'Lista kompaktowa', value: 'compact' },
+          { label: 'Siatka', value: 'grid' },
+        ],
+        required: true,
+      },
+    }),
     {
       name: 'selectionMode',
       type: 'select',
@@ -123,6 +137,11 @@ export const ListingBlock: Block = {
         {
           name: 'item',
           type: 'relationship',
+          admin: {
+            components: {
+              Field: '/components/admin/ListingManualItemField#ListingManualItemField',
+            },
+          },
           filterOptions: { _status: { equals: 'published' } },
           label: 'Treść',
           relationTo: [...listingSources],
@@ -177,39 +196,6 @@ export const ListingBlock: Block = {
       type: 'row',
       fields: [
         {
-          name: 'sort',
-          type: 'select',
-          admin: { condition: filtersCondition, isClearable: false, width: '50%' },
-          defaultValue: 'newest',
-          label: 'Sortowanie',
-          options: [
-            { label: 'Najnowsze', value: 'newest' },
-            { label: 'Najstarsze', value: 'oldest' },
-            { label: 'Tytuł A–Z', value: 'titleAscending' },
-            { label: 'Tytuł Z–A', value: 'titleDescending' },
-            { label: 'Termin wydarzenia', value: 'eventDateAscending' },
-          ],
-          required: true,
-        },
-        {
-          name: 'view',
-          type: 'select',
-          admin: { isClearable: false, width: '50%' },
-          defaultValue: 'cards',
-          label: 'Widok',
-          options: [
-            { label: 'Karty', value: 'cards' },
-            { label: 'Lista kompaktowa', value: 'compact' },
-            { label: 'Siatka', value: 'grid' },
-          ],
-          required: true,
-        },
-      ],
-    },
-    {
-      type: 'row',
-      fields: [
-        {
           name: 'eventTimeFilter',
           type: 'select',
           admin: { condition: filtersCondition, isClearable: false, width: '50%' },
@@ -234,7 +220,23 @@ export const ListingBlock: Block = {
         },
       ],
     },
-    createListingPaginationRow(),
+    createListingPaginationRow({
+      leadingField: {
+        name: 'sort',
+        type: 'select',
+        admin: { condition: filtersCondition, isClearable: false, width: '33.333%' },
+        defaultValue: 'newest',
+        label: 'Sortowanie',
+        options: [
+          { label: 'Najnowsze', value: 'newest' },
+          { label: 'Najstarsze', value: 'oldest' },
+          { label: 'Tytuł A–Z', value: 'titleAscending' },
+          { label: 'Tytuł Z–A', value: 'titleDescending' },
+          { label: 'Termin wydarzenia', value: 'eventDateAscending' },
+        ],
+        required: true,
+      },
+    }),
     {
       name: 'parentFilter',
       type: 'select',

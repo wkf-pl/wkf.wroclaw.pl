@@ -10,6 +10,7 @@ import {
 } from '@payloadcms/ui'
 import type { FormState, RelationshipFieldClientProps } from 'payload'
 import { formatAdminURL } from 'payload/shared'
+import type { CSSProperties } from 'react'
 import { useMemo } from 'react'
 
 type ParentFilter = 'current' | 'none' | 'specific'
@@ -95,6 +96,12 @@ export function ListingParentPageField(properties: RelationshipFieldClientProps)
     [data],
   )
   const selectedOption = getSelectedOption(options, parentFilter, parentPageID)
+  const fieldStyles = {
+    ...(properties.field.admin?.style ?? {}),
+    ...(properties.field.admin?.width
+      ? { '--field-width': properties.field.admin.width }
+      : { flex: '1 1 auto' }),
+  } as CSSProperties
 
   function updateParentSelection(
     nextParentFilter: ParentFilter,
@@ -140,7 +147,7 @@ export function ListingParentPageField(properties: RelationshipFieldClientProps)
   }
 
   return (
-    <div className="field-type">
+    <div className="field-type relationship" style={fieldStyles}>
       <FieldLabel label={properties.field.label} path={parentPagePath} />
       <ReactSelect
         disabled={properties.readOnly}

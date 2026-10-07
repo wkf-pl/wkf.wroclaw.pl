@@ -1,6 +1,7 @@
 import { APIError, type Access, type CollectionConfig } from 'payload'
 
 import { adminOnly } from '@/access/adminOnly'
+import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import {
   permissionResourceOptions,
   resourceSupportsCreateAndDelete,
@@ -46,38 +47,38 @@ function createPermissionScopeFields(prefix: 'read' | 'update' | 'delete') {
       {
         name: `${prefix}Allowed`,
         type: 'checkbox' as const,
-        admin: {
+        admin: createBooleanSwitchAdmin({
           condition: (_data: unknown, siblingData: Record<string, unknown>) =>
             Boolean(siblingData.resource) &&
             (prefix === 'read' || Boolean(siblingData.readAllowed)),
           width: '34%',
-        },
+        }),
         defaultValue: false,
         label: capitalizedLabel,
       },
       {
         name: `${prefix}Own`,
         type: 'checkbox' as const,
-        admin: {
+        admin: createBooleanSwitchAdmin({
           condition: (_data: unknown, siblingData: Record<string, unknown>) =>
             Boolean(siblingData.readAllowed) &&
             Boolean(siblingData[`${prefix}Allowed`]) &&
             resourceSupportsOwnership(siblingData.resource),
           width: '33%',
-        },
+        }),
         defaultValue: false,
         label: 'Tylko własne',
       },
       {
         name: `${prefix}Published`,
         type: 'checkbox' as const,
-        admin: {
+        admin: createBooleanSwitchAdmin({
           condition: (_data: unknown, siblingData: Record<string, unknown>) =>
             Boolean(siblingData.readAllowed) &&
             Boolean(siblingData[`${prefix}Allowed`]) &&
             resourceSupportsPublishedStatus(siblingData.resource),
           width: '33%',
-        },
+        }),
         defaultValue: false,
         label: 'Tylko opublikowane',
       },
@@ -152,9 +153,9 @@ export const Roles: CollectionConfig = {
         create: () => false,
         update: () => false,
       },
-      admin: {
+      admin: createBooleanSwitchAdmin({
         hidden: true,
-      },
+      }),
       defaultValue: false,
     },
     {
@@ -191,11 +192,11 @@ export const Roles: CollectionConfig = {
         {
           name: 'canCreate',
           type: 'checkbox',
-          admin: {
+          admin: createBooleanSwitchAdmin({
             condition: (_data, siblingData) =>
               Boolean(siblingData.readAllowed) &&
               resourceSupportsCreateAndDelete(siblingData.resource),
-          },
+          }),
           defaultValue: false,
           label: 'Tworzenie',
         },

@@ -1,5 +1,7 @@
 import type { Field } from 'payload'
 
+import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
+
 const filtersCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.selectionMode === 'filters'
 
@@ -33,14 +35,17 @@ export function createListingTaxonomyRow({ conditional = false } = {}): Field {
   }
 }
 
-export function createListingPaginationRow(): Field {
+export function createListingPaginationRow({ leadingField }: { leadingField?: Field } = {}): Field {
+  const fieldWidth = leadingField ? '33.333%' : '50%'
+
   return {
     type: 'row',
     fields: [
+      ...(leadingField ? [leadingField] : []),
       {
         name: 'pageSize',
         type: 'number',
-        admin: { width: '50%' },
+        admin: { width: fieldWidth },
         defaultValue: 12,
         label: 'Elementy na stronę',
         max: 100,
@@ -50,7 +55,7 @@ export function createListingPaginationRow(): Field {
       {
         name: 'pagination',
         type: 'checkbox',
-        admin: { width: '50%' },
+        admin: createBooleanSwitchAdmin({ width: fieldWidth }),
         defaultValue: true,
         label: 'Włącz paginację',
       },

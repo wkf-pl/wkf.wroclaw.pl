@@ -1279,6 +1279,7 @@ export interface EventType {
  * via the `definition` "ListingBlock".
  */
 export interface ListingBlock {
+  view: 'cards' | 'compact' | 'grid';
   frame?: ('none' | 'outline') | null;
   surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
   /**
@@ -1314,10 +1315,9 @@ export interface ListingBlock {
   parentPage?: (number | null) | Page;
   category?: (number | null) | Category;
   tag?: (number | null) | Tag;
-  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending') | null;
-  view: 'cards' | 'compact' | 'grid';
   eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
   eventCycle?: (number | null) | EventCycle;
+  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending') | null;
   pageSize: number;
   pagination?: boolean | null;
   parentFilter: 'none' | 'current' | 'specific';
@@ -2118,6 +2118,7 @@ export interface CardBlockSelect<T extends boolean = true> {
  * via the `definition` "ListingBlock_select".
  */
 export interface ListingBlockSelect<T extends boolean = true> {
+  view?: T;
   frame?: T;
   surface?: T;
   surfaceImage?: T;
@@ -2134,10 +2135,9 @@ export interface ListingBlockSelect<T extends boolean = true> {
   parentPage?: T;
   category?: T;
   tag?: T;
-  sort?: T;
-  view?: T;
   eventTimeFilter?: T;
   eventCycle?: T;
+  sort?: T;
   pageSize?: T;
   pagination?: T;
   parentFilter?: T;

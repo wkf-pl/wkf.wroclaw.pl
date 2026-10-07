@@ -2,6 +2,7 @@ import sharp from 'sharp'
 import type { Access, CollectionConfig } from 'payload'
 import { APIError } from 'payload'
 
+import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import {
   invalidateMemberProfileImagesAfterChange,
   invalidateMemberProfileImagesAfterDelete,
@@ -60,9 +61,9 @@ export const MemberProfileImages: CollectionConfig = {
         create: () => false,
         update: () => false,
       },
-      admin: {
+      admin: createBooleanSwitchAdmin({
         hidden: true,
-      },
+      }),
       defaultValue: false,
       index: true,
     },

@@ -1,5 +1,8 @@
 import type { Field } from 'payload'
 
+import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
+import { createLinkFields } from '@/modules/navigation/fields'
+
 import {
   capacityModeOptions,
   eventStatusOptions,
@@ -8,7 +11,6 @@ import {
   timeModeOptions,
 } from './constants'
 import { normalizeGoogleMapsEmbedField, validateGoogleMapsEmbed } from './map-embed'
-import { createLinkFields } from '@/modules/navigation/fields'
 import { validatePostalCode, validateVenueWebsite } from './validation'
 
 export { validatePostalCode, validateVenueWebsite } from './validation'
@@ -189,8 +191,12 @@ export function createOrganizerField({ name = 'organizers' }: { name?: string } 
       {
         name: 'showContactChannels',
         type: 'checkbox',
+        admin: createBooleanSwitchAdmin({
+          falseLabel: 'Wyłączone',
+          trueLabel: 'Włączone',
+        }),
         defaultValue: false,
-        label: 'Pokaż publiczne kanały kontaktu z Wizytówki',
+        label: 'Publiczne kanały kontaktu z Wizytówki',
       },
     ],
     label: 'Organizatorzy',

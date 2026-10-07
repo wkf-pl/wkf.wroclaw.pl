@@ -1,5 +1,6 @@
 import type { Field, Validate } from 'payload'
 
+import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import { createRasterIconField, iconNameOptions } from '@/modules/icons/fields'
 
 import { normalizeCustomAddress, validateCustomAddress } from './custom-target'
@@ -276,9 +277,9 @@ export function createLinkFields({
     {
       name: openInNewTabFieldName,
       type: 'checkbox',
-      admin: {
+      admin: createBooleanSwitchAdmin({
         ...(includeSiteContactEmail ? { condition: isNotSiteContactTarget } : {}),
-      },
+      }),
       defaultValue: false,
       label: 'Otwórz w nowej karcie',
     },

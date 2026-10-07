@@ -185,7 +185,8 @@ describe('content composition', () => {
 
     expect(firstRowNames(RichTextBlock.fields)).toEqual(['textStyle', 'frame', 'surface'])
     expect(firstRowNames(MemberProfilesBlock.fields)).toEqual(['view', 'frame', 'surface'])
-    for (const block of [ListingBlock, MediaGalleryBlock, AttachmentsBlock, DocumentsBlock]) {
+    expect(firstRowNames(ListingBlock.fields)).toEqual(['view', 'frame', 'surface'])
+    for (const block of [MediaGalleryBlock, AttachmentsBlock, DocumentsBlock]) {
       expect(firstRowNames(block.fields)).toEqual(['frame', 'surface'])
     }
 

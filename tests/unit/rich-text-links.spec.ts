@@ -1,6 +1,7 @@
 import type { SerializedLinkNode } from '@payloadcms/richtext-lexical'
 import { describe, expect, it } from 'vitest'
 
+import { booleanSwitchFieldComponent } from '@/components/admin/boolean-switch-config'
 import {
   createRichTextLinkFields,
   getRichTextLinkTechnicalValues,
@@ -65,7 +66,13 @@ describe('rich text internal links', () => {
     ).toBe(false)
     expect(fields).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ name: 'newTab', type: 'checkbox' }),
+        expect.objectContaining({
+          admin: expect.objectContaining({
+            components: { Field: booleanSwitchFieldComponent },
+          }),
+          name: 'newTab',
+          type: 'checkbox',
+        }),
         expect.objectContaining({ admin: { hidden: true }, name: 'linkType' }),
         expect.objectContaining({ admin: { hidden: true }, name: 'doc' }),
         expect.objectContaining({ admin: { hidden: true }, name: 'url' }),

@@ -265,30 +265,40 @@ describe('page configuration', () => {
 
     expect(ListingBlock.fields[0]).toMatchObject({
       fields: [
-        { admin: { width: '50%' }, name: 'frame', type: 'select' },
-        { admin: { width: '50%' }, name: 'surface', type: 'select' },
+        { admin: { width: '33.333%' }, name: 'view', type: 'select' },
+        { admin: { width: '33.333%' }, name: 'frame', type: 'select' },
+        { admin: { width: '33.333%' }, name: 'surface', type: 'select' },
       ],
       type: 'row',
     })
     expect(rowFieldNames).toEqual([
       ['sources', 'parentPage'],
       ['category', 'tag'],
-      ['sort', 'view'],
       ['eventTimeFilter', 'eventCycle'],
-      ['pageSize', 'pagination'],
+      ['sort', 'pageSize', 'pagination'],
     ])
     expect(describeFieldOrder(listingFields)).toEqual([
       'selectionMode',
       'items',
       ['sources', 'parentPage'],
       ['category', 'tag'],
-      ['sort', 'view'],
       ['eventTimeFilter', 'eventCycle'],
-      ['pageSize', 'pagination'],
+      ['sort', 'pageSize', 'pagination'],
       'parentFilter',
       'emptyMessage',
     ])
-    expect(parentPageField).toMatchObject({ label: 'Strona nadrzędna', type: 'relationship' })
+    expect(parentPageField).toMatchObject({
+      admin: { width: '50%' },
+      label: 'Strona nadrzędna',
+      type: 'relationship',
+    })
+    expect(rows.at(-1)).toMatchObject({
+      fields: [
+        { admin: { width: '33.333%' }, name: 'sort' },
+        { admin: { width: '33.333%' }, name: 'pageSize' },
+        { admin: { width: '33.333%' }, name: 'pagination' },
+      ],
+    })
   })
 
   it('supports ordered manual Listing items from every content source', () => {
@@ -314,6 +324,11 @@ describe('page configuration', () => {
       type: 'array',
     })
     expect(itemField).toMatchObject({
+      admin: {
+        components: {
+          Field: '/components/admin/ListingManualItemField#ListingManualItemField',
+        },
+      },
       label: 'Treść',
       relationTo: ['pages', 'posts', 'events', 'event-cycles'],
       required: true,
