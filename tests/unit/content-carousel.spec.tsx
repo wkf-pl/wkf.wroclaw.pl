@@ -48,4 +48,13 @@ describe('Content carousel', () => {
     expect(markup).toContain('Brak slajdów.')
     expect(markup).not.toContain('contentCarouselControls')
   })
+
+  it('formats dates near midnight in the Warsaw time zone', () => {
+    const markup = renderToStaticMarkup(
+      <ContentCarousel items={[contentItemFixture(1, { date: '2026-08-18T22:08:57.181Z' })]} />,
+    )
+
+    expect(markup).toContain('19 sierpnia 2026')
+    expect(markup).not.toContain('18 sierpnia 2026')
+  })
 })

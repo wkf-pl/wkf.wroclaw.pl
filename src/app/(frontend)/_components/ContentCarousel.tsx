@@ -24,6 +24,7 @@ const contentKindLabels: Record<PublicContentListItem['kind'], string> = {
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric',
   month: 'long',
+  timeZone: 'Europe/Warsaw',
   year: 'numeric',
 })
 
