@@ -341,7 +341,7 @@ function TabbedLayoutField({
           }
         >
           {definition.kind === 'columns'
-            ? `Kolumny: ${typedRows.length} · suma szerokości: ${widthSum}/${totalColumnWidth}`
+            ? `Kolumny: ${typedRows.length} · suma szerokości: ${widthSum}c`
             : `Sekcje: ${typedRows.length}`}
         </p>
         {!effectiveReadOnly && typedRows.length < definition.maximumRows ? (

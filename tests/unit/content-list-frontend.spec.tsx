@@ -67,7 +67,7 @@ describe('frontend content listing', () => {
     expect(cardsMarkup).toContain('class="contentCardImageFallback"')
     expect(compactMarkup).not.toContain('contentCardImageFallback')
     expect(frontendStyles).toMatch(
-      /\.newsImageFallback,\s*\.sectionCardImageFallback,\s*\.contentCardImageFallback\s*\{[^}]*placeholder-nebula\.webp/,
+      /\.newsImageFallback,\s*\.cardBlockImageFallback,\s*\.contentCardImageFallback\s*\{[^}]*placeholder-nebula\.webp/,
     )
     expect(frontendStyles).toMatch(
       /:is\(\.contentList-grid, \.contentList-cards\)[^{]*> \.contentCardImageFallback\s*\{[^}]*height: 100%;/,

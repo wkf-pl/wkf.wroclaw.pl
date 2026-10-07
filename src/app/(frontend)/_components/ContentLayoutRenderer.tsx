@@ -12,11 +12,13 @@ import { resolvePresentedLinks } from '@/modules/navigation/links'
 import type {
   ActionLinksBlock,
   AttachmentsBlock,
+  CardBlock,
   ColumnLayoutBlock,
   DocumentsBlock,
   Event,
   EventCycle,
   HeadingBlock,
+  HomepageSection,
   ListingBlock,
   MediaGalleryBlock,
   MemberProfilesBlock,
@@ -28,23 +30,28 @@ import type {
 } from '@/payload-types'
 
 import { ContentHeading, ContentPresentation } from './ContentPresentation'
+import { CardBlockSection } from './CardBlockSection'
 import { DocumentBlockSection } from './DocumentBlockSection'
 import { ListingBlockSection } from './ListingBlockSection'
 import { MediaBlockSection } from './MediaBlockSection'
 import { MemberProfilesSection } from './MemberProfilesSection'
 import { PresentedLink } from './PresentedLink'
 
-type ContentDocument = Event | EventCycle | Page | Partner | Post
+type ContentDocument = Event | EventCycle | HomepageSection | Page | Partner | Post
 type ContentLeafBlock =
   | ActionLinksBlock
   | AttachmentsBlock
+  | CardBlock
   | DocumentsBlock
   | HeadingBlock
   | ListingBlock
   | MediaGalleryBlock
   | MemberProfilesBlock
   | RichTextBlock
-type PresentedContentLeafBlock = Exclude<ContentLeafBlock, ActionLinksBlock | HeadingBlock>
+type PresentedContentLeafBlock = Exclude<
+  ContentLeafBlock,
+  ActionLinksBlock | CardBlock | HeadingBlock
+>
 type SectionContentBlock = ColumnLayoutBlock | ContentLeafBlock
 type ContentLayoutBlock = ColumnLayoutBlock | SectionGroupBlock | ContentLeafBlock
 
@@ -63,7 +70,7 @@ export async function ContentLayoutRenderer({
   pathname,
   searchParams,
 }: ContentRendererProperties) {
-  const layout = document.layout as ContentLayoutBlock[]
+  const layout = (document.layout ?? []) as ContentLayoutBlock[]
 
   return (
     <div className="pageBlocks">
@@ -284,6 +291,10 @@ export async function ContentLeafBlockRenderer({
         ))}
       </ul>
     )
+  }
+
+  if (block.blockType === 'card') {
+    return <CardBlockSection block={block} />
   }
 
   const content = await renderPresentedLeafBlock({

@@ -28,6 +28,10 @@ type HeadingBlockData = {
   headingLevel?: unknown
 }
 
+type CardBlockData = {
+  title?: unknown
+}
+
 type PresentedBlockData = {
   frame?: unknown
   surface?: unknown
@@ -217,6 +221,12 @@ export function ActionLinksBlockLabelClient() {
   return <BlockLabel prefix="Odnośniki akcji" value={count ? `${count}` : ''} />
 }
 
+export function CardBlockLabelClient() {
+  const { data } = useRowLabel<CardBlockData>()
+
+  return <BlockLabel prefix="Karta" value={getText(data.title)} />
+}
+
 export function SectionGroupBlockLabelClient() {
   const { data } = useRowLabel<CountedBlockData>()
   const count = Array.isArray(data.sections) ? data.sections.length : 0
@@ -249,7 +259,7 @@ export function ColumnLayoutBlockLabelClient() {
     ? data.columns.flatMap((column) => (typeof column.width === 'number' ? [column.width] : []))
     : []
   const widths = liveWidthEntries.length ? liveWidthEntries.map(([, width]) => width) : rowWidths
-  const widthsLabel = widths.length ? widths.map((width) => `${width}/12`).join(' + ') : ''
+  const widthsLabel = widths.length ? widths.map((width) => `${width}c`).join(' + ') : ''
   const value = [getPresentationDescription(data), widthsLabel].filter(Boolean).join(' — ')
 
   return <BlockLabel prefix="Układ kolumnowy" value={value} />

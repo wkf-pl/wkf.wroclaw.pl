@@ -92,10 +92,11 @@ test.beforeAll(async ({ browser }) => {
   })
   await updateGlobal(page, 'homepage-sections', {
     eventsTitle: 'E2E Wydarzenia',
-    groups: [
+    layout: [
       {
-        backgroundImage: heroMedia.id,
-        menuItems: [
+        blockType: 'card',
+        image: heroMedia.id,
+        links: [
           {
             appearance: 'link',
             customAddress: 'blog',
@@ -105,11 +106,10 @@ test.beforeAll(async ({ browser }) => {
             targetType: 'custom',
           },
         ],
-        name: 'E2E RPG',
+        title: 'E2E RPG',
       },
     ],
     newsTitle: 'E2E Aktualności',
-    sectionsTitle: 'E2E Sekcje',
   })
   await updateGlobal(page, 'footer', createTestFooter(aboutPage.id))
   await page.close()
@@ -139,10 +139,9 @@ test.afterAll(async ({ browser }) => {
     eventsContent: originalHomepageSections.eventsContent,
     eventsTitle: originalHomepageSections.eventsTitle,
     eventWindowWeeks: originalHomepageSections.eventWindowWeeks,
-    groups: originalHomepageSections.groups,
+    layout: originalHomepageSections.layout,
     newsTitle: originalHomepageSections.newsTitle,
     postCount: originalHomepageSections.postCount,
-    sectionsTitle: originalHomepageSections.sectionsTitle,
   })
   await updateGlobal(page, 'footer', {
     columns: originalFooter.columns,
@@ -159,7 +158,7 @@ test.afterAll(async ({ browser }) => {
   await page.close()
 })
 
-test('renders editable menus and configured groups on the home page', async ({ page }) => {
+test('renders editable menus and configured content on the home page', async ({ page }) => {
   await page.goto('/')
 
   await expect(page.locator('.homeHeroImage')).toHaveAttribute('src', /e2e-home-hero(?:-\d+)?\.png/)
@@ -169,7 +168,6 @@ test('renders editable menus and configured groups on the home page', async ({ p
   ).toBeVisible()
   await expect(page.getByRole('heading', { level: 1, name: 'E2E Hero' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'E2E Aktualności' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'E2E Sekcje' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Główna nawigacja' })).toContainText(
     'Aktualności',
   )
@@ -208,6 +206,7 @@ test('renders editable menus and configured groups on the home page', async ({ p
   await expect(joinHeaderLink).toHaveCSS('color', 'rgb(0, 13, 23)')
   await expect(page.getByRole('navigation', { name: 'Obszary klubu' })).toContainText('Gry RPG')
   await expect(page.getByRole('heading', { name: 'E2E RPG' })).toBeVisible()
+  await expect(page.locator('.cardBlock')).toHaveCSS('max-width', 'none')
   await expect(
     page.getByRole('link', { name: 'Sesje' }).locator('[data-icon-name="dice"]'),
   ).toHaveAttribute('data-icon-size', 'medium')
@@ -248,7 +247,7 @@ test('renders editable menus and configured groups on the home page', async ({ p
   ).toHaveCSS('justify-content', 'flex-end')
 })
 
-test('searches, selects with the keyboard and persists a named icon in a nested array', async ({
+test('searches, selects with the keyboard and persists a named icon in a card block', async ({
   page,
 }) => {
   test.setTimeout(60_000)
@@ -256,29 +255,29 @@ test('searches, selects with the keyboard and persists a named icon in a nested 
   await login({ page, user: editorTestUser })
   await page.goto('/admin/globals/homepage-sections')
 
-  const groupsField = page.locator('#field-groups')
-  const groupsTab = page.getByRole('button', { name: 'Grupy', exact: true })
+  const layoutField = page.locator('#field-layout')
+  const contentTab = page.getByRole('button', { name: 'Treść', exact: true })
   await expect(async () => {
-    await groupsTab.click()
-    await expect(groupsField).toBeVisible({ timeout: 2_000 })
+    await contentTab.click()
+    await expect(layoutField).toBeVisible({ timeout: 2_000 })
   }).toPass({ intervals: [500, 1_000], timeout: 15_000 })
-  const expandGroupsButton = groupsField
+  const expandLayoutButton = layoutField
+    .locator(':scope > .blocks-field__header')
+    .getByRole('button', { name: 'Pokaż wszystkie' })
+  await expect(expandLayoutButton).toBeVisible({ timeout: 15_000 })
+  await expandLayoutButton.click()
+
+  const cardRow = layoutField.locator('.blocks-field__row').first()
+  const linksField = cardRow.locator('#field-layout__0__links')
+  await expect(linksField).toBeVisible({ timeout: 15_000 })
+  const expandLinksButton = linksField
     .locator(':scope > .array-field__header')
     .getByRole('button', { name: 'Pokaż wszystkie' })
-  await expect(expandGroupsButton).toBeVisible({ timeout: 15_000 })
-  await expandGroupsButton.click()
+  await expect(expandLinksButton).toBeVisible({ timeout: 15_000 })
+  await expandLinksButton.click()
 
-  const groupRow = groupsField.locator('.array-field__row').first()
-  const menuItemsField = groupRow.locator('#field-groups__0__menuItems')
-  await expect(menuItemsField).toBeVisible({ timeout: 15_000 })
-  const expandMenuItemsButton = menuItemsField
-    .locator(':scope > .array-field__header')
-    .getByRole('button', { name: 'Pokaż wszystkie' })
-  await expect(expandMenuItemsButton).toBeVisible({ timeout: 15_000 })
-  await expandMenuItemsButton.click()
-
-  const menuItemRow = menuItemsField.locator('.array-field__row').first()
-  const iconField = menuItemRow.locator('#field-groups__0__menuItems__0__iconName')
+  const linkRow = linksField.locator('.array-field__row').first()
+  const iconField = linkRow.locator('#field-layout__0__links__0__iconName')
   await expect(iconField).toBeVisible()
 
   const combobox = iconField.getByRole('combobox')
@@ -304,7 +303,9 @@ test('searches, selects with the keyboard and persists a named icon in a nested 
     depth: 0,
     overrideAccess: true,
   })
-  expect(savedHomepageSections.groups?.[0]?.menuItems?.[0]?.iconName).toBe('sword')
+  expect(savedHomepageSections.layout?.[0]?.blockType).toBe('card')
+  const savedCard = savedHomepageSections.layout?.[0]
+  expect(savedCard?.blockType === 'card' ? savedCard.links?.[0]?.iconName : undefined).toBe('sword')
 
   await page.goto('/')
   await expect(

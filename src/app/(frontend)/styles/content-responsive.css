@@ -85,14 +85,6 @@
     min-height: 34rem;
   }
 
-  .sectionCards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .sectionCard:last-child {
-    grid-column: 1 / -1;
-  }
-
   .siteFooter {
     grid-template-columns: 1fr auto;
   }
@@ -230,13 +222,8 @@
     border-bottom: 0;
   }
 
-  .newsGrid,
-  .sectionCards {
+  .newsGrid {
     grid-template-columns: 1fr;
-  }
-
-  .sectionCard:last-child {
-    grid-column: auto;
   }
 
   .smallNewsCard,
@@ -244,7 +231,7 @@
     min-height: 16rem;
   }
 
-  .sectionCard {
+  .cardBlock {
     min-height: 23rem;
   }
 

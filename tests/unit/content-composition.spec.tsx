@@ -5,6 +5,7 @@ import type { Field } from 'payload'
 import { ContentLeafBlockRenderer } from '@/app/(frontend)/_components/ContentLayoutRenderer'
 import { ContentPresentation } from '@/app/(frontend)/_components/ContentPresentation'
 import { ActionLinksBlock } from '@/blocks/ActionLinks'
+import { CardBlock } from '@/blocks/Card'
 import { ColumnLayoutBlock } from '@/blocks/ColumnLayout'
 import { DocumentsBlock } from '@/blocks/Documents'
 import { HeadingBlock } from '@/blocks/Heading'
@@ -144,6 +145,8 @@ describe('content composition', () => {
     ).toEqual(presentationFieldNames)
     expect(getFieldNames(ActionLinksBlock.fields)).not.toContain('surface')
     expect(getFieldNames(ActionLinksBlock.fields)).not.toContain('frame')
+    expect(getFieldNames(CardBlock.fields)).not.toContain('surface')
+    expect(getFieldNames(CardBlock.fields)).not.toContain('frame')
     expect(getFieldNames(HeadingBlock.fields)).toEqual(
       expect.arrayContaining(['heading', 'headingLevel', 'headingIconName', 'iconInverted']),
     )

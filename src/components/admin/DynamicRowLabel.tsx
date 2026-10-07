@@ -108,10 +108,6 @@ export function PresentedLinkRowLabel() {
   return <DynamicLabel prefix="Odnośnik" value={usePresentedLinkDescription()} />
 }
 
-export function HomepageGroupRowLabel() {
-  return <DynamicLabel prefix="Grupa" value={useRowValue('name')} />
-}
-
 export function SocialItemRowLabel() {
   return <DynamicLabel prefix="Medium społecznościowe" value={usePresentedLinkDescription()} />
 }

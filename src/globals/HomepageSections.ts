@@ -1,9 +1,8 @@
 import type { GlobalConfig } from 'payload'
 
 import { invalidateSiteSettingsAfterChange } from '@/modules/cache/invalidate-public-data'
-import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
+import { createContentLayoutField } from '@/modules/content/layout-field'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
-import { createPresentedLinkFields, validatePresentedLinkItems } from '@/modules/navigation/fields'
 
 const readHomepageSections = createRolePermissionAccess({
   anonymousAccess: true,
@@ -93,67 +92,8 @@ export const HomepageSections: GlobalConfig = {
           ],
         },
         {
-          label: 'Grupy',
-          fields: [
-            {
-              name: 'sectionsTitle',
-              type: 'text',
-              defaultValue: 'Sekcje',
-              label: 'Tytuł',
-            },
-            {
-              name: 'groups',
-              type: 'array',
-              admin: {
-                components: {
-                  RowLabel: '/components/admin/DynamicRowLabel#HomepageGroupRowLabel',
-                },
-              },
-              fields: [
-                {
-                  name: 'name',
-                  type: 'text',
-                  label: 'Nazwa',
-                  required: true,
-                },
-                {
-                  name: 'backgroundImage',
-                  type: 'upload',
-                  filterOptions: { mimeType: { in: [...webRasterImageMimeTypes] } },
-                  label: 'Obraz tła',
-                  relationTo: 'media',
-                },
-                {
-                  name: 'destinationPage',
-                  type: 'relationship',
-                  filterOptions: { _status: { equals: 'published' } },
-                  label: 'Strona docelowa tytułu',
-                  relationTo: 'pages',
-                },
-                {
-                  name: 'menuItems',
-                  type: 'array',
-                  admin: {
-                    components: {
-                      RowLabel: '/components/admin/DynamicRowLabel#FooterColumnItemRowLabel',
-                    },
-                  },
-                  fields: createPresentedLinkFields(),
-                  label: 'Elementy menu',
-                  labels: {
-                    plural: 'Elementy menu',
-                    singular: 'pozycję',
-                  },
-                  validate: validatePresentedLinkItems,
-                },
-              ],
-              label: 'Grupy',
-              labels: {
-                plural: 'Grupy',
-                singular: 'grupę',
-              },
-            },
-          ],
+          label: 'Treść',
+          fields: [createContentLayoutField('Treści')],
         },
       ],
     },

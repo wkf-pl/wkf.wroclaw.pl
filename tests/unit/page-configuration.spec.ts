@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 import { AttachmentsBlock, MediaGalleryBlock } from '@/blocks/MediaListing'
 import { ActionLinksBlock } from '@/blocks/ActionLinks'
+import { CardBlock } from '@/blocks/Card'
 import { ColumnLayoutBlock } from '@/blocks/ColumnLayout'
 import { DocumentsBlock } from '@/blocks/Documents'
 import { HeadingBlock } from '@/blocks/Heading'
@@ -92,6 +93,7 @@ describe('page configuration', () => {
       MemberProfilesBlock.admin?.images?.thumbnail,
       HeadingBlock.admin?.images?.thumbnail,
       ActionLinksBlock.admin?.images?.thumbnail,
+      CardBlock.admin?.images?.thumbnail,
       ColumnLayoutBlock.admin?.images?.thumbnail,
       SectionGroupBlock.admin?.images?.thumbnail,
     ]).toEqual([
@@ -128,6 +130,10 @@ describe('page configuration', () => {
         url: '/assets/block-thumbnails/action-links.png',
       },
       {
+        alt: 'Schematyczna ikona karty z obrazem i odnośnikami',
+        url: '/assets/block-thumbnails/listing.png',
+      },
+      {
         alt: 'Schematyczna ikona układu kolumnowego',
         url: '/assets/block-thumbnails/column-layout.png',
       },
@@ -148,6 +154,7 @@ describe('page configuration', () => {
       MemberProfilesBlock.admin?.group,
       HeadingBlock.admin?.group,
       ActionLinksBlock.admin?.group,
+      CardBlock.admin?.group,
       ColumnLayoutBlock.admin?.group,
       SectionGroupBlock.admin?.group,
     ]).toEqual([
@@ -157,6 +164,7 @@ describe('page configuration', () => {
       'Treści',
       'Treści',
       'Treści',
+      'Elementy',
       'Elementy',
       'Elementy',
       'Układ',

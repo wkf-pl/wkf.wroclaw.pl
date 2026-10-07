@@ -2,21 +2,20 @@ import Link from 'next/link'
 
 import { CmsRichText } from '@/components/CmsRichText'
 import { RasterIcon } from '@/components/RasterIcon'
-import type { HomepageSection, Post } from '@/payload-types'
+import type { Post } from '@/payload-types'
 import {
   findPublishedPosts,
   getPublicHomepageHero,
   getPublicHomepageSections,
 } from '@/modules/content/public-content'
-import { resolvePageLink, resolvePresentedLinks } from '@/modules/navigation/links'
 import { findHomepageEvents } from '@/modules/events/public-events'
 import { findCalendarMonth } from '@/modules/events/calendar-data'
 import { getWarsawCalendarMonth } from '@/modules/events/calendar-presentation'
 
 import { CmsImage } from './_components/CmsImage'
+import { ContentLayoutRenderer } from './_components/ContentLayoutRenderer'
 import { EventShowcase } from './_components/EventShowcase'
 import { HomepageHero } from './_components/HomepageHero'
-import { PresentedLink } from './_components/PresentedLink'
 
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric',
@@ -88,58 +87,12 @@ function NewsSection({ posts, title }: { posts: Post[]; title: string }) {
   )
 }
 
-type HomepageGroup = NonNullable<HomepageSection['groups']>[number]
-
-function SectionCard({ section }: { section: HomepageGroup }) {
-  const titleLink = resolvePageLink(section.destinationPage)
-  const menuItems = resolvePresentedLinks(section.menuItems ?? [])
-
-  return (
-    <article className="sectionCard">
-      {section.backgroundImage && typeof section.backgroundImage === 'object' ? (
-        <CmsImage className="sectionCardImage" media={section.backgroundImage} />
-      ) : (
-        <span aria-hidden="true" className="sectionCardImage sectionCardImageFallback" />
-      )}
-      <span aria-hidden="true" className="sectionCardShade" />
-      <div className="sectionCardContent">
-        <h3>{titleLink ? <Link {...titleLink}>{section.name}</Link> : section.name}</h3>
-        {menuItems?.length ? (
-          <ul>
-            {menuItems.map((item, itemIndex) => (
-              <li key={`${item.link.href}-${itemIndex}`}>
-                <PresentedLink item={item} trailingIconName="arrow-right" />
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-    </article>
-  )
+type HomePageProperties = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-function Sections({ sections, title }: { sections: HomepageGroup[]; title?: null | string }) {
-  if (sections.length === 0) {
-    return null
-  }
-
-  return (
-    <section
-      aria-label={title ? undefined : 'Sekcje klubowe'}
-      aria-labelledby={title ? 'sections-heading' : undefined}
-      className="homeSection clubSections"
-    >
-      {title ? <SectionHeading id="sections-heading">{title}</SectionHeading> : null}
-      <div className="sectionCards">
-        {sections.map((section) => (
-          <SectionCard key={section.id} section={section} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: HomePageProperties) {
+  const resolvedSearchParams = await searchParams
   const initialCalendarMonth = getWarsawCalendarMonth()
   const [hero, homepageSections, calendarData] = await Promise.all([
     getPublicHomepageHero(),
@@ -153,7 +106,6 @@ export default async function HomePage() {
     findHomepageEvents(eventWindowWeeks, eventSlideLimit),
     findPublishedPosts(postCount),
   ])
-  const sections = homepageSections.groups ?? []
 
   return (
     <main className="homePage">
@@ -172,7 +124,11 @@ export default async function HomePage() {
           />
         </section>
         <NewsSection posts={posts} title={homepageSections.newsTitle} />
-        <Sections sections={sections} title={homepageSections.sectionsTitle} />
+        <ContentLayoutRenderer
+          document={homepageSections}
+          pathname="/"
+          searchParams={resolvedSearchParams}
+        />
       </div>
     </main>
   )

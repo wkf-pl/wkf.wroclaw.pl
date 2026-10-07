@@ -29,6 +29,7 @@ import { RasterIconPickerField as RasterIconPickerField_50026296e49ca6acd59e010c
 import { HeadingBlockLabel as HeadingBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { PresentedLinkRowLabel as PresentedLinkRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { ActionLinksBlockLabel as ActionLinksBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
+import { CardBlockLabel as CardBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { ListingParentPageField as ListingParentPageField_064fe10c7d0092bdda4e6b763de3624c } from '../../../components/admin/ListingParentPageField'
 import { ListingBlockLabel as ListingBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { MediaGalleryBlockLabel as MediaGalleryBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
@@ -76,7 +77,6 @@ import { PermissionResourceField as PermissionResourceField_67f510ca66240b59a1f7
 import { PermissionRowLabel as PermissionRowLabel_2aad346eb5e12c6ee690c795b76ce94c } from '../../../components/admin/PermissionRowLabel'
 import { NavigationItemRowLabel as NavigationItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { FixedToolbarFeatureClient as FixedToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
-import { HomepageGroupRowLabel as HomepageGroupRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { SocialItemRowLabel as SocialItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { FooterColumnRowLabel as FooterColumnRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { AdminNav as AdminNav_231477f0faa4368be46fd47ffb9da4d9 } from '../../../components/admin/AdminNav'
@@ -120,6 +120,7 @@ export const importMap = {
   "/components/admin/ContentBlockLabel#HeadingBlockLabel": HeadingBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/DynamicRowLabel#PresentedLinkRowLabel": PresentedLinkRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/ContentBlockLabel#ActionLinksBlockLabel": ActionLinksBlockLabel_d53c993bb109710411f82eaaf564eeff,
+  "/components/admin/ContentBlockLabel#CardBlockLabel": CardBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ListingParentPageField#ListingParentPageField": ListingParentPageField_064fe10c7d0092bdda4e6b763de3624c,
   "/components/admin/ContentBlockLabel#ListingBlockLabel": ListingBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ContentBlockLabel#MediaGalleryBlockLabel": MediaGalleryBlockLabel_d53c993bb109710411f82eaaf564eeff,
@@ -167,7 +168,6 @@ export const importMap = {
   "/components/admin/PermissionRowLabel#PermissionRowLabel": PermissionRowLabel_2aad346eb5e12c6ee690c795b76ce94c,
   "/components/admin/DynamicRowLabel#NavigationItemRowLabel": NavigationItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "@payloadcms/richtext-lexical/client#FixedToolbarFeatureClient": FixedToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
-  "/components/admin/DynamicRowLabel#HomepageGroupRowLabel": HomepageGroupRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/DynamicRowLabel#SocialItemRowLabel": SocialItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/DynamicRowLabel#FooterColumnRowLabel": FooterColumnRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/AdminNav#AdminNav": AdminNav_231477f0faa4368be46fd47ffb9da4d9,

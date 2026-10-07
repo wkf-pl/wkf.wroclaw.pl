@@ -1,6 +1,7 @@
 import {
   AttachmentsBlockLabelClient,
   ActionLinksBlockLabelClient,
+  CardBlockLabelClient,
   ColumnLayoutBlockLabelClient,
   DocumentsBlockLabelClient,
   ListingBlockLabelClient,
@@ -74,6 +75,10 @@ export function HeadingBlockLabel() {
 
 export function ActionLinksBlockLabel() {
   return <ActionLinksBlockLabelClient />
+}
+
+export function CardBlockLabel() {
+  return <CardBlockLabelClient />
 }
 
 export function SectionGroupBlockLabel() {

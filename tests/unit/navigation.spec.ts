@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Category, Document, Page, Post, Tag } from '@/payload-types'
-import { Footer, HomepageHero, HomepageSections, Navigation } from '@/globals'
+import { CardBlock } from '@/blocks/Card'
+import { Footer, HomepageHero, Navigation } from '@/globals'
 import {
   createLinkFields,
   createPresentedLinkFields,
@@ -184,11 +185,11 @@ describe('navigation links', () => {
       },
     })
 
-    const menuItems = findArrayField(HomepageSections.fields, 'menuItems')
-    expect(menuItems).toMatchObject({
+    const cardLinks = findArrayField(CardBlock.fields, 'links')
+    expect(cardLinks).toMatchObject({
       admin: {
         components: {
-          RowLabel: '/components/admin/DynamicRowLabel#FooterColumnItemRowLabel',
+          RowLabel: '/components/admin/DynamicRowLabel#PresentedLinkRowLabel',
         },
       },
     })
@@ -257,7 +258,7 @@ describe('navigation links', () => {
     for (const [fields, name] of [
       [Navigation.fields, 'headerItems'],
       [HomepageHero.fields, 'items'],
-      [HomepageSections.fields, 'menuItems'],
+      [CardBlock.fields, 'links'],
       [Footer.fields, 'socialItems'],
       [Footer.fields, 'items'],
     ] as const) {

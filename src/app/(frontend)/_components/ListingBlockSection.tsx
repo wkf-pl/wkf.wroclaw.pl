@@ -1,6 +1,14 @@
 import { redirect } from 'next/navigation'
 
-import type { Event, EventCycle, ListingBlock, Page, Partner, Post } from '@/payload-types'
+import type {
+  Event,
+  EventCycle,
+  HomepageSection,
+  ListingBlock,
+  Page,
+  Partner,
+  Post,
+} from '@/payload-types'
 import { getRelationshipId } from '@/lib/relationships'
 import { createPaginatedURL, resolveBlockPagination } from '@/modules/content/pagination'
 import {
@@ -12,7 +20,7 @@ import {
 import { ContentList } from './ContentList'
 import { ContentPagination } from './ContentPagination'
 
-type ContentDocument = Event | EventCycle | Page | Partner | Post
+type ContentDocument = Event | EventCycle | HomepageSection | Page | Partner | Post
 
 export async function ListingBlockSection({
   block,
@@ -76,12 +84,9 @@ function getManualItems(block: ListingBlock): ManualContentReference[] {
   return (block.items?.map(({ item }) => item) ?? []) as ManualContentReference[]
 }
 
-function getListingParentId(
-  block: ListingBlock,
-  document: Pick<ContentDocument, 'id'>,
-): number | undefined {
+function getListingParentId(block: ListingBlock, document: ContentDocument): number | undefined {
   if (block.parentFilter === 'current') {
-    return document.id
+    return 'fullTitle' in document ? document.id : -1
   }
 
   return block.parentFilter === 'specific' ? getRelationshipId(block.parentPage) : undefined

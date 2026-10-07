@@ -572,7 +572,7 @@ body:has(> .homePage) .siteHeader {
 }
 
 .newsImageFallback,
-.sectionCardImageFallback,
+.cardBlockImageFallback,
 .contentCardImageFallback {
   background:
     url('/assets/placeholder-nebula.webp') center / cover no-repeat,
@@ -680,43 +680,36 @@ body:has(> .homePage) .siteHeader {
   color: var(--gold-light);
 }
 
-.clubSections {
-  padding-bottom: 2.5rem;
-}
-
-.sectionCards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.sectionCard {
+.cardBlock {
   position: relative;
+  width: 100%;
+  max-width: none;
   min-height: 25rem;
+  margin-inline: 0;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 0.7rem;
   background: linear-gradient(135deg, var(--panel-soft), var(--background-deep));
 }
 
-.sectionCardImage {
+.cardBlockImage {
   position: absolute;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.sectionCardImageFallback {
+.cardBlockImageFallback {
   inset: 0;
 }
 
-.sectionCardShade {
+.cardBlockShade {
   position: absolute;
   inset: 0;
   background: linear-gradient(transparent 12%, rgb(0 15 25 / 92%) 55%, #00111e 100%);
 }
 
-.sectionCardContent {
+.cardBlockContent {
   position: absolute;
   z-index: 1;
   right: 1.7rem;
@@ -724,26 +717,26 @@ body:has(> .homePage) .siteHeader {
   left: 1.7rem;
 }
 
-.sectionCardContent h3 {
+.cardBlockContent h3 {
   margin-bottom: 0.9rem;
-  font-size: 2.3rem;
+  font-size: clamp(1.8rem, 4vw, 2.3rem);
 }
 
-.sectionCardContent h3 a {
+.cardBlockContent h3 a {
   text-decoration: none;
 }
 
-.sectionCardContent ul {
+.cardBlockContent ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.sectionCardContent li + li {
+.cardBlockContent li + li {
   border-top: 1px solid rgb(255 255 255 / 12%);
 }
 
-.sectionCardContent a {
+.cardBlockContent a {
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 0.8rem;
@@ -752,7 +745,7 @@ body:has(> .homePage) .siteHeader {
   text-decoration: none;
 }
 
-.sectionCardContent a:hover,
-.sectionCardContent a:focus-visible {
+.cardBlockContent a:hover,
+.cardBlockContent a:focus-visible {
   color: var(--gold-light);
 }

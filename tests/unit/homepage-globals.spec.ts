@@ -63,7 +63,7 @@ describe('homepage globals', () => {
   })
 
   it('uses the requested section tabs and fields', () => {
-    expect(tabLabels(HomepageSections.fields)).toEqual(['Wydarzenia', 'Aktualności', 'Grupy'])
+    expect(tabLabels(HomepageSections.fields)).toEqual(['Wydarzenia', 'Aktualności', 'Treść'])
     expect(fieldsInTab(HomepageSections.fields, 'Wydarzenia')).toEqual([
       'eventsTitle',
       'eventsContent',
@@ -71,14 +71,14 @@ describe('homepage globals', () => {
       'eventSlideLimit',
     ])
     expect(fieldsInTab(HomepageSections.fields, 'Aktualności')).toEqual(['newsTitle', 'postCount'])
-    expect(fieldsInTab(HomepageSections.fields, 'Grupy')).toEqual(['sectionsTitle', 'groups'])
+    expect(fieldsInTab(HomepageSections.fields, 'Treść')).toEqual(['layout'])
 
-    const groups = HomepageSections.fields
+    const layout = HomepageSections.fields
       .filter((field) => field.type === 'tabs')
       .flatMap((field) => field.tabs)
       .flatMap((tab) => tab.fields)
-      .find((field) => 'name' in field && field.name === 'groups')
-    expect(groups).toMatchObject({ label: 'Grupy', type: 'array' })
+      .find((field) => 'name' in field && field.name === 'layout')
+    expect(layout).toMatchObject({ label: 'Treści', type: 'blocks' })
     expect(ClubSections.admin?.hidden).toBe(true)
   })
 
