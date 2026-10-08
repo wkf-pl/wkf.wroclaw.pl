@@ -1,23 +1,9 @@
-import { getPayload, type Where } from 'payload'
+import { getPayload, type Payload, type Where } from 'payload'
 
 import config from '@payload-config'
 
-import type {
-  Category,
-  ContentListingItem,
-  Event,
-  EventCycle,
-  Media,
-  Page,
-  Post,
-  Tag,
-} from '@/payload-types'
-import {
-  getFormRelationshipId,
-  getPopulatedRelationship,
-  getPopulatedRelationships,
-  type RelationshipID,
-} from '@/lib/relationships'
+import type { ContentListingItem, Event, EventCycle, Page, Post } from '@/payload-types'
+import { getFormRelationshipId, type RelationshipID } from '@/lib/relationships'
 import { normalizeListingWindow, paginateInMemory } from '@/modules/content/listing-window'
 import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
@@ -29,17 +15,11 @@ export type TaxonomizableDocument = Event | EventCycle | Page | Post
 export type ContentListingSort =
   'eventDateAscending' | 'newest' | 'oldest' | 'titleAscending' | 'titleDescending'
 
-export type PublicContentListItem = {
-  category: Category | null
-  date: null | string
-  excerpt: null | string
-  id: number
-  image: Media | null
-  kind: TaxonomizableCollectionSlug
-  tags: Tag[]
-  title: string
-  url: string
-}
+export type PublicContentListItem =
+  | { document: EventCycle; kind: 'event-cycles'; url: string }
+  | { document: Event; kind: 'events'; url: string }
+  | { document: Page; kind: 'pages'; url: string }
+  | { document: Post; kind: 'posts'; url: string }
 
 export type FindPublicContentOptions = {
   categoryId?: number
@@ -85,20 +65,9 @@ async function findPublicContentUncached(
     limit: pageSize,
     overrideAccess: false,
     page,
-    populate: {
-      categories: { name: true, slug: true },
-      media: { alt: true, filename: true, height: true, url: true, width: true },
-      tags: { name: true, slug: true },
-    },
     select: {
-      category: true,
-      excerpt: true,
-      heroImage: true,
-      sortDate: true,
       source: true,
       sourceDocumentId: true,
-      tags: true,
-      title: true,
       url: true,
     },
     sort: getPayloadSort(options.sort),
@@ -107,7 +76,7 @@ async function findPublicContentUncached(
   })
 
   return {
-    items: result.docs.map(mapIndexItem),
+    items: await hydratePublicContentItems(payload, result.docs),
     page,
     pageSize,
     totalDocs: result.totalDocs,
@@ -151,7 +120,7 @@ async function findManualPublicContent(
   options: FindPublicContentOptions,
 ): Promise<PublicContentResult> {
   const references = getManualContentReferences(options.manualItems)
-  let items: PublicContentListItem[] = []
+  let selectedItems: SelectedListingItem[] = []
 
   if (references.length > 0) {
     const payload = await getPayload({ config })
@@ -162,20 +131,9 @@ async function findManualPublicContent(
       limit: references.length,
       overrideAccess: false,
       pagination: false,
-      populate: {
-        categories: { name: true, slug: true },
-        media: { alt: true, filename: true, height: true, url: true, width: true },
-        tags: { name: true, slug: true },
-      },
       select: {
-        category: true,
-        excerpt: true,
-        heroImage: true,
-        sortDate: true,
         source: true,
         sourceDocumentId: true,
-        tags: true,
-        title: true,
         url: true,
       },
       user: null,
@@ -193,13 +151,18 @@ async function findManualPublicContent(
     const itemsByReference = new Map(
       result.docs.map((item) => [`${item.source}:${String(item.sourceDocumentId)}`, item]),
     )
-    items = references.flatMap(({ id, source }) => {
+    selectedItems = references.flatMap(({ id, source }) => {
       const item = itemsByReference.get(`${source}:${String(id)}`)
-      return item ? [mapIndexItem(item)] : []
+      return item ? [item] : []
     })
   }
 
-  return paginateInMemory(items, options)
+  const paginatedItems = paginateInMemory(selectedItems, options)
+
+  return {
+    ...paginatedItems,
+    items: await hydratePublicContentItems(await getPayload({ config }), paginatedItems.items),
+  }
 }
 
 function getManualContentReferences(
@@ -265,29 +228,116 @@ function getPayloadSort(sort: ContentListingSort): string[] {
   }
 }
 
-type SelectedListingItem = Pick<
-  ContentListingItem,
-  | 'category'
-  | 'excerpt'
-  | 'heroImage'
-  | 'sortDate'
-  | 'source'
-  | 'sourceDocumentId'
-  | 'tags'
-  | 'title'
-  | 'url'
->
+type SelectedListingItem = Pick<ContentListingItem, 'source' | 'sourceDocumentId' | 'url'>
 
-function mapIndexItem(item: SelectedListingItem): PublicContentListItem {
-  return {
-    category: getPopulatedRelationship(item.category),
-    date: item.sortDate,
-    excerpt: item.excerpt ?? null,
-    id: item.sourceDocumentId,
-    image: getPopulatedRelationship(item.heroImage),
-    kind: item.source,
-    tags: getPopulatedRelationships(item.tags),
-    title: item.title,
-    url: item.url,
+async function hydratePublicContentItems(
+  payload: Payload,
+  selectedItems: readonly SelectedListingItem[],
+): Promise<PublicContentListItem[]> {
+  const idsBySource: Record<TaxonomizableCollectionSlug, number[]> = {
+    'event-cycles': [],
+    events: [],
+    pages: [],
+    posts: [],
   }
+
+  for (const item of selectedItems) {
+    idsBySource[item.source].push(item.sourceDocumentId)
+  }
+
+  const [eventCycles, events, pages, posts] = await Promise.all([
+    findPublishedEventCycles(payload, idsBySource['event-cycles']),
+    findPublishedEvents(payload, idsBySource.events),
+    findPublishedPages(payload, idsBySource.pages),
+    findPublishedPosts(payload, idsBySource.posts),
+  ])
+  const documentsByReference = new Map<string, TaxonomizableDocument>([
+    ...eventCycles.map((document) => [`event-cycles:${document.id}`, document] as const),
+    ...events.map((document) => [`events:${document.id}`, document] as const),
+    ...pages.map((document) => [`pages:${document.id}`, document] as const),
+    ...posts.map((document) => [`posts:${document.id}`, document] as const),
+  ])
+
+  return selectedItems.flatMap((item): PublicContentListItem[] => {
+    const document = documentsByReference.get(`${item.source}:${item.sourceDocumentId}`)
+    if (!document) return []
+
+    switch (item.source) {
+      case 'event-cycles':
+        return [{ document: document as EventCycle, kind: item.source, url: item.url }]
+      case 'events':
+        return [{ document: document as Event, kind: item.source, url: item.url }]
+      case 'pages':
+        return [{ document: document as Page, kind: item.source, url: item.url }]
+      case 'posts':
+        return [{ document: document as Post, kind: item.source, url: item.url }]
+    }
+  })
+}
+
+function uniqueIds(ids: readonly number[]): number[] {
+  return [...new Set(ids)]
+}
+
+async function findPublishedEventCycles(
+  payload: Payload,
+  ids: readonly number[],
+): Promise<EventCycle[]> {
+  if (!ids.length) return []
+  const result = await payload.find({
+    collection: 'event-cycles',
+    context: publicRequestContext,
+    depth: 1,
+    draft: false,
+    overrideAccess: false,
+    pagination: false,
+    user: null,
+    where: { id: { in: uniqueIds(ids) } },
+  })
+  return result.docs
+}
+
+async function findPublishedEvents(payload: Payload, ids: readonly number[]): Promise<Event[]> {
+  if (!ids.length) return []
+  const result = await payload.find({
+    collection: 'events',
+    context: publicRequestContext,
+    depth: 1,
+    draft: false,
+    overrideAccess: false,
+    pagination: false,
+    user: null,
+    where: { id: { in: uniqueIds(ids) } },
+  })
+  return result.docs
+}
+
+async function findPublishedPages(payload: Payload, ids: readonly number[]): Promise<Page[]> {
+  if (!ids.length) return []
+  const result = await payload.find({
+    collection: 'pages',
+    context: publicRequestContext,
+    depth: 1,
+    draft: false,
+    overrideAccess: false,
+    pagination: false,
+    user: null,
+    where: { id: { in: uniqueIds(ids) } },
+  })
+  return result.docs
+}
+
+async function findPublishedPosts(payload: Payload, ids: readonly number[]): Promise<Post[]> {
+  if (!ids.length) return []
+  const result = await payload.find({
+    collection: 'posts',
+    context: publicRequestContext,
+    depth: 1,
+    draft: false,
+    overrideAccess: false,
+    pagination: false,
+    user: null,
+    where: { id: { in: uniqueIds(ids) } },
+  })
+  return result.docs
 }

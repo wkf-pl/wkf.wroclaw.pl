@@ -127,11 +127,11 @@ describe('content hierarchy', () => {
         tagId: fixture.tag.id,
       })
 
-      expect(subtree.items.map((item) => item.id)).toEqual(
+      expect(subtree.items.map((item) => item.document.id)).toEqual(
         expect.arrayContaining([taggedGrandchildPost.id, untaggedGrandchildPost.id]),
       )
       expect(subtree.items).toHaveLength(2)
-      expect(taggedSubtree.items.map((item) => item.id)).toEqual([taggedGrandchildPost.id])
+      expect(taggedSubtree.items.map((item) => item.document.id)).toEqual([taggedGrandchildPost.id])
 
       const populatedGrandchild = await fixture.payload.findByID({
         collection: 'categories',

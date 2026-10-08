@@ -6,7 +6,7 @@ import { DocumentItems } from '@/app/(frontend)/_components/DocumentList'
 import { DocumentsBlock, validateManualDocumentItems } from '@/blocks/Documents'
 import { Documents } from '@/collections/Documents'
 import { Pages } from '@/collections/Pages'
-import type { Document } from '@/payload-types'
+import type { Category, Document, Tag } from '@/payload-types'
 import type { Field } from 'payload'
 
 function flattenFields(fields: Field[]): Field[] {
@@ -132,11 +132,14 @@ describe('documents block', () => {
 
   it('renders card, compact list and grid as distinct public views', () => {
     const document = {
+      category: { id: 4, name: 'Dokumenty', slug: 'dokumenty' } as Category,
       documentDate: '2026-08-26T00:00:00.000Z',
+      documentNumber: '4/2026',
       documentType: 'resolution',
       id: 1,
       slug: 'uchwala-testowa',
       summary: 'Opis widoczny w szczegółowych widokach.',
+      tags: [{ id: 7, name: 'Formalne', slug: 'formalne' } as Tag],
       title: 'Uchwała testowa',
       primaryFile: {
         id: 17,
@@ -153,9 +156,13 @@ describe('documents block', () => {
 
     expect(cardsMarkup).toContain('documentList-cards')
     expect(cardsMarkup).toContain(document.summary)
-    expect(cardsMarkup).toContain('documentPdfLink')
-    expect(cardsMarkup).toContain('/dokumenty/uchwala-testowa/plik/17')
-    expect(cardsMarkup).toContain('target="_blank"')
+    expect(cardsMarkup).toContain('class="contentCardKind">Uchwała</span>')
+    expect(cardsMarkup).toContain('nr 4/2026 z dnia')
+    expect(cardsMarkup).toContain('26 sierpnia 2026')
+    expect(cardsMarkup).toContain('contentCardImageFallback')
+    expect(cardsMarkup).toContain('href="/category/dokumenty"')
+    expect(cardsMarkup).toContain('href="/tag/formalne"')
+    expect(cardsMarkup).not.toContain('documentPdfLink')
     expect(gridMarkup).toContain('documentList-grid')
     expect(gridMarkup).toContain(document.summary)
     expect(gridMarkup).not.toContain('documentPdfLink')

@@ -147,7 +147,6 @@
 
 @container content-block (width <= 48rem) {
   .contentCard,
-  .documentList-cards .documentListItem,
   .memberGrid-card .memberCard {
     display: block;
   }

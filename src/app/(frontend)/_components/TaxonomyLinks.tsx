@@ -18,11 +18,20 @@ export function TaxonomyLinks({ category, tags }: TaxonomyLinksProperties) {
   return (
     <div className="taxonomyLinks">
       {populatedCategory ? (
-        <Link href={`/category/${populatedCategory.slug}`}>{populatedCategory.name}</Link>
+        <Link
+          className="taxonomyLink taxonomyLink--category"
+          href={`/category/${populatedCategory.slug}`}
+        >
+          {populatedCategory.name}
+        </Link>
       ) : null}
       {populatedTags?.map((tag) => (
-        <Link href={`/tag/${tag.slug}`} key={`tag-${tag.id}`}>
-          #{tag.name}
+        <Link
+          className="taxonomyLink taxonomyLink--tag"
+          href={`/tag/${tag.slug}`}
+          key={`tag-${tag.id}`}
+        >
+          {tag.name}
         </Link>
       ))}
     </div>

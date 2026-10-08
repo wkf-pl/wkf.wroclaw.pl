@@ -31,7 +31,7 @@ describe('content listing and pagination', () => {
       tagId: fixture.tag.id,
     })
 
-    expect(result.items.map(({ kind, title }) => [kind, title])).toEqual([
+    expect(result.items.map(({ document, kind }) => [kind, document.title])).toEqual([
       ['posts', fixture.post.title],
       ['pages', fixture.page.title],
     ])
@@ -44,7 +44,8 @@ describe('content listing and pagination', () => {
       sort: 'titleAscending',
       sources: ['pages'],
     })
-    expect(childResult.items.map((item) => item.id)).toEqual([fixture.childPage.id])
+    expect(childResult.items.map((item) => item.document.id)).toEqual([fixture.childPage.id])
+    expect(childResult.items[0]?.document).toHaveProperty('layout')
   })
 
   it('preserves manual mixed-content order before pagination', async () => {
@@ -62,7 +63,7 @@ describe('content listing and pagination', () => {
       sources: [],
     })
 
-    expect(result.items.map(({ kind, title }) => [kind, title])).toEqual([
+    expect(result.items.map(({ document, kind }) => [kind, document.title])).toEqual([
       ['pages', fixture.childPage.title],
     ])
     expect(result.totalDocs).toBe(3)
@@ -166,7 +167,7 @@ describe('content listing and pagination', () => {
       ])
       expect(carousel).not.toHaveProperty('pagination')
       expect(carousel).not.toHaveProperty('pageSize')
-      expect(result.items.map(({ kind, title }) => [kind, title])).toEqual([
+      expect(result.items.map(({ document, kind }) => [kind, document.title])).toEqual([
         ['posts', fixture.post.title],
       ])
       expect(result.totalDocs).toBe(2)

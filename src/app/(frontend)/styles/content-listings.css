@@ -53,12 +53,50 @@
 }
 
 .taxonomyLinks a {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
   padding: 0.3rem 0.65rem;
-  border: 1px solid rgb(243 163 19 / 45%);
+  border: 1px solid transparent;
   border-radius: 999px;
-  color: var(--gold-light);
   font-size: 0.85rem;
+  line-height: 1.2;
   text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.taxonomyLinks .taxonomyLink--category {
+  border-color: var(--gold-light);
+  background: rgb(0 13 23 / 36%);
+  color: var(--gold-light);
+}
+
+.taxonomyLinks .taxonomyLink--tag {
+  border-color: rgb(111 168 235 / 78%);
+  background: rgb(3 29 46 / 46%);
+  color: #b9d5f5;
+}
+
+.taxonomyLinks .taxonomyLink--category:hover,
+.taxonomyLinks .taxonomyLink--category:focus-visible {
+  border-color: var(--gold);
+  background: rgb(243 163 19 / 14%);
+  color: var(--ivory);
+}
+
+.taxonomyLinks .taxonomyLink--tag:hover,
+.taxonomyLinks .taxonomyLink--tag:focus-visible {
+  border-color: #a8cdf8;
+  background: rgb(111 168 235 / 14%);
+  color: var(--ivory);
+}
+
+.taxonomyLinks .taxonomyLink:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
 }
 
 .hierarchyBreadcrumbs {
@@ -286,36 +324,9 @@
   padding: clamp(1.25rem, 4vw, 2.25rem);
 }
 
-.documentList-cards .documentListItem {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(7rem, 14vw, 9rem);
-}
-
-.documentPdfLink {
-  display: grid;
-  min-height: 10rem;
-  margin: 1.25rem 1.25rem 1.25rem 0;
-  place-items: center;
-  border: 1px solid rgb(243 163 19 / 48%);
-  border-radius: 0.65rem;
-  color: var(--gold-light);
-  text-decoration: none;
-  transition:
-    border-color 160ms ease,
-    background-color 160ms ease,
-    color 160ms ease;
-}
-
-.documentPdfLink:hover,
-.documentPdfLink:focus-visible {
-  border-color: var(--gold-light);
-  background: rgb(243 163 19 / 12%);
-  color: var(--ivory);
-}
-
-.documentPdfLink .rasterIcon {
-  width: min(5.5rem, 75%);
-  height: min(6.6rem, 82%);
+.documentList-cards {
+  gap: 1.5rem;
+  width: min(70rem, 100%);
 }
 
 .documentListItemMeta {
@@ -491,6 +502,8 @@
 }
 
 .contentCardImage {
+  display: block;
+  overflow: hidden;
   min-height: 15rem;
   background: var(--panel);
 }
@@ -505,6 +518,12 @@
   padding: clamp(1.25rem, 4vw, 2.25rem);
 }
 
+:is(.contentList-cards, .documentList-cards) .contentCardContent {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
 .contentCardMeta {
   display: flex;
   flex-wrap: wrap;
@@ -514,11 +533,24 @@
   font-size: 0.9rem;
 }
 
-.contentCardMeta span {
+.contentCardKind {
   color: var(--gold-light);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.contentCardMetaText,
+.contentCardMeta time {
+  color: var(--ivory);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.contentCardMetaLink {
+  color: var(--ivory);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
 }
 
 .contentCard h2 {
@@ -530,9 +562,50 @@
   text-decoration: none;
 }
 
-.contentCardContent > p:not(.contentCardMeta) {
+.contentCardExcerpt {
+  margin: 0;
   color: var(--muted);
   line-height: 1.6;
+}
+
+.contentCardExcerpt > :last-child {
+  margin-bottom: 0;
+}
+
+.contentCardFacts {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0 0 1rem;
+}
+
+.contentCardFacts p {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  margin: 0;
+  color: var(--ivory);
+  line-height: 1.45;
+}
+
+.contentCardFacts a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.contentCardFactIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--gold-light);
+}
+
+.contentCardFactIcon .rasterIcon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+:is(.contentList-cards, .documentList-cards) .contentCardContent > .taxonomyLinks {
+  margin: 1.75rem 0 0;
 }
 
 .contentList-grid {
@@ -559,7 +632,7 @@
   display: block;
 }
 
-:is(.contentList-grid, .contentList-cards)
+:is(.contentList-grid, .contentList-cards, .documentList-cards)
   > article.contentCard
   > .contentCardImage
   > .contentCardImageFallback {

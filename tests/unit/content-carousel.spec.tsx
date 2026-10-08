@@ -3,29 +3,48 @@ import { describe, expect, it } from 'vitest'
 
 import { ContentCarousel } from '@/app/(frontend)/_components/ContentCarousel'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
+import type { Page, Post } from '@/payload-types'
 
-function contentItemFixture(
+function postItemFixture(
   id: number,
-  overrides: Partial<PublicContentListItem> = {},
-): PublicContentListItem {
+  publishedAt = '2026-10-07T12:00:00.000Z',
+): Extract<PublicContentListItem, { kind: 'posts' }> {
   return {
-    category: null,
-    date: '2026-10-07T12:00:00.000Z',
-    excerpt: `Streszczenie ${id}`,
-    id,
-    image: null,
+    document: {
+      category: null,
+      excerpt: `Streszczenie ${id}`,
+      heroImage: null,
+      id,
+      publishedAt,
+      slug: `tresc-${id}`,
+      tags: [],
+      title: `Treść ${id}`,
+    } as unknown as Post,
     kind: 'posts',
-    tags: [],
-    title: `Treść ${id}`,
     url: `/aktualnosci/tresc-${id}`,
-    ...overrides,
+  }
+}
+
+function pageItemFixture(id: number): Extract<PublicContentListItem, { kind: 'pages' }> {
+  return {
+    document: {
+      category: null,
+      heroImage: null,
+      id,
+      listingExcerpt: `Streszczenie ${id}`,
+      slug: `tresc-${id}`,
+      tags: [],
+      title: `Treść ${id}`,
+    } as unknown as Page,
+    kind: 'pages',
+    url: `/tresc-${id}`,
   }
 }
 
 describe('Content carousel', () => {
   it('renders all slides with lower-left controls inside the slide visual', () => {
     const markup = renderToStaticMarkup(
-      <ContentCarousel items={[contentItemFixture(1), contentItemFixture(2, { kind: 'pages' })]} />,
+      <ContentCarousel items={[postItemFixture(1), pageItemFixture(2)]} />,
     )
 
     expect(markup.match(/<article[^>]+class="contentCarouselSlide/g)).toHaveLength(2)
@@ -51,7 +70,7 @@ describe('Content carousel', () => {
 
   it('formats dates near midnight in the Warsaw time zone', () => {
     const markup = renderToStaticMarkup(
-      <ContentCarousel items={[contentItemFixture(1, { date: '2026-08-18T22:08:57.181Z' })]} />,
+      <ContentCarousel items={[postItemFixture(1, '2026-08-18T22:08:57.181Z')]} />,
     )
 
     expect(markup).toContain('19 sierpnia 2026')

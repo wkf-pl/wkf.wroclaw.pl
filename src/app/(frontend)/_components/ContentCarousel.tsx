@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
 import { RasterIcon } from '@/components/RasterIcon'
+import { CmsRichText } from '@/components/CmsRichText'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
 
 import { CmsImage } from './CmsImage'
@@ -97,7 +98,9 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
       <div className="contentCarouselSlides">
         {items.map((item, index) => {
           const isActive = index === displayedActiveIndex
-          const showsDate = item.kind !== 'event-cycles' && item.kind !== 'pages' && item.date
+          const date = getCarouselDate(item)
+          const image = item.document.heroImage
+          const title = item.document.title
 
           return (
             <article
@@ -106,29 +109,29 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
               aria-roledescription="slajd"
               className={`contentCarouselSlide${isActive ? ' contentCarouselSlide--active' : ''}`}
               inert={!isActive}
-              key={`${item.kind}-${item.id}`}
+              key={`${item.kind}-${item.document.id}`}
             >
               <div className="contentCarouselVisual">
                 <Link
-                  aria-label={`Zobacz: ${item.title}`}
+                  aria-label={`Zobacz: ${title}`}
                   className="contentCarouselVisualLink"
                   href={item.url}
                   tabIndex={isActive ? undefined : -1}
                 >
-                  {item.image ? (
-                    <CmsImage className="contentCarouselImage" media={item.image} />
+                  {image ? (
+                    <CmsImage className="contentCarouselImage" media={image} />
                   ) : (
                     <span aria-hidden="true" className="contentCarouselImageFallback" />
                   )}
-                  <span className="contentCarouselTitle">{item.title}</span>
+                  <span className="contentCarouselTitle">{title}</span>
                 </Link>
                 {items.length > 1 ? (
                   <div aria-label="Wybór slajdu" className="contentCarouselControls">
                     {items.map((controlItem, controlIndex) => (
                       <button
-                        aria-label={`Pokaż: ${controlItem.title}`}
+                        aria-label={`Pokaż: ${controlItem.document.title}`}
                         aria-pressed={controlIndex === displayedActiveIndex}
-                        key={`${controlItem.kind}-${controlItem.id}`}
+                        key={`${controlItem.kind}-${controlItem.document.id}`}
                         onClick={() => setActiveIndex(controlIndex)}
                         type="button"
                       >
@@ -141,14 +144,12 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
               <div className="contentCarouselContent">
                 <p className="contentCarouselMeta">
                   <span>{contentKindLabels[item.kind]}</span>
-                  {showsDate ? (
-                    <time dateTime={item.date ?? undefined}>
-                      {dateFormatter.format(new Date(item.date as string))}
-                    </time>
+                  {date ? (
+                    <time dateTime={date}>{dateFormatter.format(new Date(date))}</time>
                   ) : null}
                 </p>
-                {item.excerpt ? <p className="contentCarouselExcerpt">{item.excerpt}</p> : null}
-                <TaxonomyLinks category={item.category} tags={item.tags} />
+                {renderCarouselExcerpt(item)}
+                <TaxonomyLinks category={item.document.category} tags={item.document.tags} />
                 <Link
                   className="contentCarouselAction"
                   href={item.url}
@@ -164,4 +165,29 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
       </div>
     </div>
   )
+}
+
+function getCarouselDate(item: PublicContentListItem): null | string {
+  switch (item.kind) {
+    case 'events':
+      return item.document.startAt
+    case 'posts':
+      return item.document.publishedAt ?? null
+    default:
+      return null
+  }
+}
+
+function renderCarouselExcerpt(item: PublicContentListItem) {
+  switch (item.kind) {
+    case 'event-cycles':
+    case 'events':
+      return <CmsRichText className="contentCarouselExcerpt" data={item.document.excerpt} />
+    case 'pages':
+      return item.document.listingExcerpt ? (
+        <p className="contentCarouselExcerpt">{item.document.listingExcerpt}</p>
+      ) : null
+    case 'posts':
+      return <p className="contentCarouselExcerpt">{item.document.excerpt}</p>
+  }
 }

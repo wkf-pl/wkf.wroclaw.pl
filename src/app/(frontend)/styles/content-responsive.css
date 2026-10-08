@@ -243,15 +243,6 @@
     grid-template-columns: 1fr;
   }
 
-  .documentList-cards .documentListItem {
-    grid-template-columns: minmax(0, 1fr) 6.5rem;
-  }
-
-  .documentPdfLink {
-    min-height: 8rem;
-    margin: 1rem 1rem 1rem 0;
-  }
-
   .mediaList-grid,
   .mediaList-cards,
   .mediaGallery.mediaList-list .mediaGalleryItem {

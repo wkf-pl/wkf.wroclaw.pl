@@ -1,9 +1,10 @@
 import Link from 'next/link'
 
-import { RasterIcon } from '@/components/RasterIcon'
 import { documentTypeOptions, getDocumentTypeLabel } from '@/modules/documents/document-types'
-import type { Document, DocumentFile } from '@/payload-types'
+import type { Document } from '@/payload-types'
 import type { DocumentListingView } from '@/modules/documents/document-listing'
+
+import { ContentCard } from './ContentCard'
 
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric',
@@ -80,7 +81,28 @@ export function DocumentItems({
   emptyMessage?: null | string
   view?: DocumentListingView
 }) {
-  return documents.length ? (
+  if (!documents.length) {
+    return <p className="emptyState">{emptyMessage || 'Nie ma dokumentów.'}</p>
+  }
+
+  if (view === 'cards') {
+    return (
+      <div className="documentList documentList-cards">
+        {documents.map((document) => (
+          <ContentCard
+            item={{
+              document,
+              kind: 'documents',
+              url: `/dokumenty/${document.slug}`,
+            }}
+            key={document.id}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  return (
     <div className={`documentList documentList-${view}`}>
       {documents.map((document) => (
         <article className="documentListItem" key={document.id}>
@@ -97,37 +119,12 @@ export function DocumentItems({
             <h2>
               <Link href={`/dokumenty/${document.slug}`}>{document.title}</Link>
             </h2>
-            {view !== 'list' ? <p>{document.summary}</p> : null}
+            {view === 'grid' ? <p>{document.summary}</p> : null}
           </div>
-          {view === 'cards' ? <DocumentPdfLink document={document} /> : null}
         </article>
       ))}
     </div>
-  ) : (
-    <p className="emptyState">{emptyMessage || 'Nie ma dokumentów.'}</p>
   )
-}
-
-function DocumentPdfLink({ document }: { document: Document }) {
-  const primaryFile = getPopulatedDocumentFile(document.primaryFile)
-
-  if (!primaryFile) return null
-
-  return (
-    <a
-      aria-label={`Otwórz główny plik PDF dokumentu: ${document.title}`}
-      className="documentPdfLink"
-      href={`/dokumenty/${document.slug}/plik/${primaryFile.id}`}
-      rel="noreferrer"
-      target="_blank"
-    >
-      <RasterIcon name="pdf" size="medium" />
-    </a>
-  )
-}
-
-function getPopulatedDocumentFile(value: DocumentFile | number): DocumentFile | null {
-  return typeof value === 'object' ? value : null
 }
 
 function buildPageURL(page: number, type?: string, year?: number): string {

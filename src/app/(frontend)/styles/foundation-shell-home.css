@@ -418,7 +418,6 @@ body:has(> .homePage) .siteHeader {
   margin-block: 1.25rem 0;
 }
 
-.contentHero .taxonomyLinks a,
 .contentHero .childCategories a {
   background: rgb(0 13 23 / 46%);
   text-shadow: none;
