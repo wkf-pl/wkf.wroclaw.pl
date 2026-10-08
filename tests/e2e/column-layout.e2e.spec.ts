@@ -246,6 +246,14 @@ test('collapses grid blocks according to their own width in every layout context
   expect(await getGridTrackCount(nestedGrid)).toBe(1)
   expect(await getGridTrackCount(topLevelGrid)).toBe(3)
 
+  const [topLevelGridBox, topLevelListingBox] = await Promise.all([
+    topLevelGrid.boundingBox(),
+    topLevelGrid.locator('xpath=..').boundingBox(),
+  ])
+  expect(topLevelGridBox).not.toBeNull()
+  expect(topLevelListingBox).not.toBeNull()
+  expect(Math.abs(topLevelGridBox!.width - topLevelListingBox!.width)).toBeLessThanOrEqual(1)
+
   await page.setViewportSize({ height: 900, width: 700 })
   expect(await getGridTrackCount(topLevelGrid)).toBe(1)
 })

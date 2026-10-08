@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-09T21:23:53Z",
+  "generatedAt": "2026-10-08T12:47:11Z",
   "title": "Design System: Wrocławski Klub Fantastyki",
   "extensions": {
     "colorMeta": {
@@ -124,6 +124,66 @@
           "oklch(95% 0.008 253.9)"
         ]
       },
+      "mist-blue": {
+        "role": "secondary",
+        "displayName": "Mist Blue",
+        "canonical": "#b9d5f5",
+        "tonalRamp": [
+          "oklch(15% 0.055 250)",
+          "oklch(26% 0.055 250)",
+          "oklch(37% 0.055 250)",
+          "oklch(49% 0.055 250)",
+          "oklch(61% 0.055 250)",
+          "oklch(73% 0.055 250)",
+          "oklch(84% 0.055 250)",
+          "oklch(95% 0.055 250)"
+        ]
+      },
+      "mist-blue-active": {
+        "role": "secondary",
+        "displayName": "Mist Blue Active",
+        "canonical": "#a8cdf8",
+        "tonalRamp": [
+          "oklch(15% 0.075 250)",
+          "oklch(26% 0.075 250)",
+          "oklch(37% 0.075 250)",
+          "oklch(49% 0.075 250)",
+          "oklch(61% 0.075 250)",
+          "oklch(73% 0.075 250)",
+          "oklch(84% 0.075 250)",
+          "oklch(95% 0.075 250)"
+        ]
+      },
+      "mist-blue-line": {
+        "role": "secondary",
+        "displayName": "Mist Blue Line",
+        "canonical": "rgb(111 168 235 / 78%)",
+        "tonalRamp": [
+          "oklch(15% 0.105 250 / 78%)",
+          "oklch(26% 0.105 250 / 78%)",
+          "oklch(37% 0.105 250 / 78%)",
+          "oklch(49% 0.105 250 / 78%)",
+          "oklch(61% 0.105 250 / 78%)",
+          "oklch(73% 0.105 250 / 78%)",
+          "oklch(84% 0.105 250 / 78%)",
+          "oklch(95% 0.105 250 / 78%)"
+        ]
+      },
+      "mist-blue-wash": {
+        "role": "secondary",
+        "displayName": "Mist Blue Wash",
+        "canonical": "rgb(111 168 235 / 14%)",
+        "tonalRamp": [
+          "oklch(15% 0.105 250 / 14%)",
+          "oklch(26% 0.105 250 / 14%)",
+          "oklch(37% 0.105 250 / 14%)",
+          "oklch(49% 0.105 250 / 14%)",
+          "oklch(61% 0.105 250 / 14%)",
+          "oklch(73% 0.105 250 / 14%)",
+          "oklch(84% 0.105 250 / 14%)",
+          "oklch(95% 0.105 250 / 14%)"
+        ]
+      },
       "lantern-line": {
         "role": "primary",
         "displayName": "Lantern Line",
@@ -239,12 +299,20 @@
       "css": ".ds-field { display: grid; gap: 0.45rem; color: var(--ivory); } .ds-field-label { font-weight: 700; } .ds-field-input { min-height: 2.75rem; padding: 0.6rem 0.75rem; border: 1px solid rgb(243 163 19 / 55%); border-radius: 0.4rem; background: var(--panel); color: var(--ivory); font: inherit; } .ds-field-input::placeholder { color: var(--muted); } .ds-field-input:focus-visible { border-color: var(--gold-light); outline: 3px solid rgb(255 189 56 / 32%); outline-offset: 2px; }"
     },
     {
-      "name": "Taxonomy Chip",
+      "name": "Category Pill",
       "kind": "chip",
-      "refersTo": "chip",
-      "description": "A quiet category link framed as a compact route marker.",
-      "html": "<a class=\"ds-taxonomy-chip\" href=\"#\">RPG</a>",
-      "css": ".ds-taxonomy-chip { display: inline-flex; padding: 0.3rem 0.65rem; border: 1px solid rgb(243 163 19 / 45%); border-radius: 999px; background: rgb(0 13 23 / 46%); color: var(--gold-light); font-size: 0.85rem; text-decoration: none; transition: border-color 160ms ease, background-color 160ms ease; } .ds-taxonomy-chip:hover { border-color: var(--gold-light); background: rgb(243 163 19 / 12%); } .ds-taxonomy-chip:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }"
+      "refersTo": "category-pill",
+      "description": "A full-pill category route marker with the system's primary amber voice.",
+      "html": "<a class=\"ds-category-pill\" href=\"#\">Spotkania</a>",
+      "css": ".ds-category-pill { display: inline-flex; min-height: 2rem; align-items: center; padding: 0.3rem 0.65rem; border: 1px solid var(--gold-light); border-radius: 999px; background: rgb(0 13 23 / 36%); color: var(--gold-light); font-size: 0.85rem; line-height: 1.2; text-decoration: none; transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease; } .ds-category-pill:hover { border-color: var(--gold); background: rgb(243 163 19 / 14%); color: var(--ivory); } .ds-category-pill:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }"
+    },
+    {
+      "name": "Tag Pill",
+      "kind": "chip",
+      "refersTo": "tag-pill",
+      "description": "A full-pill tag marker using Mist Blue as a subdued secondary taxonomy voice.",
+      "html": "<a class=\"ds-tag-pill\" href=\"#\">RPG</a>",
+      "css": ".ds-tag-pill { display: inline-flex; min-height: 2rem; align-items: center; padding: 0.3rem 0.65rem; border: 1px solid rgb(111 168 235 / 78%); border-radius: 999px; background: rgb(3 29 46 / 46%); color: #b9d5f5; font-size: 0.85rem; line-height: 1.2; text-decoration: none; transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease; } .ds-tag-pill:hover { border-color: #a8cdf8; background: rgb(111 168 235 / 14%); color: var(--ivory); } .ds-tag-pill:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }"
     },
     {
       "name": "Content Card",
@@ -294,6 +362,11 @@
         "section": "colors"
       },
       {
+        "name": "The Cool Quiet Rule",
+        "body": "Mist Blue supports tag taxonomy, muted information, and other secondary distinctions. It complements the amber route system without becoming a competing primary accent or blue glow.",
+        "section": "colors"
+      },
+      {
         "name": "The Chronicle, Not Costume Rule",
         "body": "Typography may feel literary and storied, but it must never imitate runes, blackletter, or game-interface display fonts.",
         "section": "typography"
@@ -325,15 +398,17 @@
       "Do keep components framed, tactile, and restrained even when the surrounding composition is theatrical.",
       "Do preserve the approved WKF logo and give it clear space on Deep Night surfaces.",
       "Do use transparent raster PNG or WebP icons with explicit dimensions and sufficient resolution for high-density displays.",
-      "Do maintain strong focus visibility, readable contrast, and reduced-motion behavior."
+      "Do maintain strong focus visibility, readable contrast, and reduced-motion behavior.",
+      "Do use Mist Blue for tag taxonomy and deliberately selected muted or informational text where a cool distinction improves scanning."
     ],
     "donts": [
-      "Don't use gaming neon, tavern-fantasy kitsch, or impersonal corporate-blue interface styling.",
+      "Don't use gaming neon, tavern-fantasy kitsch, or impersonal corporate-blue interface styling; Mist Blue is a quiet supporting voice, not a new dominant accent.",
       "Don't use SVG icons, icon fonts, emoji, or Unicode characters as substitutes for raster icon artwork.",
       "Don't turn Lantern Amber into a large-area background or apply glow uniformly to every surface.",
       "Don't give every card the strongest theatrical shadow; a hierarchy without a quiet plane has no depth.",
       "Don't use decorative fantasy typefaces that undermine institutional credibility or long-form readability.",
-      "Don't fabricate visual proof, partner marks, endorsements, or activity imagery that the organization cannot substantiate."
+      "Don't fabricate visual proof, partner marks, endorsements, or activity imagery that the organization cannot substantiate.",
+      "Don't promote the provisional Mist Blue Event or Document heading treatment into a service-wide convention before the current round has been evaluated by users."
     ]
   }
 }

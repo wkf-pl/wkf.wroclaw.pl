@@ -72,6 +72,15 @@ export function formatEventDate(event: Pick<Event, 'endAt' | 'startAt' | 'timeMo
     : `${startDate}, ${timeFormatter.format(start)} - ${endDate}, ${timeFormatter.format(end)}`
 }
 
+export function formatEventStartDate(event: Pick<Event, 'startAt' | 'timeMode'>): string {
+  const start = new Date(event.startAt)
+  const startDate = dateFormatter.format(start)
+
+  return event.timeMode === 'allDay'
+    ? `${startDate}, cały dzień`
+    : `${startDate}, ${timeFormatter.format(start)}`
+}
+
 export function getEventStatusLabel(status: Event['eventStatus']): string {
   return eventStatusOptions.find((option) => option.value === status)?.label ?? status
 }

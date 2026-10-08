@@ -362,15 +362,7 @@
 
 .documentList-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: min(70rem, 100%);
-}
-
-.documentList-grid .documentListItemContent {
-  padding: 1.25rem;
-}
-
-.documentList-grid .documentListItem h2 {
-  font-size: 1.5rem;
+  width: 100%;
 }
 
 .documentList-list {
@@ -578,6 +570,10 @@
   margin: 0 0 1rem;
 }
 
+.contentCardFacts--grid {
+  margin-bottom: 1.5rem;
+}
+
 .contentCardFacts p {
   display: flex;
   gap: 0.65rem;
@@ -610,15 +606,15 @@
 
 .contentList-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: min(70rem, 100%);
+  width: 100%;
 }
 
-.contentList-grid .contentCard {
+:is(.contentList-grid, .documentList-grid) .contentCard {
   display: flex;
   flex-direction: column;
 }
 
-.contentList-grid > article.contentCard > .contentCardImage {
+:is(.contentList-grid, .documentList-grid) > article.contentCard > .contentCardImage {
   display: block;
   align-self: start;
   overflow: hidden;
@@ -628,11 +624,11 @@
   aspect-ratio: 16 / 9;
 }
 
-.contentList-grid > article.contentCard > .contentCardImage img {
+:is(.contentList-grid, .documentList-grid) > article.contentCard > .contentCardImage img {
   display: block;
 }
 
-:is(.contentList-grid, .contentList-cards, .documentList-cards)
+:is(.contentList-grid, .contentList-cards, .documentList-grid, .documentList-cards)
   > article.contentCard
   > .contentCardImage
   > .contentCardImageFallback {
@@ -641,12 +637,21 @@
   height: 100%;
 }
 
-.contentList-grid .contentCardContent {
+:is(.contentList-grid, .documentList-grid) .contentCardContent {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
   padding: 1.25rem;
 }
 
-.contentList-grid .contentCard h2 {
+:is(.contentList-grid, .documentList-grid) .contentCard h2 {
   font-size: 1.5rem;
+}
+
+:is(.contentList-grid, .documentList-grid) .contentCardContent > .taxonomyLinks {
+  margin: auto 0 0;
+  padding-top: 2rem;
 }
 
 .contentList-compact {

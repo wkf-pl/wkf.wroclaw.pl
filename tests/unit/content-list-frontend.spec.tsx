@@ -95,9 +95,10 @@ describe('frontend content listing', () => {
     const frontendStyles = readFrontendStyles()
     const cardImageRule = frontendStyles.match(/\.contentCardImage\s*\{(?<declarations>[^}]*)\}/)
     const cardImageDeclarations = cardImageRule?.groups?.declarations
-    const gridCardImageSelector = '.contentList-grid > article.contentCard > .contentCardImage'
+    const gridCardImageSelector =
+      ':is(.contentList-grid, .documentList-grid) > article.contentCard > .contentCardImage'
     const gridCardImageRule = frontendStyles.match(
-      /\.contentList-grid > article\.contentCard > \.contentCardImage\s*\{(?<declarations>[^}]*)\}/,
+      /:is\(\.contentList-grid, \.documentList-grid\) > article\.contentCard > \.contentCardImage\s*\{(?<declarations>[^}]*)\}/,
     )
     const gridCardImageDeclarations = gridCardImageRule?.groups?.declarations
     const contentCardImageAspectRatioSelectors = [
@@ -138,7 +139,7 @@ describe('frontend content listing', () => {
       /\.newsImageFallback,\s*\.cardBlockImageFallback,\s*\.contentCardImageFallback\s*\{[^}]*placeholder-nebula\.webp/,
     )
     expect(frontendStyles).toMatch(
-      /:is\(\.contentList-grid, \.contentList-cards, \.documentList-cards\)[^{]*> \.contentCardImageFallback\s*\{[^}]*height: 100%;/,
+      /:is\(\.contentList-grid, \.contentList-cards, \.documentList-grid, \.documentList-cards\)[^{]*> \.contentCardImageFallback\s*\{[^}]*height: 100%;/,
     )
   })
 
@@ -195,11 +196,55 @@ describe('frontend content listing', () => {
     expect(markup).toContain('Otwarte spotkanie dla graczy.')
   })
 
+  it('renders the collection-specific grid data from full entities', () => {
+    const event = createEventItem()
+    const markup = renderToStaticMarkup(
+      createElement(ContentList, {
+        items: [createPageItem(), createPostItem(), event, createEventCycleItem()],
+        view: 'grid',
+      }),
+    )
+
+    expect(markup).toContain('class="contentCard contentCard--grid"')
+    expect(markup).toContain('class="contentCardKind">Strona</span>')
+    expect(markup).toContain('class="contentCardKind">Wpis</span>')
+    expect(markup).toContain('class="contentCardKind">Wydarzenie</span>')
+    expect(markup).toContain('class="contentCardKind">Cykl wydarzeń</span>')
+    expect(markup).toContain(
+      '<time dateTime="2026-10-13T16:00:00.000Z">13 października 2026, 18:00</time>',
+    )
+    expect(markup).not.toContain('/events/series/erpegowe-wtorki')
+    expect(markup).not.toContain('22:00')
+    expect(markup).toContain('href="https://example.com/miejsce"')
+    expect(markup.indexOf(event.document.title)).toBeLessThan(
+      markup.indexOf('Centrum kultury, Wrocław'),
+    )
+    expect(markup.indexOf('Centrum kultury, Wrocław')).toBeLessThan(
+      markup.indexOf('Otwarte spotkanie dla graczy.'),
+    )
+  })
+
   it('keeps the approved larger gap before taxonomy in every detailed card', () => {
     const frontendStyles = readFrontendStyles()
 
     expect(frontendStyles).toMatch(
       /:is\(\.contentList-cards, \.documentList-cards\) \.contentCardContent > \.taxonomyLinks \{[\s\S]*?margin: 1\.75rem 0 0;/,
     )
+  })
+
+  it('keeps the approved grid spacing before taxonomy and after the event place', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-grid, \.documentList-grid\) \.contentCardContent > \.taxonomyLinks \{[\s\S]*?margin: auto 0 0;[\s\S]*?padding-top: 2rem;/,
+    )
+    expect(frontendStyles).toMatch(/\.contentCardFacts--grid \{[\s\S]*?margin-bottom: 1\.5rem;/)
+  })
+
+  it('lets content and document grids fill the width of their section', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(/\.contentList-grid \{[^}]*width: 100%;/)
+    expect(frontendStyles).toMatch(/\.documentList-grid \{[^}]*width: 100%;/)
   })
 })

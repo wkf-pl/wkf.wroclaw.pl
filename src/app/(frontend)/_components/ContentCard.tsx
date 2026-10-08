@@ -1,13 +1,13 @@
 import Link from 'next/link'
 
+import { CmsRichText } from '@/components/CmsRichText'
 import { RasterIcon } from '@/components/RasterIcon'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
 import { getDocumentTypeLabel } from '@/modules/documents/document-types'
-import { formatEventDate } from '@/modules/events/presentation'
+import { formatEventDate, formatEventStartDate } from '@/modules/events/presentation'
 import type { Document, EventCycle, Media } from '@/payload-types'
 
 import { CmsImage } from './CmsImage'
-import { CmsRichText } from '@/components/CmsRichText'
 import { TaxonomyLinks } from './TaxonomyLinks'
 
 const publicationDateFormatter = new Intl.DateTimeFormat('pl-PL', {
@@ -24,13 +24,20 @@ export type DocumentCardItem = {
 }
 
 export type ContentCardItem = DocumentCardItem | PublicContentListItem
+export type ContentCardView = 'cards' | 'grid'
 
-export function ContentCard({ item }: { item: ContentCardItem }) {
+export function ContentCard({
+  item,
+  view = 'cards',
+}: {
+  item: ContentCardItem
+  view?: ContentCardView
+}) {
   const title = item.document.title
   const image = getCardImage(item)
 
   return (
-    <article className="contentCard">
+    <article className={view === 'grid' ? 'contentCard contentCard--grid' : 'contentCard'}>
       <Link aria-label={title} className="contentCardImage" href={item.url}>
         {image ? (
           <CmsImage media={image} />
@@ -39,11 +46,11 @@ export function ContentCard({ item }: { item: ContentCardItem }) {
         )}
       </Link>
       <div className="contentCardContent">
-        {renderCardMetadata(item)}
+        {renderCardMetadata(item, view)}
         <h2>
           <Link href={item.url}>{title}</Link>
         </h2>
-        {renderEventFacts(item)}
+        {renderEventFacts(item, view)}
         {renderCardExcerpt(item)}
         <TaxonomyLinks category={item.document.category} tags={item.document.tags} />
       </div>
@@ -55,7 +62,7 @@ function getCardImage(item: ContentCardItem): Media | number | null | undefined 
   return item.kind === 'documents' ? null : item.document.heroImage
 }
 
-function renderCardMetadata(item: ContentCardItem) {
+function renderCardMetadata(item: ContentCardItem, view: ContentCardView) {
   switch (item.kind) {
     case 'event-cycles':
       return (
@@ -64,6 +71,15 @@ function renderCardMetadata(item: ContentCardItem) {
         </p>
       )
     case 'events': {
+      if (view === 'grid') {
+        return (
+          <p className="contentCardMeta">
+            <span className="contentCardKind">Wydarzenie</span>
+            <time dateTime={item.document.startAt}>{formatEventStartDate(item.document)}</time>
+          </p>
+        )
+      }
+
       const cycle = getPopulatedEventCycle(item.document.cycle)
       return (
         <p className="contentCardMeta">
@@ -113,18 +129,24 @@ function renderCardMetadata(item: ContentCardItem) {
   }
 }
 
-function renderEventFacts(item: ContentCardItem) {
+function renderEventFacts(item: ContentCardItem, view: ContentCardView) {
   if (item.kind !== 'events') return null
 
   const { location } = item.document
+  if (view === 'grid' && !location.venueName) return null
+
   return (
-    <div className="contentCardFacts">
-      <p>
-        <span aria-label="Kiedy" className="contentCardFactIcon" role="img">
-          <RasterIcon name="calendar" size="small" />
-        </span>
-        <time dateTime={item.document.startAt}>{formatEventDate(item.document)}</time>
-      </p>
+    <div
+      className={view === 'grid' ? 'contentCardFacts contentCardFacts--grid' : 'contentCardFacts'}
+    >
+      {view === 'cards' ? (
+        <p>
+          <span aria-label="Kiedy" className="contentCardFactIcon" role="img">
+            <RasterIcon name="calendar" size="small" />
+          </span>
+          <time dateTime={item.document.startAt}>{formatEventDate(item.document)}</time>
+        </p>
+      ) : null}
       {location.venueName ? (
         <p>
           <span aria-label="Gdzie" className="contentCardFactIcon" role="img">

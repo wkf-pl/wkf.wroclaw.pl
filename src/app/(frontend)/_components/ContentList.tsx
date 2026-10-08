@@ -2,10 +2,7 @@ import Link from 'next/link'
 
 import type { PublicContentListItem } from '@/modules/content/content-listing'
 
-import { CmsRichText } from '@/components/CmsRichText'
-import { CmsImage } from './CmsImage'
 import { ContentCard } from './ContentCard'
-import { TaxonomyLinks } from './TaxonomyLinks'
 
 export type ContentListView = 'cards' | 'compact' | 'grid'
 
@@ -33,35 +30,24 @@ export function ContentList({ emptyMessage, items, view }: ContentListProperties
     return <p className="emptyState">{emptyMessage || 'Nie ma opublikowanych treści.'}</p>
   }
 
-  if (view === 'cards') {
+  if (view !== 'compact') {
     return (
-      <div className="contentList contentList-cards">
+      <div className={`contentList contentList-${view}`}>
         {items.map((item) => (
-          <ContentCard item={item} key={`${item.kind}-${item.document.id}`} />
+          <ContentCard item={item} key={`${item.kind}-${item.document.id}`} view={view} />
         ))}
       </div>
     )
   }
 
-  const showsImageFallback = view === 'grid'
-
   return (
-    <div className={`contentList contentList-${view}`}>
+    <div className="contentList contentList-compact">
       {items.map((item) => {
         const { document } = item
         const date = getListingDate(item)
 
         return (
           <article className="contentCard" key={`${item.kind}-${document.id}`}>
-            {view !== 'compact' ? (
-              <Link aria-label={document.title} className="contentCardImage" href={item.url}>
-                {document.heroImage ? (
-                  <CmsImage media={document.heroImage} />
-                ) : showsImageFallback ? (
-                  <span aria-hidden="true" className="contentCardImageFallback" />
-                ) : null}
-              </Link>
-            ) : null}
             <div className="contentCardContent">
               <p className="contentCardMeta">
                 <span className="contentCardKind">{contentKindLabels[item.kind]}</span>
@@ -70,10 +56,6 @@ export function ContentList({ emptyMessage, items, view }: ContentListProperties
               <h2>
                 <Link href={item.url}>{document.title}</Link>
               </h2>
-              {view !== 'compact' ? renderListingExcerpt(item) : null}
-              {view !== 'compact' ? (
-                <TaxonomyLinks category={document.category} tags={document.tags} />
-              ) : null}
             </div>
           </article>
         )
@@ -90,17 +72,5 @@ function getListingDate(item: PublicContentListItem): null | string {
       return item.document.publishedAt ?? null
     default:
       return null
-  }
-}
-
-function renderListingExcerpt(item: PublicContentListItem) {
-  switch (item.kind) {
-    case 'event-cycles':
-    case 'events':
-      return <CmsRichText data={item.document.excerpt} />
-    case 'pages':
-      return item.document.listingExcerpt ? <p>{item.document.listingExcerpt}</p> : null
-    case 'posts':
-      return <p>{item.document.excerpt}</p>
   }
 }

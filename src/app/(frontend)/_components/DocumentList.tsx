@@ -85,9 +85,9 @@ export function DocumentItems({
     return <p className="emptyState">{emptyMessage || 'Nie ma dokumentów.'}</p>
   }
 
-  if (view === 'cards') {
+  if (view !== 'list') {
     return (
-      <div className="documentList documentList-cards">
+      <div className={`documentList documentList-${view}`}>
         {documents.map((document) => (
           <ContentCard
             item={{
@@ -96,6 +96,7 @@ export function DocumentItems({
               url: `/dokumenty/${document.slug}`,
             }}
             key={document.id}
+            view={view}
           />
         ))}
       </div>
@@ -103,7 +104,7 @@ export function DocumentItems({
   }
 
   return (
-    <div className={`documentList documentList-${view}`}>
+    <div className="documentList documentList-list">
       {documents.map((document) => (
         <article className="documentListItem" key={document.id}>
           <div className="documentListItemContent">
@@ -119,7 +120,6 @@ export function DocumentItems({
             <h2>
               <Link href={`/dokumenty/${document.slug}`}>{document.title}</Link>
             </h2>
-            {view === 'grid' ? <p>{document.summary}</p> : null}
           </div>
         </article>
       ))}
