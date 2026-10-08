@@ -107,7 +107,10 @@ describe('documents block', () => {
       emptyMessageField?.admin?.condition?.({}, { selectionMode: 'manual' }, {} as never),
     ).toBe(false)
     expect(viewField).toMatchObject({
-      options: expect.arrayContaining([{ label: 'Karuzela', value: 'carousel' }]),
+      options: expect.arrayContaining([
+        { label: 'Kafelki', value: 'tiles' },
+        { label: 'Karuzela', value: 'carousel' },
+      ]),
     })
 
     const layout = flattenFields(Pages.fields).find(
@@ -136,7 +139,7 @@ describe('documents block', () => {
     ).toBe(true)
   })
 
-  it('renders card, compact list and grid as distinct public views', () => {
+  it('renders card, compact list, grid and tiles as distinct public views', () => {
     const document = {
       category: { id: 4, name: 'Dokumenty', slug: 'dokumenty' } as Category,
       documentDate: '2026-08-26T00:00:00.000Z',
@@ -153,12 +156,13 @@ describe('documents block', () => {
       },
     } as Document
 
-    const renderView = (view: 'cards' | 'grid' | 'list') =>
+    const renderView = (view: 'cards' | 'grid' | 'list' | 'tiles') =>
       renderToStaticMarkup(createElement(DocumentItems, { documents: [document], view }))
 
     const cardsMarkup = renderView('cards')
     const gridMarkup = renderView('grid')
     const listMarkup = renderView('list')
+    const tilesMarkup = renderView('tiles')
 
     expect(cardsMarkup).toContain('documentList-cards')
     expect(cardsMarkup).toContain(document.summary)
@@ -187,6 +191,17 @@ describe('documents block', () => {
     )
     expect(listMarkup).not.toContain(document.summary)
     expect(listMarkup).not.toContain('documentPdfLink')
+    expect(tilesMarkup).toContain('documentList-tiles')
+    expect(tilesMarkup).toContain('class="contentTile"')
+    expect(tilesMarkup).toContain('class="contentTileImageFallback"')
+    expect(tilesMarkup).toContain('class="contentCardKind">Uchwała</span>')
+    expect(tilesMarkup).toContain('class="contentCardMetaText">nr 4/2026 z dnia ')
+    expect(tilesMarkup).toContain(
+      '<time dateTime="2026-08-26T00:00:00.000Z">26 sierpnia 2026</time>',
+    )
+    expect(tilesMarkup).not.toContain(document.summary)
+    expect(tilesMarkup).not.toContain('taxonomyLinks')
+    expect(tilesMarkup).not.toContain('documentPdfLink')
   })
 
   it('renders documents in the shared carousel without discarding document data', () => {

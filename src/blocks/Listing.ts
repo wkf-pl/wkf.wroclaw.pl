@@ -110,6 +110,7 @@ export const ListingBlock: Block = {
           { label: 'Karty', value: 'cards' },
           { label: 'Lista kompaktowa', value: 'compact' },
           { label: 'Siatka', value: 'grid' },
+          { label: 'Kafelki', value: 'tiles' },
         ],
         required: true,
       },

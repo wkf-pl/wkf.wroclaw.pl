@@ -44,6 +44,7 @@ import * as migration_20261007_125027_tabbed_content_block from './20261007_1250
 import * as migration_20261007_133416_content_calendar_block from './20261007_133416_content_calendar_block'
 import * as migration_20261007_144303_carousel_block from './20261007_144303_carousel_block'
 import * as migration_20261008_142626_document_carousel_view from './20261008_142626_document_carousel_view'
+import * as migration_20261008_151847_content_tiles_view from './20261008_151847_content_tiles_view'
 
 export const migrations = [
   {
@@ -275,5 +276,10 @@ export const migrations = [
     up: migration_20261008_142626_document_carousel_view.up,
     down: migration_20261008_142626_document_carousel_view.down,
     name: '20261008_142626_document_carousel_view',
+  },
+  {
+    up: migration_20261008_151847_content_tiles_view.up,
+    down: migration_20261008_151847_content_tiles_view.down,
+    name: '20261008_151847_content_tiles_view',
   },
 ]

@@ -587,6 +587,118 @@
   width: 100%;
 }
 
+:is(.contentList-tiles, .documentList-tiles) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.contentTile {
+  min-width: 0;
+}
+
+.contentTileLink {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgb(243 163 19 / 72%);
+  border-radius: 0.75rem;
+  background: var(--background-deep);
+  color: var(--ivory);
+  text-decoration: none;
+  transition: border-color 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.contentTileMedia,
+.contentTileOverlay,
+.contentTileContent {
+  grid-area: 1 / 1;
+}
+
+.contentTileMedia {
+  display: block;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.contentTileImage,
+.contentTileImageFallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.contentTileImage {
+  object-fit: cover;
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.contentTileImageFallback {
+  background:
+    url('/assets/placeholder-nebula.webp') center / cover no-repeat,
+    var(--background-deep);
+}
+
+.contentTileOverlay {
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgb(0 13 23 / 4%) 0%,
+    rgb(0 13 23 / 6%) 24%,
+    rgb(0 13 23 / 16%) 44%,
+    rgb(0 13 23 / 35%) 62%,
+    rgb(0 13 23 / 59%) 78%,
+    rgb(0 13 23 / 80%) 90%,
+    rgb(0 13 23 / 96%) 100%
+  );
+  pointer-events: none;
+}
+
+.contentTileContent {
+  z-index: 2;
+  align-self: end;
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 1.35rem);
+  text-shadow: 0 3px 22px rgb(0 0 0 / 65%);
+}
+
+.contentTileContent h2 {
+  margin: 0 0 0.65rem;
+  color: var(--ivory);
+  font-size: 1.5rem;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.contentTileMeta {
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.contentTileMeta :is(.contentCardKind, .contentCardMetaText, time) {
+  color: inherit;
+}
+
+.contentTileLink:hover,
+.contentTileLink:focus-visible {
+  border-color: var(--gold-light);
+}
+
+.contentTileLink:hover .contentTileImage,
+.contentTileLink:focus-visible .contentTileImage {
+  transform: scale(1.035);
+}
+
+.contentTileLink:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
 :is(.contentList-grid, .documentList-grid) .contentCard {
   display: flex;
   flex-direction: column;

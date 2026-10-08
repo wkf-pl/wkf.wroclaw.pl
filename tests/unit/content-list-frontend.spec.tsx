@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 import { ContentList } from '@/app/(frontend)/_components/ContentList'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
-import type { Event, EventCycle, Page, Post } from '@/payload-types'
+import type { Event, EventCycle, Media, Page, Post } from '@/payload-types'
 
 import { readFrontendStyles } from '../helpers/frontend-styles'
 import { createLexicalDocument } from '../helpers/lexical-document'
@@ -239,6 +239,64 @@ describe('frontend content listing', () => {
     expect(markup).not.toContain('contentCardImage')
     expect(markup).not.toContain('taxonomyLinks')
     expect(markup).not.toContain('Otwarte spotkanie dla graczy.')
+  })
+
+  it('renders image tiles with the same information as compact rows', () => {
+    const post = createPostItem()
+    post.document.heroImage = {
+      alt: 'Członkowie klubu przy stole',
+      height: 900,
+      id: 9,
+      url: '/media/spotkanie.webp',
+      width: 1600,
+    } as Media
+    const markup = renderToStaticMarkup(
+      createElement(ContentList, {
+        items: [createPageItem(), post, createEventItem(), createEventCycleItem()],
+        view: 'tiles',
+      }),
+    )
+
+    expect(markup).toContain('class="contentList contentList-tiles"')
+    expect(markup.match(/class="contentTile"/g)).toHaveLength(4)
+    expect(markup.match(/class="contentTileImageFallback"/g)).toHaveLength(3)
+    expect(markup).toContain('class="contentTileImage"')
+    expect(markup).toContain('src="/media/spotkanie.webp"')
+    expect(markup).toContain('class="contentCardKind">Strona</span>')
+    expect(markup).toContain('class="contentCardKind">Wpis</span>')
+    expect(markup).toContain('class="contentCardKind">Wydarzenie</span>')
+    expect(markup).toContain('class="contentCardKind">Cykl wydarzeń</span>')
+    expect(markup).toContain(
+      '<time dateTime="2026-10-13T16:00:00.000Z">13 października 2026, 18:00</time>',
+    )
+    expect(markup).not.toContain('taxonomyLinks')
+    expect(markup).not.toContain('Otwarte spotkanie dla graczy.')
+    expect(markup).not.toContain('Centrum kultury, Wrocław')
+  })
+
+  it('lays image tiles out in three, two and one container-aware columns', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-tiles, \.documentList-tiles\) \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/,
+    )
+    expect(frontendStyles).toMatch(
+      /@container content-block \(width <= 54rem\) \{[\s\S]*?:is\(\.contentList-tiles, \.documentList-tiles\) \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/,
+    )
+    expect(frontendStyles).toMatch(
+      /@container content-block \(width <= 36rem\) \{[\s\S]*?:is\(\.contentList-tiles, \.documentList-tiles\) \{[^}]*grid-template-columns: minmax\(0, 1fr\);/,
+    )
+  })
+
+  it('uses the nebula fallback and a progressively stronger tile scrim', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(
+      /\.contentTileImageFallback \{[^}]*placeholder-nebula\.webp[^}]*cover no-repeat/,
+    )
+    expect(frontendStyles).toMatch(
+      /\.contentTileOverlay \{[^}]*linear-gradient\([\s\S]*?4%\) 0%,[\s\S]*?16%\) 44%,[\s\S]*?59%\) 78%,[\s\S]*?96%\) 100%/,
+    )
   })
 
   it('groups compact content and document rows into one table-like frame', () => {

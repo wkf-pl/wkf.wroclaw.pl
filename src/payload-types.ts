@@ -1294,7 +1294,7 @@ export interface EventType {
  * via the `definition` "ListingBlock".
  */
 export interface ListingBlock {
-  view: 'cards' | 'compact' | 'grid';
+  view: 'cards' | 'compact' | 'grid' | 'tiles';
   frame?: ('none' | 'outline') | null;
   surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
   /**
@@ -1466,7 +1466,7 @@ export interface DocumentsBlock {
   category?: (number | null) | Category;
   tag?: (number | null) | Tag;
   sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
-  view: 'cards' | 'list' | 'grid' | 'carousel';
+  view: 'cards' | 'list' | 'grid' | 'tiles' | 'carousel';
   pageSize: number;
   pagination?: boolean | null;
   emptyMessage?: string | null;

@@ -287,7 +287,12 @@ describe('page configuration', () => {
 
     expect(ListingBlock.fields[0]).toMatchObject({
       fields: [
-        { admin: { width: '33.333%' }, name: 'view', type: 'select' },
+        {
+          admin: { width: '33.333%' },
+          name: 'view',
+          options: expect.arrayContaining([{ label: 'Kafelki', value: 'tiles' }]),
+          type: 'select',
+        },
         { admin: { width: '33.333%' }, name: 'frame', type: 'select' },
         { admin: { width: '33.333%' }, name: 'surface', type: 'select' },
       ],

@@ -1,17 +1,13 @@
 import Link from 'next/link'
 
-import { documentTypeOptions, getDocumentTypeLabel } from '@/modules/documents/document-types'
+import { documentTypeOptions } from '@/modules/documents/document-types'
 import type { Document } from '@/payload-types'
 import type { DocumentListingView } from '@/modules/documents/document-listing'
 
 import { ContentCard } from './ContentCard'
 import { ContentCarousel } from './ContentCarousel'
-
-const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-})
+import { ContentListingMeta } from './ContentListingMeta'
+import { ContentTile } from './ContentTile'
 
 export function DocumentList({
   documents,
@@ -98,6 +94,23 @@ export function DocumentItems({
     )
   }
 
+  if (view === 'tiles') {
+    return (
+      <div className="documentList documentList-tiles">
+        {documents.map((document) => (
+          <ContentTile
+            item={{
+              document,
+              kind: 'documents',
+              url: `/dokumenty/${document.slug}`,
+            }}
+            key={document.id}
+          />
+        ))}
+      </div>
+    )
+  }
+
   if (view !== 'list') {
     return (
       <div className={`documentList documentList-${view}`}>
@@ -121,15 +134,14 @@ export function DocumentItems({
       {documents.map((document) => (
         <article className="documentListItem" key={document.id}>
           <div className="documentListItemContent">
-            <p className="contentCardMeta documentListItemMeta">
-              <span className="contentCardKind">{getDocumentTypeLabel(document.documentType)}</span>
-              <span className="contentCardMetaText">
-                {document.documentNumber ? `nr ${document.documentNumber} ` : null}z dnia{' '}
-                <time dateTime={document.documentDate}>
-                  {dateFormatter.format(new Date(document.documentDate))}
-                </time>
-              </span>
-            </p>
+            <ContentListingMeta
+              className="contentCardMeta documentListItemMeta"
+              item={{
+                document,
+                kind: 'documents',
+                url: `/dokumenty/${document.slug}`,
+              }}
+            />
             <h2>
               <Link href={`/dokumenty/${document.slug}`}>{document.title}</Link>
             </h2>

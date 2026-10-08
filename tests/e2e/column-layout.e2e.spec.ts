@@ -134,7 +134,7 @@ test.beforeAll(async () => {
               width: 6,
             },
             {
-              blocks: [headingBlock('Right paginated listing'), listingBlock('grid')],
+              blocks: [headingBlock('Right paginated listing'), listingBlock('tiles')],
               surface: 'default',
               width: 6,
             },
@@ -143,6 +143,8 @@ test.beforeAll(async () => {
         },
         headingBlock('Top-level grid listing'),
         listingBlock('grid', false),
+        headingBlock('Top-level tile listing'),
+        listingBlock('tiles', false),
       ],
       slug: pageSlug,
       title: 'E2E column layout',
@@ -228,9 +230,7 @@ test('uses container breakpoints and omits empty columns after stacking', async 
   await expect(twoColumnLayout.locator('.columnLayoutColumn').nth(1)).toBeHidden()
 })
 
-test('collapses grid blocks according to their own width in every layout context', async ({
-  page,
-}) => {
+test('collapses grid and tile blocks according to their own width', async ({ page }) => {
   await page.setViewportSize({ height: 900, width: 1400 })
   await page.goto(`/${pageSlug}`)
 
@@ -242,9 +242,21 @@ test('collapses grid blocks according to their own width in every layout context
   const topLevelGrid = page.locator(
     '.pageBlocks > .contentPresentation--block .listingBlock .contentList-grid',
   )
+  const nestedTiles = page
+    .locator('.columnLayout')
+    .filter({ hasText: 'Right paginated listing' })
+    .locator('.contentList-tiles')
+    .first()
+  const topLevelTiles = page.locator(
+    '.pageBlocks > .contentPresentation--block .listingBlock .contentList-tiles',
+  )
 
   expect(await getGridTrackCount(nestedGrid)).toBe(1)
   expect(await getGridTrackCount(topLevelGrid)).toBe(3)
+  expect(await getGridTrackCount(nestedTiles)).toBe(1)
+  expect(await getGridTrackCount(topLevelTiles)).toBe(3)
+  await expect(topLevelTiles.locator('.contentTileImage')).toHaveCount(0)
+  await expect(topLevelTiles.locator('.contentTileImageFallback')).toHaveCount(3)
 
   const [topLevelGridBox, topLevelListingBox] = await Promise.all([
     topLevelGrid.boundingBox(),
@@ -254,15 +266,19 @@ test('collapses grid blocks according to their own width in every layout context
   expect(topLevelListingBox).not.toBeNull()
   expect(Math.abs(topLevelGridBox!.width - topLevelListingBox!.width)).toBeLessThanOrEqual(1)
 
-  await page.setViewportSize({ height: 900, width: 700 })
+  await page.setViewportSize({ height: 900, width: 900 })
+  expect(await getGridTrackCount(topLevelTiles)).toBe(2)
+
+  await page.setViewportSize({ height: 900, width: 560 })
   expect(await getGridTrackCount(topLevelGrid)).toBe(1)
+  expect(await getGridTrackCount(topLevelTiles)).toBe(1)
 })
 
 function headingBlock(heading: string) {
   return { blockType: 'heading' as const, heading, headingLevel: 'h2' as const }
 }
 
-function listingBlock(view: 'compact' | 'grid' = 'compact', pagination = true) {
+function listingBlock(view: 'compact' | 'grid' | 'tiles' = 'compact', pagination = true) {
   return {
     blockType: 'listing' as const,
     eventTimeFilter: 'all' as const,

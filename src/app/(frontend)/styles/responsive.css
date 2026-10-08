@@ -155,6 +155,13 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .contentTileLink,
+  .contentTileImage {
+    transition: none;
+  }
+}
+
 @container content-block (width <= 48rem) {
   .contentCard,
   .memberGrid-card .memberCard {
@@ -187,6 +194,18 @@
 
   .mediaGallery.mediaList-list .mediaGalleryItem,
   .attachmentList.mediaList-list .attachmentItem {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container content-block (width <= 54rem) {
+  :is(.contentList-tiles, .documentList-tiles) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container content-block (width <= 36rem) {
+  :is(.contentList-tiles, .documentList-tiles) {
     grid-template-columns: minmax(0, 1fr);
   }
 }
