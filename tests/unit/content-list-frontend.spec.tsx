@@ -224,6 +224,43 @@ describe('frontend content listing', () => {
     )
   })
 
+  it('renders compact rows with the event start time and no extra entity data', () => {
+    const markup = renderToStaticMarkup(
+      createElement(ContentList, {
+        items: [createPageItem(), createPostItem(), createEventItem(), createEventCycleItem()],
+        view: 'compact',
+      }),
+    )
+
+    expect(markup).toContain('class="contentList contentList-compact"')
+    expect(markup).toContain(
+      '<time dateTime="2026-10-13T16:00:00.000Z">13 października 2026, 18:00</time>',
+    )
+    expect(markup).not.toContain('contentCardImage')
+    expect(markup).not.toContain('taxonomyLinks')
+    expect(markup).not.toContain('Otwarte spotkanie dla graczy.')
+  })
+
+  it('groups compact content and document rows into one table-like frame', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(
+      /:is\(\.listingBlock, \.documentsBlock\):has\(\s*> :is\(\.contentList-compact, \.documentList-list\)\s*\) \{[^}]*width: 100%;/,
+    )
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-compact, \.documentList-list\) \{[^}]*gap: 0;[^}]*overflow: hidden;[^}]*width: 100%;[^}]*border: 1px solid[^}]*border-radius: 0\.75rem;/,
+    )
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-compact > \.contentCard, \.documentList-list > \.documentListItem\) \{[^}]*border: 0;[^}]*border-bottom: 1px solid[^}]*border-radius: 0;[^}]*background: transparent;/,
+    )
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-compact \.contentCardContent, \.documentList-list \.documentListItemContent\) \{[^}]*grid-template-columns: minmax\(18rem, 5fr\) minmax\(0, 7fr\);[^}]*gap: 0;/,
+    )
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-compact, \.documentList-list\) h2 a \{[^}]*color: var\(--ivory\);/,
+    )
+  })
+
   it('keeps the approved larger gap before taxonomy in every detailed card', () => {
     const frontendStyles = readFrontendStyles()
 

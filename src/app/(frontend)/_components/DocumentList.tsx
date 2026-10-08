@@ -108,14 +108,14 @@ export function DocumentItems({
       {documents.map((document) => (
         <article className="documentListItem" key={document.id}>
           <div className="documentListItemContent">
-            <p className="documentListItemMeta">
-              <span>
-                {getDocumentTypeLabel(document.documentType)}
-                {document.documentNumber ? ` ${document.documentNumber}` : ''}
+            <p className="contentCardMeta documentListItemMeta">
+              <span className="contentCardKind">{getDocumentTypeLabel(document.documentType)}</span>
+              <span className="contentCardMetaText">
+                {document.documentNumber ? `nr ${document.documentNumber} ` : null}z dnia{' '}
+                <time dateTime={document.documentDate}>
+                  {dateFormatter.format(new Date(document.documentDate))}
+                </time>
               </span>
-              <time dateTime={document.documentDate}>
-                {dateFormatter.format(new Date(document.documentDate))}
-              </time>
             </p>
             <h2>
               <Link href={`/dokumenty/${document.slug}`}>{document.title}</Link>

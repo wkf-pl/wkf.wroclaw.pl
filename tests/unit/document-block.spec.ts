@@ -174,6 +174,11 @@ describe('documents block', () => {
     expect(gridMarkup).toContain('href="/tag/formalne"')
     expect(gridMarkup).not.toContain('documentPdfLink')
     expect(listMarkup).toContain('documentList-list')
+    expect(listMarkup).toContain('class="contentCardKind">Uchwała</span>')
+    expect(listMarkup).toContain('class="contentCardMetaText">nr 4/2026 z dnia ')
+    expect(listMarkup).toContain(
+      '<time dateTime="2026-08-26T00:00:00.000Z">26 sierpnia 2026</time>',
+    )
     expect(listMarkup).not.toContain(document.summary)
     expect(listMarkup).not.toContain('documentPdfLink')
   })

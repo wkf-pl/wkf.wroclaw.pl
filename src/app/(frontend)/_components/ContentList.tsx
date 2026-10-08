@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import type { PublicContentListItem } from '@/modules/content/content-listing'
+import { formatEventStartDate } from '@/modules/events/presentation'
 
 import { ContentCard } from './ContentCard'
 
@@ -12,9 +13,10 @@ type ContentListProperties = {
   view: ContentListView
 }
 
-const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
+const publicationDateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric',
   month: 'long',
+  timeZone: 'Europe/Warsaw',
   year: 'numeric',
 })
 
@@ -51,7 +53,7 @@ export function ContentList({ emptyMessage, items, view }: ContentListProperties
             <div className="contentCardContent">
               <p className="contentCardMeta">
                 <span className="contentCardKind">{contentKindLabels[item.kind]}</span>
-                {date ? <time dateTime={date}>{dateFormatter.format(new Date(date))}</time> : null}
+                {date ? <time dateTime={date.dateTime}>{date.label}</time> : null}
               </p>
               <h2>
                 <Link href={item.url}>{document.title}</Link>
@@ -64,12 +66,20 @@ export function ContentList({ emptyMessage, items, view }: ContentListProperties
   )
 }
 
-function getListingDate(item: PublicContentListItem): null | string {
+function getListingDate(item: PublicContentListItem): null | { dateTime: string; label: string } {
   switch (item.kind) {
     case 'events':
-      return item.document.startAt
+      return {
+        dateTime: item.document.startAt,
+        label: formatEventStartDate(item.document),
+      }
     case 'posts':
-      return item.document.publishedAt ?? null
+      return item.document.publishedAt
+        ? {
+            dateTime: item.document.publishedAt,
+            label: publicationDateFormatter.format(new Date(item.document.publishedAt)),
+          }
+        : null
     default:
       return null
   }
