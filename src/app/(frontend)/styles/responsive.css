@@ -116,6 +116,16 @@
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .calendarSelectionActions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .calendarEventPrimaryAction {
+    justify-content: center;
+    width: 100%;
+  }
 }
 
 @media (width <= 70rem) {

@@ -13,11 +13,14 @@ export type CalendarEventType = {
 }
 
 export type CalendarEvent = {
+  endAt: null | string
   eventType: CalendarEventType
   excerpt: Event['excerpt']
   id: number
+  location: Pick<Event['location'], 'venueName' | 'venueWebsite'>
   slug: string
   startAt: string
+  timeMode: Event['timeMode']
   title: string
 }
 
@@ -63,17 +66,28 @@ export function toCalendarEventType(
 }
 
 export function toCalendarEvent(
-  event: Pick<Event, 'eventType' | 'excerpt' | 'id' | 'slug' | 'startAt' | 'title'>,
+  event: Pick<
+    Event,
+    'endAt' | 'eventType' | 'excerpt' | 'id' | 'slug' | 'startAt' | 'timeMode' | 'title'
+  > & {
+    location: Pick<Event['location'], 'venueName' | 'venueWebsite'>
+  },
 ): CalendarEvent {
   return {
+    endAt: event.endAt ?? null,
     eventType:
       event.eventType && typeof event.eventType === 'object'
         ? toCalendarEventType(event.eventType)
         : fallbackEventType,
     excerpt: event.excerpt,
     id: event.id,
+    location: {
+      venueName: event.location.venueName,
+      venueWebsite: event.location.venueWebsite,
+    },
     slug: event.slug,
     startAt: event.startAt,
+    timeMode: event.timeMode,
     title: event.title,
   }
 }

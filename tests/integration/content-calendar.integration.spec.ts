@@ -59,8 +59,14 @@ describe('content calendar', () => {
           eventStatus: 'scheduled',
           eventType: 1,
           excerpt: createLexicalDocument(`Excerpt ${slug}`),
+          endAt: '2026-08-14T20:00:00.000Z',
           layout: [{ blockType: 'richText', content: createLexicalDocument(`Content ${slug}`) }],
-          location: { city: 'Wrocław', country: 'Polska' },
+          location: {
+            city: 'Wrocław',
+            country: 'Polska',
+            venueName: 'Klub Pod Kolumnami',
+            venueWebsite: 'https://example.com/klub',
+          },
           participation: 'public',
           slug,
           startAt: '2026-08-14T16:00:00.000Z',
@@ -115,6 +121,14 @@ describe('content calendar', () => {
       `events:${matchingEvent.id}`,
     ])
     expect(result.items.map((item) => item.kind)).toEqual(['posts', 'events'])
+    expect(result.items.find((item) => item.kind === 'events')).toMatchObject({
+      endAt: '2026-08-14T20:00:00.000Z',
+      location: {
+        venueName: 'Klub Pod Kolumnami',
+        venueWebsite: 'https://example.com/klub',
+      },
+      timeMode: 'timed',
+    })
     expect(storedBlock).toMatchObject({
       category: fixture.category.id,
       eventCycle: cycle.id,

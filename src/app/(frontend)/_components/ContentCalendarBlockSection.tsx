@@ -27,6 +27,7 @@ export async function ContentCalendarBlockSection({ block }: { block: ContentCal
       fallbackURL={getFallbackURL(filters.sources)}
       initialData={initialData}
       initialMonth={initialMonth}
+      subscriptionURL={filters.sources.includes('events') ? '/events/calendar.ics' : undefined}
     />
   )
 }

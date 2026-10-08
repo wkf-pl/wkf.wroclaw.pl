@@ -20,10 +20,16 @@ describe('content calendar presentation', () => {
         name: 'Sesje RPG',
         updatedAt: '2026-08-01T08:00:00.000Z',
       },
+      endAt: '2026-08-13T20:00:00.000Z',
       excerpt,
       id: 11,
+      location: {
+        venueName: 'Klub Pod Kolumnami',
+        venueWebsite: 'https://example.com/klub',
+      },
       slug: 'sesja-testowa',
       startAt: '2026-08-13T16:00:00.000Z',
+      timeMode: 'timed',
       title: 'Sesja testowa',
     })
     const post = toCalendarContentPost({
@@ -36,9 +42,15 @@ describe('content calendar presentation', () => {
 
     expect(event).toMatchObject({
       dateTime: '2026-08-13T16:00:00.000Z',
+      endAt: '2026-08-13T20:00:00.000Z',
       id: 'events:11',
       kind: 'events',
+      location: {
+        venueName: 'Klub Pod Kolumnami',
+        venueWebsite: 'https://example.com/klub',
+      },
       summary: { kind: 'richText', value: excerpt },
+      timeMode: 'timed',
       type: { id: 'event-type:7', name: 'Sesje RPG' },
       url: '/events/sesja-testowa',
     })

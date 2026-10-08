@@ -12,6 +12,8 @@ import {
 } from '@/modules/events/calendar-presentation'
 import { createRichTextDocument } from '@/modules/members/rich-text'
 
+import { readFrontendStyles } from '../helpers/frontend-styles'
+
 const firstExcerpt = createRichTextDocument([
   'Cotygodniowe spotkanie przy grach fabularnych.',
   'Drugi akapit kalendarza.',
@@ -25,19 +27,28 @@ const calendarData: CalendarMonthPayload = {
   ],
   events: [
     {
+      endAt: '2026-09-08T20:00:00.000Z',
       eventType: { id: 1, iconColor: 'lantern-glow', iconName: 'dice', name: 'Sesje RPG' },
       excerpt: firstExcerpt,
       id: 1,
+      location: {
+        venueName: 'Klub Pod Kolumnami',
+        venueWebsite: 'https://example.com/klub',
+      },
       slug: 'erpegowy-wtorek',
       startAt: '2026-09-08T16:00:00.000Z',
+      timeMode: 'timed',
       title: 'Erpegowy Wtorek',
     },
     {
+      endAt: null,
       eventType: { id: 2, iconColor: 'mist-silver', iconName: 'users', name: 'Spotkania' },
       excerpt: secondExcerpt,
       id: 2,
+      location: {},
       slug: 'spotkanie-klubowe',
       startAt: '2026-09-08T17:00:00.000Z',
+      timeMode: 'timed',
       title: 'Spotkanie klubowe',
     },
   ],
@@ -54,9 +65,15 @@ describe('Event calendar', () => {
       items: [
         {
           dateTime: '2026-09-08T16:00:00.000Z',
+          endAt: '2026-09-08T20:00:00.000Z',
           id: 'events:1',
           kind: 'events',
+          location: {
+            venueName: 'Klub Pod Kolumnami',
+            venueWebsite: 'https://example.com/klub',
+          },
           summary: { kind: 'richText', value: firstExcerpt },
+          timeMode: 'timed',
           title: 'Erpegowy Wtorek',
           type: {
             id: 'event-type:1',
@@ -83,6 +100,7 @@ describe('Event calendar', () => {
         endpoint="/content/calendar.json?source=events&amp;source=posts"
         initialData={mixedData}
         initialMonth="2026-09"
+        subscriptionURL="/events/calendar.ics"
       />,
     )
 
@@ -90,8 +108,16 @@ describe('Event calendar', () => {
     expect(markup).toContain('href="/events/erpegowy-wtorek"')
     expect(markup).toContain('href="/blog/nowy-wpis"')
     expect(markup).toContain('Aktualność klubowa.')
-    expect(markup).toContain('Czytaj wpis')
-    expect(markup).not.toContain('Subskrybuj kalendarz WKF')
+    expect(markup).toContain('8 września 2026')
+    expect(markup).toContain('8 września 2026, 18:00 - 22:00')
+    expect(markup).toContain('href="https://example.com/klub"')
+    expect(markup).toContain('href="/events/erpegowy-wtorek/calendar.ics"')
+    expect(markup).toContain('Dodaj do kalendarza')
+    expect(markup).toContain('Zobacz wydarzenie')
+    expect(markup).toContain('Zobacz wpis')
+    expect(markup).not.toContain('Czytaj wpis')
+    expect(markup).not.toContain('Opublikowano')
+    expect(markup).toContain('Zasubskrybuj kalendarz WKF')
   })
 
   it('renders the month, weekday grid, type legend and all types for an occupied day', () => {
@@ -107,7 +133,9 @@ describe('Event calendar', () => {
     expect(markup).toContain('Spotkania')
     expect(markup).toContain('Cotygodniowe spotkanie przy grach fabularnych.')
     expect(markup).toContain('Drugi akapit kalendarza.')
-    expect(markup).toContain('Subskrybuj kalendarz WKF')
+    expect(markup).toContain('Zasubskrybuj kalendarz WKF')
+    expect(markup).toContain('href="/events/erpegowy-wtorek/calendar.ics"')
+    expect(markup.indexOf('Dodaj do kalendarza')).toBeLessThan(markup.indexOf('Zobacz wydarzenie'))
   })
 
   it('keeps the Event excerpt in the public calendar payload', () => {
@@ -122,13 +150,36 @@ describe('Event calendar', () => {
           name: 'Sesje RPG',
           updatedAt: '2026-09-01T10:00:00.000Z',
         },
+        endAt: '2026-09-08T20:00:00.000Z',
         excerpt,
         id: 1,
+        location: {
+          venueName: 'Klub Pod Kolumnami',
+          venueWebsite: 'https://example.com/klub',
+        },
         slug: 'wydarzenie',
         startAt: '2026-09-08T16:00:00.000Z',
+        timeMode: 'timed',
         title: 'Wydarzenie',
       }),
     ).toMatchObject({ excerpt })
+  })
+
+  it('uses the approved sidebar hierarchy and action treatments', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(
+      /\.calendarDetails h4 \{[^}]*color: var\(--gold-light\);[^}]*font-size: 1\.08rem;[^}]*letter-spacing: 0\.08em;[^}]*text-transform: uppercase;/,
+    )
+    expect(frontendStyles).toMatch(
+      /\.calendarSelectionActions \{[^}]*display: flex;[^}]*align-items: center;/,
+    )
+    expect(frontendStyles).toMatch(
+      /\.calendarEventPrimaryAction \{[^}]*background: var\(--gold-light\);[^}]*color: var\(--background-deep\);/,
+    )
+    expect(frontendStyles).toMatch(
+      /\.calendarEventCalendarAction \{[^}]*color: var\(--gold-light\);/,
+    )
   })
 
   it('announces an initially truncated month before hydration', () => {

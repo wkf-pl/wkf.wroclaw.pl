@@ -11,15 +11,29 @@ export type ContentCalendarSource = (typeof contentCalendarSources)[number]
 
 export type ContentCalendarItemType = Omit<CalendarEventType, 'id'> & { id: string }
 
-export type ContentCalendarItem = {
+type ContentCalendarBaseItem = {
   dateTime: string
   id: string
-  kind: ContentCalendarSource
   summary: { kind: 'richText'; value: Event['excerpt'] } | { kind: 'text'; value: string }
   title: string
   type: ContentCalendarItemType
   url: string
 }
+
+export type ContentCalendarEventItem = ContentCalendarBaseItem & {
+  endAt: null | string
+  kind: 'events'
+  location: Pick<Event['location'], 'venueName' | 'venueWebsite'>
+  summary: { kind: 'richText'; value: Event['excerpt'] }
+  timeMode: Event['timeMode']
+}
+
+export type ContentCalendarPostItem = ContentCalendarBaseItem & {
+  kind: 'posts'
+  summary: { kind: 'text'; value: string }
+}
+
+export type ContentCalendarItem = ContentCalendarEventItem | ContentCalendarPostItem
 
 export type ContentCalendarMonthPayload = {
   itemTypes: ContentCalendarItemType[]
@@ -54,8 +68,13 @@ export function toCalendarContentEventType(
 }
 
 export function toCalendarContentEvent(
-  event: Pick<Event, 'eventType' | 'excerpt' | 'id' | 'slug' | 'startAt' | 'title'>,
-): ContentCalendarItem {
+  event: Pick<
+    Event,
+    'endAt' | 'eventType' | 'excerpt' | 'id' | 'slug' | 'startAt' | 'timeMode' | 'title'
+  > & {
+    location: Pick<Event['location'], 'venueName' | 'venueWebsite'>
+  },
+): ContentCalendarEventItem {
   const eventType =
     event.eventType && typeof event.eventType === 'object'
       ? toCalendarContentEventType(event.eventType)
@@ -68,9 +87,15 @@ export function toCalendarContentEvent(
 
   return {
     dateTime: event.startAt,
+    endAt: event.endAt ?? null,
     id: `events:${event.id}`,
     kind: 'events',
+    location: {
+      venueName: event.location.venueName,
+      venueWebsite: event.location.venueWebsite,
+    },
     summary: { kind: 'richText', value: event.excerpt },
+    timeMode: event.timeMode,
     title: event.title,
     type: eventType,
     url: `/events/${event.slug}`,
@@ -79,7 +104,7 @@ export function toCalendarContentEvent(
 
 export function toCalendarContentPost(
   post: Pick<Post, 'excerpt' | 'id' | 'slug' | 'title'> & { publishedAt: string },
-): ContentCalendarItem {
+): ContentCalendarPostItem {
   return {
     dateTime: post.publishedAt,
     id: `posts:${post.id}`,

@@ -86,6 +86,7 @@ test('switches one responsive Events frame between the carousel and interactive 
         ],
         events: [
           {
+            endAt: `${month}-${String(eventDay).padStart(2, '0')}T16:00:00.000Z`,
             eventType: {
               id: 1,
               iconColor: 'lantern-glow',
@@ -94,8 +95,13 @@ test('switches one responsive Events frame between the carousel and interactive 
             },
             excerpt: createLexicalDocument('Streszczenie wydarzenia kalendarzowego E2E.'),
             id: 1,
+            location: {
+              venueName: 'Klub Pod Kolumnami',
+              venueWebsite: 'https://example.com/klub',
+            },
             slug: eventSlug,
             startAt: `${month}-${String(eventDay).padStart(2, '0')}T12:00:00.000Z`,
+            timeMode: 'timed',
             title: eventTitle,
           },
         ],
@@ -135,7 +141,7 @@ test('switches one responsive Events frame between the carousel and interactive 
     'aria-selected',
     'true',
   )
-  await expect(showcase.getByRole('link', { name: /Subskrybuj kalendarz WKF/ })).toHaveAttribute(
+  await expect(showcase.getByRole('link', { name: /Zasubskrybuj kalendarz WKF/ })).toHaveAttribute(
     'href',
     '/events/calendar.ics',
   )
@@ -152,6 +158,14 @@ test('switches one responsive Events frame between the carousel and interactive 
     `/events/${eventSlug}`,
   )
   await expect(showcase).toContainText('Streszczenie wydarzenia kalendarzowego E2E.')
+  await expect(showcase.getByRole('link', { name: 'Klub Pod Kolumnami' })).toHaveAttribute(
+    'href',
+    'https://example.com/klub',
+  )
+  await expect(showcase.getByRole('link', { name: /Dodaj do kalendarza/ })).toHaveAttribute(
+    'href',
+    `/events/${eventSlug}/calendar.ics`,
+  )
   await showcase.getByRole('button', { name: 'Poprzedni miesiąc' }).click()
   await expect(monthHeading).toHaveText(initialHeading ?? '')
 
@@ -164,7 +178,7 @@ test('switches one responsive Events frame between the carousel and interactive 
 
   const legendBox = await showcase.getByRole('list', { name: 'Rodzaje wydarzeń' }).boundingBox()
   const subscriptionBox = await showcase
-    .getByRole('link', { name: /Subskrybuj kalendarz WKF/ })
+    .getByRole('link', { name: /Zasubskrybuj kalendarz WKF/ })
     .boundingBox()
   expect(legendBox).not.toBeNull()
   expect(subscriptionBox).not.toBeNull()

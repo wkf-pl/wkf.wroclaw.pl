@@ -439,7 +439,7 @@ body:has(> .homePage) .siteHeader {
 
 .heroTitle {
   margin-bottom: 1.5rem;
-  font-size: clamp(3.3rem, 4vw, 5rem);
+  font-size: clamp(2.5rem, 3.5vw, 4rem);
   font-weight: 700;
   text-wrap: balance;
   text-shadow: 0 3px 22px rgb(0 0 0 / 65%);

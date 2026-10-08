@@ -7,11 +7,13 @@ import { CmsRichText } from '@/components/CmsRichText'
 import { RasterIcon } from '@/components/RasterIcon'
 import {
   getCalendarContentDate,
+  type ContentCalendarEventItem,
   type ContentCalendarItem,
   type ContentCalendarItemType,
   type ContentCalendarMonthPayload,
 } from '@/modules/content/content-calendar-presentation'
 import type { CalendarMonthPayload } from '@/modules/events/calendar-presentation'
+import { formatEventDate } from '@/modules/events/presentation'
 
 const weekdays = ['PN', 'WT', 'ŚR', 'CZ', 'PT', 'SB', 'ND'] as const
 
@@ -48,10 +50,16 @@ const eventCalendarCopy: CalendarCopy = {
   truncated: 'Zbyt wiele wydarzeń. Zobacz pełną listę wydarzeń.',
 }
 
-function CalendarItemTypeIcon({ itemType }: { itemType: ContentCalendarItemType }) {
+function CalendarItemTypeIcon({
+  itemType,
+  size = 'small',
+}: {
+  itemType: ContentCalendarItemType
+  size?: 'medium' | 'small'
+}) {
   return (
     <span className="calendarEventTypeIcon" data-event-type-color={itemType.iconColor}>
-      <RasterIcon name={itemType.iconName} size="small" />
+      <RasterIcon name={itemType.iconName} size={size} />
     </span>
   )
 }
@@ -61,11 +69,13 @@ export function ContentCalendar({
   fallbackURL,
   initialData,
   initialMonth,
+  subscriptionURL,
 }: {
   endpoint: string
   fallbackURL?: string
   initialData: ContentCalendarMonthPayload
   initialMonth: string
+  subscriptionURL?: string
 }) {
   return (
     <InteractiveCalendar
@@ -75,6 +85,7 @@ export function ContentCalendar({
       initialData={initialData}
       initialMonth={initialMonth}
       responseFormat="content"
+      subscriptionURL={subscriptionURL}
     />
   )
 }
@@ -178,6 +189,7 @@ function InteractiveCalendar({
         day: 'numeric',
         month: 'long',
         timeZone: 'UTC',
+        year: 'numeric',
       }).format(new Date(`${selectedDay}T12:00:00Z`))
     : copy.monthFallback
 
@@ -278,7 +290,7 @@ function InteractiveCalendar({
         {subscriptionURL ? (
           <Link className="eventCalendarSubscription" href={subscriptionURL}>
             <RasterIcon name="calendar" size="small" />
-            <span>Subskrybuj kalendarz WKF</span>
+            <span>Zasubskrybuj kalendarz WKF</span>
           </Link>
         ) : null}
       </footer>
@@ -290,7 +302,7 @@ function CalendarSelectionItem({ item }: { item: ContentCalendarItem }) {
   return (
     <article className="calendarSelectionItem">
       <h5>
-        <CalendarItemTypeIcon itemType={item.type} />
+        <CalendarItemTypeIcon itemType={item.type} size="medium" />
         <Link href={item.url}>{item.title}</Link>
       </h5>
       {item.summary.kind === 'richText' ? (
@@ -298,11 +310,60 @@ function CalendarSelectionItem({ item }: { item: ContentCalendarItem }) {
       ) : (
         <p className="calendarEventSummary">{item.summary.value}</p>
       )}
-      <Link className="calendarEventLink" href={item.url}>
-        <span>{item.kind === 'posts' ? 'Czytaj wpis' : 'Zobacz wydarzenie'}</span>
-        <RasterIcon name="arrow-right" size="small" />
-      </Link>
+      {item.kind === 'events' ? (
+        <CalendarEventDetails item={item} />
+      ) : (
+        <div className="calendarSelectionActions">
+          <Link className="calendarEventPrimaryAction" href={item.url}>
+            <span>Zobacz wpis</span>
+            <RasterIcon name="arrow-right" size="small" />
+          </Link>
+        </div>
+      )}
     </article>
+  )
+}
+
+function CalendarEventDetails({ item }: { item: ContentCalendarEventItem }) {
+  return (
+    <>
+      <div className="calendarEventFacts">
+        <p className="calendarEventFact">
+          <span aria-label="Kiedy" className="calendarEventFactIcon" role="img">
+            <RasterIcon name="calendar" size="small" />
+          </span>
+          <time dateTime={item.dateTime}>
+            {formatEventDate({
+              endAt: item.endAt,
+              startAt: item.dateTime,
+              timeMode: item.timeMode,
+            })}
+          </time>
+        </p>
+        {item.location.venueName ? (
+          <p className="calendarEventFact">
+            <span aria-label="Gdzie" className="calendarEventFactIcon" role="img">
+              <RasterIcon name="location" size="small" />
+            </span>
+            {item.location.venueWebsite ? (
+              <a href={item.location.venueWebsite}>{item.location.venueName}</a>
+            ) : (
+              item.location.venueName
+            )}
+          </p>
+        ) : null}
+      </div>
+      <div className="calendarSelectionActions">
+        <Link className="calendarEventCalendarAction" href={`${item.url}/calendar.ics`}>
+          <RasterIcon name="calendar" size="small" />
+          <span>Dodaj do kalendarza</span>
+        </Link>
+        <Link className="calendarEventPrimaryAction" href={item.url}>
+          <span>Zobacz wydarzenie</span>
+          <RasterIcon name="arrow-right" size="small" />
+        </Link>
+      </div>
+    </>
   )
 }
 
@@ -314,9 +375,12 @@ function convertEventCalendarPayload(data: CalendarMonthPayload): ContentCalenda
     })),
     items: data.events.map((event) => ({
       dateTime: event.startAt,
+      endAt: event.endAt,
       id: `events:${event.id}`,
       kind: 'events',
+      location: event.location,
       summary: { kind: 'richText', value: event.excerpt },
+      timeMode: event.timeMode,
       title: event.title,
       type: { ...event.eventType, id: `event-type:${event.eventType.id}` },
       url: `/events/${event.slug}`,
