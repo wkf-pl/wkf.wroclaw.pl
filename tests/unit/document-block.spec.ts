@@ -90,6 +90,9 @@ describe('documents block', () => {
     const emptyMessageField = DocumentsBlock.fields.find(
       (field) => 'name' in field && field.name === 'emptyMessage',
     )
+    const viewField = flattenFields(DocumentsBlock.fields).find(
+      (field) => 'name' in field && field.name === 'view' && field.type === 'select',
+    )
     expect(itemsField).toMatchObject({
       admin: {
         components: {
@@ -103,6 +106,9 @@ describe('documents block', () => {
     expect(
       emptyMessageField?.admin?.condition?.({}, { selectionMode: 'manual' }, {} as never),
     ).toBe(false)
+    expect(viewField).toMatchObject({
+      options: expect.arrayContaining([{ label: 'Karuzela', value: 'carousel' }]),
+    })
 
     const layout = flattenFields(Pages.fields).find(
       (field) => 'name' in field && field.name === 'layout' && field.type === 'blocks',
@@ -181,5 +187,36 @@ describe('documents block', () => {
     )
     expect(listMarkup).not.toContain(document.summary)
     expect(listMarkup).not.toContain('documentPdfLink')
+  })
+
+  it('renders documents in the shared carousel without discarding document data', () => {
+    const document = {
+      category: { id: 4, name: 'Dokumenty', slug: 'dokumenty' } as Category,
+      documentDate: '2026-08-26T00:00:00.000Z',
+      documentNumber: '4/2026',
+      documentType: 'resolution',
+      id: 1,
+      slug: 'uchwala-testowa',
+      summary: 'Opis widoczny w karuzeli.',
+      tags: [{ id: 7, name: 'Formalne', slug: 'formalne' } as Tag],
+      title: 'Uchwała testowa',
+    } as Document
+
+    const markup = renderToStaticMarkup(
+      createElement(DocumentItems, {
+        documents: [document],
+        view: 'carousel',
+      }),
+    )
+
+    expect(markup).toContain('class="contentCarousel"')
+    expect(markup).toContain('class="contentCarouselImageFallback"')
+    expect(markup).toContain('<span class="contentCarouselKind">Uchwała</span>')
+    expect(markup).toContain('nr 4/2026 z dnia')
+    expect(markup).toContain('26 sierpnia 2026')
+    expect(markup).toContain(document.summary)
+    expect(markup).toContain('href="/category/dokumenty"')
+    expect(markup).toContain('href="/tag/formalne"')
+    expect(markup).toContain('<span>Zobacz</span>')
   })
 })

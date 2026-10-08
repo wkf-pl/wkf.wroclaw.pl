@@ -114,6 +114,7 @@ export const DocumentsBlock: Block = {
             { label: 'Karty', value: 'cards' },
             { label: 'Lista kompaktowa', value: 'list' },
             { label: 'Siatka', value: 'grid' },
+            { label: 'Karuzela', value: 'carousel' },
           ],
           required: true,
         },

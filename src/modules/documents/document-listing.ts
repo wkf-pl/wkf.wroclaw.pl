@@ -13,7 +13,7 @@ import {
 import { publicRequestContext } from '@/modules/content/public-access'
 
 export type DocumentListingSort = 'newest' | 'oldest' | 'titleAscending' | 'titleDescending'
-export type DocumentListingView = 'cards' | 'grid' | 'list'
+export type DocumentListingView = 'cards' | 'carousel' | 'grid' | 'list'
 
 export type FindDocumentListingOptions = {
   categoryId?: number

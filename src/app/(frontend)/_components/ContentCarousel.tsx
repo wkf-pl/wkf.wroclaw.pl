@@ -6,14 +6,25 @@ import { useEffect, useRef, useState } from 'react'
 import { RasterIcon } from '@/components/RasterIcon'
 import { CmsRichText } from '@/components/CmsRichText'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
+import { getDocumentTypeLabel } from '@/modules/documents/document-types'
+import { formatEventDate } from '@/modules/events/presentation'
+import type { Document, Media } from '@/payload-types'
 
 import { CmsImage } from './CmsImage'
 import { TaxonomyLinks } from './TaxonomyLinks'
 
 type ContentCarouselProperties = {
   emptyMessage?: null | string
-  items: PublicContentListItem[]
+  items: ContentCarouselItem[]
 }
+
+export type DocumentCarouselItem = {
+  document: Document
+  kind: 'documents'
+  url: string
+}
+
+export type ContentCarouselItem = DocumentCarouselItem | PublicContentListItem
 
 const contentKindLabels: Record<PublicContentListItem['kind'], string> = {
   'event-cycles': 'Cykl wydarzeń',
@@ -98,8 +109,7 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
       <div className="contentCarouselSlides">
         {items.map((item, index) => {
           const isActive = index === displayedActiveIndex
-          const date = getCarouselDate(item)
-          const image = item.document.heroImage
+          const image = getCarouselImage(item)
           const title = item.document.title
 
           return (
@@ -142,22 +152,30 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
                 ) : null}
               </div>
               <div className="contentCarouselContent">
-                <p className="contentCarouselMeta">
-                  <span>{contentKindLabels[item.kind]}</span>
-                  {date ? (
-                    <time dateTime={date}>{dateFormatter.format(new Date(date))}</time>
-                  ) : null}
-                </p>
+                {renderCarouselMetadata(item)}
                 {renderCarouselExcerpt(item)}
+                {renderEventFacts(item, isActive)}
                 <TaxonomyLinks category={item.document.category} tags={item.document.tags} />
-                <Link
-                  className="contentCarouselAction"
-                  href={item.url}
-                  tabIndex={isActive ? undefined : -1}
-                >
-                  <span>Zobacz treść</span>
-                  <RasterIcon name="arrow-right" size="small" />
-                </Link>
+                <div className="contentCarouselActions">
+                  {item.kind === 'events' ? (
+                    <Link
+                      className="contentCarouselSecondaryAction"
+                      href={`/events/${item.document.slug}/calendar.ics`}
+                      tabIndex={isActive ? undefined : -1}
+                    >
+                      <RasterIcon name="calendar" size="small" />
+                      <span>Dodaj do kalendarza</span>
+                    </Link>
+                  ) : null}
+                  <Link
+                    className="contentCarouselAction"
+                    href={item.url}
+                    tabIndex={isActive ? undefined : -1}
+                  >
+                    <span>Zobacz</span>
+                    <RasterIcon name="arrow-right" size="small" />
+                  </Link>
+                </div>
               </div>
             </article>
           )
@@ -167,18 +185,47 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
   )
 }
 
-function getCarouselDate(item: PublicContentListItem): null | string {
+function getCarouselImage(item: ContentCarouselItem): Media | number | null | undefined {
+  return item.kind === 'documents' ? null : item.document.heroImage
+}
+
+function renderCarouselMetadata(item: ContentCarouselItem) {
   switch (item.kind) {
-    case 'events':
-      return item.document.startAt
+    case 'documents':
+      return (
+        <p className="contentCarouselMeta">
+          <span className="contentCarouselKind">
+            {getDocumentTypeLabel(item.document.documentType)}
+          </span>
+          <span className="contentCarouselMetaText">
+            {item.document.documentNumber ? `nr ${item.document.documentNumber} ` : null}z dnia{' '}
+            <time dateTime={item.document.documentDate}>
+              {dateFormatter.format(new Date(item.document.documentDate))}
+            </time>
+          </span>
+        </p>
+      )
     case 'posts':
-      return item.document.publishedAt ?? null
+      return (
+        <p className="contentCarouselMeta">
+          <span className="contentCarouselKind">{contentKindLabels[item.kind]}</span>
+          {item.document.publishedAt ? (
+            <time dateTime={item.document.publishedAt}>
+              {dateFormatter.format(new Date(item.document.publishedAt))}
+            </time>
+          ) : null}
+        </p>
+      )
     default:
-      return null
+      return (
+        <p className="contentCarouselMeta">
+          <span className="contentCarouselKind">{contentKindLabels[item.kind]}</span>
+        </p>
+      )
   }
 }
 
-function renderCarouselExcerpt(item: PublicContentListItem) {
+function renderCarouselExcerpt(item: ContentCarouselItem) {
   switch (item.kind) {
     case 'event-cycles':
     case 'events':
@@ -189,5 +236,38 @@ function renderCarouselExcerpt(item: PublicContentListItem) {
       ) : null
     case 'posts':
       return <p className="contentCarouselExcerpt">{item.document.excerpt}</p>
+    case 'documents':
+      return <p className="contentCarouselExcerpt">{item.document.summary}</p>
   }
+}
+
+function renderEventFacts(item: ContentCarouselItem, isActive: boolean) {
+  if (item.kind !== 'events') return null
+
+  const { location } = item.document
+
+  return (
+    <div className="contentCarouselEventFacts">
+      <p>
+        <span aria-label="Kiedy" className="contentCarouselEventFactIcon" role="img">
+          <RasterIcon name="calendar" size="small" />
+        </span>
+        <time dateTime={item.document.startAt}>{formatEventDate(item.document)}</time>
+      </p>
+      {location.venueName ? (
+        <p>
+          <span aria-label="Gdzie" className="contentCarouselEventFactIcon" role="img">
+            <RasterIcon name="location" size="small" />
+          </span>
+          {location.venueWebsite ? (
+            <a href={location.venueWebsite} tabIndex={isActive ? undefined : -1}>
+              {location.venueName}
+            </a>
+          ) : (
+            location.venueName
+          )}
+        </p>
+      ) : null}
+    </div>
+  )
 }

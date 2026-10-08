@@ -1466,7 +1466,7 @@ export interface DocumentsBlock {
   category?: (number | null) | Category;
   tag?: (number | null) | Tag;
   sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
-  view: 'cards' | 'list' | 'grid';
+  view: 'cards' | 'list' | 'grid' | 'carousel';
   pageSize: number;
   pagination?: boolean | null;
   emptyMessage?: string | null;

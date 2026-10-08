@@ -5,6 +5,7 @@ import type { Document } from '@/payload-types'
 import type { DocumentListingView } from '@/modules/documents/document-listing'
 
 import { ContentCard } from './ContentCard'
+import { ContentCarousel } from './ContentCarousel'
 
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric',
@@ -83,6 +84,18 @@ export function DocumentItems({
 }) {
   if (!documents.length) {
     return <p className="emptyState">{emptyMessage || 'Nie ma dokumentów.'}</p>
+  }
+
+  if (view === 'carousel') {
+    return (
+      <ContentCarousel
+        items={documents.map((document) => ({
+          document,
+          kind: 'documents',
+          url: `/dokumenty/${document.slug}`,
+        }))}
+      />
+    )
   }
 
   if (view !== 'list') {
