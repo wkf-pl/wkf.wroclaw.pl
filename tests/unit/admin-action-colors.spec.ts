@@ -21,7 +21,7 @@ describe('admin action colors', () => {
     expect(adminStyles).toContain('.upload__listToggler')
     expect(adminStyles).toContain('.array-actions__remove')
     expect(adminStyles).toMatch(
-      /\.array-field__add-row[\s\S]*?color: #3465a4[\s\S]*?\.icon--plus \.stroke[\s\S]*?stroke: currentColor/,
+      /\.array-field__add-row[\s\S]*?color: var\(--wkf-action-add-color\)[\s\S]*?\.icon--plus \.stroke[\s\S]*?stroke: currentColor/,
     )
   })
 
