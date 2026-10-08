@@ -28,7 +28,7 @@ test('groups editor navigation with the intended labels and order', async ({ pag
   ).toHaveText(['Dokumenty', 'Partnerzy'])
   await expect(
     navigation.getByRole('button', { name: 'Strona główna' }).locator('..').locator('a'),
-  ).toHaveText(['Podstawowe', 'Nagłówek', 'Hero', 'Sekcje', 'Stopka'])
+  ).toHaveText(['Podstawowe', 'Nagłówek', 'Hero', 'Treści', 'Stopka'])
 
   const groupLabels = await navigation.locator('.nav-group__label').allTextContents()
 

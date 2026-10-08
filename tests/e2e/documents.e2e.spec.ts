@@ -86,10 +86,10 @@ test('renders the public documents register without account actions', async ({ p
   ).toBeVisible()
   await expect(page.getByRole('link', { name: 'Zaloguj się' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Wyloguj' })).toHaveCount(0)
-  const documentLink = page.getByRole('link', {
-    exact: true,
-    name: `Dokument E2E ${fixtureName}`,
-  })
+  const documentTitle = `Dokument E2E ${fixtureName}`
+  const documentLink = page
+    .getByRole('heading', { exact: true, level: 2, name: documentTitle })
+    .getByRole('link', { exact: true, name: documentTitle })
   await expect(documentLink).toHaveAttribute('href', `/dokumenty/${fixtureName}`)
 
   await documentLink.click()
