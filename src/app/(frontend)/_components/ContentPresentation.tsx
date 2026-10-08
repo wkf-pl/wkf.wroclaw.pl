@@ -16,12 +16,37 @@ type ContentPresentationProperties = {
   style?: CSSProperties
 }
 
-export function ContentHeading({ heading }: { heading: ResolvedContentHeading }) {
+export function ContentHeading({
+  appearance = 'default',
+  heading,
+}: {
+  appearance?: 'default' | 'homeSection'
+  heading: ResolvedContentHeading
+}) {
   if (!heading.text && !heading.iconName) {
     return null
   }
 
   const HeadingElement = `h${heading.level}` as ElementType
+
+  if (appearance === 'homeSection') {
+    return (
+      <HeadingElement className="contentHeading contentHeading--homeSection">
+        <span aria-hidden="true" className="contentHeadingSectionLine" />
+        <span aria-hidden="true" className="contentHeadingSectionMark">
+          <RasterIcon name="dice" size="medium" />
+        </span>
+        {heading.text ? <span>{heading.text}</span> : null}
+        {!heading.text && heading.accessibleName ? (
+          <span className="srOnly">{heading.accessibleName}</span>
+        ) : null}
+        <span aria-hidden="true" className="contentHeadingSectionMark">
+          <RasterIcon name="dice" size="medium" />
+        </span>
+        <span aria-hidden="true" className="contentHeadingSectionLine" />
+      </HeadingElement>
+    )
+  }
 
   return (
     <HeadingElement

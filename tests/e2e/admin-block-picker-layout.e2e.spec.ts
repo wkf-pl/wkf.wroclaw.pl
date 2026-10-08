@@ -9,11 +9,8 @@ test('shows eight block tiles per row on a wide admin viewport', async ({ page }
   await page.goto('/admin/globals/homepage-sections')
 
   const layoutField = page.locator('#field-layout')
-  const contentTab = page.getByRole('button', { name: 'Treść', exact: true })
-  await expect(async () => {
-    await contentTab.click()
-    await expect(layoutField).toBeVisible({ timeout: 2_000 })
-  }).toPass({ intervals: [500, 1_000], timeout: 15_000 })
+  await expect(page.getByRole('button', { name: 'Treść', exact: true })).toHaveCount(0)
+  await expect(layoutField).toBeVisible({ timeout: 15_000 })
 
   const drawerToggler = layoutField.locator(':scope > .blocks-field__drawer-toggler')
   await drawerToggler.click()

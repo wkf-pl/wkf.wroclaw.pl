@@ -38,7 +38,7 @@ describe('homepage globals', () => {
       'Podstawowe',
       'Nagłówek',
       'Hero',
-      'Sekcje',
+      'Treści',
       'Stopka',
     ])
   })
@@ -62,22 +62,13 @@ describe('homepage globals', () => {
     ).toMatchObject({ label: 'Tytuł', required: true, type: 'richText' })
   })
 
-  it('uses the requested section tabs and fields', () => {
-    expect(tabLabels(HomepageSections.fields)).toEqual(['Wydarzenia', 'Aktualności', 'Treść'])
-    expect(fieldsInTab(HomepageSections.fields, 'Wydarzenia')).toEqual([
-      'eventsTitle',
-      'eventsContent',
-      'eventWindowWeeks',
-      'eventSlideLimit',
-    ])
-    expect(fieldsInTab(HomepageSections.fields, 'Aktualności')).toEqual(['newsTitle', 'postCount'])
-    expect(fieldsInTab(HomepageSections.fields, 'Treść')).toEqual(['layout'])
+  it('shows only the content layout in Treści', () => {
+    expect(tabLabels(HomepageSections.fields)).toEqual([])
+    expect(namedFields(HomepageSections.fields)).toEqual(['layout'])
 
-    const layout = HomepageSections.fields
-      .filter((field) => field.type === 'tabs')
-      .flatMap((field) => field.tabs)
-      .flatMap((tab) => tab.fields)
-      .find((field) => 'name' in field && field.name === 'layout')
+    const layout = HomepageSections.fields.find(
+      (field) => 'name' in field && field.name === 'layout',
+    )
     expect(layout).toMatchObject({ label: 'Treści', type: 'blocks' })
     expect(ClubSections.admin?.hidden).toBe(true)
   })

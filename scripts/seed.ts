@@ -636,6 +636,40 @@ async function ensureHomepageContent(author: User, image?: Media): Promise<void>
     data: {
       layout: [
         {
+          blockType: 'heading',
+          heading: 'Wydarzenia',
+          headingLevel: 'h2',
+        },
+        {
+          blockType: 'carousel',
+          eventTimeFilter: 'upcoming',
+          parentFilter: 'none',
+          selectionMode: 'filters',
+          slideLimit: 6,
+          sort: 'eventDateAscending',
+          sources: ['events'],
+        },
+        {
+          blockType: 'contentCalendar',
+          sources: ['events'],
+        },
+        {
+          blockType: 'heading',
+          heading: 'Aktualności',
+          headingLevel: 'h2',
+        },
+        {
+          blockType: 'listing',
+          eventTimeFilter: 'all',
+          pageSize: 2,
+          pagination: false,
+          parentFilter: 'none',
+          selectionMode: 'filters',
+          sort: 'newest',
+          sources: ['posts'],
+          view: 'tiles',
+        },
+        {
           blockType: 'card',
           image: image?.id,
           title: 'RPG',

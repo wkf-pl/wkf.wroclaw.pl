@@ -3814,26 +3814,6 @@ export interface HomepageHero {
  */
 export interface HomepageSection {
   id: number;
-  eventsTitle: string;
-  eventsContent?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  eventWindowWeeks?: number | null;
-  eventSlideLimit?: number | null;
-  newsTitle: string;
-  postCount?: ('2' | '5' | '8') | null;
   layout: (
     | RichTextBlock
     | HeadingBlock
@@ -4177,12 +4157,6 @@ export interface HomepageHeroSelect<T extends boolean = true> {
  * via the `definition` "homepage-sections_select".
  */
 export interface HomepageSectionsSelect<T extends boolean = true> {
-  eventsTitle?: T;
-  eventsContent?: T;
-  eventWindowWeeks?: T;
-  eventSlideLimit?: T;
-  newsTitle?: T;
-  postCount?: T;
   layout?:
     | T
     | {

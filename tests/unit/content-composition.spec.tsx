@@ -480,6 +480,27 @@ describe('content composition', () => {
     expect(markup).not.toContain('contentHeadingIcon--inverted')
   })
 
+  it('renders homepage headings as section separators with two dice icons', async () => {
+    const rendered = await ContentLeafBlockRenderer({
+      block: {
+        blockType: 'heading',
+        heading: 'Wydarzenia',
+        headingIconName: 'mail',
+        headingLevel: 'h2',
+      },
+      document: {} as never,
+      path: 'layout.0',
+      pathname: '/',
+      searchParams: {},
+    })
+
+    const markup = renderToStaticMarkup(rendered)
+    expect(markup).toContain('contentHeading--homeSection')
+    expect(markup.match(/contentHeadingSectionLine/g)).toHaveLength(2)
+    expect(markup.match(/data-icon-name="dice"/g)).toHaveLength(2)
+    expect(markup).not.toContain('data-icon-name="mail"')
+  })
+
   it('does not constrain a content block rendered directly inside a tab', async () => {
     const rendered = await ContentLeafBlockRenderer({
       block: {

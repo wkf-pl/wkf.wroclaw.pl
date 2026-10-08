@@ -370,7 +370,12 @@ export async function ContentLeafBlockRenderer({
   presentationPlacement?: 'block' | 'tab'
 }) {
   if (block.blockType === 'heading') {
-    return <ContentHeading heading={normalizeContentHeading(block as ContentHeadingData)} />
+    return (
+      <ContentHeading
+        appearance={pathname === '/' ? 'homeSection' : 'default'}
+        heading={normalizeContentHeading(block as ContentHeadingData)}
+      />
+    )
   }
 
   if (block.blockType === 'actionLinks') {

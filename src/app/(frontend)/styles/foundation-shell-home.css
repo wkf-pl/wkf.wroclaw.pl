@@ -75,6 +75,10 @@ h3,
   font-family: var(--font-roboto-slab), Georgia, 'Times New Roman', serif;
 }
 
+.homeShell {
+  padding: 2.5rem 0;
+}
+
 .homeShell,
 .contentShell,
 .siteHeaderShell {
@@ -501,34 +505,31 @@ body:has(> .homePage) .siteHeader {
   padding-top: 1.2rem;
 }
 
-.sectionHeading {
+.homePage .contentHeading--homeSection {
   display: grid;
   grid-template-columns: minmax(2rem, 1fr) auto auto auto minmax(2rem, 1fr);
   gap: 0.9rem;
   align-items: center;
-  margin: 1.2rem;
-}
-
-.sectionHeading h2 {
-  margin: 0;
+  width: 100%;
+  margin: 1.2rem 0;
   font-size: 2rem;
   line-height: 1;
   text-align: center;
   text-transform: uppercase;
 }
 
-.sectionHeadingLine {
+.contentHeadingSectionLine {
   position: relative;
   display: block;
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--gold));
 }
 
-.sectionHeadingLine:last-child {
+.contentHeadingSectionLine:last-child {
   background: linear-gradient(90deg, var(--gold), transparent);
 }
 
-.sectionHeadingLine::after {
+.contentHeadingSectionLine::after {
   position: absolute;
   top: 50%;
   right: 0;
@@ -540,13 +541,13 @@ body:has(> .homePage) .siteHeader {
   transform: translate(50%, -50%) rotate(45deg);
 }
 
-.sectionHeadingLine:last-child::after {
+.contentHeadingSectionLine:last-child::after {
   right: auto;
   left: 0;
   transform: translate(-50%, -50%) rotate(45deg);
 }
 
-.sectionHeadingMark {
+.contentHeadingSectionMark {
   display: grid;
   width: 1.6rem;
   height: 1.6rem;
@@ -554,7 +555,7 @@ body:has(> .homePage) .siteHeader {
   color: var(--gold);
 }
 
-.sectionHeadingMark .rasterIcon {
+.contentHeadingSectionMark .rasterIcon {
   width: 100%;
   height: 100%;
 }
