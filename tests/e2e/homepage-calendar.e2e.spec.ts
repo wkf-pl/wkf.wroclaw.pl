@@ -1,8 +1,10 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
 import config from '../../src/payload.config.js'
+import type { HomepageSection } from '../../src/payload-types.js'
 import { createLexicalDocument } from '../helpers/lexical-document'
+import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
 const eventSlug = 'homepage-calendar-e2e'
@@ -10,12 +12,20 @@ const eventTitle = 'Kalendarz strony głównej E2E'
 const eventDay = 15
 const carouselEventSlugs = ['homepage-carousel-first-e2e', 'homepage-carousel-second-e2e']
 let payload: Payload
+let originalHomepageSections: HomepageSection
+let carouselEventIDs: number[] = []
 
 test.describe.configure({ mode: 'serial' })
 
 test.beforeAll(async () => {
   payload = await getPayload({ config })
   await cleanupCarouselFixtures()
+  carouselEventIDs = []
+  originalHomepageSections = await payload.findGlobal({
+    slug: 'homepage-sections',
+    depth: 1,
+    overrideAccess: true,
+  })
 
   const [users, eventTypes] = await Promise.all([
     payload.find({
@@ -39,7 +49,7 @@ test.beforeAll(async () => {
   if (!eventType) throw new Error('Missing the Sesje RPG event type.')
 
   for (const [index, slug] of carouselEventSlugs.entries()) {
-    await payload.create({
+    const event = await payload.create({
       collection: 'events',
       data: {
         _status: 'published',
@@ -65,38 +75,66 @@ test.beforeAll(async () => {
       draft: false,
       overrideAccess: true,
     })
+    carouselEventIDs.push(event.id)
   }
 })
 
-test.afterAll(async () => cleanupCarouselFixtures())
+test.afterAll(async () => {
+  await payload.updateGlobal({
+    slug: 'homepage-sections',
+    data: { layout: normalizeHomepageLayout(originalHomepageSections.layout) },
+    overrideAccess: true,
+  })
+  await cleanupCarouselFixtures()
+})
 
-test('switches one responsive Events frame between the carousel and interactive calendar', async ({
+test('renders responsive event carousel and calendar content blocks on the homepage', async ({
   page,
 }) => {
-  await page.route('**/events/calendar.json?month=*', async (route) => {
+  await page.route('**/content/calendar.json?*', async (route) => {
     const month = new URL(route.request().url()).searchParams.get('month')
     if (!month) throw new Error('Missing calendar month in E2E request.')
 
     await route.fulfill({
       contentType: 'application/json',
       json: {
-        eventTypes: [
-          { id: 1, iconColor: 'lantern-glow', iconName: 'dice', name: 'Sesje RPG' },
-          { id: 2, iconColor: 'mist-silver', iconName: 'users', name: 'Spotkania' },
-        ],
-        events: [
+        itemTypes: [
           {
-            eventType: {
-              id: 1,
+            id: 'event-type:1',
+            iconColor: 'lantern-glow',
+            iconName: 'dice',
+            name: 'Sesje RPG',
+          },
+          {
+            id: 'event-type:2',
+            iconColor: 'mist-silver',
+            iconName: 'users',
+            name: 'Spotkania',
+          },
+        ],
+        items: [
+          {
+            dateTime: `${month}-${String(eventDay).padStart(2, '0')}T12:00:00.000Z`,
+            endAt: `${month}-${String(eventDay).padStart(2, '0')}T16:00:00.000Z`,
+            id: 'events:1',
+            kind: 'events',
+            location: {
+              venueName: 'Klub Pod Kolumnami',
+              venueWebsite: 'https://example.com/klub',
+            },
+            summary: {
+              kind: 'richText',
+              value: createLexicalDocument('Streszczenie wydarzenia kalendarzowego E2E.'),
+            },
+            timeMode: 'timed',
+            title: eventTitle,
+            type: {
+              id: 'event-type:1',
               iconColor: 'lantern-glow',
               iconName: 'dice',
               name: 'Sesje RPG',
             },
-            excerpt: createLexicalDocument('Streszczenie wydarzenia kalendarzowego E2E.'),
-            id: 1,
-            slug: eventSlug,
-            startAt: `${month}-${String(eventDay).padStart(2, '0')}T12:00:00.000Z`,
-            title: eventTitle,
+            url: `/events/${eventSlug}`,
           },
         ],
         truncated: false,
@@ -114,62 +152,107 @@ test('switches one responsive Events frame between the carousel and interactive 
       }),
     )
   })
-  await page.goto('/')
+  await login({ page, user: editorTestUser })
+  await updateHomepageLayout(page, createFixtureHomepageLayout())
 
-  const showcase = page.locator('.homeEventShowcase')
-  await expect(showcase).toBeVisible()
-  await expect(showcase.getByRole('tab', { name: 'Najbliższe' })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  )
-  await expect(showcase.getByRole('link', { name: /Wszystkie wydarzenia/ })).toHaveAttribute(
-    'href',
-    '/events',
-  )
-  const activeSlideControl = showcase.locator('.carouselControls button[aria-pressed="true"]')
-  await expect(activeSlideControl).toHaveCSS('background-color', 'rgb(255, 189, 56)')
-  await expect(activeSlideControl).toHaveCSS('color', 'rgb(0, 13, 23)')
+  try {
+    await page.goto('/')
 
-  await showcase.getByRole('tab', { name: 'Kalendarz' }).click()
-  await expect(showcase.getByRole('tab', { name: 'Kalendarz' })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  )
-  await expect(showcase.getByRole('link', { name: /Subskrybuj kalendarz WKF/ })).toHaveAttribute(
-    'href',
-    '/events/calendar.ics',
-  )
-  await expect(showcase.getByRole('list', { name: 'Rodzaje wydarzeń' })).toContainText('Sesje RPG')
-  await expect(showcase.getByRole('list', { name: 'Rodzaje wydarzeń' })).toContainText('Spotkania')
+    const carousel = page.getByRole('region', { name: 'Karuzela treści' })
+    await expect(carousel).toBeVisible()
+    await expect(carousel.locator('.contentCarouselSlide')).toHaveCount(2)
+    await expect(
+      carousel.locator(
+        '.contentCarouselSlide--active .contentCarouselControls button[aria-pressed="true"]',
+      ),
+    ).toHaveCount(1)
 
-  const monthHeading = showcase.getByRole('heading', { level: 3 })
-  const initialHeading = await monthHeading.textContent()
-  await showcase.getByRole('button', { name: 'Następny miesiąc' }).click()
-  await expect(monthHeading).not.toHaveText(initialHeading ?? '')
-  await showcase.getByRole('button', { name: new RegExp(`^${eventDay}, .*${eventTitle}`) }).click()
-  await expect(showcase.getByRole('link', { name: new RegExp(eventTitle) })).toHaveAttribute(
-    'href',
-    `/events/${eventSlug}`,
-  )
-  await expect(showcase).toContainText('Streszczenie wydarzenia kalendarzowego E2E.')
-  await showcase.getByRole('button', { name: 'Poprzedni miesiąc' }).click()
-  await expect(monthHeading).toHaveText(initialHeading ?? '')
+    const calendar = page.getByRole('region', { name: 'Kalendarz treści' })
+    await expect(calendar).toBeVisible()
+    await expect(
+      calendar.getByRole('link', { name: /Zasubskrybuj kalendarz WKF/ }),
+    ).toHaveAttribute('href', '/events/calendar.ics')
+    await expect(calendar.getByRole('list', { name: 'Typy treści' })).toContainText('Sesje RPG')
 
-  await page.setViewportSize({ height: 844, width: 390 })
-  const calendarGrid = showcase.locator('.calendarGrid')
-  await expect(calendarGrid).toBeVisible()
-  expect(await calendarGrid.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
-    true,
-  )
+    const monthHeading = calendar.getByRole('heading', { level: 3 })
+    const initialHeading = await monthHeading.textContent()
+    await calendar.getByRole('button', { name: 'Następny miesiąc' }).click()
+    await expect(monthHeading).not.toHaveText(initialHeading ?? '')
+    await calendar
+      .getByRole('button', { name: new RegExp(`^${eventDay}, .*${eventTitle}`) })
+      .click()
+    await expect(calendar.getByRole('link', { name: new RegExp(eventTitle) })).toHaveAttribute(
+      'href',
+      `/events/${eventSlug}`,
+    )
+    await expect(calendar).toContainText('Streszczenie wydarzenia kalendarzowego E2E.')
+    await expect(calendar.getByRole('link', { name: 'Klub Pod Kolumnami' })).toHaveAttribute(
+      'href',
+      'https://example.com/klub',
+    )
+    await expect(calendar.getByRole('link', { name: /Dodaj do kalendarza/ })).toHaveAttribute(
+      'href',
+      `/events/${eventSlug}/calendar.ics`,
+    )
+    await calendar.getByRole('button', { name: 'Poprzedni miesiąc' }).click()
+    await expect(monthHeading).toHaveText(initialHeading ?? '')
 
-  const legendBox = await showcase.getByRole('list', { name: 'Rodzaje wydarzeń' }).boundingBox()
-  const subscriptionBox = await showcase
-    .getByRole('link', { name: /Subskrybuj kalendarz WKF/ })
-    .boundingBox()
-  expect(legendBox).not.toBeNull()
-  expect(subscriptionBox).not.toBeNull()
-  expect(subscriptionBox?.y ?? 0).toBeGreaterThan(legendBox?.y ?? 0)
+    await page.setViewportSize({ height: 844, width: 390 })
+    const calendarGrid = calendar.locator('.calendarGrid')
+    await expect(calendarGrid).toBeVisible()
+    expect(
+      await calendarGrid.evaluate((element) => element.scrollWidth <= element.clientWidth),
+    ).toBe(true)
+
+    const legendBox = await calendar.getByRole('list', { name: 'Typy treści' }).boundingBox()
+    const subscriptionBox = await calendar
+      .getByRole('link', { name: /Zasubskrybuj kalendarz WKF/ })
+      .boundingBox()
+    expect(legendBox).not.toBeNull()
+    expect(subscriptionBox).not.toBeNull()
+    expect(subscriptionBox?.y ?? 0).toBeGreaterThan(legendBox?.y ?? 0)
+  } finally {
+    await updateHomepageLayout(page, normalizeHomepageLayout(originalHomepageSections.layout))
+  }
 })
+
+function createFixtureHomepageLayout(): HomepageSection['layout'] {
+  return [
+    { blockType: 'heading', heading: 'Wydarzenia', headingLevel: 'h2' },
+    {
+      blockType: 'carousel',
+      items: carouselEventIDs.map((eventID) => ({
+        item: { relationTo: 'events', value: eventID },
+      })),
+      parentFilter: 'none',
+      selectionMode: 'manual',
+      slideLimit: 5,
+    },
+    { blockType: 'heading', heading: 'Kalendarz', headingLevel: 'h2' },
+    { blockType: 'contentCalendar', sources: ['events'] },
+  ]
+}
+
+async function updateHomepageLayout(page: Page, layout: HomepageSection['layout']): Promise<void> {
+  const result = await page.evaluate(async (nextLayout) => {
+    const response = await fetch('/api/globals/homepage-sections', {
+      body: JSON.stringify({ layout: nextLayout }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+    })
+
+    return {
+      body: await response.text(),
+      ok: response.ok,
+      status: response.status,
+    }
+  }, layout)
+
+  expect(
+    result,
+    `Failed to update homepage sections: ${result.status} ${result.body}`,
+  ).toMatchObject({ ok: true })
+}
 
 async function cleanupCarouselFixtures(): Promise<void> {
   if (!payload) return
@@ -178,4 +261,8 @@ async function cleanupCarouselFixtures(): Promise<void> {
     overrideAccess: true,
     where: { slug: { in: carouselEventSlugs } },
   })
+}
+
+function normalizeHomepageLayout(layout: HomepageSection['layout']): HomepageSection['layout'] {
+  return layout.map((block) => (block.blockType === 'card' ? { ...block, image: null } : block))
 }

@@ -6,6 +6,7 @@ import path from 'node:path'
 import { getPayload } from 'payload'
 
 import config from '../src/payload.config'
+import { isRichTextEmpty } from '../src/modules/content/rich-text'
 import type {
   HomepageSection,
   Media,
@@ -555,6 +556,7 @@ async function ensureBlogPage(author: User): Promise<Page> {
           pageSize: 12,
           pagination: true,
           parentFilter: 'none',
+          selectionMode: 'filters',
           sort: 'newest',
           sources: ['posts'],
           view: 'cards',
@@ -614,24 +616,63 @@ async function ensureNavigation(
   })
 }
 
-async function ensureHomepageGroups(author: User, backgroundImage?: Media): Promise<void> {
+async function ensureHomepageContent(author: User, image?: Media): Promise<void> {
   const homepageSections = await payload.findGlobal({
     slug: 'homepage-sections',
     depth: 0,
     overrideAccess: true,
   })
 
-  if (homepageSections.groups?.length) {
+  const layout = homepageSections.layout ?? []
+  const hasOnlyEmptyDefaultContent =
+    layout.length === 1 && layout[0]?.blockType === 'richText' && isRichTextEmpty(layout[0].content)
+
+  if (layout.length && !hasOnlyEmptyDefaultContent) {
     return
   }
 
   await payload.updateGlobal({
     slug: 'homepage-sections',
     data: {
-      groups: [
+      layout: [
         {
-          backgroundImage: backgroundImage?.id,
-          name: 'RPG',
+          blockType: 'heading',
+          heading: 'Wydarzenia',
+          headingLevel: 'h2',
+        },
+        {
+          blockType: 'carousel',
+          eventTimeFilter: 'upcoming',
+          parentFilter: 'none',
+          selectionMode: 'filters',
+          slideLimit: 6,
+          sort: 'eventDateAscending',
+          sources: ['events'],
+        },
+        {
+          blockType: 'contentCalendar',
+          sources: ['events'],
+        },
+        {
+          blockType: 'heading',
+          heading: 'Aktualności',
+          headingLevel: 'h2',
+        },
+        {
+          blockType: 'listing',
+          eventTimeFilter: 'all',
+          pageSize: 2,
+          pagination: false,
+          parentFilter: 'none',
+          selectionMode: 'filters',
+          sort: 'newest',
+          sources: ['posts'],
+          view: 'tiles',
+        },
+        {
+          blockType: 'card',
+          image: image?.id,
+          title: 'RPG',
         },
       ],
     } satisfies Partial<HomepageSection>,
@@ -658,7 +699,7 @@ try {
   const joinPage = await ensureJoinPage(author)
   const siteLogo = await findOrCreateSiteLogo(author)
   await ensureNavigation(aboutPage, blogPage, joinPage, siteLogo, author)
-  await ensureHomepageGroups(author, rpgBackgroundImage)
+  await ensureHomepageContent(author, rpgBackgroundImage)
 
   await payload.updateGlobal({
     slug: 'site-settings',
@@ -680,7 +721,7 @@ try {
   })
 
   payload.logger.info(
-    'Seed completed: homepage settings, navigation, pages, onboarding composition, posts and groups',
+    'Seed completed: homepage settings, navigation, pages, onboarding composition, posts and homepage content',
   )
 } finally {
   await payload.destroy()

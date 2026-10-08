@@ -116,6 +116,16 @@
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .calendarSelectionActions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .calendarEventPrimaryAction {
+    justify-content: center;
+    width: 100%;
+  }
 }
 
 @media (width <= 70rem) {
@@ -145,9 +155,15 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .contentTileLink,
+  .contentTileImage {
+    transition: none;
+  }
+}
+
 @container content-block (width <= 48rem) {
   .contentCard,
-  .documentList-cards .documentListItem,
   .memberGrid-card .memberCard {
     display: block;
   }
@@ -162,6 +178,11 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .contentList-compact .contentCardContent,
+  .documentList-list .documentListItemContent {
+    gap: 0.45rem;
+  }
+
   .contentPagination {
     grid-template-columns: minmax(0, 1fr);
     text-align: left;
@@ -173,6 +194,18 @@
 
   .mediaGallery.mediaList-list .mediaGalleryItem,
   .attachmentList.mediaList-list .attachmentItem {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container content-block (width <= 54rem) {
+  :is(.contentList-tiles, .documentList-tiles) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container content-block (width <= 36rem) {
+  :is(.contentList-tiles, .documentList-tiles) {
     grid-template-columns: minmax(0, 1fr);
   }
 }

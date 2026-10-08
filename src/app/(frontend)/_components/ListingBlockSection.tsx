@@ -1,17 +1,26 @@
 import { redirect } from 'next/navigation'
 
-import type { Event, EventCycle, ListingBlock, Page, Partner, Post } from '@/payload-types'
+import type {
+  Event,
+  EventCycle,
+  HomepageSection,
+  ListingBlock,
+  Page,
+  Partner,
+  Post,
+} from '@/payload-types'
 import { getRelationshipId } from '@/lib/relationships'
 import { createPaginatedURL, resolveBlockPagination } from '@/modules/content/pagination'
 import {
   findPublicContent,
+  type ManualContentReference,
   type TaxonomizableCollectionSlug,
 } from '@/modules/content/content-listing'
 
 import { ContentList } from './ContentList'
 import { ContentPagination } from './ContentPagination'
 
-type ContentDocument = Event | EventCycle | Page | Partner | Post
+type ContentDocument = Event | EventCycle | HomepageSection | Page | Partner | Post
 
 export async function ListingBlockSection({
   block,
@@ -40,12 +49,14 @@ export async function ListingBlockSection({
       getRelationshipId(block.eventCycle) ??
       ('calendarFeedKey' in document ? document.id : undefined),
     eventTimeFilter: block.eventTimeFilter ?? 'all',
+    manualItems: getManualItems(block),
     page: requestedPage,
     pageSize: block.pageSize,
     pagination: Boolean(block.pagination),
     parentId,
-    sort: block.sort,
-    sources: block.sources as TaxonomizableCollectionSlug[],
+    selectionMode: block.selectionMode,
+    sort: block.sort ?? 'newest',
+    sources: (block.sources ?? []) as TaxonomizableCollectionSlug[],
     tagId: getRelationshipId(block.tag),
   })
 
@@ -69,12 +80,13 @@ export async function ListingBlockSection({
   )
 }
 
-function getListingParentId(
-  block: ListingBlock,
-  document: Pick<ContentDocument, 'id'>,
-): number | undefined {
+function getManualItems(block: ListingBlock): ManualContentReference[] {
+  return (block.items?.map(({ item }) => item) ?? []) as ManualContentReference[]
+}
+
+function getListingParentId(block: ListingBlock, document: ContentDocument): number | undefined {
   if (block.parentFilter === 'current') {
-    return document.id
+    return 'fullTitle' in document ? document.id : -1
   }
 
   return block.parentFilter === 'specific' ? getRelationshipId(block.parentPage) : undefined

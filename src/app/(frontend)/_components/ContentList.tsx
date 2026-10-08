@@ -2,10 +2,11 @@ import Link from 'next/link'
 
 import type { PublicContentListItem } from '@/modules/content/content-listing'
 
-import { CmsImage } from './CmsImage'
-import { TaxonomyLinks } from './TaxonomyLinks'
+import { ContentCard } from './ContentCard'
+import { ContentListingMeta } from './ContentListingMeta'
+import { ContentTile } from './ContentTile'
 
-export type ContentListView = 'cards' | 'compact' | 'grid'
+export type ContentListView = 'cards' | 'compact' | 'grid' | 'tiles'
 
 type ContentListProperties = {
   emptyMessage?: null | string
@@ -13,56 +14,47 @@ type ContentListProperties = {
   view: ContentListView
 }
 
-const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-})
-
-const contentKindLabels: Record<PublicContentListItem['kind'], string> = {
-  'event-cycles': 'Cykl wydarzeń',
-  events: 'Wydarzenie',
-  pages: 'Strona',
-  posts: 'Wpis',
-}
-
 export function ContentList({ emptyMessage, items, view }: ContentListProperties) {
   if (!items.length) {
     return <p className="emptyState">{emptyMessage || 'Nie ma opublikowanych treści.'}</p>
   }
 
-  const showsImageFallback = view === 'cards' || view === 'grid'
+  if (view === 'tiles') {
+    return (
+      <div className="contentList contentList-tiles">
+        {items.map((item) => (
+          <ContentTile item={item} key={`${item.kind}-${item.document.id}`} />
+        ))}
+      </div>
+    )
+  }
+
+  if (view !== 'compact') {
+    return (
+      <div className={`contentList contentList-${view}`}>
+        {items.map((item) => (
+          <ContentCard item={item} key={`${item.kind}-${item.document.id}`} view={view} />
+        ))}
+      </div>
+    )
+  }
 
   return (
-    <div className={`contentList contentList-${view}`}>
-      {items.map((item) => (
-        <article className="contentCard" key={`${item.kind}-${item.id}`}>
-          {view !== 'compact' ? (
-            <Link aria-label={item.title} className="contentCardImage" href={item.url}>
-              {item.image ? (
-                <CmsImage media={item.image} />
-              ) : showsImageFallback ? (
-                <span aria-hidden="true" className="contentCardImageFallback" />
-              ) : null}
-            </Link>
-          ) : null}
-          <div className="contentCardContent">
-            <p className="contentCardMeta">
-              <span>{contentKindLabels[item.kind]}</span>
-              {item.kind !== 'event-cycles' && item.kind !== 'pages' && item.date ? (
-                <time dateTime={item.date}>{dateFormatter.format(new Date(item.date))}</time>
-              ) : null}
-            </p>
-            <h2>
-              <Link href={item.url}>{item.title}</Link>
-            </h2>
-            {view !== 'compact' && item.excerpt ? <p>{item.excerpt}</p> : null}
-            {view !== 'compact' ? (
-              <TaxonomyLinks category={item.category} tags={item.tags} />
-            ) : null}
-          </div>
-        </article>
-      ))}
+    <div className="contentList contentList-compact">
+      {items.map((item) => {
+        const { document } = item
+
+        return (
+          <article className="contentCard" key={`${item.kind}-${document.id}`}>
+            <div className="contentCardContent">
+              <ContentListingMeta item={item} />
+              <h2>
+                <Link href={item.url}>{document.title}</Link>
+              </h2>
+            </div>
+          </article>
+        )
+      })}
     </div>
   )
 }

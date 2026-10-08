@@ -12,6 +12,8 @@ export type ContentPresentationReference = {
 
 const presentedLeafBlockTypes = new Set([
   'attachments',
+  'carousel',
+  'contentCalendar',
   'documents',
   'listing',
   'mediaGallery',
@@ -100,6 +102,38 @@ function* walkSectionGroupLeafBlocks(
   }
 }
 
+function* walkTabbedContentLeafBlocks(
+  candidate: Record<string, unknown>,
+  path: string,
+): Generator<ContentLeafBlockReference> {
+  if (!Array.isArray(candidate.tabs)) {
+    return
+  }
+
+  for (const [tabIndex, tabCandidate] of candidate.tabs.entries()) {
+    if (!isRecord(tabCandidate) || !Array.isArray(tabCandidate.blocks)) {
+      continue
+    }
+
+    const tabPath = `${path}.tabs.${tabIndex}`
+    for (const [blockIndex, nestedCandidate] of tabCandidate.blocks.entries()) {
+      if (!isRecord(nestedCandidate)) {
+        continue
+      }
+
+      const nestedPath = `${tabPath}.blocks.${blockIndex}`
+      if (nestedCandidate.blockType === 'columnLayout') {
+        yield* walkColumnLeafBlocks(nestedCandidate, nestedPath)
+      } else if (
+        nestedCandidate.blockType !== 'sectionGroup' &&
+        nestedCandidate.blockType !== 'tabs'
+      ) {
+        yield { block: nestedCandidate, path: nestedPath }
+      }
+    }
+  }
+}
+
 export function* walkContentLeafBlocks(layout: unknown): Generator<ContentLeafBlockReference> {
   if (!Array.isArray(layout)) {
     return
@@ -115,8 +149,39 @@ export function* walkContentLeafBlocks(layout: unknown): Generator<ContentLeafBl
       yield* walkColumnLeafBlocks(candidate, blockPath)
     } else if (candidate.blockType === 'sectionGroup') {
       yield* walkSectionGroupLeafBlocks(candidate, blockPath)
+    } else if (candidate.blockType === 'tabs') {
+      yield* walkTabbedContentLeafBlocks(candidate, blockPath)
     } else {
       yield { block: candidate, path: blockPath }
+    }
+  }
+}
+
+function* walkTabbedContentPresentations(
+  candidate: Record<string, unknown>,
+  path: string,
+): Generator<ContentPresentationReference> {
+  if (!Array.isArray(candidate.tabs)) {
+    return
+  }
+
+  for (const [tabIndex, tabCandidate] of candidate.tabs.entries()) {
+    if (!isRecord(tabCandidate) || !Array.isArray(tabCandidate.blocks)) {
+      continue
+    }
+
+    const tabPath = `${path}.tabs.${tabIndex}`
+    for (const [blockIndex, nestedCandidate] of tabCandidate.blocks.entries()) {
+      if (!isRecord(nestedCandidate)) {
+        continue
+      }
+
+      const nestedPath = `${tabPath}.blocks.${blockIndex}`
+      if (nestedCandidate.blockType === 'columnLayout') {
+        yield* walkColumnPresentations(nestedCandidate, nestedPath)
+      } else if (isPresentedBlock(nestedCandidate)) {
+        yield createPresentationReference(nestedCandidate, nestedPath)
+      }
     }
   }
 }
@@ -205,6 +270,8 @@ export function* walkContentPresentations(
       yield* walkColumnPresentations(candidate, blockPath)
     } else if (candidate.blockType === 'sectionGroup') {
       yield* walkSectionGroupPresentations(candidate, blockPath)
+    } else if (candidate.blockType === 'tabs') {
+      yield* walkTabbedContentPresentations(candidate, blockPath)
     } else if (isPresentedBlock(candidate)) {
       yield createPresentationReference(candidate, blockPath)
     }

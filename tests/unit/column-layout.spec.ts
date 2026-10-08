@@ -111,6 +111,7 @@ describe('column layout', () => {
       ...contentLeafBlocks.map((block) => block.slug),
       'columnLayout',
       'sectionGroup',
+      'tabs',
     ])
 
     const columnsField = findNamedField(ColumnLayoutBlock.fields, 'columns')

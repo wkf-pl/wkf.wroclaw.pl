@@ -3,7 +3,7 @@ import type { GlobalConfig } from 'payload'
 import { invalidateNavigationAfterChange } from '@/modules/cache/invalidate-public-data'
 import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
-import { createPresentedLinkFields, validatePresentedLinkItems } from '@/modules/navigation/fields'
+import { createSiteMenuLinkFields, validatePresentedLinkItems } from '@/modules/navigation/fields'
 
 const readNavigation = createRolePermissionAccess({
   anonymousAccess: true,
@@ -40,7 +40,7 @@ export const Navigation: GlobalConfig = {
           RowLabel: '/components/admin/DynamicRowLabel#NavigationItemRowLabel',
         },
       },
-      fields: createPresentedLinkFields(),
+      fields: createSiteMenuLinkFields(),
       label: 'Elementy nagłówka',
       labels: {
         plural: 'Pozycje menu w nagłówku',

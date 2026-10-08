@@ -1,178 +1,29 @@
-import Link from 'next/link'
+import { getPublicHomepageHero, getPublicHomepageSections } from '@/modules/content/public-content'
 
-import { CmsRichText } from '@/components/CmsRichText'
-import { RasterIcon } from '@/components/RasterIcon'
-import type { HomepageSection, Post } from '@/payload-types'
-import {
-  findPublishedPosts,
-  getPublicHomepageHero,
-  getPublicHomepageSections,
-} from '@/modules/content/public-content'
-import { resolvePageLink, resolvePresentedLinks } from '@/modules/navigation/links'
-import { findHomepageEvents } from '@/modules/events/public-events'
-import { findCalendarMonth } from '@/modules/events/calendar-data'
-import { getWarsawCalendarMonth } from '@/modules/events/calendar-presentation'
-
-import { CmsImage } from './_components/CmsImage'
-import { EventShowcase } from './_components/EventShowcase'
+import { ContentLayoutRenderer } from './_components/ContentLayoutRenderer'
 import { HomepageHero } from './_components/HomepageHero'
-import { PresentedLink } from './_components/PresentedLink'
 
-const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
-  day: 'numeric',
-  month: 'long',
-})
-
-function SectionHeading({ children, id }: { children: string; id: string }) {
-  return (
-    <div className="sectionHeading">
-      <span aria-hidden="true" className="sectionHeadingLine" />
-      <span aria-hidden="true" className="sectionHeadingMark">
-        <RasterIcon name="dice" size="medium" />
-      </span>
-      <h2 id={id}>{children}</h2>
-      <span aria-hidden="true" className="sectionHeadingMark">
-        <RasterIcon name="dice" size="medium" />
-      </span>
-      <span aria-hidden="true" className="sectionHeadingLine" />
-    </div>
-  )
+type HomePageProperties = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-function NewsImage({ className, post }: { className: string; post: Post }) {
-  if (post.heroImage && typeof post.heroImage === 'object') {
-    return <CmsImage className={className} media={post.heroImage} />
-  }
-
-  return <span aria-hidden="true" className={`${className} newsImageFallback`} />
-}
-
-function SmallNewsCard({ post }: { post: Post }) {
-  return (
-    <Link className="smallNewsCard" href={`/blog/${post.slug}`}>
-      <NewsImage className="smallNewsImage" post={post} />
-      <span className="smallNewsOverlay" />
-      <span className="smallNewsContent">
-        <strong>{post.title}</strong>
-        {post.publishedAt ? (
-          <time dateTime={post.publishedAt}>
-            <RasterIcon name="calendar" size="small" />
-            {dateFormatter.format(new Date(post.publishedAt))}
-          </time>
-        ) : null}
-      </span>
-    </Link>
-  )
-}
-
-function NewsSection({ posts, title }: { posts: Post[]; title: string }) {
-  return (
-    <section aria-labelledby="news-heading" className="homeSection homeNews">
-      <SectionHeading id="news-heading">{title}</SectionHeading>
-
-      <div className="newsGrid">
-        {posts.map((post) => (
-          <SmallNewsCard key={post.id} post={post} />
-        ))}
-        <Link className="allNewsCard" href="/blog">
-          <span aria-hidden="true" className="allNewsIcon">
-            <RasterIcon name="book" size="medium" />
-          </span>
-          <strong>Wszystkie aktualności</strong>
-          <span className="allNewsCallToAction">
-            Przejdź do bloga <RasterIcon name="arrow-right" size="medium" />
-          </span>
-        </Link>
-      </div>
-    </section>
-  )
-}
-
-type HomepageGroup = NonNullable<HomepageSection['groups']>[number]
-
-function SectionCard({ section }: { section: HomepageGroup }) {
-  const titleLink = resolvePageLink(section.destinationPage)
-  const menuItems = resolvePresentedLinks(section.menuItems ?? [])
-
-  return (
-    <article className="sectionCard">
-      {section.backgroundImage && typeof section.backgroundImage === 'object' ? (
-        <CmsImage className="sectionCardImage" media={section.backgroundImage} />
-      ) : (
-        <span aria-hidden="true" className="sectionCardImage sectionCardImageFallback" />
-      )}
-      <span aria-hidden="true" className="sectionCardShade" />
-      <div className="sectionCardContent">
-        <h3>{titleLink ? <Link {...titleLink}>{section.name}</Link> : section.name}</h3>
-        {menuItems?.length ? (
-          <ul>
-            {menuItems.map((item, itemIndex) => (
-              <li key={`${item.link.href}-${itemIndex}`}>
-                <PresentedLink item={item} trailingIconName="arrow-right" />
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-    </article>
-  )
-}
-
-function Sections({ sections, title }: { sections: HomepageGroup[]; title?: null | string }) {
-  if (sections.length === 0) {
-    return null
-  }
-
-  return (
-    <section
-      aria-label={title ? undefined : 'Sekcje klubowe'}
-      aria-labelledby={title ? 'sections-heading' : undefined}
-      className="homeSection clubSections"
-    >
-      {title ? <SectionHeading id="sections-heading">{title}</SectionHeading> : null}
-      <div className="sectionCards">
-        {sections.map((section) => (
-          <SectionCard key={section.id} section={section} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-export default async function HomePage() {
-  const initialCalendarMonth = getWarsawCalendarMonth()
-  const [hero, homepageSections, calendarData] = await Promise.all([
+export default async function HomePage({ searchParams }: HomePageProperties) {
+  const resolvedSearchParams = await searchParams
+  const [hero, homepageSections] = await Promise.all([
     getPublicHomepageHero(),
     getPublicHomepageSections(),
-    findCalendarMonth(initialCalendarMonth),
   ])
-  const eventWindowWeeks = homepageSections.eventWindowWeeks ?? 4
-  const eventSlideLimit = homepageSections.eventSlideLimit ?? 6
-  const postCount = Number.parseInt(homepageSections.postCount ?? '2', 10)
-  const [events, posts] = await Promise.all([
-    findHomepageEvents(eventWindowWeeks, eventSlideLimit),
-    findPublishedPosts(postCount),
-  ])
-  const sections = homepageSections.groups ?? []
 
   return (
     <main className="homePage">
       <HomepageHero hero={hero} />
 
       <div className="homeShell">
-        <section aria-labelledby="events-heading" className="homeSection homeEvents">
-          <SectionHeading id="events-heading">{homepageSections.eventsTitle}</SectionHeading>
-          {homepageSections.eventsContent ? (
-            <CmsRichText className="homeSectionContent" data={homepageSections.eventsContent} />
-          ) : null}
-          <EventShowcase
-            events={events}
-            initialCalendarData={calendarData}
-            initialCalendarMonth={initialCalendarMonth}
-          />
-        </section>
-        <NewsSection posts={posts} title={homepageSections.newsTitle} />
-        <Sections sections={sections} title={homepageSections.sectionsTitle} />
+        <ContentLayoutRenderer
+          document={homepageSections}
+          pathname="/"
+          searchParams={resolvedSearchParams}
+        />
       </div>
     </main>
   )

@@ -12,11 +12,15 @@ import { resolvePresentedLinks } from '@/modules/navigation/links'
 import type {
   ActionLinksBlock,
   AttachmentsBlock,
+  CardBlock,
+  CarouselBlock,
   ColumnLayoutBlock,
+  ContentCalendarBlock,
   DocumentsBlock,
   Event,
   EventCycle,
   HeadingBlock,
+  HomepageSection,
   ListingBlock,
   MediaGalleryBlock,
   MemberProfilesBlock,
@@ -25,28 +29,41 @@ import type {
   Post,
   RichTextBlock,
   SectionGroupBlock,
+  TabbedContentBlock,
 } from '@/payload-types'
 
 import { ContentHeading, ContentPresentation } from './ContentPresentation'
+import { CardBlockSection } from './CardBlockSection'
+import { CarouselBlockSection } from './CarouselBlockSection'
+import { ContentCalendarBlockSection } from './ContentCalendarBlockSection'
 import { DocumentBlockSection } from './DocumentBlockSection'
 import { ListingBlockSection } from './ListingBlockSection'
 import { MediaBlockSection } from './MediaBlockSection'
 import { MemberProfilesSection } from './MemberProfilesSection'
 import { PresentedLink } from './PresentedLink'
+import { TabbedContentFrame, type TabbedContentFrameTab } from './TabbedContentFrame'
 
-type ContentDocument = Event | EventCycle | Page | Partner | Post
+type ContentDocument = Event | EventCycle | HomepageSection | Page | Partner | Post
 type ContentLeafBlock =
   | ActionLinksBlock
   | AttachmentsBlock
+  | CardBlock
+  | CarouselBlock
+  | ContentCalendarBlock
   | DocumentsBlock
   | HeadingBlock
   | ListingBlock
   | MediaGalleryBlock
   | MemberProfilesBlock
   | RichTextBlock
-type PresentedContentLeafBlock = Exclude<ContentLeafBlock, ActionLinksBlock | HeadingBlock>
+type PresentedContentLeafBlock = Exclude<
+  ContentLeafBlock,
+  ActionLinksBlock | CardBlock | HeadingBlock
+>
 type SectionContentBlock = ColumnLayoutBlock | ContentLeafBlock
-type ContentLayoutBlock = ColumnLayoutBlock | SectionGroupBlock | ContentLeafBlock
+type TabbedContentSectionBlock = ColumnLayoutBlock | ContentLeafBlock
+type ContentLayoutBlock =
+  ColumnLayoutBlock | SectionGroupBlock | TabbedContentBlock | ContentLeafBlock
 
 type ContentRendererProperties = {
   document: ContentDocument
@@ -63,7 +80,7 @@ export async function ContentLayoutRenderer({
   pathname,
   searchParams,
 }: ContentRendererProperties) {
-  const layout = document.layout as ContentLayoutBlock[]
+  const layout = (document.layout ?? []) as ContentLayoutBlock[]
 
   return (
     <div className="pageBlocks">
@@ -112,6 +129,18 @@ async function ContentBlockRenderer({
     )
   }
 
+  if (block.blockType === 'tabs') {
+    return (
+      <TabbedContentRenderer
+        block={block}
+        document={document}
+        path={path}
+        pathname={pathname}
+        searchParams={searchParams}
+      />
+    )
+  }
+
   return (
     <ContentLeafBlockRenderer
       block={block}
@@ -120,6 +149,84 @@ async function ContentBlockRenderer({
       pathname={pathname}
       searchParams={searchParams}
     />
+  )
+}
+
+async function TabbedContentRenderer({
+  block,
+  document,
+  path,
+  pathname,
+  searchParams,
+}: PositionedRendererProperties & { block: TabbedContentBlock }) {
+  const tabs = block.tabs ?? []
+  if (!tabs.length) return null
+
+  const configuredMenus = [
+    ...(block.headerLeftItems ?? []),
+    ...(block.headerRightItems ?? []),
+    ...(block.footerItems ?? []),
+  ]
+  const siteSettings = configuredMenus.length ? await getPublicSiteSettings() : undefined
+  const resolutionOptions = { siteContactEmail: siteSettings?.contactEmail }
+  const headerLeftItems = resolvePresentedLinks(block.headerLeftItems ?? [], resolutionOptions)
+  const headerRightItems = resolvePresentedLinks(block.headerRightItems ?? [], resolutionOptions)
+  const footerItems = resolvePresentedLinks(block.footerItems ?? [], resolutionOptions)
+  const renderedTabs: TabbedContentFrameTab[] = tabs.map((tab, tabIndex) => {
+    const tabPath = `${path}.tabs.${tabIndex}`
+    const blocks = (tab.blocks ?? []) as TabbedContentSectionBlock[]
+
+    return {
+      content: blocks.map((nestedBlock, nestedBlockIndex) => {
+        const nestedPath = `${tabPath}.blocks.${nestedBlockIndex}`
+        return nestedBlock.blockType === 'columnLayout' ? (
+          <ColumnLayoutRenderer
+            block={nestedBlock}
+            document={document}
+            key={nestedBlock.id ?? nestedPath}
+            path={nestedPath}
+            pathname={pathname}
+            searchParams={searchParams}
+          />
+        ) : (
+          <ContentLeafBlockRenderer
+            block={nestedBlock}
+            document={document}
+            key={nestedBlock.id ?? nestedPath}
+            path={nestedPath}
+            pathname={pathname}
+            presentationPlacement="tab"
+            searchParams={searchParams}
+          />
+        )
+      }),
+      id: tab.id ?? `tab-${tabIndex}`,
+      label: tab.label,
+    }
+  })
+
+  return (
+    <TabbedContentFrame
+      footer={renderTabbedContentMenu(footerItems)}
+      footerAlignment={block.footerAlignment ?? 'center'}
+      headerLeft={renderTabbedContentMenu(headerLeftItems)}
+      headerRight={renderTabbedContentMenu(headerRightItems)}
+      tabs={renderedTabs}
+    />
+  )
+}
+
+function renderTabbedContentMenu(items: ReturnType<typeof resolvePresentedLinks>): ReactNode {
+  if (!items.length) return undefined
+
+  return (
+    <ul className="tabbedContentMenuList">
+      {items.map((item, itemIndex) => (
+        <li key={`${item.link.href}-${itemIndex}`}>
+          <PresentedLink item={item} />
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -255,13 +362,20 @@ export async function ContentLeafBlockRenderer({
   document,
   path,
   pathname,
+  presentationPlacement = 'block',
   searchParams,
 }: ContentRendererProperties & {
   block: ContentLeafBlock
   path: string
+  presentationPlacement?: 'block' | 'tab'
 }) {
   if (block.blockType === 'heading') {
-    return <ContentHeading heading={normalizeContentHeading(block as ContentHeadingData)} />
+    return (
+      <ContentHeading
+        appearance={pathname === '/' ? 'homeSection' : 'default'}
+        heading={normalizeContentHeading(block as ContentHeadingData)}
+      />
+    )
   }
 
   if (block.blockType === 'actionLinks') {
@@ -286,6 +400,10 @@ export async function ContentLeafBlockRenderer({
     )
   }
 
+  if (block.blockType === 'card') {
+    return <CardBlockSection block={block} />
+  }
+
   const content = await renderPresentedLeafBlock({
     block,
     document,
@@ -299,7 +417,7 @@ export async function ContentLeafBlockRenderer({
 
   return (
     <ContentPresentation
-      placement="block"
+      placement={presentationPlacement}
       presentation={normalizeContentPresentation(block as ContentPresentationData)}
     >
       {content}
@@ -350,5 +468,9 @@ async function renderPresentedLeafBlock({
         pathname,
         searchParams,
       })
+    case 'carousel':
+      return CarouselBlockSection({ block, document })
+    case 'contentCalendar':
+      return ContentCalendarBlockSection({ block })
   }
 }

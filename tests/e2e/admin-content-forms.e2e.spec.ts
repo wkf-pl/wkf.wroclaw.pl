@@ -16,6 +16,7 @@ let categoryID: number | string
 let tagID: number | string
 let parentPageID: number | string
 let listingPageID: number | string
+let relatedPostID: number | string
 
 test.describe.configure({ mode: 'serial' })
 
@@ -73,6 +74,7 @@ test.beforeAll(async () => {
           pageSize: 12,
           pagination: true,
           parentFilter: 'none',
+          selectionMode: 'filters',
           sort: 'newest',
           sources: ['pages'],
           view: 'cards',
@@ -86,20 +88,28 @@ test.beforeAll(async () => {
   })
   listingPageID = listingPage.id
 
-  await payload.create({
+  const relatedPost = await payload.create({
     collection: 'posts',
     data: {
-      _status: 'draft',
+      _status: 'published',
       author: author.id,
       category: category.id,
       excerpt: 'Wpis używany do sprawdzenia kolumn relacji.',
+      layout: [
+        {
+          blockType: 'heading',
+          heading: 'Treść testowa',
+          headingLevel: 'h2',
+        },
+      ],
       slug: `${fixturePrefix}-related-post`,
       tags: [tag.id],
       title: relatedPostTitle,
     },
-    draft: true,
+    draft: false,
     overrideAccess: true,
   })
+  relatedPostID = relatedPost.id
   await payload.create({
     collection: 'posts',
     data: {
@@ -129,9 +139,52 @@ test('shows complete search labels and concise missing-value fallbacks', async (
   await expect(row).not.toContainText('<Bez')
 })
 
-test('selects and persists a parent page in a Listing block', async ({ page }) => {
+test('lays out Listing presentation fields and persists a parent page', async ({ page }) => {
   await login({ page, user: editorTestUser })
   await page.goto(`/admin/collections/pages/${listingPageID}`)
+
+  const presentationFieldBoxes = await Promise.all(
+    ['view', 'frame', 'surface'].map(async (fieldName) => {
+      const box = await page.locator(`#field-layout__0__${fieldName}`).boundingBox()
+      if (!box) throw new Error(`Missing visible Listing field: ${fieldName}`)
+      return box
+    }),
+  )
+  const presentationFieldTops = presentationFieldBoxes.map(({ y }) => y)
+  expect(Math.max(...presentationFieldTops) - Math.min(...presentationFieldTops)).toBeLessThan(2)
+  expect(presentationFieldBoxes.map(({ x }) => x)).toEqual(
+    [...presentationFieldBoxes.map(({ x }) => x)].sort((left, right) => left - right),
+  )
+
+  const parentPageBox = await page
+    .locator('#field-layout')
+    .getByText('Strona nadrzędna', { exact: true })
+    .locator('xpath=ancestor::div[contains(@class, "field-type")][1]')
+    .boundingBox()
+  const tagBox = await page.locator('#field-layout__0__tag').boundingBox()
+  expect(parentPageBox).not.toBeNull()
+  expect(tagBox).not.toBeNull()
+  expect(Math.abs(parentPageBox!.width - tagBox!.width)).toBeLessThan(2)
+
+  const listingFooterFieldAnchors = [
+    page.locator('#field-layout__0__sort'),
+    page.locator('#field-layout__0__pageSize'),
+    page.getByRole('switch', { name: /Włącz paginację/ }),
+  ]
+  const listingFooterFieldBoxes = await Promise.all(
+    listingFooterFieldAnchors.map((field) =>
+      field.evaluate((element) => {
+        const fieldElement = element.closest('.field-type') ?? element
+        const bounds = fieldElement.getBoundingClientRect()
+        return { x: bounds.x, y: bounds.y }
+      }),
+    ),
+  )
+  const listingFooterFieldTops = listingFooterFieldBoxes.map(({ y }) => y)
+  expect(Math.max(...listingFooterFieldTops) - Math.min(...listingFooterFieldTops)).toBeLessThan(2)
+  expect(listingFooterFieldBoxes.map(({ x }) => x)).toEqual(
+    [...listingFooterFieldBoxes.map(({ x }) => x)].sort((left, right) => left - right),
+  )
 
   const parentPageField = page
     .locator('#field-layout')
@@ -159,6 +212,54 @@ test('selects and persists a parent page in a Listing block', async ({ page }) =
   const listing = savedPage.layout?.find((block) => block.blockType === 'listing')
   expect(listing).toMatchObject({ parentFilter: 'specific' })
   expect(String(listing?.parentPage)).toBe(String(parentPageID))
+})
+
+test('selects a manual Listing target through separate type and target fields', async ({
+  page,
+}) => {
+  await login({ page, user: editorTestUser })
+  await page.goto(`/admin/collections/pages/${listingPageID}`)
+
+  const selectionModeField = page.locator('#field-layout__0__selectionMode')
+  await selectionModeField.getByRole('combobox').click()
+  await page.locator('.rs__menu').getByText('Ręczny', { exact: true }).click()
+
+  const itemsField = page.locator('#field-layout__0__items')
+  await itemsField.getByRole('button', { name: 'Dodaj Treść' }).click()
+  const typeLabel = page.locator('label').filter({ hasText: 'Typ treści' })
+  const targetLabel = page.locator('label').filter({ hasText: 'Cel' })
+  await expect(typeLabel).toBeVisible()
+  await expect(targetLabel).toBeVisible()
+
+  const typeField = typeLabel.locator('xpath=ancestor::div[contains(@class, "field-type")][1]')
+  await typeField.locator('.rs__control').click()
+  await page.locator('.rs__menu').getByText('Wpis', { exact: true }).click()
+
+  const targetField = targetLabel.locator('xpath=ancestor::div[contains(@class, "field-type")][1]')
+  await targetField.getByRole('combobox').click()
+  await page.locator('.rs__menu').getByText(relatedPostTitle, { exact: true }).click()
+  await expect(targetField).toContainText(relatedPostTitle)
+
+  const saveResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'PATCH' &&
+      response.url().includes(`/api/pages/${listingPageID}`),
+  )
+  await page.getByRole('button', { name: 'Zapisz szkic' }).click()
+  expect((await saveResponse).ok()).toBe(true)
+
+  const savedPage = await payload.findByID({
+    collection: 'pages',
+    depth: 0,
+    draft: true,
+    id: listingPageID,
+    overrideAccess: true,
+  })
+  const listing = savedPage.layout?.find((block) => block.blockType === 'listing')
+  expect(listing).toMatchObject({
+    items: [{ item: { relationTo: 'posts', value: relatedPostID } }],
+    selectionMode: 'manual',
+  })
 })
 
 test('uses full-width map previews in Events and Cycle defaults', async ({ page }) => {

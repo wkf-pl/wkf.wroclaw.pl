@@ -30,19 +30,20 @@ const presentationTabID = 'presentation'
 const totalColumnWidth = 12
 
 type ArrayClientField = Extract<ClientField, { type: 'array' }>
-type LayoutKind = 'columns' | 'sections'
+type LayoutKind = 'columns' | 'sections' | 'tabs'
 type LayoutRow = { id: string }
 type RenderedFieldPermissions = true | Record<string, SanitizedFieldPermissions>
 type RowFormValue = { blocks?: unknown }
 
 type LayoutDefinition = {
   addLabel: string
-  arrayName: 'columns' | 'sections'
-  itemAccusative: 'kolumnę' | 'sekcję'
-  itemLabel: 'Kolumna' | 'Sekcja'
+  arrayName: 'columns' | 'sections' | 'tabs'
+  itemAccusative: 'kolumnę' | 'sekcję' | 'zakładkę'
+  itemLabel: 'Kolumna' | 'Sekcja' | 'Zakładka'
   kind: LayoutKind
   maximumRows: number
   minimumRows: number
+  rootTabLabel: string
   tabListLabel: string
 }
 
@@ -55,6 +56,7 @@ const layoutDefinitions: Record<LayoutKind, LayoutDefinition> = {
     kind: 'columns',
     maximumRows: 4,
     minimumRows: 2,
+    rootTabLabel: 'Prezentacja',
     tabListLabel: 'Ustawienia układu kolumnowego',
   },
   sections: {
@@ -65,7 +67,19 @@ const layoutDefinitions: Record<LayoutKind, LayoutDefinition> = {
     kind: 'sections',
     maximumRows: 8,
     minimumRows: 1,
+    rootTabLabel: 'Prezentacja',
     tabListLabel: 'Ustawienia grupy sekcji',
+  },
+  tabs: {
+    addLabel: 'Dodaj zakładkę',
+    arrayName: 'tabs',
+    itemAccusative: 'zakładkę',
+    itemLabel: 'Zakładka',
+    kind: 'tabs',
+    maximumRows: 8,
+    minimumRows: 2,
+    rootTabLabel: 'Rama',
+    tabListLabel: 'Ustawienia treści w zakładkach',
   },
 }
 
@@ -104,6 +118,15 @@ function getClientValidation(definition: LayoutDefinition): Validate {
       value.length <= definition.maximumRows
         ? true
         : 'Grupa sekcji musi zawierać od 1 do 8 sekcji.'
+  }
+
+  if (definition.kind === 'tabs') {
+    return (value) =>
+      Array.isArray(value) &&
+      value.length >= definition.minimumRows &&
+      value.length <= definition.maximumRows
+        ? true
+        : 'Blok musi zawierać od 2 do 8 zakładek.'
   }
 
   return (value) => {
@@ -212,6 +235,14 @@ function TabbedLayoutField({
         })
       : [],
   )
+  const tabLabels = useFormFields(([fields]) =>
+    definition.kind === 'tabs'
+      ? typedRows.map((_, rowIndex) => {
+          const value = fields[`${arrayPaths.path}.${rowIndex}.label`]?.value
+          return typeof value === 'string' ? value.trim() : ''
+        })
+      : [],
+  )
   const tabIDs = [presentationTabID, ...rowIDs]
   const pendingActiveRow = activateRowAtIndex === null ? undefined : typedRows[activateRowAtIndex]
   const resolvedActiveTabID = pendingActiveRow?.id ?? activeTabID
@@ -267,7 +298,16 @@ function TabbedLayoutField({
         ? {
             width: { initialValue: 2, passesCondition: true, valid: true, value: 2 },
           }
-        : {}),
+        : definition.kind === 'tabs'
+          ? {
+              label: {
+                initialValue: `Zakładka ${rowIndex + 1}`,
+                passesCondition: true,
+                valid: true,
+                value: `Zakładka ${rowIndex + 1}`,
+              },
+            }
+          : {}),
     }
 
     addFieldRow({
@@ -341,8 +381,10 @@ function TabbedLayoutField({
           }
         >
           {definition.kind === 'columns'
-            ? `Kolumny: ${typedRows.length} · suma szerokości: ${widthSum}/${totalColumnWidth}`
-            : `Sekcje: ${typedRows.length}`}
+            ? `Kolumny: ${typedRows.length} · suma szerokości: ${widthSum}c`
+            : definition.kind === 'sections'
+              ? `Sekcje: ${typedRows.length}`
+              : `Zakładki: ${typedRows.length}`}
         </p>
         {!effectiveReadOnly && typedRows.length < definition.maximumRows ? (
           <Button
@@ -379,7 +421,7 @@ function TabbedLayoutField({
           tabIndex={effectiveActiveTabID === presentationTabID ? 0 : -1}
           type="button"
         >
-          <span>Prezentacja</span>
+          <span>{definition.rootTabLabel}</span>
           <TabErrorCount fields={rootFields} path={currentPath} />
         </button>
 
@@ -393,7 +435,9 @@ function TabbedLayoutField({
             const itemLabel =
               definition.kind === 'columns'
                 ? `${definition.itemLabel} ${rowIndex + 1} - ${columnWidths[rowIndex]}c`
-                : `${definition.itemLabel} ${rowIndex + 1}`
+                : definition.kind === 'tabs' && tabLabels[rowIndex]
+                  ? tabLabels[rowIndex]
+                  : `${definition.itemLabel} ${rowIndex + 1}`
             const canRemoveRow = typedRows.length > definition.minimumRows
             return (
               <DraggableSortableItem disabled={effectiveReadOnly} id={row.id} key={row.id}>
@@ -510,4 +554,8 @@ export function ColumnLayoutTabsField(properties: GroupFieldClientProps) {
 
 export function SectionGroupTabsField(properties: GroupFieldClientProps) {
   return <TabbedLayoutField definition={layoutDefinitions.sections} properties={properties} />
+}
+
+export function TabbedContentTabsField(properties: GroupFieldClientProps) {
+  return <TabbedLayoutField definition={layoutDefinitions.tabs} properties={properties} />
 }

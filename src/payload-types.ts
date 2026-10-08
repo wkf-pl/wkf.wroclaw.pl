@@ -290,13 +290,17 @@ export interface Page {
     | RichTextBlock
     | HeadingBlock
     | ActionLinksBlock
+    | CardBlock
     | ListingBlock
+    | CarouselBlock
+    | ContentCalendarBlock
     | MediaGalleryBlock
     | DocumentsBlock
     | AttachmentsBlock
     | MemberProfilesBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
+    | TabbedContentBlock
   )[];
   seo?: {
     /**
@@ -585,13 +589,17 @@ export interface EventCycle {
     | RichTextBlock
     | HeadingBlock
     | ActionLinksBlock
+    | CardBlock
     | ListingBlock
+    | CarouselBlock
+    | ContentCalendarBlock
     | MediaGalleryBlock
     | DocumentsBlock
     | AttachmentsBlock
     | MemberProfilesBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
+    | TabbedContentBlock
   )[];
   seo?: {
     /**
@@ -627,13 +635,17 @@ export interface EventCycle {
       | RichTextBlock
       | HeadingBlock
       | ActionLinksBlock
+      | CardBlock
       | ListingBlock
+      | CarouselBlock
+      | ContentCalendarBlock
       | MediaGalleryBlock
       | DocumentsBlock
       | AttachmentsBlock
       | MemberProfilesBlock
       | ColumnLayoutBlock
       | SectionGroupBlock
+      | TabbedContentBlock
     )[];
     category?: (number | null) | Category;
     tags?: (number | Tag)[] | null;
@@ -716,32 +728,264 @@ export interface EventCycle {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ListingBlock".
+ * via the `definition` "CardBlock".
  */
-export interface ListingBlock {
-  frame?: ('none' | 'outline') | null;
-  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
-  /**
-   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
-   */
-  surfaceImage?: (number | null) | Media;
-  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
-  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
-  sources: ('pages' | 'posts' | 'events' | 'event-cycles')[];
-  parentPage?: (number | null) | Page;
-  category?: (number | null) | Category;
-  tag?: (number | null) | Tag;
-  sort: 'newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending';
-  view: 'cards' | 'compact' | 'grid';
-  eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
-  eventCycle?: (number | null) | EventCycle;
-  pageSize: number;
-  pagination?: boolean | null;
-  parentFilter: 'none' | 'current' | 'specific';
-  emptyMessage?: string | null;
+export interface CardBlock {
+  title: string;
+  destinationPage?: (number | null) | Page;
+  image?: (number | null) | Media;
+  links?:
+    | {
+        /**
+         * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
+         */
+        label?: string | null;
+        appearance: 'link' | 'primaryButton' | 'secondaryButton';
+        iconName?:
+          | (
+              | 'astronaut'
+              | 'bluesky'
+              | 'mace'
+              | 'time'
+              | 'dnd5'
+              | 'discord'
+              | 'document'
+              | 'mail'
+              | 'facebook'
+              | 'globe'
+              | 'star'
+              | 'instagram'
+              | 'calendar'
+              | 'gun'
+              | 'cards'
+              | 'collection'
+              | 'compass'
+              | 'confetti'
+              | 'dice'
+              | 'd10'
+              | 'd12'
+              | 'd20'
+              | 'd4'
+              | 'd6'
+              | 'd8'
+              | 'book'
+              | 'fireball'
+              | 'larp'
+              | 'external-link'
+              | 'linkedin'
+              | 'location'
+              | 'bow'
+              | 'mage'
+              | 'messenger'
+              | 'sword'
+              | 'image'
+              | 'announcement'
+              | 'partner'
+              | 'pdf'
+              | 'pawn'
+              | 'download'
+              | 'review'
+              | 'wand'
+              | 'sf'
+              | 'arrows'
+              | 'slack'
+              | 'users'
+              | 'star-trek'
+              | 'star-wars-empire'
+              | 'star-wars-rebel-alliance'
+              | 'steampunk'
+              | 'home'
+              | 'arrow'
+              | 'arrow-left'
+              | 'arrow-right'
+              | 'stormtrooper'
+              | 'tag'
+              | 'shield'
+              | 'axe'
+              | 'twitch'
+              | 'fighter'
+              | 'event'
+              | 'youtube'
+            )
+          | null;
+        targetType:
+          | 'eventCycle'
+          | 'document'
+          | 'siteContactEmail'
+          | 'category'
+          | 'partner'
+          | 'page'
+          | 'tag'
+          | 'custom'
+          | 'post'
+          | 'event';
+        eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
+        partner?: (number | null) | Partner;
+        page?: (number | null) | Page;
+        tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+        /**
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+         */
+        customAddress?: string | null;
+        emailSubject?: string | null;
+        emailBody?: string | null;
+        openInNewTab?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
   id?: string | null;
   blockName?: string | null;
-  blockType: 'listing';
+  blockType: 'card';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "documents".
+ */
+export interface Document {
+  id: number;
+  documentType: 'resolution' | 'statute' | 'regulations' | 'minutes' | 'report' | 'agreement' | 'license' | 'other';
+  /**
+   * Na przykład 3/2026. Pole jest wymagane dla uchwał.
+   */
+  documentNumber?: string | null;
+  documentDate: string;
+  title: string;
+  /**
+   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
+   */
+  slug: string;
+  summary: string;
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  primaryFile: number | DocumentFile;
+  attachments?: (number | DocumentFile)[] | null;
+  category?: (number | null) | Category;
+  tags?: (number | Tag)[] | null;
+  author: number | User;
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "document-files".
+ */
+export interface DocumentFile {
+  id: number;
+  /**
+   * Czytelna nazwa wyświetlana przy odnośniku do pliku.
+   */
+  label: string;
+  document?: (number | null) | Document;
+  uploadedBy?: (number | null) | User;
+  prefix?: string | null;
+  _objectKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: number;
+  displayName: string;
+  roles: (number | Role)[];
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "roles".
+ */
+export interface Role {
+  id: number;
+  name: string;
+  description?: string | null;
+  key: string;
+  isSystem?: boolean | null;
+  /**
+   * Uprawnienia wielu ról sumują się. Dwa ograniczenia zaznaczone dla jednej operacji obowiązują jednocześnie.
+   */
+  permissions?:
+    | {
+        resource:
+          | 'users'
+          | 'media'
+          | 'member-profiles'
+          | 'member-profile-images'
+          | 'pages'
+          | 'posts'
+          | 'events'
+          | 'event-cycles'
+          | 'event-types'
+          | 'partners'
+          | 'documents'
+          | 'club-sections'
+          | 'categories'
+          | 'tags'
+          | 'navigation'
+          | 'site-settings';
+        readAllowed?: boolean | null;
+        readOwn?: boolean | null;
+        readPublished?: boolean | null;
+        canCreate?: boolean | null;
+        updateAllowed?: boolean | null;
+        updateOwn?: boolean | null;
+        updatePublished?: boolean | null;
+        deleteAllowed?: boolean | null;
+        deleteOwn?: boolean | null;
+        deletePublished?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -801,13 +1045,17 @@ export interface Post {
     | RichTextBlock
     | HeadingBlock
     | ActionLinksBlock
+    | CardBlock
     | ListingBlock
+    | CarouselBlock
+    | ContentCalendarBlock
     | MediaGalleryBlock
     | DocumentsBlock
     | AttachmentsBlock
     | MemberProfilesBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
+    | TabbedContentBlock
   )[];
   seo?: {
     /**
@@ -864,13 +1112,17 @@ export interface Event {
     | RichTextBlock
     | HeadingBlock
     | ActionLinksBlock
+    | CardBlock
     | ListingBlock
+    | CarouselBlock
+    | ContentCalendarBlock
     | MediaGalleryBlock
     | DocumentsBlock
     | AttachmentsBlock
     | MemberProfilesBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
+    | TabbedContentBlock
   )[];
   timeMode: 'timed' | 'allDay';
   eventStatus: 'scheduled' | 'cancelled' | 'postponed' | 'rescheduled';
@@ -1039,6 +1291,129 @@ export interface EventType {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ListingBlock".
+ */
+export interface ListingBlock {
+  view: 'cards' | 'compact' | 'grid' | 'tiles';
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  selectionMode: 'manual' | 'filters';
+  items?:
+    | {
+        item:
+          | {
+              relationTo: 'pages';
+              value: number | Page;
+            }
+          | {
+              relationTo: 'posts';
+              value: number | Post;
+            }
+          | {
+              relationTo: 'events';
+              value: number | Event;
+            }
+          | {
+              relationTo: 'event-cycles';
+              value: number | EventCycle;
+            };
+        id?: string | null;
+      }[]
+    | null;
+  sources?: ('pages' | 'posts' | 'events' | 'event-cycles')[] | null;
+  parentPage?: (number | null) | Page;
+  category?: (number | null) | Category;
+  tag?: (number | null) | Tag;
+  eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
+  eventCycle?: (number | null) | EventCycle;
+  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending') | null;
+  pageSize: number;
+  pagination?: boolean | null;
+  parentFilter: 'none' | 'current' | 'specific';
+  emptyMessage?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'listing';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CarouselBlock".
+ */
+export interface CarouselBlock {
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  selectionMode: 'manual' | 'filters';
+  items?:
+    | {
+        item:
+          | {
+              relationTo: 'pages';
+              value: number | Page;
+            }
+          | {
+              relationTo: 'posts';
+              value: number | Post;
+            }
+          | {
+              relationTo: 'events';
+              value: number | Event;
+            }
+          | {
+              relationTo: 'event-cycles';
+              value: number | EventCycle;
+            };
+        id?: string | null;
+      }[]
+    | null;
+  sources?: ('pages' | 'posts' | 'events' | 'event-cycles')[] | null;
+  parentPage?: (number | null) | Page;
+  category?: (number | null) | Category;
+  tag?: (number | null) | Tag;
+  eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
+  eventCycle?: (number | null) | EventCycle;
+  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending') | null;
+  slideLimit: number;
+  parentFilter: 'none' | 'current' | 'specific';
+  emptyMessage?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'carousel';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ContentCalendarBlock".
+ */
+export interface ContentCalendarBlock {
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  sources: ('events' | 'posts')[];
+  category?: (number | null) | Category;
+  tag?: (number | null) | Tag;
+  eventCycle?: (number | null) | EventCycle;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'contentCalendar';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "MediaGalleryBlock".
  */
 export interface MediaGalleryBlock {
@@ -1091,158 +1466,13 @@ export interface DocumentsBlock {
   category?: (number | null) | Category;
   tag?: (number | null) | Tag;
   sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
-  view: 'cards' | 'list' | 'grid';
+  view: 'cards' | 'list' | 'grid' | 'tiles' | 'carousel';
   pageSize: number;
   pagination?: boolean | null;
   emptyMessage?: string | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'documents';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "documents".
- */
-export interface Document {
-  id: number;
-  documentType: 'resolution' | 'statute' | 'regulations' | 'minutes' | 'report' | 'agreement' | 'license' | 'other';
-  /**
-   * Na przykład 3/2026. Pole jest wymagane dla uchwał.
-   */
-  documentNumber?: string | null;
-  documentDate: string;
-  title: string;
-  /**
-   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
-   */
-  slug: string;
-  summary: string;
-  content?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  primaryFile: number | DocumentFile;
-  attachments?: (number | DocumentFile)[] | null;
-  category?: (number | null) | Category;
-  tags?: (number | Tag)[] | null;
-  author: number | User;
-  publishedAt?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "document-files".
- */
-export interface DocumentFile {
-  id: number;
-  /**
-   * Czytelna nazwa wyświetlana przy odnośniku do pliku.
-   */
-  label: string;
-  document?: (number | null) | Document;
-  uploadedBy?: (number | null) | User;
-  prefix?: string | null;
-  _objectKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
- */
-export interface User {
-  id: number;
-  displayName: string;
-  roles: (number | Role)[];
-  updatedAt: string;
-  createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  resetPasswordRequestedAt?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'users';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "roles".
- */
-export interface Role {
-  id: number;
-  name: string;
-  description?: string | null;
-  key: string;
-  isSystem?: boolean | null;
-  /**
-   * Uprawnienia wielu ról sumują się. Dwa ograniczenia zaznaczone dla jednej operacji obowiązują jednocześnie.
-   */
-  permissions?:
-    | {
-        resource:
-          | 'users'
-          | 'media'
-          | 'member-profiles'
-          | 'member-profile-images'
-          | 'pages'
-          | 'posts'
-          | 'events'
-          | 'event-cycles'
-          | 'event-types'
-          | 'partners'
-          | 'documents'
-          | 'club-sections'
-          | 'categories'
-          | 'tags'
-          | 'navigation'
-          | 'site-settings';
-        readAllowed?: boolean | null;
-        readOwn?: boolean | null;
-        readPublished?: boolean | null;
-        canCreate?: boolean | null;
-        updateAllowed?: boolean | null;
-        updateOwn?: boolean | null;
-        updatePublished?: boolean | null;
-        deleteAllowed?: boolean | null;
-        deleteOwn?: boolean | null;
-        deletePublished?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1462,7 +1692,10 @@ export interface ColumnLayoutBlock {
           | RichTextBlock
           | HeadingBlock
           | ActionLinksBlock
+          | CardBlock
           | ListingBlock
+          | CarouselBlock
+          | ContentCalendarBlock
           | MediaGalleryBlock
           | DocumentsBlock
           | AttachmentsBlock
@@ -1501,7 +1734,10 @@ export interface SectionGroupBlock {
       | RichTextBlock
       | HeadingBlock
       | ActionLinksBlock
+      | CardBlock
       | ListingBlock
+      | CarouselBlock
+      | ContentCalendarBlock
       | MediaGalleryBlock
       | DocumentsBlock
       | AttachmentsBlock
@@ -1513,6 +1749,348 @@ export interface SectionGroupBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'sectionGroup';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TabbedContentBlock".
+ */
+export interface TabbedContentBlock {
+  headerLeftItems?:
+    | {
+        /**
+         * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
+         */
+        label?: string | null;
+        appearance: 'link' | 'primaryButton' | 'secondaryButton';
+        iconName?:
+          | (
+              | 'astronaut'
+              | 'bluesky'
+              | 'mace'
+              | 'time'
+              | 'dnd5'
+              | 'discord'
+              | 'document'
+              | 'mail'
+              | 'facebook'
+              | 'globe'
+              | 'star'
+              | 'instagram'
+              | 'calendar'
+              | 'gun'
+              | 'cards'
+              | 'collection'
+              | 'compass'
+              | 'confetti'
+              | 'dice'
+              | 'd10'
+              | 'd12'
+              | 'd20'
+              | 'd4'
+              | 'd6'
+              | 'd8'
+              | 'book'
+              | 'fireball'
+              | 'larp'
+              | 'external-link'
+              | 'linkedin'
+              | 'location'
+              | 'bow'
+              | 'mage'
+              | 'messenger'
+              | 'sword'
+              | 'image'
+              | 'announcement'
+              | 'partner'
+              | 'pdf'
+              | 'pawn'
+              | 'download'
+              | 'review'
+              | 'wand'
+              | 'sf'
+              | 'arrows'
+              | 'slack'
+              | 'users'
+              | 'star-trek'
+              | 'star-wars-empire'
+              | 'star-wars-rebel-alliance'
+              | 'steampunk'
+              | 'home'
+              | 'arrow'
+              | 'arrow-left'
+              | 'arrow-right'
+              | 'stormtrooper'
+              | 'tag'
+              | 'shield'
+              | 'axe'
+              | 'twitch'
+              | 'fighter'
+              | 'event'
+              | 'youtube'
+            )
+          | null;
+        targetType:
+          | 'eventCycle'
+          | 'document'
+          | 'siteContactEmail'
+          | 'category'
+          | 'partner'
+          | 'page'
+          | 'tag'
+          | 'custom'
+          | 'post'
+          | 'event';
+        eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
+        partner?: (number | null) | Partner;
+        page?: (number | null) | Page;
+        tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+        /**
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+         */
+        customAddress?: string | null;
+        emailSubject?: string | null;
+        emailBody?: string | null;
+        openInNewTab?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  headerRightItems?:
+    | {
+        /**
+         * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
+         */
+        label?: string | null;
+        appearance: 'link' | 'primaryButton' | 'secondaryButton';
+        iconName?:
+          | (
+              | 'astronaut'
+              | 'bluesky'
+              | 'mace'
+              | 'time'
+              | 'dnd5'
+              | 'discord'
+              | 'document'
+              | 'mail'
+              | 'facebook'
+              | 'globe'
+              | 'star'
+              | 'instagram'
+              | 'calendar'
+              | 'gun'
+              | 'cards'
+              | 'collection'
+              | 'compass'
+              | 'confetti'
+              | 'dice'
+              | 'd10'
+              | 'd12'
+              | 'd20'
+              | 'd4'
+              | 'd6'
+              | 'd8'
+              | 'book'
+              | 'fireball'
+              | 'larp'
+              | 'external-link'
+              | 'linkedin'
+              | 'location'
+              | 'bow'
+              | 'mage'
+              | 'messenger'
+              | 'sword'
+              | 'image'
+              | 'announcement'
+              | 'partner'
+              | 'pdf'
+              | 'pawn'
+              | 'download'
+              | 'review'
+              | 'wand'
+              | 'sf'
+              | 'arrows'
+              | 'slack'
+              | 'users'
+              | 'star-trek'
+              | 'star-wars-empire'
+              | 'star-wars-rebel-alliance'
+              | 'steampunk'
+              | 'home'
+              | 'arrow'
+              | 'arrow-left'
+              | 'arrow-right'
+              | 'stormtrooper'
+              | 'tag'
+              | 'shield'
+              | 'axe'
+              | 'twitch'
+              | 'fighter'
+              | 'event'
+              | 'youtube'
+            )
+          | null;
+        targetType:
+          | 'eventCycle'
+          | 'document'
+          | 'siteContactEmail'
+          | 'category'
+          | 'partner'
+          | 'page'
+          | 'tag'
+          | 'custom'
+          | 'post'
+          | 'event';
+        eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
+        partner?: (number | null) | Partner;
+        page?: (number | null) | Page;
+        tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+        /**
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+         */
+        customAddress?: string | null;
+        emailSubject?: string | null;
+        emailBody?: string | null;
+        openInNewTab?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  footerItems?:
+    | {
+        /**
+         * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
+         */
+        label?: string | null;
+        appearance: 'link' | 'primaryButton' | 'secondaryButton';
+        iconName?:
+          | (
+              | 'astronaut'
+              | 'bluesky'
+              | 'mace'
+              | 'time'
+              | 'dnd5'
+              | 'discord'
+              | 'document'
+              | 'mail'
+              | 'facebook'
+              | 'globe'
+              | 'star'
+              | 'instagram'
+              | 'calendar'
+              | 'gun'
+              | 'cards'
+              | 'collection'
+              | 'compass'
+              | 'confetti'
+              | 'dice'
+              | 'd10'
+              | 'd12'
+              | 'd20'
+              | 'd4'
+              | 'd6'
+              | 'd8'
+              | 'book'
+              | 'fireball'
+              | 'larp'
+              | 'external-link'
+              | 'linkedin'
+              | 'location'
+              | 'bow'
+              | 'mage'
+              | 'messenger'
+              | 'sword'
+              | 'image'
+              | 'announcement'
+              | 'partner'
+              | 'pdf'
+              | 'pawn'
+              | 'download'
+              | 'review'
+              | 'wand'
+              | 'sf'
+              | 'arrows'
+              | 'slack'
+              | 'users'
+              | 'star-trek'
+              | 'star-wars-empire'
+              | 'star-wars-rebel-alliance'
+              | 'steampunk'
+              | 'home'
+              | 'arrow'
+              | 'arrow-left'
+              | 'arrow-right'
+              | 'stormtrooper'
+              | 'tag'
+              | 'shield'
+              | 'axe'
+              | 'twitch'
+              | 'fighter'
+              | 'event'
+              | 'youtube'
+            )
+          | null;
+        targetType:
+          | 'eventCycle'
+          | 'document'
+          | 'siteContactEmail'
+          | 'category'
+          | 'partner'
+          | 'page'
+          | 'tag'
+          | 'custom'
+          | 'post'
+          | 'event';
+        eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
+        partner?: (number | null) | Partner;
+        page?: (number | null) | Page;
+        tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+        /**
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+         */
+        customAddress?: string | null;
+        emailSubject?: string | null;
+        emailBody?: string | null;
+        openInNewTab?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  footerAlignment?: ('start' | 'center' | 'end') | null;
+  tabs: {
+    label: string;
+    blocks?:
+      | (
+          | RichTextBlock
+          | HeadingBlock
+          | ActionLinksBlock
+          | CardBlock
+          | ListingBlock
+          | CarouselBlock
+          | ContentCalendarBlock
+          | MediaGalleryBlock
+          | DocumentsBlock
+          | AttachmentsBlock
+          | MemberProfilesBlock
+          | ColumnLayoutBlock
+        )[]
+      | null;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'tabs';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1528,13 +2106,17 @@ export interface Partner {
     | RichTextBlock
     | HeadingBlock
     | ActionLinksBlock
+    | CardBlock
     | ListingBlock
+    | CarouselBlock
+    | ContentCalendarBlock
     | MediaGalleryBlock
     | DocumentsBlock
     | AttachmentsBlock
     | MemberProfilesBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
+    | TabbedContentBlock
   )[];
   seo?: {
     /**
@@ -1840,13 +2422,17 @@ export interface PagesSelect<T extends boolean = true> {
         richText?: T | RichTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | ActionLinksBlockSelect<T>;
+        card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
+        contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
+        tabs?: T | TabbedContentBlockSelect<T>;
       };
   seo?:
     | T
@@ -1934,26 +2520,113 @@ export interface ActionLinksBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CardBlock_select".
+ */
+export interface CardBlockSelect<T extends boolean = true> {
+  title?: T;
+  destinationPage?: T;
+  image?: T;
+  links?:
+    | T
+    | {
+        label?: T;
+        appearance?: T;
+        iconName?: T;
+        targetType?: T;
+        eventCycle?: T;
+        document?: T;
+        category?: T;
+        partner?: T;
+        page?: T;
+        tag?: T;
+        post?: T;
+        event?: T;
+        customScheme?: T;
+        customAddress?: T;
+        emailSubject?: T;
+        emailBody?: T;
+        openInNewTab?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ListingBlock_select".
  */
 export interface ListingBlockSelect<T extends boolean = true> {
+  view?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
+  selectionMode?: T;
+  items?:
+    | T
+    | {
+        item?: T;
+        id?: T;
+      };
+  sources?: T;
+  parentPage?: T;
+  category?: T;
+  tag?: T;
+  eventTimeFilter?: T;
+  eventCycle?: T;
+  sort?: T;
+  pageSize?: T;
+  pagination?: T;
+  parentFilter?: T;
+  emptyMessage?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CarouselBlock_select".
+ */
+export interface CarouselBlockSelect<T extends boolean = true> {
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
+  selectionMode?: T;
+  items?:
+    | T
+    | {
+        item?: T;
+        id?: T;
+      };
+  sources?: T;
+  parentPage?: T;
+  category?: T;
+  tag?: T;
+  eventTimeFilter?: T;
+  eventCycle?: T;
+  sort?: T;
+  slideLimit?: T;
+  parentFilter?: T;
+  emptyMessage?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ContentCalendarBlock_select".
+ */
+export interface ContentCalendarBlockSelect<T extends boolean = true> {
   frame?: T;
   surface?: T;
   surfaceImage?: T;
   surfaceHorizontalPosition?: T;
   surfaceVerticalPosition?: T;
   sources?: T;
-  parentPage?: T;
   category?: T;
   tag?: T;
-  sort?: T;
-  view?: T;
-  eventTimeFilter?: T;
   eventCycle?: T;
-  pageSize?: T;
-  pagination?: T;
-  parentFilter?: T;
-  emptyMessage?: T;
   id?: T;
   blockName?: T;
 }
@@ -2086,7 +2759,10 @@ export interface ColumnLayoutBlockSelect<T extends boolean = true> {
               richText?: T | RichTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
               actionLinks?: T | ActionLinksBlockSelect<T>;
+              card?: T | CardBlockSelect<T>;
               listing?: T | ListingBlockSelect<T>;
+              carousel?: T | CarouselBlockSelect<T>;
+              contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               documents?: T | DocumentsBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
@@ -2121,7 +2797,107 @@ export interface SectionGroupBlockSelect<T extends boolean = true> {
               richText?: T | RichTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
               actionLinks?: T | ActionLinksBlockSelect<T>;
+              card?: T | CardBlockSelect<T>;
               listing?: T | ListingBlockSelect<T>;
+              carousel?: T | CarouselBlockSelect<T>;
+              contentCalendar?: T | ContentCalendarBlockSelect<T>;
+              mediaGallery?: T | MediaGalleryBlockSelect<T>;
+              documents?: T | DocumentsBlockSelect<T>;
+              attachments?: T | AttachmentsBlockSelect<T>;
+              memberProfiles?: T | MemberProfilesBlockSelect<T>;
+              columnLayout?: T | ColumnLayoutBlockSelect<T>;
+            };
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TabbedContentBlock_select".
+ */
+export interface TabbedContentBlockSelect<T extends boolean = true> {
+  headerLeftItems?:
+    | T
+    | {
+        label?: T;
+        appearance?: T;
+        iconName?: T;
+        targetType?: T;
+        eventCycle?: T;
+        document?: T;
+        category?: T;
+        partner?: T;
+        page?: T;
+        tag?: T;
+        post?: T;
+        event?: T;
+        customScheme?: T;
+        customAddress?: T;
+        emailSubject?: T;
+        emailBody?: T;
+        openInNewTab?: T;
+        id?: T;
+      };
+  headerRightItems?:
+    | T
+    | {
+        label?: T;
+        appearance?: T;
+        iconName?: T;
+        targetType?: T;
+        eventCycle?: T;
+        document?: T;
+        category?: T;
+        partner?: T;
+        page?: T;
+        tag?: T;
+        post?: T;
+        event?: T;
+        customScheme?: T;
+        customAddress?: T;
+        emailSubject?: T;
+        emailBody?: T;
+        openInNewTab?: T;
+        id?: T;
+      };
+  footerItems?:
+    | T
+    | {
+        label?: T;
+        appearance?: T;
+        iconName?: T;
+        targetType?: T;
+        eventCycle?: T;
+        document?: T;
+        category?: T;
+        partner?: T;
+        page?: T;
+        tag?: T;
+        post?: T;
+        event?: T;
+        customScheme?: T;
+        customAddress?: T;
+        emailSubject?: T;
+        emailBody?: T;
+        openInNewTab?: T;
+        id?: T;
+      };
+  footerAlignment?: T;
+  tabs?:
+    | T
+    | {
+        label?: T;
+        blocks?:
+          | T
+          | {
+              richText?: T | RichTextBlockSelect<T>;
+              heading?: T | HeadingBlockSelect<T>;
+              actionLinks?: T | ActionLinksBlockSelect<T>;
+              card?: T | CardBlockSelect<T>;
+              listing?: T | ListingBlockSelect<T>;
+              carousel?: T | CarouselBlockSelect<T>;
+              contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               documents?: T | DocumentsBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
@@ -2149,13 +2925,17 @@ export interface PostsSelect<T extends boolean = true> {
         richText?: T | RichTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | ActionLinksBlockSelect<T>;
+        card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
+        contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
+        tabs?: T | TabbedContentBlockSelect<T>;
       };
   seo?:
     | T
@@ -2189,13 +2969,17 @@ export interface EventsSelect<T extends boolean = true> {
         richText?: T | RichTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | ActionLinksBlockSelect<T>;
+        card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
+        contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
+        tabs?: T | TabbedContentBlockSelect<T>;
       };
   timeMode?: T;
   eventStatus?: T;
@@ -2287,13 +3071,17 @@ export interface EventCyclesSelect<T extends boolean = true> {
         richText?: T | RichTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | ActionLinksBlockSelect<T>;
+        card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
+        contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
+        tabs?: T | TabbedContentBlockSelect<T>;
       };
   seo?:
     | T
@@ -2315,13 +3103,17 @@ export interface EventCyclesSelect<T extends boolean = true> {
               richText?: T | RichTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
               actionLinks?: T | ActionLinksBlockSelect<T>;
+              card?: T | CardBlockSelect<T>;
               listing?: T | ListingBlockSelect<T>;
+              carousel?: T | CarouselBlockSelect<T>;
+              contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               documents?: T | DocumentsBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
               memberProfiles?: T | MemberProfilesBlockSelect<T>;
               columnLayout?: T | ColumnLayoutBlockSelect<T>;
               sectionGroup?: T | SectionGroupBlockSelect<T>;
+              tabs?: T | TabbedContentBlockSelect<T>;
             };
         category?: T;
         tags?: T;
@@ -2604,13 +3396,17 @@ export interface PartnersSelect<T extends boolean = true> {
         richText?: T | RichTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | ActionLinksBlockSelect<T>;
+        card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
+        contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
+        tabs?: T | TabbedContentBlockSelect<T>;
       };
   seo?:
     | T
@@ -2847,7 +3643,17 @@ export interface Navigation {
               | 'youtube'
             )
           | null;
-        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+        targetType:
+          | 'eventCycle'
+          | 'document'
+          | 'siteContactEmail'
+          | 'category'
+          | 'partner'
+          | 'page'
+          | 'tag'
+          | 'custom'
+          | 'post'
+          | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
         category?: (number | null) | Category;
@@ -2861,6 +3667,8 @@ export interface Navigation {
          * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
          */
         customAddress?: string | null;
+        emailSubject?: string | null;
+        emailBody?: string | null;
         openInNewTab?: boolean | null;
         id?: string | null;
       }[]
@@ -3006,128 +3814,22 @@ export interface HomepageHero {
  */
 export interface HomepageSection {
   id: number;
-  eventsTitle: string;
-  eventsContent?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  eventWindowWeeks?: number | null;
-  eventSlideLimit?: number | null;
-  newsTitle: string;
-  postCount?: ('2' | '5' | '8') | null;
-  sectionsTitle?: string | null;
-  groups?:
-    | {
-        name: string;
-        backgroundImage?: (number | null) | Media;
-        destinationPage?: (number | null) | Page;
-        menuItems?:
-          | {
-              /**
-               * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
-               */
-              label?: string | null;
-              appearance: 'link' | 'primaryButton' | 'secondaryButton';
-              iconName?:
-                | (
-                    | 'astronaut'
-                    | 'bluesky'
-                    | 'mace'
-                    | 'time'
-                    | 'dnd5'
-                    | 'discord'
-                    | 'document'
-                    | 'mail'
-                    | 'facebook'
-                    | 'globe'
-                    | 'star'
-                    | 'instagram'
-                    | 'calendar'
-                    | 'gun'
-                    | 'cards'
-                    | 'collection'
-                    | 'compass'
-                    | 'confetti'
-                    | 'dice'
-                    | 'd10'
-                    | 'd12'
-                    | 'd20'
-                    | 'd4'
-                    | 'd6'
-                    | 'd8'
-                    | 'book'
-                    | 'fireball'
-                    | 'larp'
-                    | 'external-link'
-                    | 'linkedin'
-                    | 'location'
-                    | 'bow'
-                    | 'mage'
-                    | 'messenger'
-                    | 'sword'
-                    | 'image'
-                    | 'announcement'
-                    | 'partner'
-                    | 'pdf'
-                    | 'pawn'
-                    | 'download'
-                    | 'review'
-                    | 'wand'
-                    | 'sf'
-                    | 'arrows'
-                    | 'slack'
-                    | 'users'
-                    | 'star-trek'
-                    | 'star-wars-empire'
-                    | 'star-wars-rebel-alliance'
-                    | 'steampunk'
-                    | 'home'
-                    | 'arrow'
-                    | 'arrow-left'
-                    | 'arrow-right'
-                    | 'stormtrooper'
-                    | 'tag'
-                    | 'shield'
-                    | 'axe'
-                    | 'twitch'
-                    | 'fighter'
-                    | 'event'
-                    | 'youtube'
-                  )
-                | null;
-              targetType:
-                'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
-              eventCycle?: (number | null) | EventCycle;
-              document?: (number | null) | Document;
-              category?: (number | null) | Category;
-              partner?: (number | null) | Partner;
-              page?: (number | null) | Page;
-              tag?: (number | null) | Tag;
-              post?: (number | null) | Post;
-              event?: (number | null) | Event;
-              customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
-              /**
-               * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
-               */
-              customAddress?: string | null;
-              openInNewTab?: boolean | null;
-              id?: string | null;
-            }[]
-          | null;
-        id?: string | null;
-      }[]
-    | null;
+  layout: (
+    | RichTextBlock
+    | HeadingBlock
+    | ActionLinksBlock
+    | CardBlock
+    | ListingBlock
+    | CarouselBlock
+    | ContentCalendarBlock
+    | MediaGalleryBlock
+    | DocumentsBlock
+    | AttachmentsBlock
+    | MemberProfilesBlock
+    | ColumnLayoutBlock
+    | SectionGroupBlock
+    | TabbedContentBlock
+  )[];
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -3339,7 +4041,16 @@ export interface Footer {
                   )
                 | null;
               targetType:
-                'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+                | 'eventCycle'
+                | 'document'
+                | 'siteContactEmail'
+                | 'category'
+                | 'partner'
+                | 'page'
+                | 'tag'
+                | 'custom'
+                | 'post'
+                | 'event';
               eventCycle?: (number | null) | EventCycle;
               document?: (number | null) | Document;
               category?: (number | null) | Category;
@@ -3353,6 +4064,8 @@ export interface Footer {
                * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
                */
               customAddress?: string | null;
+              emailSubject?: string | null;
+              emailBody?: string | null;
               openInNewTab?: boolean | null;
               id?: string | null;
             }[]
@@ -3398,6 +4111,8 @@ export interface NavigationSelect<T extends boolean = true> {
         event?: T;
         customScheme?: T;
         customAddress?: T;
+        emailSubject?: T;
+        emailBody?: T;
         openInNewTab?: T;
         id?: T;
       };
@@ -3442,40 +4157,23 @@ export interface HomepageHeroSelect<T extends boolean = true> {
  * via the `definition` "homepage-sections_select".
  */
 export interface HomepageSectionsSelect<T extends boolean = true> {
-  eventsTitle?: T;
-  eventsContent?: T;
-  eventWindowWeeks?: T;
-  eventSlideLimit?: T;
-  newsTitle?: T;
-  postCount?: T;
-  sectionsTitle?: T;
-  groups?:
+  layout?:
     | T
     | {
-        name?: T;
-        backgroundImage?: T;
-        destinationPage?: T;
-        menuItems?:
-          | T
-          | {
-              label?: T;
-              appearance?: T;
-              iconName?: T;
-              targetType?: T;
-              eventCycle?: T;
-              document?: T;
-              category?: T;
-              partner?: T;
-              page?: T;
-              tag?: T;
-              post?: T;
-              event?: T;
-              customScheme?: T;
-              customAddress?: T;
-              openInNewTab?: T;
-              id?: T;
-            };
-        id?: T;
+        richText?: T | RichTextBlockSelect<T>;
+        heading?: T | HeadingBlockSelect<T>;
+        actionLinks?: T | ActionLinksBlockSelect<T>;
+        card?: T | CardBlockSelect<T>;
+        listing?: T | ListingBlockSelect<T>;
+        carousel?: T | CarouselBlockSelect<T>;
+        contentCalendar?: T | ContentCalendarBlockSelect<T>;
+        mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        documents?: T | DocumentsBlockSelect<T>;
+        attachments?: T | AttachmentsBlockSelect<T>;
+        memberProfiles?: T | MemberProfilesBlockSelect<T>;
+        columnLayout?: T | ColumnLayoutBlockSelect<T>;
+        sectionGroup?: T | SectionGroupBlockSelect<T>;
+        tabs?: T | TabbedContentBlockSelect<T>;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -3531,6 +4229,8 @@ export interface FooterSelect<T extends boolean = true> {
               event?: T;
               customScheme?: T;
               customAddress?: T;
+              emailSubject?: T;
+              emailBody?: T;
               openInNewTab?: T;
               id?: T;
             };

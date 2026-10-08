@@ -38,6 +38,14 @@ import * as migration_20261002_224408_unified_content_presentation from './20261
 import * as migration_20261003_122622_content_presentation_frame_style from './20261003_122622_content_presentation_frame_style'
 import * as migration_20261004_202800_content_presentation_compaction from './20261004_202800_content_presentation_compaction'
 import * as migration_20261006_204500_repair_content_listing_relationships from './20261006_204500_repair_content_listing_relationships'
+import * as migration_20261006_231853 from './20261006_231853'
+import * as migration_20261006_235915_card_block_and_homepage_content from './20261006_235915_card_block_and_homepage_content'
+import * as migration_20261007_125027_tabbed_content_block from './20261007_125027_tabbed_content_block'
+import * as migration_20261007_133416_content_calendar_block from './20261007_133416_content_calendar_block'
+import * as migration_20261007_144303_carousel_block from './20261007_144303_carousel_block'
+import * as migration_20261008_142626_document_carousel_view from './20261008_142626_document_carousel_view'
+import * as migration_20261008_151847_content_tiles_view from './20261008_151847_content_tiles_view'
+import * as migration_20261008_210723_homepage_content_only from './20261008_210723_homepage_content_only'
 
 export const migrations = [
   {
@@ -239,5 +247,45 @@ export const migrations = [
     up: migration_20261006_204500_repair_content_listing_relationships.up,
     down: migration_20261006_204500_repair_content_listing_relationships.down,
     name: '20261006_204500_repair_content_listing_relationships',
+  },
+  {
+    up: migration_20261006_231853.up,
+    down: migration_20261006_231853.down,
+    name: '20261006_231853',
+  },
+  {
+    up: migration_20261006_235915_card_block_and_homepage_content.up,
+    down: migration_20261006_235915_card_block_and_homepage_content.down,
+    name: '20261006_235915_card_block_and_homepage_content',
+  },
+  {
+    up: migration_20261007_125027_tabbed_content_block.up,
+    down: migration_20261007_125027_tabbed_content_block.down,
+    name: '20261007_125027_tabbed_content_block',
+  },
+  {
+    up: migration_20261007_133416_content_calendar_block.up,
+    down: migration_20261007_133416_content_calendar_block.down,
+    name: '20261007_133416_content_calendar_block',
+  },
+  {
+    up: migration_20261007_144303_carousel_block.up,
+    down: migration_20261007_144303_carousel_block.down,
+    name: '20261007_144303_carousel_block',
+  },
+  {
+    up: migration_20261008_142626_document_carousel_view.up,
+    down: migration_20261008_142626_document_carousel_view.down,
+    name: '20261008_142626_document_carousel_view',
+  },
+  {
+    up: migration_20261008_151847_content_tiles_view.up,
+    down: migration_20261008_151847_content_tiles_view.down,
+    name: '20261008_151847_content_tiles_view',
+  },
+  {
+    up: migration_20261008_210723_homepage_content_only.up,
+    down: migration_20261008_210723_homepage_content_only.down,
+    name: '20261008_210723_homepage_content_only',
   },
 ]

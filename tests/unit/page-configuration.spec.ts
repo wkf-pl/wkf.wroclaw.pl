@@ -5,13 +5,22 @@ import { describe, expect, it } from 'vitest'
 
 import { AttachmentsBlock, MediaGalleryBlock } from '@/blocks/MediaListing'
 import { ActionLinksBlock } from '@/blocks/ActionLinks'
+import { CardBlock } from '@/blocks/Card'
+import { CarouselBlock } from '@/blocks/Carousel'
+import { ContentCalendarBlock, validateContentCalendarSources } from '@/blocks/ContentCalendar'
 import { ColumnLayoutBlock } from '@/blocks/ColumnLayout'
 import { DocumentsBlock } from '@/blocks/Documents'
 import { HeadingBlock } from '@/blocks/Heading'
 import { MemberProfilesBlock } from '@/blocks/MemberProfiles'
 import { RichTextBlock } from '@/blocks/RichText'
 import { SectionGroupBlock } from '@/blocks/SectionGroup'
-import { ListingBlock, validateListingSources, validateParentPage } from '@/blocks/Listing'
+import { TabbedContentBlock } from '@/blocks/TabbedContent'
+import {
+  ListingBlock,
+  validateListingSources,
+  validateManualListingItems,
+  validateParentPage,
+} from '@/blocks/Listing'
 import { Categories } from '@/collections/Categories'
 import { Documents } from '@/collections/Documents'
 import { EventCycles } from '@/collections/EventCycles'
@@ -81,14 +90,18 @@ describe('page configuration', () => {
     expect([
       RichTextBlock.admin?.images?.thumbnail,
       ListingBlock.admin?.images?.thumbnail,
+      CarouselBlock.admin?.images?.thumbnail,
       MediaGalleryBlock.admin?.images?.thumbnail,
       DocumentsBlock.admin?.images?.thumbnail,
       AttachmentsBlock.admin?.images?.thumbnail,
       MemberProfilesBlock.admin?.images?.thumbnail,
       HeadingBlock.admin?.images?.thumbnail,
       ActionLinksBlock.admin?.images?.thumbnail,
+      CardBlock.admin?.images?.thumbnail,
+      ContentCalendarBlock.admin?.images?.thumbnail,
       ColumnLayoutBlock.admin?.images?.thumbnail,
       SectionGroupBlock.admin?.images?.thumbnail,
+      TabbedContentBlock.admin?.images?.thumbnail,
     ]).toEqual([
       {
         alt: 'Schematyczna ikona dokumentu z tekstem i piórem',
@@ -97,6 +110,10 @@ describe('page configuration', () => {
       {
         alt: 'Schematyczna ikona uporządkowanych kart i filtra',
         url: '/assets/block-thumbnails/listing.png',
+      },
+      {
+        alt: 'Schematyczna ikona slajdów karuzeli z przełącznikiem',
+        url: '/assets/block-thumbnails/carousel.png',
       },
       {
         alt: 'Schematyczna ikona siatki zdjęć',
@@ -123,12 +140,24 @@ describe('page configuration', () => {
         url: '/assets/block-thumbnails/action-links.png',
       },
       {
+        alt: 'Schematyczna ikona karty z obrazem i odnośnikami',
+        url: '/assets/block-thumbnails/card.png',
+      },
+      {
+        alt: 'Schematyczna ikona kalendarza z siatką dni',
+        url: '/assets/block-thumbnails/calendar.png',
+      },
+      {
         alt: 'Schematyczna ikona układu kolumnowego',
         url: '/assets/block-thumbnails/column-layout.png',
       },
       {
         alt: 'Schematyczna ikona sekcji objętych wspólną ramką',
         url: '/assets/block-thumbnails/section-group.png',
+      },
+      {
+        alt: 'Schematyczna ikona treści przełączanej zakładkami',
+        url: '/assets/block-thumbnails/tabbed-content.png',
       },
     ])
   })
@@ -137,12 +166,15 @@ describe('page configuration', () => {
     expect([
       RichTextBlock.admin?.group,
       ListingBlock.admin?.group,
+      CarouselBlock.admin?.group,
       MediaGalleryBlock.admin?.group,
       DocumentsBlock.admin?.group,
       AttachmentsBlock.admin?.group,
       MemberProfilesBlock.admin?.group,
       HeadingBlock.admin?.group,
       ActionLinksBlock.admin?.group,
+      CardBlock.admin?.group,
+      ContentCalendarBlock.admin?.group,
       ColumnLayoutBlock.admin?.group,
       SectionGroupBlock.admin?.group,
     ]).toEqual([
@@ -152,6 +184,9 @@ describe('page configuration', () => {
       'Treści',
       'Treści',
       'Treści',
+      'Treści',
+      'Elementy',
+      'Elementy',
       'Elementy',
       'Elementy',
       'Układ',
@@ -252,28 +287,182 @@ describe('page configuration', () => {
 
     expect(ListingBlock.fields[0]).toMatchObject({
       fields: [
-        { admin: { width: '50%' }, name: 'frame', type: 'select' },
-        { admin: { width: '50%' }, name: 'surface', type: 'select' },
+        {
+          admin: { width: '33.333%' },
+          name: 'view',
+          options: expect.arrayContaining([{ label: 'Kafelki', value: 'tiles' }]),
+          type: 'select',
+        },
+        { admin: { width: '33.333%' }, name: 'frame', type: 'select' },
+        { admin: { width: '33.333%' }, name: 'surface', type: 'select' },
       ],
       type: 'row',
     })
     expect(rowFieldNames).toEqual([
       ['sources', 'parentPage'],
       ['category', 'tag'],
-      ['sort', 'view'],
       ['eventTimeFilter', 'eventCycle'],
-      ['pageSize', 'pagination'],
+      ['sort', 'pageSize', 'pagination'],
     ])
     expect(describeFieldOrder(listingFields)).toEqual([
+      'selectionMode',
+      'items',
       ['sources', 'parentPage'],
       ['category', 'tag'],
-      ['sort', 'view'],
       ['eventTimeFilter', 'eventCycle'],
-      ['pageSize', 'pagination'],
+      ['sort', 'pageSize', 'pagination'],
       'parentFilter',
       'emptyMessage',
     ])
-    expect(parentPageField).toMatchObject({ label: 'Strona nadrzędna', type: 'relationship' })
+    expect(parentPageField).toMatchObject({
+      admin: { width: '50%' },
+      label: 'Strona nadrzędna',
+      type: 'relationship',
+    })
+    expect(rows.at(-1)).toMatchObject({
+      fields: [
+        { admin: { width: '33.333%' }, name: 'sort' },
+        { admin: { width: '33.333%' }, name: 'pageSize' },
+        { admin: { width: '33.333%' }, name: 'pagination' },
+      ],
+    })
+  })
+
+  it('configures the content calendar with Listing-compatible filters', () => {
+    const sourceField = findField(ContentCalendarBlock.fields, 'sources')
+    const eventCycleField = findField(ContentCalendarBlock.fields, 'eventCycle')
+
+    expect(describeFieldOrder(ContentCalendarBlock.fields.slice(3))).toEqual([
+      'sources',
+      ['category', 'tag', 'eventCycle'],
+    ])
+    expect(sourceField).toMatchObject({
+      defaultValue: ['events', 'posts'],
+      hasMany: true,
+      label: 'Typy treści',
+      options: [
+        { label: 'Wydarzenia', value: 'events' },
+        { label: 'Wpisy', value: 'posts' },
+      ],
+      required: true,
+      type: 'select',
+    })
+    expect(eventCycleField).toMatchObject({
+      admin: { width: '33.333%' },
+      label: 'Cykl wydarzeń',
+      relationTo: 'event-cycles',
+      type: 'relationship',
+    })
+    expect(validateContentCalendarSources([], {} as never)).toBeTypeOf('string')
+    expect(validateContentCalendarSources(['events', 'posts'], {} as never)).toBe(true)
+  })
+
+  it('supports ordered manual Listing items from every content source', () => {
+    const selectionModeField = findField(ListingBlock.fields, 'selectionMode')
+    const itemsField = findField(ListingBlock.fields, 'items')
+    const itemField =
+      itemsField.type === 'array'
+        ? itemsField.fields.find((field) => 'name' in field && field.name === 'item')
+        : null
+
+    expect(selectionModeField).toMatchObject({
+      defaultValue: 'filters',
+      label: 'Tryb wyboru',
+      options: [
+        { label: 'Ręczny', value: 'manual' },
+        { label: 'Filtry', value: 'filters' },
+      ],
+      required: true,
+      type: 'select',
+    })
+    expect(itemsField).toMatchObject({
+      label: 'Treści',
+      type: 'array',
+    })
+    expect(itemField).toMatchObject({
+      admin: {
+        components: {
+          Field: '/components/admin/ListingManualItemField#ListingManualItemField',
+        },
+      },
+      label: 'Treść',
+      relationTo: ['pages', 'posts', 'events', 'event-cycles'],
+      required: true,
+      type: 'relationship',
+    })
+    expect(itemsField.admin?.condition?.({}, { selectionMode: 'manual' }, {} as never)).toBe(true)
+    expect(itemsField.admin?.condition?.({}, { selectionMode: 'filters' }, {} as never)).toBe(false)
+  })
+
+  it('configures Carousel selection like Listing without pagination', () => {
+    const selectionModeField = findField(CarouselBlock.fields, 'selectionMode')
+    const itemsField = findField(CarouselBlock.fields, 'items')
+    const sourcesField = findField(CarouselBlock.fields, 'sources')
+    const slideLimitField = findField(CarouselBlock.fields, 'slideLimit')
+    const paginationField = flattenFields(CarouselBlock.fields).find(
+      (field) => 'name' in field && field.name === 'pagination',
+    )
+    const pageSizeField = flattenFields(CarouselBlock.fields).find(
+      (field) => 'name' in field && field.name === 'pageSize',
+    )
+    const itemField =
+      itemsField.type === 'array'
+        ? itemsField.fields.find((field) => 'name' in field && field.name === 'item')
+        : null
+
+    expect(CarouselBlock.fields[0]).toMatchObject({
+      fields: [
+        { admin: { width: '50%' }, name: 'frame', type: 'select' },
+        { admin: { width: '50%' }, name: 'surface', type: 'select' },
+      ],
+      type: 'row',
+    })
+    expect(selectionModeField).toMatchObject({
+      defaultValue: 'filters',
+      label: 'Tryb wyboru',
+      required: true,
+      type: 'select',
+    })
+    expect(itemsField).toMatchObject({ label: 'Treści', type: 'array' })
+    expect(itemField).toMatchObject({
+      relationTo: ['pages', 'posts', 'events', 'event-cycles'],
+      required: true,
+      type: 'relationship',
+    })
+    expect(sourcesField).toMatchObject({ hasMany: true, label: 'Źródła', type: 'select' })
+    expect(slideLimitField).toMatchObject({
+      defaultValue: 5,
+      label: 'Maksymalna liczba slajdów',
+      max: 20,
+      min: 1,
+      required: true,
+      type: 'number',
+    })
+    expect(paginationField).toBeUndefined()
+    expect(pageSizeField).toBeUndefined()
+  })
+
+  it('requires unique manual Listing items within each content source', () => {
+    expect(
+      validateManualListingItems([], {
+        siblingData: { selectionMode: 'manual' },
+      } as never),
+    ).toBeTypeOf('string')
+    expect(
+      validateManualListingItems(
+        [
+          { item: { relationTo: 'pages', value: 7 } },
+          { item: { relationTo: 'pages', value: { id: 7 } } },
+        ],
+        { siblingData: { selectionMode: 'manual' } } as never,
+      ),
+    ).toBeTypeOf('string')
+    expect(
+      validateManualListingItems(
+        [{ item: { relationTo: 'pages', value: 7 } }, { item: { relationTo: 'posts', value: 7 } }],
+        { siblingData: { selectionMode: 'manual' } } as never,
+      ),
+    ).toBe(true)
   })
 
   it('puts SEO in a separate tab in every SEO-enabled collection', () => {

@@ -75,7 +75,7 @@ const getPublicHomepageHeroCached = cachePublicData(
 export const getPublicHomepageHero = cache(getPublicHomepageHeroCached)
 
 const getPublicHomepageSectionsCached = cachePublicData(
-  'public-homepage-sections',
+  'public-homepage-sections-v2',
   async (): Promise<HomepageSection> => {
     const payload = await getPayload({ config })
     return payload.findGlobal({

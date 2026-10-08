@@ -1,6 +1,9 @@
 import {
   AttachmentsBlockLabelClient,
   ActionLinksBlockLabelClient,
+  CardBlockLabelClient,
+  CarouselBlockLabelClient,
+  ContentCalendarBlockLabelClient,
   ColumnLayoutBlockLabelClient,
   DocumentsBlockLabelClient,
   ListingBlockLabelClient,
@@ -8,6 +11,7 @@ import {
   MemberProfilesBlockLabelClient,
   HeadingBlockLabelClient,
   SectionGroupBlockLabelClient,
+  TabbedContentBlockLabelClient,
   RichTextBlockLabelClient,
 } from './ContentBlockLabelClient'
 
@@ -52,6 +56,14 @@ export function ListingBlockLabel() {
   return <ListingBlockLabelClient />
 }
 
+export function CarouselBlockLabel() {
+  return <CarouselBlockLabelClient />
+}
+
+export function ContentCalendarBlockLabel() {
+  return <ContentCalendarBlockLabelClient />
+}
+
 export function MediaGalleryBlockLabel() {
   return <MediaGalleryBlockLabelClient />
 }
@@ -76,8 +88,16 @@ export function ActionLinksBlockLabel() {
   return <ActionLinksBlockLabelClient />
 }
 
+export function CardBlockLabel() {
+  return <CardBlockLabelClient />
+}
+
 export function SectionGroupBlockLabel() {
   return <SectionGroupBlockLabelClient />
+}
+
+export function TabbedContentBlockLabel() {
+  return <TabbedContentBlockLabelClient />
 }
 
 export function ColumnLayoutBlockLabel() {

@@ -18,7 +18,9 @@ export function SiteFooter({
 }) {
   const socialItems = resolvePresentedLinks(footer.socialItems ?? [])
   const columns = footer.columns?.flatMap((column) => {
-    const items = resolvePresentedLinks(column.items ?? [])
+    const items = resolvePresentedLinks(column.items ?? [], {
+      siteContactEmail: siteSettings.contactEmail,
+    })
 
     return items?.length ? [{ ...column, items }] : []
   })

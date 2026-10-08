@@ -304,7 +304,7 @@ test('shows compact presentation and heading controls with the crop preview in a
   const headingField = firstSection.locator('[id$="__heading"]').first()
   const headingLevelField = firstSection.locator('[id$="__headingLevel"]').first()
   const headingIconField = firstSection.locator('[id$="__headingIconName"]').first()
-  const iconInvertedField = firstSection.locator('[id$="__iconInverted"]').first()
+  const iconInvertedField = firstSection.getByRole('switch', { name: /^Inwersja/ }).first()
   const headingLayout = await Promise.all(
     [headingField, headingLevelField, headingIconField, iconInvertedField].map((field) =>
       field.evaluate((element) => {

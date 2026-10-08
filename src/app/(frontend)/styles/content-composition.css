@@ -107,7 +107,14 @@
 .contentPresentation--block
   > .contentPresentationContent
   > .contentPresentationBody
-  > :is(.richText, .listingBlock, .documentsBlock, .mediaBlock, .memberProfilesBlock) {
+  > :is(
+    .richText,
+    .listingBlock,
+    .contentCarousel,
+    .documentsBlock,
+    .mediaBlock,
+    .memberProfilesBlock
+  ) {
   width: 100%;
   max-width: none;
   margin-inline: 0;
@@ -401,14 +408,14 @@
   border-right: 0;
 }
 
-.sectionCardContent .presentedLink {
+.cardBlockContent .presentedLink {
   display: grid;
   grid-template-columns: auto 1fr auto;
   justify-content: stretch;
   text-align: left;
 }
 
-.sectionCardContent .presentedLinkIcon {
+.cardBlockContent .presentedLinkIcon {
   width: 2rem;
   height: 2rem;
   color: var(--gold);

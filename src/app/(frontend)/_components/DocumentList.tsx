@@ -1,15 +1,13 @@
 import Link from 'next/link'
 
-import { RasterIcon } from '@/components/RasterIcon'
-import { documentTypeOptions, getDocumentTypeLabel } from '@/modules/documents/document-types'
-import type { Document, DocumentFile } from '@/payload-types'
+import { documentTypeOptions } from '@/modules/documents/document-types'
+import type { Document } from '@/payload-types'
 import type { DocumentListingView } from '@/modules/documents/document-listing'
 
-const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-})
+import { ContentCard } from './ContentCard'
+import { ContentCarousel } from './ContentCarousel'
+import { ContentListingMeta } from './ContentListingMeta'
+import { ContentTile } from './ContentTile'
 
 export function DocumentList({
   documents,
@@ -80,54 +78,78 @@ export function DocumentItems({
   emptyMessage?: null | string
   view?: DocumentListingView
 }) {
-  return documents.length ? (
-    <div className={`documentList documentList-${view}`}>
+  if (!documents.length) {
+    return <p className="emptyState">{emptyMessage || 'Nie ma dokumentów.'}</p>
+  }
+
+  if (view === 'carousel') {
+    return (
+      <ContentCarousel
+        items={documents.map((document) => ({
+          document,
+          kind: 'documents',
+          url: `/dokumenty/${document.slug}`,
+        }))}
+      />
+    )
+  }
+
+  if (view === 'tiles') {
+    return (
+      <div className="documentList documentList-tiles">
+        {documents.map((document) => (
+          <ContentTile
+            item={{
+              document,
+              kind: 'documents',
+              url: `/dokumenty/${document.slug}`,
+            }}
+            key={document.id}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  if (view !== 'list') {
+    return (
+      <div className={`documentList documentList-${view}`}>
+        {documents.map((document) => (
+          <ContentCard
+            item={{
+              document,
+              kind: 'documents',
+              url: `/dokumenty/${document.slug}`,
+            }}
+            key={document.id}
+            view={view}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="documentList documentList-list">
       {documents.map((document) => (
         <article className="documentListItem" key={document.id}>
           <div className="documentListItemContent">
-            <p className="documentListItemMeta">
-              <span>
-                {getDocumentTypeLabel(document.documentType)}
-                {document.documentNumber ? ` ${document.documentNumber}` : ''}
-              </span>
-              <time dateTime={document.documentDate}>
-                {dateFormatter.format(new Date(document.documentDate))}
-              </time>
-            </p>
+            <ContentListingMeta
+              className="contentCardMeta documentListItemMeta"
+              item={{
+                document,
+                kind: 'documents',
+                url: `/dokumenty/${document.slug}`,
+              }}
+            />
             <h2>
               <Link href={`/dokumenty/${document.slug}`}>{document.title}</Link>
             </h2>
-            {view !== 'list' ? <p>{document.summary}</p> : null}
           </div>
-          {view === 'cards' ? <DocumentPdfLink document={document} /> : null}
         </article>
       ))}
     </div>
-  ) : (
-    <p className="emptyState">{emptyMessage || 'Nie ma dokumentów.'}</p>
   )
-}
-
-function DocumentPdfLink({ document }: { document: Document }) {
-  const primaryFile = getPopulatedDocumentFile(document.primaryFile)
-
-  if (!primaryFile) return null
-
-  return (
-    <a
-      aria-label={`Otwórz główny plik PDF dokumentu: ${document.title}`}
-      className="documentPdfLink"
-      href={`/dokumenty/${document.slug}/plik/${primaryFile.id}`}
-      rel="noreferrer"
-      target="_blank"
-    >
-      <RasterIcon name="pdf" size="medium" />
-    </a>
-  )
-}
-
-function getPopulatedDocumentFile(value: DocumentFile | number): DocumentFile | null {
-  return typeof value === 'object' ? value : null
 }
 
 function buildPageURL(page: number, type?: string, year?: number): string {

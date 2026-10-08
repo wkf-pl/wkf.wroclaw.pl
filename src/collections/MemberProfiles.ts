@@ -1,5 +1,6 @@
 import type { Access, CollectionConfig, FieldAccess, Where } from 'payload'
 
+import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import {
   invalidateMemberProfilesAfterChange,
   invalidateMemberProfilesAfterDelete,
@@ -139,12 +140,14 @@ export const MemberProfiles: CollectionConfig = {
                     {
                       name: 'plays',
                       type: 'checkbox',
+                      admin: createBooleanSwitchAdmin(),
                       label: 'Gram',
                       validate: validateGame,
                     },
                     {
                       name: 'runs',
                       type: 'checkbox',
+                      admin: createBooleanSwitchAdmin(),
                       label: 'Prowadzę',
                       validate: validateGame,
                     },
@@ -272,9 +275,9 @@ export const MemberProfiles: CollectionConfig = {
         read: () => false,
         update: () => false,
       },
-      admin: {
+      admin: createBooleanSwitchAdmin({
         hidden: true,
-      },
+      }),
       defaultValue: false,
     },
     {

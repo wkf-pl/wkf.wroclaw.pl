@@ -1,13 +1,11 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { getPayload } from 'payload'
-import sharp from 'sharp'
 
 import config from '../../src/payload.config.js'
 import type {
   Footer,
   HomepageHero,
   HomepageSection,
-  Media,
   Navigation,
   SiteSetting,
 } from '../../src/payload-types.js'
@@ -20,7 +18,6 @@ let originalSiteSettings: SiteSetting
 let originalHomepageHero: HomepageHero
 let originalHomepageSections: HomepageSection
 let originalFooter: Footer
-let heroMedia: Media
 
 test.beforeAll(async ({ browser }) => {
   const payload = await getPayload({ config })
@@ -41,7 +38,7 @@ test.beforeAll(async ({ browser }) => {
   })
   originalHomepageSections = await payload.findGlobal({
     slug: 'homepage-sections',
-    depth: 0,
+    depth: 1,
     overrideAccess: true,
   })
   originalFooter = await payload.findGlobal({
@@ -62,40 +59,25 @@ test.beforeAll(async ({ browser }) => {
     throw new Error('Missing the published O nas page required by menu E2E tests.')
   }
 
-  const heroImageData = await sharp({
-    create: { background: '#b55a2a', channels: 4, height: 48, width: 96 },
-  })
-    .png()
-    .toBuffer()
-  heroMedia = await payload.create({
-    collection: 'media',
-    data: { alt: 'E2E Hero' },
-    file: {
-      data: heroImageData,
-      mimetype: 'image/png',
-      name: 'e2e-home-hero.png',
-      size: heroImageData.length,
-    },
-    overrideAccess: true,
-  })
   const page = await browser.newPage()
   await login({ page, user: editorTestUser })
+
   await updateGlobal(page, 'site-settings', { siteName: 'E2E Klub Fantastyki' })
-  await updateGlobal(page, 'navigation', {
-    ...createTestNavigation(aboutPage.id),
-    logo: originalNavigation.logo,
-  })
+  await updateGlobal(page, 'navigation', createTestNavigation(aboutPage.id))
   await updateGlobal(page, 'homepage-hero', {
-    image: heroMedia.id,
     items: createTestHeroItems(),
     title: createRichText('E2E Hero', 2),
   })
   await updateGlobal(page, 'homepage-sections', {
-    eventsTitle: 'E2E Wydarzenia',
-    groups: [
+    layout: [
       {
-        backgroundImage: heroMedia.id,
-        menuItems: [
+        blockType: 'heading',
+        heading: 'E2E Wydarzenia',
+        headingLevel: 'h2',
+      },
+      {
+        blockType: 'card',
+        links: [
           {
             appearance: 'link',
             customAddress: 'blog',
@@ -105,20 +87,18 @@ test.beforeAll(async ({ browser }) => {
             targetType: 'custom',
           },
         ],
-        name: 'E2E RPG',
+        title: 'E2E RPG',
       },
     ],
-    newsTitle: 'E2E Aktualności',
-    sectionsTitle: 'E2E Sekcje',
   })
   await updateGlobal(page, 'footer', createTestFooter(aboutPage.id))
   await page.close()
 })
 
 test.afterAll(async ({ browser }) => {
-  const payload = await getPayload({ config })
   const page = await browser.newPage()
   await login({ page, user: editorTestUser })
+
   await updateGlobal(page, 'site-settings', {
     contactEmail: originalSiteSettings.contactEmail,
     siteDescription: originalSiteSettings.siteDescription,
@@ -126,23 +106,14 @@ test.afterAll(async ({ browser }) => {
   })
   await updateGlobal(page, 'navigation', {
     headerItems: originalNavigation.headerItems,
-    logo: originalNavigation.logo,
   })
   await updateGlobal(page, 'homepage-hero', {
     content: originalHomepageHero.content,
-    image: originalHomepageHero.image,
     items: originalHomepageHero.items,
     title: originalHomepageHero.title,
   })
   await updateGlobal(page, 'homepage-sections', {
-    eventSlideLimit: originalHomepageSections.eventSlideLimit,
-    eventsContent: originalHomepageSections.eventsContent,
-    eventsTitle: originalHomepageSections.eventsTitle,
-    eventWindowWeeks: originalHomepageSections.eventWindowWeeks,
-    groups: originalHomepageSections.groups,
-    newsTitle: originalHomepageSections.newsTitle,
-    postCount: originalHomepageSections.postCount,
-    sectionsTitle: originalHomepageSections.sectionsTitle,
+    layout: normalizeHomepageLayout(originalHomepageSections.layout),
   })
   await updateGlobal(page, 'footer', {
     columns: originalFooter.columns,
@@ -152,24 +123,24 @@ test.afterAll(async ({ browser }) => {
     socialItems: originalFooter.socialItems,
   })
 
-  await payload.delete({ collection: 'media', id: heroMedia.id, overrideAccess: true })
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'E2E RPG' })).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'E2E LARP' })).toHaveCount(0)
   await page.close()
 })
 
-test('renders editable menus and configured groups on the home page', async ({ page }) => {
+test('renders editable menus and configured content on the home page', async ({ page }) => {
   await page.goto('/')
 
-  await expect(page.locator('.homeHeroImage')).toHaveAttribute('src', /e2e-home-hero(?:-\d+)?\.png/)
   await expect(page.locator('.siteBrand img')).toHaveAttribute('src', /logo-color(?:-\d+)?\.webp/)
   await expect(
     page.getByRole('link', { name: /E2E Klub Fantastyki — strona główna/ }),
   ).toBeVisible()
   await expect(page.getByRole('heading', { level: 1, name: 'E2E Hero' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'E2E Aktualności' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'E2E Sekcje' })).toBeVisible()
+  const homepageContentHeading = page.getByRole('heading', { level: 2, name: 'E2E Wydarzenia' })
+  await expect(homepageContentHeading).toHaveClass(/contentHeading--homeSection/)
+  await expect(homepageContentHeading.locator('[data-icon-name="dice"]')).toHaveCount(2)
+  await expect(page.locator('.homeEvents, .homeNews, .sectionHeading')).toHaveCount(0)
   await expect(page.getByRole('navigation', { name: 'Główna nawigacja' })).toContainText(
     'Aktualności',
   )
@@ -208,6 +179,7 @@ test('renders editable menus and configured groups on the home page', async ({ p
   await expect(joinHeaderLink).toHaveCSS('color', 'rgb(0, 13, 23)')
   await expect(page.getByRole('navigation', { name: 'Obszary klubu' })).toContainText('Gry RPG')
   await expect(page.getByRole('heading', { name: 'E2E RPG' })).toBeVisible()
+  await expect(page.locator('.cardBlock')).toHaveCSS('max-width', 'none')
   await expect(
     page.getByRole('link', { name: 'Sesje' }).locator('[data-icon-name="dice"]'),
   ).toHaveAttribute('data-icon-size', 'medium')
@@ -248,7 +220,7 @@ test('renders editable menus and configured groups on the home page', async ({ p
   ).toHaveCSS('justify-content', 'flex-end')
 })
 
-test('searches, selects with the keyboard and persists a named icon in a nested array', async ({
+test('searches, selects with the keyboard and persists a named icon in a card block', async ({
   page,
 }) => {
   test.setTimeout(60_000)
@@ -256,29 +228,26 @@ test('searches, selects with the keyboard and persists a named icon in a nested 
   await login({ page, user: editorTestUser })
   await page.goto('/admin/globals/homepage-sections')
 
-  const groupsField = page.locator('#field-groups')
-  const groupsTab = page.getByRole('button', { name: 'Grupy', exact: true })
-  await expect(async () => {
-    await groupsTab.click()
-    await expect(groupsField).toBeVisible({ timeout: 2_000 })
-  }).toPass({ intervals: [500, 1_000], timeout: 15_000 })
-  const expandGroupsButton = groupsField
+  const layoutField = page.locator('#field-layout')
+  await expect(page.getByRole('button', { name: 'Treść', exact: true })).toHaveCount(0)
+  await expect(layoutField).toBeVisible({ timeout: 15_000 })
+  const expandLayoutButton = layoutField
+    .locator(':scope > .blocks-field__header')
+    .getByRole('button', { name: 'Pokaż wszystkie' })
+  await expect(expandLayoutButton).toBeVisible({ timeout: 15_000 })
+  await expandLayoutButton.click()
+
+  const cardRow = layoutField.locator('.blocks-field__row').nth(1)
+  const linksField = cardRow.locator('#field-layout__1__links')
+  await expect(linksField).toBeVisible({ timeout: 15_000 })
+  const expandLinksButton = linksField
     .locator(':scope > .array-field__header')
     .getByRole('button', { name: 'Pokaż wszystkie' })
-  await expect(expandGroupsButton).toBeVisible({ timeout: 15_000 })
-  await expandGroupsButton.click()
+  await expect(expandLinksButton).toBeVisible({ timeout: 15_000 })
+  await expandLinksButton.click()
 
-  const groupRow = groupsField.locator('.array-field__row').first()
-  const menuItemsField = groupRow.locator('#field-groups__0__menuItems')
-  await expect(menuItemsField).toBeVisible({ timeout: 15_000 })
-  const expandMenuItemsButton = menuItemsField
-    .locator(':scope > .array-field__header')
-    .getByRole('button', { name: 'Pokaż wszystkie' })
-  await expect(expandMenuItemsButton).toBeVisible({ timeout: 15_000 })
-  await expandMenuItemsButton.click()
-
-  const menuItemRow = menuItemsField.locator('.array-field__row').first()
-  const iconField = menuItemRow.locator('#field-groups__0__menuItems__0__iconName')
+  const linkRow = linksField.locator('.array-field__row').first()
+  const iconField = linkRow.locator('#field-layout__1__links__0__iconName')
   await expect(iconField).toBeVisible()
 
   const combobox = iconField.getByRole('combobox')
@@ -304,7 +273,9 @@ test('searches, selects with the keyboard and persists a named icon in a nested 
     depth: 0,
     overrideAccess: true,
   })
-  expect(savedHomepageSections.groups?.[0]?.menuItems?.[0]?.iconName).toBe('sword')
+  expect(savedHomepageSections.layout?.[1]?.blockType).toBe('card')
+  const savedCard = savedHomepageSections.layout?.[1]
+  expect(savedCard?.blockType === 'card' ? savedCard.links?.[0]?.iconName : undefined).toBe('sword')
 
   await page.goto('/')
   await expect(
@@ -416,31 +387,6 @@ function createTestFooter(aboutPageID: number): Partial<Footer> {
   }
 }
 
-async function updateGlobal(
-  page: import('@playwright/test').Page,
-  slug: 'footer' | 'homepage-hero' | 'homepage-sections' | 'navigation' | 'site-settings',
-  data:
-    | Partial<Footer>
-    | Partial<HomepageHero>
-    | Partial<HomepageSection>
-    | Partial<Navigation>
-    | Partial<SiteSetting>,
-): Promise<void> {
-  const result = await page.evaluate(
-    async ({ data, slug }) => {
-      const response = await fetch(`/api/globals/${slug}`, {
-        body: JSON.stringify(data),
-        headers: { 'content-type': 'application/json' },
-        method: 'POST',
-      })
-      return { body: await response.text(), ok: response.ok }
-    },
-    { data, slug },
-  )
-
-  expect(result.ok, result.body).toBe(true)
-}
-
 function createRichText(text: string, format = 0): HomepageHero['title'] {
   return {
     root: {
@@ -473,4 +419,31 @@ function createRichText(text: string, format = 0): HomepageHero['title'] {
       version: 1,
     },
   }
+}
+
+function normalizeHomepageLayout(layout: HomepageSection['layout']): HomepageSection['layout'] {
+  return layout.map((block) => (block.blockType === 'card' ? { ...block, image: null } : block))
+}
+
+async function updateGlobal(page: Page, slug: string, data: unknown): Promise<void> {
+  const result = await page.evaluate(
+    async ({ globalSlug, globalData }) => {
+      const response = await fetch(`/api/globals/${globalSlug}`, {
+        body: JSON.stringify(globalData),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      })
+
+      return {
+        body: await response.text(),
+        ok: response.ok,
+        status: response.status,
+      }
+    },
+    { globalData: data, globalSlug: slug },
+  )
+
+  expect(result, `Failed to update ${slug}: ${result.status} ${result.body}`).toMatchObject({
+    ok: true,
+  })
 }

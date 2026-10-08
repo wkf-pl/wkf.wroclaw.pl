@@ -1,5 +1,6 @@
 import type { Field, FieldHook, Validate } from 'payload'
 
+import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import { createRasterIconField } from '@/modules/icons/fields'
 import {
   getSelectableRasterIconLabel,
@@ -185,7 +186,7 @@ export function createContentHeadingFields({
         {
           name: 'iconInverted',
           type: 'checkbox',
-          admin: { width: '25%' },
+          admin: createBooleanSwitchAdmin({ width: '25%' }),
           defaultValue: false,
           label: 'Inwersja',
         },

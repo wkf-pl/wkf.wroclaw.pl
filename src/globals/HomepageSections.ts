@@ -1,9 +1,8 @@
 import type { GlobalConfig } from 'payload'
 
 import { invalidateSiteSettingsAfterChange } from '@/modules/cache/invalidate-public-data'
-import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
+import { createContentLayoutField } from '@/modules/content/layout-field'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
-import { createPresentedLinkFields, validatePresentedLinkItems } from '@/modules/navigation/fields'
 
 const readHomepageSections = createRolePermissionAccess({
   anonymousAccess: true,
@@ -24,140 +23,7 @@ export const HomepageSections: GlobalConfig = {
   admin: {
     group: 'Strona główna',
   },
-  fields: [
-    {
-      type: 'tabs',
-      tabs: [
-        {
-          label: 'Wydarzenia',
-          fields: [
-            {
-              name: 'eventsTitle',
-              type: 'text',
-              defaultValue: 'Wydarzenia',
-              label: 'Tytuł',
-              required: true,
-            },
-            {
-              name: 'eventsContent',
-              type: 'richText',
-              label: 'Treść',
-            },
-            {
-              type: 'row',
-              fields: [
-                {
-                  name: 'eventWindowWeeks',
-                  type: 'number',
-                  admin: { width: '50%' },
-                  defaultValue: 4,
-                  label: 'Zakres Wydarzeń na stronie głównej (tygodnie)',
-                  max: 52,
-                  min: 1,
-                },
-                {
-                  name: 'eventSlideLimit',
-                  type: 'number',
-                  admin: { width: '50%' },
-                  defaultValue: 6,
-                  label: 'Limit slajdów Wydarzeń',
-                  max: 12,
-                  min: 1,
-                },
-              ],
-            },
-          ],
-        },
-        {
-          label: 'Aktualności',
-          fields: [
-            {
-              name: 'newsTitle',
-              type: 'text',
-              defaultValue: 'Aktualności',
-              label: 'Tytuł',
-              required: true,
-            },
-            {
-              name: 'postCount',
-              type: 'select',
-              admin: { isClearable: false },
-              defaultValue: '2',
-              label: 'Liczba Aktualności',
-              options: [
-                { label: '2', value: '2' },
-                { label: '5', value: '5' },
-                { label: '8', value: '8' },
-              ],
-            },
-          ],
-        },
-        {
-          label: 'Grupy',
-          fields: [
-            {
-              name: 'sectionsTitle',
-              type: 'text',
-              defaultValue: 'Sekcje',
-              label: 'Tytuł',
-            },
-            {
-              name: 'groups',
-              type: 'array',
-              admin: {
-                components: {
-                  RowLabel: '/components/admin/DynamicRowLabel#HomepageGroupRowLabel',
-                },
-              },
-              fields: [
-                {
-                  name: 'name',
-                  type: 'text',
-                  label: 'Nazwa',
-                  required: true,
-                },
-                {
-                  name: 'backgroundImage',
-                  type: 'upload',
-                  filterOptions: { mimeType: { in: [...webRasterImageMimeTypes] } },
-                  label: 'Obraz tła',
-                  relationTo: 'media',
-                },
-                {
-                  name: 'destinationPage',
-                  type: 'relationship',
-                  filterOptions: { _status: { equals: 'published' } },
-                  label: 'Strona docelowa tytułu',
-                  relationTo: 'pages',
-                },
-                {
-                  name: 'menuItems',
-                  type: 'array',
-                  admin: {
-                    components: {
-                      RowLabel: '/components/admin/DynamicRowLabel#FooterColumnItemRowLabel',
-                    },
-                  },
-                  fields: createPresentedLinkFields(),
-                  label: 'Elementy menu',
-                  labels: {
-                    plural: 'Elementy menu',
-                    singular: 'pozycję',
-                  },
-                  validate: validatePresentedLinkItems,
-                },
-              ],
-              label: 'Grupy',
-              labels: {
-                plural: 'Grupy',
-                singular: 'grupę',
-              },
-            },
-          ],
-        },
-      ],
-    },
-  ],
+  fields: [createContentLayoutField('Treści')],
   hooks: { afterChange: [invalidateSiteSettingsAfterChange] },
-  label: 'Sekcje',
+  label: 'Treści',
 }

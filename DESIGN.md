@@ -10,6 +10,10 @@ colors:
   lantern-glow: '#ffbd38'
   parchment-ivory: '#f4efe5'
   mist-silver: '#c7cbd0'
+  mist-blue: '#b9d5f5'
+  mist-blue-active: '#a8cdf8'
+  mist-blue-line: 'rgb(111 168 235 / 78%)'
+  mist-blue-wash: 'rgb(111 168 235 / 14%)'
   lantern-line: 'rgb(243 163 19 / 82%)'
   button-ink: '#052033'
 typography:
@@ -78,9 +82,15 @@ components:
     rounded: '{rounded.control}'
     padding: '0.6rem 0.75rem'
     height: '2.75rem'
-  chip:
-    backgroundColor: 'transparent'
+  category-pill:
+    backgroundColor: 'rgb(0 13 23 / 36%)'
     textColor: '{colors.lantern-glow}'
+    typography: '{typography.label}'
+    rounded: '{rounded.pill}'
+    padding: '0.3rem 0.65rem'
+  tag-pill:
+    backgroundColor: 'rgb(3 29 46 / 46%)'
+    textColor: '{colors.mist-blue}'
     typography: '{typography.label}'
     rounded: '{rounded.pill}'
     padding: '0.3rem 0.65rem'
@@ -127,6 +137,10 @@ The palette combines Deep Night, Lantern Amber, and Parchment Ivory: a cool, civ
 - **Raised Night** (`raised-night`): A lighter navy plane used for secondary layering and gradient transitions.
 - **Parchment Ivory** (`parchment-ivory`): The principal high-contrast reading and heading color.
 - **Mist Silver** (`mist-silver`): Supporting copy, descriptions, and secondary information.
+- **Mist Blue** (`mist-blue`): A cool, subdued voice for tag taxonomy and selected muted or informational text that needs clearer separation from Mist Silver.
+- **Mist Blue Active** (`mist-blue-active`): The more saturated interactive edge used when a Mist Blue element needs to come forward.
+- **Mist Blue Line** (`mist-blue-line`): The translucent outline for subdued blue pills and related compact markers.
+- **Mist Blue Wash** (`mist-blue-wash`): A restrained hover wash; never a dominant surface or luminous effect.
 - **Button Ink** (`button-ink`): Dark text on filled Lantern Glow controls.
 
 ### Named Rules
@@ -134,6 +148,10 @@ The palette combines Deep Night, Lantern Amber, and Parchment Ivory: a cool, civ
 **The Lantern Route Rule.** Amber traces paths, frames important content, and marks interaction; it does not become a broad decorative fill.
 
 **The True Night Rule.** Use layered navy surfaces for darkness. Generic pure black is reserved for shadow and image control, not the page canvas.
+
+**The Cool Quiet Rule.** Mist Blue supports tag taxonomy, muted information, and other secondary distinctions. It complements the amber route system without becoming a competing primary accent or blue glow.
+
+During the current evaluation round, Mist Blue may be explored in Event and Document headings. This remains a provisional application: do not propagate blue heading semantics across the service until user feedback on the completed round has been assessed.
 
 ## Typography
 
@@ -180,7 +198,7 @@ The chosen philosophy is lifted and theatrical. Depth comes from a hybrid of dee
 
 ## Shapes
 
-The form language uses gently curved rectangles for content and controls: compact icon and label frames sit near 0.35rem, controls near 0.4rem, and cards or media frames near 0.75rem to 0.8rem. Tags use full pill geometry, while compact social and carousel controls use true circles. Thin amber borders make silhouettes legible against related navy layers.
+The form language uses gently curved rectangles for content and controls: compact icon and label frames sit near 0.35rem, controls near 0.4rem, and cards or media frames near 0.75rem to 0.8rem. Taxonomy labels use exact full-pill geometry (`999px`), not an enlarged compact radius, while compact social and carousel controls use true circles. Thin amber or Mist Blue borders make these silhouettes legible against related navy layers.
 
 Raster icons must be supplied as transparent PNG or WebP assets at sufficient source resolution for their rendered size. Use explicit dimensions and preserve hard, intentional silhouettes. Existing SVG-rendering icon components are a legacy implementation exception, not authority for new work.
 
@@ -199,8 +217,10 @@ Components are framed, tactile, and restrained: their borders clarify affordance
 
 ### Chips
 
-- **Style:** Full-pill labels with Lantern Glow text and a translucent Lantern Amber border over the current navy plane.
-- **State:** Keep them visually quiet at rest; strengthen border or background contrast for active and focus states without turning them into bright capsules.
+- **Shape:** Category and tag labels use exact full-pill corners (`999px`) with a minimum height of `2rem` and compact `0.3rem 0.65rem` padding.
+- **Category:** Lantern Glow text and border over a translucent Night Abyss plane.
+- **Tag:** Mist Blue text with a Mist Blue Line border over a translucent Constellation Panel plane; tag labels do not use a `#` prefix.
+- **State:** Keep both variants quiet at rest. Hover may add a restrained amber or Mist Blue wash, while keyboard focus retains the clearly visible Lantern Glow outline.
 
 ### Cards / Containers
 
@@ -234,12 +254,14 @@ Section headings pair symmetrical amber rules with small emblem positions to cre
 - **Do** preserve the approved WKF logo and give it clear space on Deep Night surfaces.
 - **Do** use transparent raster PNG or WebP icons with explicit dimensions and sufficient resolution for high-density displays.
 - **Do** maintain strong focus visibility, readable contrast, and reduced-motion behavior.
+- **Do** use Mist Blue for tag taxonomy and deliberately selected muted or informational text where a cool distinction improves scanning.
 
 ### Don't:
 
-- **Don't** use gaming neon, tavern-fantasy kitsch, or impersonal corporate-blue interface styling.
+- **Don't** use gaming neon, tavern-fantasy kitsch, or impersonal corporate-blue interface styling; Mist Blue is a quiet supporting voice, not a new dominant accent.
 - **Don't** use SVG icons, icon fonts, emoji, or Unicode characters as substitutes for raster icon artwork.
 - **Don't** turn Lantern Amber into a large-area background or apply glow uniformly to every surface.
 - **Don't** give every card the strongest theatrical shadow; a hierarchy without a quiet plane has no depth.
 - **Don't** use decorative fantasy typefaces that undermine institutional credibility or long-form readability.
 - **Don't** fabricate visual proof, partner marks, endorsements, or activity imagery that the organization cannot substantiate.
+- **Don't** promote the provisional Mist Blue Event or Document heading treatment into a service-wide convention before the current round has been evaluated by users.

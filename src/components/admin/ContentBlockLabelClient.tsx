@@ -28,6 +28,10 @@ type HeadingBlockData = {
   headingLevel?: unknown
 }
 
+type CardBlockData = {
+  title?: unknown
+}
+
 type PresentedBlockData = {
   frame?: unknown
   surface?: unknown
@@ -38,6 +42,7 @@ type CountedBlockData = {
   items?: unknown
   sections?: unknown
   surface?: unknown
+  tabs?: unknown
 }
 
 type ColumnLayoutBlockData = {
@@ -171,6 +176,18 @@ export function ListingBlockLabelClient() {
   return <BlockLabel prefix="Listing" value={getPresentationDescription(data)} />
 }
 
+export function CarouselBlockLabelClient() {
+  const { data } = useRowLabel<PresentedBlockData>()
+
+  return <BlockLabel prefix="Karuzela" value={getPresentationDescription(data)} />
+}
+
+export function ContentCalendarBlockLabelClient() {
+  const { data } = useRowLabel<PresentedBlockData>()
+
+  return <BlockLabel prefix="Kalendarz" value={getPresentationDescription(data)} />
+}
+
 export function MediaGalleryBlockLabelClient() {
   const { data } = useRowLabel<PresentedBlockData>()
 
@@ -217,6 +234,12 @@ export function ActionLinksBlockLabelClient() {
   return <BlockLabel prefix="Odnośniki akcji" value={count ? `${count}` : ''} />
 }
 
+export function CardBlockLabelClient() {
+  const { data } = useRowLabel<CardBlockData>()
+
+  return <BlockLabel prefix="Karta" value={getText(data.title)} />
+}
+
 export function SectionGroupBlockLabelClient() {
   const { data } = useRowLabel<CountedBlockData>()
   const count = Array.isArray(data.sections) ? data.sections.length : 0
@@ -228,6 +251,14 @@ export function SectionGroupBlockLabelClient() {
       value={[getPresentationDescription(data), countLabel].filter(Boolean).join(' — ')}
     />
   )
+}
+
+export function TabbedContentBlockLabelClient() {
+  const { data } = useRowLabel<CountedBlockData>()
+  const count = Array.isArray(data.tabs) ? data.tabs.length : 0
+  const noun = count === 1 ? 'zakładka' : count >= 2 && count <= 4 ? 'zakładki' : 'zakładek'
+
+  return <BlockLabel prefix="Treść w zakładkach" value={count ? `${count} ${noun}` : ''} />
 }
 
 export function ColumnLayoutBlockLabelClient() {
@@ -249,7 +280,7 @@ export function ColumnLayoutBlockLabelClient() {
     ? data.columns.flatMap((column) => (typeof column.width === 'number' ? [column.width] : []))
     : []
   const widths = liveWidthEntries.length ? liveWidthEntries.map(([, width]) => width) : rowWidths
-  const widthsLabel = widths.length ? widths.map((width) => `${width}/12`).join(' + ') : ''
+  const widthsLabel = widths.length ? widths.map((width) => `${width}c`).join(' + ') : ''
   const value = [getPresentationDescription(data), widthsLabel].filter(Boolean).join(' — ')
 
   return <BlockLabel prefix="Układ kolumnowy" value={value} />

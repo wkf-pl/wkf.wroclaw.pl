@@ -31,7 +31,7 @@ describe('content listing and pagination', () => {
       tagId: fixture.tag.id,
     })
 
-    expect(result.items.map(({ kind, title }) => [kind, title])).toEqual([
+    expect(result.items.map(({ document, kind }) => [kind, document.title])).toEqual([
       ['posts', fixture.post.title],
       ['pages', fixture.page.title],
     ])
@@ -44,7 +44,140 @@ describe('content listing and pagination', () => {
       sort: 'titleAscending',
       sources: ['pages'],
     })
-    expect(childResult.items.map((item) => item.id)).toEqual([fixture.childPage.id])
+    expect(childResult.items.map((item) => item.document.id)).toEqual([fixture.childPage.id])
+    expect(childResult.items[0]?.document).toHaveProperty('layout')
+  })
+
+  it('preserves manual mixed-content order before pagination', async () => {
+    const result = await findPublicContent({
+      manualItems: [
+        { relationTo: 'posts', value: fixture.post.id },
+        { relationTo: 'pages', value: fixture.page.id },
+        { relationTo: 'pages', value: fixture.childPage.id },
+      ],
+      page: 2,
+      pageSize: 2,
+      pagination: true,
+      selectionMode: 'manual',
+      sort: 'titleAscending',
+      sources: [],
+    })
+
+    expect(result.items.map(({ document, kind }) => [kind, document.title])).toEqual([
+      ['pages', fixture.childPage.title],
+    ])
+    expect(result.totalDocs).toBe(3)
+    expect(result.totalPages).toBe(2)
+  })
+
+  it('stores ordered polymorphic relationships in a manual Listing block', async () => {
+    const containerPage = await fixture.payload.create({
+      collection: 'pages',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        layout: [
+          {
+            blockType: 'listing',
+            items: [
+              { item: { relationTo: 'posts', value: fixture.post.id } },
+              { item: { relationTo: 'pages', value: fixture.page.id } },
+            ],
+            pageSize: 12,
+            pagination: false,
+            parentFilter: 'none',
+            selectionMode: 'manual',
+            sort: 'newest',
+            view: 'cards',
+          },
+        ],
+        slug: fixture.slugs.lifecyclePage,
+        title: 'Integration manual listing container',
+      },
+      overrideAccess: true,
+    })
+
+    try {
+      const storedPage = await fixture.payload.findByID({
+        collection: 'pages',
+        depth: 0,
+        id: containerPage.id,
+        overrideAccess: true,
+      })
+      const listing = storedPage.layout?.find((block) => block.blockType === 'listing')
+
+      expect(listing?.items?.map(({ item }) => [item.relationTo, item.value])).toEqual([
+        ['posts', fixture.post.id],
+        ['pages', fixture.page.id],
+      ])
+    } finally {
+      await fixture.payload.delete({
+        collection: 'pages',
+        id: containerPage.id,
+        overrideAccess: true,
+      })
+    }
+  })
+
+  it('stores a limited manual Carousel without pagination fields', async () => {
+    const containerPage = await fixture.payload.create({
+      collection: 'pages',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        layout: [
+          {
+            blockType: 'carousel',
+            items: [
+              { item: { relationTo: 'posts', value: fixture.post.id } },
+              { item: { relationTo: 'pages', value: fixture.page.id } },
+            ],
+            parentFilter: 'none',
+            selectionMode: 'manual',
+            slideLimit: 1,
+          },
+        ],
+        slug: `${fixture.slugs.lifecyclePage}-carousel`,
+        title: 'Integration manual carousel container',
+      },
+      overrideAccess: true,
+    })
+
+    try {
+      const storedPage = await fixture.payload.findByID({
+        collection: 'pages',
+        depth: 0,
+        id: containerPage.id,
+        overrideAccess: true,
+      })
+      const carousel = storedPage.layout?.find((block) => block.blockType === 'carousel')
+      const result = await findPublicContent({
+        manualItems: carousel?.items?.map(({ item }) => item),
+        page: 1,
+        pageSize: carousel?.slideLimit ?? 5,
+        pagination: false,
+        selectionMode: carousel?.selectionMode,
+        sort: carousel?.sort ?? 'newest',
+        sources: [],
+      })
+
+      expect(carousel?.items?.map(({ item }) => [item.relationTo, item.value])).toEqual([
+        ['posts', fixture.post.id],
+        ['pages', fixture.page.id],
+      ])
+      expect(carousel).not.toHaveProperty('pagination')
+      expect(carousel).not.toHaveProperty('pageSize')
+      expect(result.items.map(({ document, kind }) => [kind, document.title])).toEqual([
+        ['posts', fixture.post.title],
+      ])
+      expect(result.totalDocs).toBe(2)
+    } finally {
+      await fixture.payload.delete({
+        collection: 'pages',
+        id: containerPage.id,
+        overrideAccess: true,
+      })
+    }
   })
 
   it('exposes both collection relations through reverse Join fields', async () => {

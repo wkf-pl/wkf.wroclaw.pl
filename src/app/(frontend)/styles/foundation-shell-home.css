@@ -75,6 +75,10 @@ h3,
   font-family: var(--font-roboto-slab), Georgia, 'Times New Roman', serif;
 }
 
+.homeShell {
+  padding: 2.5rem 0;
+}
+
 .homeShell,
 .contentShell,
 .siteHeaderShell {
@@ -418,7 +422,6 @@ body:has(> .homePage) .siteHeader {
   margin-block: 1.25rem 0;
 }
 
-.contentHero .taxonomyLinks a,
 .contentHero .childCategories a {
   background: rgb(0 13 23 / 46%);
   text-shadow: none;
@@ -440,7 +443,7 @@ body:has(> .homePage) .siteHeader {
 
 .heroTitle {
   margin-bottom: 1.5rem;
-  font-size: clamp(3.3rem, 4vw, 5rem);
+  font-size: clamp(2.5rem, 3.5vw, 4rem);
   font-weight: 700;
   text-wrap: balance;
   text-shadow: 0 3px 22px rgb(0 0 0 / 65%);
@@ -502,34 +505,31 @@ body:has(> .homePage) .siteHeader {
   padding-top: 1.2rem;
 }
 
-.sectionHeading {
+.homePage .contentHeading--homeSection {
   display: grid;
   grid-template-columns: minmax(2rem, 1fr) auto auto auto minmax(2rem, 1fr);
   gap: 0.9rem;
   align-items: center;
-  margin: 1.2rem;
-}
-
-.sectionHeading h2 {
-  margin: 0;
+  width: 100%;
+  margin: 1.2rem 0;
   font-size: 2rem;
   line-height: 1;
   text-align: center;
   text-transform: uppercase;
 }
 
-.sectionHeadingLine {
+.contentHeadingSectionLine {
   position: relative;
   display: block;
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--gold));
 }
 
-.sectionHeadingLine:last-child {
+.contentHeadingSectionLine:last-child {
   background: linear-gradient(90deg, var(--gold), transparent);
 }
 
-.sectionHeadingLine::after {
+.contentHeadingSectionLine::after {
   position: absolute;
   top: 50%;
   right: 0;
@@ -541,13 +541,13 @@ body:has(> .homePage) .siteHeader {
   transform: translate(50%, -50%) rotate(45deg);
 }
 
-.sectionHeadingLine:last-child::after {
+.contentHeadingSectionLine:last-child::after {
   right: auto;
   left: 0;
   transform: translate(-50%, -50%) rotate(45deg);
 }
 
-.sectionHeadingMark {
+.contentHeadingSectionMark {
   display: grid;
   width: 1.6rem;
   height: 1.6rem;
@@ -555,7 +555,7 @@ body:has(> .homePage) .siteHeader {
   color: var(--gold);
 }
 
-.sectionHeadingMark .rasterIcon {
+.contentHeadingSectionMark .rasterIcon {
   width: 100%;
   height: 100%;
 }
@@ -572,7 +572,7 @@ body:has(> .homePage) .siteHeader {
 }
 
 .newsImageFallback,
-.sectionCardImageFallback,
+.cardBlockImageFallback,
 .contentCardImageFallback {
   background:
     url('/assets/placeholder-nebula.webp') center / cover no-repeat,
@@ -680,43 +680,36 @@ body:has(> .homePage) .siteHeader {
   color: var(--gold-light);
 }
 
-.clubSections {
-  padding-bottom: 2.5rem;
-}
-
-.sectionCards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.sectionCard {
+.cardBlock {
   position: relative;
+  width: 100%;
+  max-width: none;
   min-height: 25rem;
+  margin-inline: 0;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 0.7rem;
   background: linear-gradient(135deg, var(--panel-soft), var(--background-deep));
 }
 
-.sectionCardImage {
+.cardBlockImage {
   position: absolute;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.sectionCardImageFallback {
+.cardBlockImageFallback {
   inset: 0;
 }
 
-.sectionCardShade {
+.cardBlockShade {
   position: absolute;
   inset: 0;
   background: linear-gradient(transparent 12%, rgb(0 15 25 / 92%) 55%, #00111e 100%);
 }
 
-.sectionCardContent {
+.cardBlockContent {
   position: absolute;
   z-index: 1;
   right: 1.7rem;
@@ -724,26 +717,26 @@ body:has(> .homePage) .siteHeader {
   left: 1.7rem;
 }
 
-.sectionCardContent h3 {
+.cardBlockContent h3 {
   margin-bottom: 0.9rem;
-  font-size: 2.3rem;
+  font-size: clamp(1.8rem, 4vw, 2.3rem);
 }
 
-.sectionCardContent h3 a {
+.cardBlockContent h3 a {
   text-decoration: none;
 }
 
-.sectionCardContent ul {
+.cardBlockContent ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.sectionCardContent li + li {
+.cardBlockContent li + li {
   border-top: 1px solid rgb(255 255 255 / 12%);
 }
 
-.sectionCardContent a {
+.cardBlockContent a {
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 0.8rem;
@@ -752,7 +745,7 @@ body:has(> .homePage) .siteHeader {
   text-decoration: none;
 }
 
-.sectionCardContent a:hover,
-.sectionCardContent a:focus-visible {
+.cardBlockContent a:hover,
+.cardBlockContent a:focus-visible {
   color: var(--gold-light);
 }

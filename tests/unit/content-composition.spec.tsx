@@ -5,6 +5,8 @@ import type { Field } from 'payload'
 import { ContentLeafBlockRenderer } from '@/app/(frontend)/_components/ContentLayoutRenderer'
 import { ContentPresentation } from '@/app/(frontend)/_components/ContentPresentation'
 import { ActionLinksBlock } from '@/blocks/ActionLinks'
+import { CardBlock } from '@/blocks/Card'
+import { ContentCalendarBlock } from '@/blocks/ContentCalendar'
 import { ColumnLayoutBlock } from '@/blocks/ColumnLayout'
 import { DocumentsBlock } from '@/blocks/Documents'
 import { HeadingBlock } from '@/blocks/Heading'
@@ -24,6 +26,7 @@ import {
 import { extractFirstRichTextParagraph } from '@/modules/content/listing-excerpt'
 import { walkContentPresentations } from '@/modules/content/walk-content-leaf-blocks'
 import { readFrontendStyles } from '../helpers/frontend-styles'
+import { createLexicalDocument } from '../helpers/lexical-document'
 
 describe('content composition', () => {
   const presentationFieldNames = [
@@ -107,6 +110,7 @@ describe('content composition', () => {
   it('uses the same presentation contract for content blocks and layout records', () => {
     for (const block of [
       RichTextBlock,
+      ContentCalendarBlock,
       ListingBlock,
       MediaGalleryBlock,
       AttachmentsBlock,
@@ -144,6 +148,8 @@ describe('content composition', () => {
     ).toEqual(presentationFieldNames)
     expect(getFieldNames(ActionLinksBlock.fields)).not.toContain('surface')
     expect(getFieldNames(ActionLinksBlock.fields)).not.toContain('frame')
+    expect(getFieldNames(CardBlock.fields)).not.toContain('surface')
+    expect(getFieldNames(CardBlock.fields)).not.toContain('frame')
     expect(getFieldNames(HeadingBlock.fields)).toEqual(
       expect.arrayContaining(['heading', 'headingLevel', 'headingIconName', 'iconInverted']),
     )
@@ -182,7 +188,13 @@ describe('content composition', () => {
 
     expect(firstRowNames(RichTextBlock.fields)).toEqual(['textStyle', 'frame', 'surface'])
     expect(firstRowNames(MemberProfilesBlock.fields)).toEqual(['view', 'frame', 'surface'])
-    for (const block of [ListingBlock, MediaGalleryBlock, AttachmentsBlock, DocumentsBlock]) {
+    expect(firstRowNames(ListingBlock.fields)).toEqual(['view', 'frame', 'surface'])
+    for (const block of [
+      ContentCalendarBlock,
+      MediaGalleryBlock,
+      AttachmentsBlock,
+      DocumentsBlock,
+    ]) {
       expect(firstRowNames(block.fields)).toEqual(['frame', 'surface'])
     }
 
@@ -466,5 +478,44 @@ describe('content composition', () => {
     expect(markup).toContain('<span class="srOnly">E-mail</span>')
     expect(markup).toContain('class="contentHeadingIcon"')
     expect(markup).not.toContain('contentHeadingIcon--inverted')
+  })
+
+  it('renders homepage headings as section separators with two dice icons', async () => {
+    const rendered = await ContentLeafBlockRenderer({
+      block: {
+        blockType: 'heading',
+        heading: 'Wydarzenia',
+        headingIconName: 'mail',
+        headingLevel: 'h2',
+      },
+      document: {} as never,
+      path: 'layout.0',
+      pathname: '/',
+      searchParams: {},
+    })
+
+    const markup = renderToStaticMarkup(rendered)
+    expect(markup).toContain('contentHeading--homeSection')
+    expect(markup.match(/contentHeadingSectionLine/g)).toHaveLength(2)
+    expect(markup.match(/data-icon-name="dice"/g)).toHaveLength(2)
+    expect(markup).not.toContain('data-icon-name="mail"')
+  })
+
+  it('does not constrain a content block rendered directly inside a tab', async () => {
+    const rendered = await ContentLeafBlockRenderer({
+      block: {
+        blockType: 'richText',
+        content: createLexicalDocument('Treść zakładki'),
+      },
+      document: {} as never,
+      path: 'layout.0.tabs.0.blocks.0',
+      pathname: '/test',
+      presentationPlacement: 'tab',
+      searchParams: {},
+    })
+
+    const markup = renderToStaticMarkup(rendered)
+    expect(markup).toContain('contentPresentation--tab')
+    expect(markup).not.toContain('contentPresentation--block')
   })
 })

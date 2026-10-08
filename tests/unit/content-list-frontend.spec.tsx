@@ -5,20 +5,88 @@ import { describe, expect, it } from 'vitest'
 
 import { ContentList } from '@/app/(frontend)/_components/ContentList'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
+import type { Event, EventCycle, Media, Page, Post } from '@/payload-types'
 
 import { readFrontendStyles } from '../helpers/frontend-styles'
+import { createLexicalDocument } from '../helpers/lexical-document'
 
-function createListItem(kind: PublicContentListItem['kind'], date: string): PublicContentListItem {
+function createPageItem(): Extract<PublicContentListItem, { kind: 'pages' }> {
   return {
-    category: null,
-    date,
-    excerpt: null,
-    id: 1,
-    image: null,
-    kind,
-    tags: [],
-    title: kind === 'pages' ? 'O klubie' : 'Aktualność klubowa',
-    url: kind === 'pages' ? '/o-klubie' : '/blog/aktualnosc-klubowa',
+    document: {
+      category: null,
+      heroImage: null,
+      id: 1,
+      listingExcerpt: 'Informacje o klubie.',
+      slug: 'o-klubie',
+      tags: [],
+      title: 'O klubie',
+    } as unknown as Page,
+    kind: 'pages',
+    url: '/o-klubie',
+  }
+}
+
+function createPostItem(
+  publishedAt = '2026-09-08T18:00:00.000Z',
+): Extract<PublicContentListItem, { kind: 'posts' }> {
+  return {
+    document: {
+      category: null,
+      excerpt: 'Aktualności z życia klubu.',
+      heroImage: null,
+      id: 2,
+      publishedAt,
+      slug: 'aktualnosc-klubowa',
+      tags: [],
+      title: 'Aktualność klubowa',
+    } as unknown as Post,
+    kind: 'posts',
+    url: '/blog/aktualnosc-klubowa',
+  }
+}
+
+function createEventItem(): Extract<PublicContentListItem, { kind: 'events' }> {
+  return {
+    document: {
+      category: null,
+      cycle: {
+        id: 7,
+        slug: 'erpegowe-wtorki',
+        title: 'Erpegowe Wtorki',
+      } as unknown as EventCycle,
+      endAt: '2026-10-13T20:00:00.000Z',
+      excerpt: createLexicalDocument('Otwarte spotkanie dla graczy.'),
+      heroImage: null,
+      id: 3,
+      location: {
+        country: 'Polska',
+        venueName: 'Centrum kultury, Wrocław',
+        venueWebsite: 'https://example.com/miejsce',
+      },
+      slug: 'wieczor-z-grami',
+      startAt: '2026-10-13T16:00:00.000Z',
+      tags: [],
+      timeMode: 'timed',
+      title: 'Wieczór z grami fabularnymi',
+    } as unknown as Event,
+    kind: 'events',
+    url: '/events/wieczor-z-grami',
+  }
+}
+
+function createEventCycleItem(): Extract<PublicContentListItem, { kind: 'event-cycles' }> {
+  return {
+    document: {
+      category: null,
+      excerpt: createLexicalDocument('Regularny cykl spotkań.'),
+      heroImage: null,
+      id: 4,
+      slug: 'spotkania-z-fantastyka',
+      tags: [],
+      title: 'Spotkania z fantastyką',
+    } as unknown as EventCycle,
+    kind: 'event-cycles',
+    url: '/events/series/spotkania-z-fantastyka',
   }
 }
 
@@ -27,9 +95,10 @@ describe('frontend content listing', () => {
     const frontendStyles = readFrontendStyles()
     const cardImageRule = frontendStyles.match(/\.contentCardImage\s*\{(?<declarations>[^}]*)\}/)
     const cardImageDeclarations = cardImageRule?.groups?.declarations
-    const gridCardImageSelector = '.contentList-grid > article.contentCard > .contentCardImage'
+    const gridCardImageSelector =
+      ':is(.contentList-grid, .documentList-grid) > article.contentCard > .contentCardImage'
     const gridCardImageRule = frontendStyles.match(
-      /\.contentList-grid > article\.contentCard > \.contentCardImage\s*\{(?<declarations>[^}]*)\}/,
+      /:is\(\.contentList-grid, \.documentList-grid\) > article\.contentCard > \.contentCardImage\s*\{(?<declarations>[^}]*)\}/,
     )
     const gridCardImageDeclarations = gridCardImageRule?.groups?.declarations
     const contentCardImageAspectRatioSelectors = [
@@ -50,7 +119,7 @@ describe('frontend content listing', () => {
   })
 
   it('renders the shared image fallback for grid and card views without media', () => {
-    const item = createListItem('events', '2026-09-07T18:00:00.000Z')
+    const item = createEventItem()
     const gridMarkup = renderToStaticMarkup(
       createElement(ContentList, { items: [item], view: 'grid' }),
     )
@@ -67,17 +136,17 @@ describe('frontend content listing', () => {
     expect(cardsMarkup).toContain('class="contentCardImageFallback"')
     expect(compactMarkup).not.toContain('contentCardImageFallback')
     expect(frontendStyles).toMatch(
-      /\.newsImageFallback,\s*\.sectionCardImageFallback,\s*\.contentCardImageFallback\s*\{[^}]*placeholder-nebula\.webp/,
+      /\.newsImageFallback,\s*\.cardBlockImageFallback,\s*\.contentCardImageFallback\s*\{[^}]*placeholder-nebula\.webp/,
     )
     expect(frontendStyles).toMatch(
-      /:is\(\.contentList-grid, \.contentList-cards\)[^{]*> \.contentCardImageFallback\s*\{[^}]*height: 100%;/,
+      /:is\(\.contentList-grid, \.contentList-cards, \.documentList-grid, \.documentList-cards\)[^{]*> \.contentCardImageFallback\s*\{[^}]*height: 100%;/,
     )
   })
 
   it('does not render a publication date for pages', () => {
     const markup = renderToStaticMarkup(
       createElement(ContentList, {
-        items: [createListItem('pages', '2026-09-07T18:00:00.000Z')],
+        items: [createPageItem()],
         view: 'cards',
       }),
     )
@@ -90,7 +159,7 @@ describe('frontend content listing', () => {
     for (const view of ['cards', 'compact', 'grid'] as const) {
       const markup = renderToStaticMarkup(
         createElement(ContentList, {
-          items: [createListItem('event-cycles', '2026-09-07T18:00:00.000Z')],
+          items: [createEventCycleItem()],
           view,
         }),
       )
@@ -104,11 +173,173 @@ describe('frontend content listing', () => {
     const date = '2026-09-08T18:00:00.000Z'
     const markup = renderToStaticMarkup(
       createElement(ContentList, {
-        items: [createListItem('posts', date)],
+        items: [createPostItem(date)],
         view: 'cards',
       }),
     )
 
     expect(markup).toContain(`<time dateTime="${date}">`)
+  })
+
+  it('renders event-specific card data from the full Event entity', () => {
+    const markup = renderToStaticMarkup(
+      createElement(ContentList, { items: [createEventItem()], view: 'cards' }),
+    )
+
+    expect(markup).toContain('class="contentCardKind">Wydarzenie</span>')
+    expect(markup).toContain('class="contentCardMetaText">z cyklu</span>')
+    expect(markup).toContain('href="/events/series/erpegowe-wtorki"')
+    expect(markup).toContain('Erpegowe Wtorki')
+    expect(markup).toContain('13 października 2026, 18:00 - 22:00')
+    expect(markup).toContain('href="https://example.com/miejsce"')
+    expect(markup).toContain('Centrum kultury, Wrocław')
+    expect(markup).toContain('Otwarte spotkanie dla graczy.')
+  })
+
+  it('renders the collection-specific grid data from full entities', () => {
+    const event = createEventItem()
+    const markup = renderToStaticMarkup(
+      createElement(ContentList, {
+        items: [createPageItem(), createPostItem(), event, createEventCycleItem()],
+        view: 'grid',
+      }),
+    )
+
+    expect(markup).toContain('class="contentCard contentCard--grid"')
+    expect(markup).toContain('class="contentCardKind">Strona</span>')
+    expect(markup).toContain('class="contentCardKind">Wpis</span>')
+    expect(markup).toContain('class="contentCardKind">Wydarzenie</span>')
+    expect(markup).toContain('class="contentCardKind">Cykl wydarzeń</span>')
+    expect(markup).toContain(
+      '<time dateTime="2026-10-13T16:00:00.000Z">13 października 2026, 18:00</time>',
+    )
+    expect(markup).not.toContain('/events/series/erpegowe-wtorki')
+    expect(markup).not.toContain('22:00')
+    expect(markup).toContain('href="https://example.com/miejsce"')
+    expect(markup.indexOf(event.document.title)).toBeLessThan(
+      markup.indexOf('Centrum kultury, Wrocław'),
+    )
+    expect(markup.indexOf('Centrum kultury, Wrocław')).toBeLessThan(
+      markup.indexOf('Otwarte spotkanie dla graczy.'),
+    )
+  })
+
+  it('renders compact rows with the event start time and no extra entity data', () => {
+    const markup = renderToStaticMarkup(
+      createElement(ContentList, {
+        items: [createPageItem(), createPostItem(), createEventItem(), createEventCycleItem()],
+        view: 'compact',
+      }),
+    )
+
+    expect(markup).toContain('class="contentList contentList-compact"')
+    expect(markup).toContain(
+      '<time dateTime="2026-10-13T16:00:00.000Z">13 października 2026, 18:00</time>',
+    )
+    expect(markup).not.toContain('contentCardImage')
+    expect(markup).not.toContain('taxonomyLinks')
+    expect(markup).not.toContain('Otwarte spotkanie dla graczy.')
+  })
+
+  it('renders image tiles with the same information as compact rows', () => {
+    const post = createPostItem()
+    post.document.heroImage = {
+      alt: 'Członkowie klubu przy stole',
+      height: 900,
+      id: 9,
+      url: '/media/spotkanie.webp',
+      width: 1600,
+    } as Media
+    const markup = renderToStaticMarkup(
+      createElement(ContentList, {
+        items: [createPageItem(), post, createEventItem(), createEventCycleItem()],
+        view: 'tiles',
+      }),
+    )
+
+    expect(markup).toContain('class="contentList contentList-tiles"')
+    expect(markup.match(/class="contentTile"/g)).toHaveLength(4)
+    expect(markup.match(/class="contentTileImageFallback"/g)).toHaveLength(3)
+    expect(markup).toContain('class="contentTileImage"')
+    expect(markup).toContain('src="/media/spotkanie.webp"')
+    expect(markup).toContain('class="contentCardKind">Strona</span>')
+    expect(markup).toContain('class="contentCardKind">Wpis</span>')
+    expect(markup).toContain('class="contentCardKind">Wydarzenie</span>')
+    expect(markup).toContain('class="contentCardKind">Cykl wydarzeń</span>')
+    expect(markup).toContain(
+      '<time dateTime="2026-10-13T16:00:00.000Z">13 października 2026, 18:00</time>',
+    )
+    expect(markup).not.toContain('taxonomyLinks')
+    expect(markup).not.toContain('Otwarte spotkanie dla graczy.')
+    expect(markup).not.toContain('Centrum kultury, Wrocław')
+  })
+
+  it('lays image tiles out in three, two and one container-aware columns', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-tiles, \.documentList-tiles\) \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/,
+    )
+    expect(frontendStyles).toMatch(
+      /@container content-block \(width <= 54rem\) \{[\s\S]*?:is\(\.contentList-tiles, \.documentList-tiles\) \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/,
+    )
+    expect(frontendStyles).toMatch(
+      /@container content-block \(width <= 36rem\) \{[\s\S]*?:is\(\.contentList-tiles, \.documentList-tiles\) \{[^}]*grid-template-columns: minmax\(0, 1fr\);/,
+    )
+  })
+
+  it('uses the nebula fallback and a progressively stronger tile scrim', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(
+      /\.contentTileImageFallback \{[^}]*placeholder-nebula\.webp[^}]*cover no-repeat/,
+    )
+    expect(frontendStyles).toMatch(
+      /\.contentTileOverlay \{[^}]*linear-gradient\([\s\S]*?4%\) 0%,[\s\S]*?16%\) 44%,[\s\S]*?59%\) 78%,[\s\S]*?96%\) 100%/,
+    )
+  })
+
+  it('groups compact content and document rows into one table-like frame', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(
+      /:is\(\.listingBlock, \.documentsBlock\):has\(\s*> :is\(\.contentList-compact, \.documentList-list\)\s*\) \{[^}]*width: 100%;/,
+    )
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-compact, \.documentList-list\) \{[^}]*gap: 0;[^}]*overflow: hidden;[^}]*width: 100%;[^}]*border: 1px solid[^}]*border-radius: 0\.75rem;/,
+    )
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-compact > \.contentCard, \.documentList-list > \.documentListItem\) \{[^}]*border: 0;[^}]*border-bottom: 1px solid[^}]*border-radius: 0;[^}]*background: transparent;/,
+    )
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-compact \.contentCardContent, \.documentList-list \.documentListItemContent\) \{[^}]*grid-template-columns: minmax\(18rem, 5fr\) minmax\(0, 7fr\);[^}]*gap: 0;/,
+    )
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-compact, \.documentList-list\) h2 a \{[^}]*color: var\(--ivory\);/,
+    )
+  })
+
+  it('keeps the approved larger gap before taxonomy in every detailed card', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-cards, \.documentList-cards\) \.contentCardContent > \.taxonomyLinks \{[\s\S]*?margin: 1\.75rem 0 0;/,
+    )
+  })
+
+  it('keeps the approved grid spacing before taxonomy and after the event place', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(
+      /:is\(\.contentList-grid, \.documentList-grid\) \.contentCardContent > \.taxonomyLinks \{[\s\S]*?margin: auto 0 0;[\s\S]*?padding-top: 2rem;/,
+    )
+    expect(frontendStyles).toMatch(/\.contentCardFacts--grid \{[\s\S]*?margin-bottom: 1\.5rem;/)
+  })
+
+  it('lets content and document grids fill the width of their section', () => {
+    const frontendStyles = readFrontendStyles()
+
+    expect(frontendStyles).toMatch(/\.contentList-grid \{[^}]*width: 100%;/)
+    expect(frontendStyles).toMatch(/\.documentList-grid \{[^}]*width: 100%;/)
   })
 })

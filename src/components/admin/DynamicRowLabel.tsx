@@ -108,10 +108,6 @@ export function PresentedLinkRowLabel() {
   return <DynamicLabel prefix="Odnośnik" value={usePresentedLinkDescription()} />
 }
 
-export function HomepageGroupRowLabel() {
-  return <DynamicLabel prefix="Grupa" value={useRowValue('name')} />
-}
-
 export function SocialItemRowLabel() {
   return <DynamicLabel prefix="Medium społecznościowe" value={usePresentedLinkDescription()} />
 }
@@ -122,6 +118,10 @@ export function FooterColumnRowLabel() {
 
 export function FooterColumnItemRowLabel() {
   return <DynamicLabel prefix="Pozycja" value={usePresentedLinkDescription()} />
+}
+
+export function TabbedContentTabRowLabel() {
+  return <DynamicLabel prefix="Zakładka" value={useRowValue('label')} />
 }
 
 const surfaceLabels: Record<string, string> = {

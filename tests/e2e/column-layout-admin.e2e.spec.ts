@@ -181,9 +181,7 @@ test('opens a 6+6 layout, keeps content visible while invalid and excludes neste
   await page.goto(`/admin/collections/pages/${defaultFixturePage.id}`)
 
   const field = await openColumnLayoutField(page)
-  await expect(
-    field.getByText('Kolumny: 2 · suma szerokości: 12/12', { exact: true }),
-  ).toBeVisible()
+  await expect(field.getByText('Kolumny: 2 · suma szerokości: 12c', { exact: true })).toBeVisible()
   await expect(field.getByRole('tab')).toHaveText([
     'Prezentacja',
     'Kolumna 1 - 6c',
@@ -315,13 +313,11 @@ test('opens a 6+6 layout, keeps content visible while invalid and excludes neste
   await field.getByRole('button', { name: 'Dodaj kolumnę' }).click()
   await expectColumnWidths(field, ['6', '6', '2'])
   await expect(
-    page.getByText('Układ kolumnowy: przezroczysta · bez ramki — 6/12 + 6/12 + 2/12', {
+    page.getByText('Układ kolumnowy: przezroczysta · bez ramki — 6c + 6c + 2c', {
       exact: true,
     }),
   ).toBeVisible()
-  await expect(
-    field.getByText('Kolumny: 3 · suma szerokości: 14/12', { exact: true }),
-  ).toBeVisible()
+  await expect(field.getByText('Kolumny: 3 · suma szerokości: 14c', { exact: true })).toBeVisible()
   await expect(field.getByRole('tab')).toHaveText([
     'Prezentacja',
     'Kolumna 1 - 6c',
@@ -347,13 +343,11 @@ test('opens a 6+6 layout, keeps content visible while invalid and excludes neste
   await activePanel(field).locator('input[type="number"]').fill('5')
   await expect(field.getByRole('tab', { name: 'Kolumna 1' })).toHaveText('Kolumna 1 - 5c')
   await expect(
-    page.getByText('Układ kolumnowy: przezroczysta · bez ramki — 5/12 + 6/12 + 2/12', {
+    page.getByText('Układ kolumnowy: przezroczysta · bez ramki — 5c + 6c + 2c', {
       exact: true,
     }),
   ).toBeVisible()
-  await expect(
-    field.getByText('Kolumny: 3 · suma szerokości: 13/12', { exact: true }),
-  ).toBeVisible()
+  await expect(field.getByText('Kolumny: 3 · suma szerokości: 13c', { exact: true })).toBeVisible()
   await expect(activePanel(field)).toBeVisible()
   await page.getByRole('button', { name: 'Zapisz szkic' }).click()
   await expect(
@@ -370,7 +364,7 @@ test('moves whole columns, confirms destructive deletion and reloads the persist
 
   const field = await openColumnLayoutField(page)
   await expect(
-    page.getByText('Układ kolumnowy: przezroczysta · bez ramki — 3/12 + 3/12 + 3/12 + 3/12', {
+    page.getByText('Układ kolumnowy: przezroczysta · bez ramki — 3c + 3c + 3c + 3c', {
       exact: true,
     }),
   ).toBeVisible()
@@ -421,9 +415,7 @@ test('moves whole columns, confirms destructive deletion and reloads the persist
   await expect(field).not.toContainText('Left content')
   await fillColumnWidth(field, 0, '6')
   await fillColumnWidth(field, 1, '6')
-  await expect(
-    field.getByText('Kolumny: 2 · suma szerokości: 12/12', { exact: true }),
-  ).toBeVisible()
+  await expect(field.getByText('Kolumny: 2 · suma szerokości: 12c', { exact: true })).toBeVisible()
   const sourceLayout = fixturePage.layout?.[0]
   if (!sourceLayout || sourceLayout.blockType !== 'columnLayout') {
     throw new Error('Missing source column layout fixture.')
@@ -524,7 +516,7 @@ test('appends an allowed copied block to section blocks and rejects a forbidden 
   await expect(sectionRows).toHaveCount(2)
   await expect(sectionRows.nth(0)).toContainText('Treść')
   await expect(sectionRows.nth(1)).toContainText(
-    'Układ kolumnowy: przezroczysta · bez ramki — 6/12 + 6/12',
+    'Układ kolumnowy: przezroczysta · bez ramki — 6c + 6c',
   )
 
   await layoutField

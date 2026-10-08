@@ -70,6 +70,10 @@ services:
 
   postgres-test:
     image: postgres:17.10-alpine3.23
+    command:
+      - postgres
+      - -c
+      - max_locks_per_transaction=128
     environment:
       POSTGRES_DB: wkf_test
       POSTGRES_PASSWORD: wkf
