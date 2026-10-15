@@ -63,6 +63,7 @@ import { EventLinkRowLabel as EventLinkRowLabel_25248d319d0ee96f21b07bc4bd261dd1
 import { EventCreateLabel as EventCreateLabel_9321488c4e8960e8bd87c29c2a32b741 } from '../../../components/admin/CollectionLabels'
 import { EventCycleDefaultsApplier as EventCycleDefaultsApplier_cc9b53b3b0ac5687279686608ed384da } from '../../../components/admin/EventCycleDefaultsApplier'
 import { EventActions as EventActions_c22ece76d5a21cdb27fafdfc30d499ed } from '../../../components/admin/EventActions'
+import { TimeTextField as TimeTextField_0da2242ef0d637e3092e22b744560915 } from '../../../components/admin/TimeTextField'
 import { AutoSlugField as AutoSlugField_ed11f9fb5a25dfaf526ef43ee4e4462b } from '../../../components/admin/AutoSlugField'
 import { EventCycleCreateLabel as EventCycleCreateLabel_9321488c4e8960e8bd87c29c2a32b741 } from '../../../components/admin/CollectionLabels'
 import { EventCycleDefaultsMirror as EventCycleDefaultsMirror_1c13d5af302bc10d1a9d59dce6491bd0 } from '../../../components/admin/EventCycleDefaultsMirror'
@@ -161,6 +162,7 @@ export const importMap = {
   "/components/admin/CollectionLabels#EventCreateLabel": EventCreateLabel_9321488c4e8960e8bd87c29c2a32b741,
   "/components/admin/EventCycleDefaultsApplier#EventCycleDefaultsApplier": EventCycleDefaultsApplier_cc9b53b3b0ac5687279686608ed384da,
   "/components/admin/EventActions#EventActions": EventActions_c22ece76d5a21cdb27fafdfc30d499ed,
+  "/components/admin/TimeTextField#TimeTextField": TimeTextField_0da2242ef0d637e3092e22b744560915,
   "/components/admin/AutoSlugField#AutoSlugField": AutoSlugField_ed11f9fb5a25dfaf526ef43ee4e4462b,
   "/components/admin/CollectionLabels#EventCycleCreateLabel": EventCycleCreateLabel_9321488c4e8960e8bd87c29c2a32b741,
   "/components/admin/EventCycleDefaultsMirror#EventCycleDefaultsMirror": EventCycleDefaultsMirror_1c13d5af302bc10d1a9d59dce6491bd0,

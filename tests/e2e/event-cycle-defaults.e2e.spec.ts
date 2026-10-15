@@ -244,6 +244,9 @@ test('creates a Cycle Event draft without asking for a date or generating a slug
   await expect(page.locator('#field-startAt input')).toHaveValue('')
   await expect(page.locator('#field-slug')).toHaveValue('')
   await expect(page.getByRole('button', { name: 'Dodaj następne' })).toBeVisible()
+  await expect(
+    page.locator('[contenteditable="true"]').filter({ hasText: 'E2E content' }),
+  ).toBeVisible()
 
   const eventID = Number(page.url().split('/').at(-1))
   await payload.delete({ collection: 'events', id: eventID, overrideAccess: true })

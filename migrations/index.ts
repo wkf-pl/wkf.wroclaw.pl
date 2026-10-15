@@ -46,6 +46,7 @@ import * as migration_20261007_144303_carousel_block from './20261007_144303_car
 import * as migration_20261008_142626_document_carousel_view from './20261008_142626_document_carousel_view'
 import * as migration_20261008_151847_content_tiles_view from './20261008_151847_content_tiles_view'
 import * as migration_20261008_210723_homepage_content_only from './20261008_210723_homepage_content_only'
+import * as migration_20261015_122648_event_cycle_schedule from './20261015_122648_event_cycle_schedule'
 
 export const migrations = [
   {
@@ -287,5 +288,10 @@ export const migrations = [
     up: migration_20261008_210723_homepage_content_only.up,
     down: migration_20261008_210723_homepage_content_only.down,
     name: '20261008_210723_homepage_content_only',
+  },
+  {
+    up: migration_20261015_122648_event_cycle_schedule.up,
+    down: migration_20261015_122648_event_cycle_schedule.down,
+    name: '20261015_122648_event_cycle_schedule',
   },
 ]

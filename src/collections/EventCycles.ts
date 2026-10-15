@@ -17,10 +17,15 @@ import {
   createOrganizerField,
   createPartnersField,
   createParticipationFields,
+  validateClockTime,
+  validateDefaultEndTime,
 } from '@/modules/events/fields'
 import { copyEventCycleContentToDefaults } from '@/modules/events/hooks'
 import { createEventFromCycleEndpoint } from '@/modules/events/create-event-from-cycle'
-import { timeModeOptions } from '@/modules/events/constants'
+import {
+  recurrenceTypeOptions,
+  recurrenceWeekdayOptions,
+} from '@/modules/events/event-cycle-schedule'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
@@ -123,35 +128,109 @@ export const EventCycles: CollectionConfig = {
                 { name: 'heroImage', type: 'upload', label: 'Obraz główny', relationTo: 'media' },
                 { name: 'excerpt', type: 'richText', label: 'Streszczenie' },
                 createContentLayoutField('Treści'),
-                { type: 'row', fields: createTaxonomyFields({ position: 'main' }) },
+                {
+                  type: 'row',
+                  fields: createTaxonomyFields({ position: 'main', width: '50%' }),
+                },
                 {
                   type: 'row',
                   fields: [
                     {
-                      name: 'defaultTimeMode',
+                      name: 'recurrenceType',
                       type: 'select',
                       admin: { isClearable: false, width: '50%' },
-                      defaultValue: 'timed',
-                      label: 'Sposób podania czasu',
-                      options: [...timeModeOptions],
+                      defaultValue: 'weekly',
+                      label: 'Interwał',
+                      options: [...recurrenceTypeOptions],
+                    },
+                    {
+                      name: 'weekInterval',
+                      type: 'number',
+                      admin: {
+                        condition: (_data, siblingData) => siblingData.recurrenceType === 'weekly',
+                        width: '25%',
+                      },
+                      defaultValue: 2,
+                      label: 'Co ile tygodni',
+                      max: 4,
+                      min: 1,
+                    },
+                    {
+                      name: 'monthDay',
+                      type: 'number',
+                      admin: {
+                        condition: (_data, siblingData) =>
+                          siblingData.recurrenceType === 'monthlyDate',
+                        width: '25%',
+                      },
+                      defaultValue: 1,
+                      label: 'Dzień miesiąca',
+                      max: 31,
+                      min: 1,
+                    },
+                    {
+                      name: 'weekOfMonth',
+                      type: 'number',
+                      admin: {
+                        condition: (_data, siblingData) =>
+                          siblingData.recurrenceType === 'monthlyWeekday',
+                        width: '25%',
+                      },
+                      defaultValue: 1,
+                      label: 'Tydzień miesiąca',
+                      max: 4,
+                      min: 1,
+                    },
+                    {
+                      name: 'recurrenceWeekday',
+                      type: 'select',
+                      admin: {
+                        condition: (_data, siblingData) =>
+                          siblingData.recurrenceType === 'weekly' ||
+                          siblingData.recurrenceType === 'monthlyWeekday',
+                        isClearable: false,
+                        width: '25%',
+                      },
+                      defaultValue: 'tuesday',
+                      label: 'Dzień tygodnia',
+                      options: [...recurrenceWeekdayOptions],
+                    },
+                  ],
+                },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'defaultDayCount',
+                      type: 'number',
+                      admin: { width: '33.333%' },
+                      defaultValue: 1,
+                      label: 'Ilość dni',
+                      min: 1,
                     },
                     {
                       name: 'defaultStartTime',
                       type: 'text',
-                      admin: { description: 'Format GG:MM, np. 18:00', width: '25%' },
-                      label: 'Typowa godzina rozpoczęcia',
-                      validate: (value: unknown) =>
-                        !value ||
-                        (typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value))
-                          ? true
-                          : 'Podaj godzinę w formacie GG:MM.',
+                      admin: {
+                        components: {
+                          Field: '/components/admin/TimeTextField#TimeTextField',
+                        },
+                        width: '33.333%',
+                      },
+                      label: 'Godzina rozpoczęcia',
+                      validate: validateClockTime,
                     },
                     {
-                      name: 'defaultDurationMinutes',
-                      type: 'number',
-                      admin: { width: '25%' },
-                      label: 'Typowy czas trwania w minutach',
-                      min: 1,
+                      name: 'defaultEndTime',
+                      type: 'text',
+                      admin: {
+                        components: {
+                          Field: '/components/admin/TimeTextField#TimeTextField',
+                        },
+                        width: '33.333%',
+                      },
+                      label: 'Godzina zakończenia',
+                      validate: validateDefaultEndTime,
                     },
                   ],
                 },
@@ -159,7 +238,7 @@ export const EventCycles: CollectionConfig = {
                   name: 'location',
                   type: 'group',
                   label: 'Miejsce',
-                  fields: createLocationFields(),
+                  fields: createLocationFields({ compactAddressRow: true }),
                 },
                 ...createParticipationFields(),
                 createOrganizerField(),

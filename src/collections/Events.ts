@@ -105,7 +105,12 @@ export const Events: CollectionConfig = {
             },
             createContentLayoutField('Treści'),
             { type: 'collapsible', label: 'Termin', fields: createScheduleFields() },
-            { name: 'location', type: 'group', label: 'Miejsce', fields: createLocationFields() },
+            {
+              name: 'location',
+              type: 'group',
+              label: 'Miejsce',
+              fields: createLocationFields({ compactAddressRow: true }),
+            },
             ...createParticipationFields(),
             createOrganizerField(),
             createPartnersField(),
