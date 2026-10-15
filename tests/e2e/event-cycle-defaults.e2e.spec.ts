@@ -213,7 +213,7 @@ test('applies selected Cycle defaults to an Event form without overwriting value
   await expect(page.getByRole('textbox', { name: 'Funkcja' })).toHaveValue('Osoba prowadząca')
   await expect(page.getByText('Partner: Partner domyślny E2E', { exact: true })).toBeVisible()
   await expect(page.getByText('Link: Informacje o wydarzeniu', { exact: true })).toBeVisible()
-  await expect(page.getByRole('textbox', { name: 'Adres', exact: true })).toHaveValue(
+  await expect(page.locator('#field-externalLinks__0__customAddress')).toHaveValue(
     'example.com/wydarzenie',
   )
   const saveResponse = page.waitForResponse(
