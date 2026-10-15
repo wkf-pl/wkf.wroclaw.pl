@@ -438,6 +438,20 @@ describe('content composition', () => {
     })
   })
 
+  it('lets editors hide a section group when any filter-capable content block is empty', () => {
+    const emptyChildBehaviorField = findNamedField(SectionGroupBlock.fields, 'emptyChildBehavior')
+
+    expect(emptyChildBehaviorField).toMatchObject({
+      defaultValue: 'show',
+      label: 'Gdy blok zasilany treścią jest pusty',
+      options: [
+        { label: 'Pokaż grupę', value: 'show' },
+        { label: 'Ukryj całą grupę', value: 'hideGroup' },
+      ],
+      type: 'select',
+    })
+  })
+
   it.each([
     ['h2', 'h2', 'contentHeading--major'],
     ['h4', 'h4', 'contentHeading--minor'],

@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { Fragment, type CSSProperties, type ReactNode } from 'react'
 
 import { CmsRichText } from '@/components/CmsRichText'
 import {
@@ -8,6 +8,10 @@ import {
   type ContentPresentationData,
 } from '@/modules/content/content-presentation'
 import { getPublicSiteSettings } from '@/modules/content/public-content'
+import {
+  isSectionGroupEmptyAwareBlockType,
+  shouldHideSectionGroup,
+} from '@/modules/content/section-group-visibility'
 import { resolvePresentedLinks } from '@/modules/navigation/links'
 import type {
   ActionLinksBlock,
@@ -34,11 +38,11 @@ import type {
 
 import { ContentHeading, ContentPresentation } from './ContentPresentation'
 import { CardBlockSection } from './CardBlockSection'
-import { CarouselBlockSection } from './CarouselBlockSection'
+import { resolveCarouselBlockSection } from './CarouselBlockSection'
 import { ContentCalendarBlockSection } from './ContentCalendarBlockSection'
 import { DocumentBlockSection } from './DocumentBlockSection'
-import { ListingBlockSection } from './ListingBlockSection'
-import { MediaBlockSection } from './MediaBlockSection'
+import { resolveListingBlockSection } from './ListingBlockSection'
+import { resolveMediaBlockSection } from './MediaBlockSection'
 import { MemberProfilesSection } from './MemberProfilesSection'
 import { PresentedLink } from './PresentedLink'
 import { TabbedContentFrame, type TabbedContentFrameTab } from './TabbedContentFrame'
@@ -73,6 +77,11 @@ type ContentRendererProperties = {
 
 type PositionedRendererProperties = ContentRendererProperties & {
   path: string
+}
+
+type ContentBlockResolution = {
+  content: ReactNode
+  hasEmptyFilterBlock: boolean
 }
 
 export async function ContentLayoutRenderer({
@@ -230,7 +239,7 @@ function renderTabbedContentMenu(items: ReturnType<typeof resolvePresentedLinks>
   )
 }
 
-async function SectionGroupRenderer({
+export async function SectionGroupRenderer({
   block,
   document,
   path,
@@ -243,6 +252,42 @@ async function SectionGroupRenderer({
     return null
   }
 
+  const resolvedSections = await Promise.all(
+    sections.map(async (section, sectionIndex) => {
+      const sectionPath = `${path}.sections.${sectionIndex}`
+      const blocks = (section.blocks ?? []) as SectionContentBlock[]
+      const resolvedBlocks = await Promise.all(
+        blocks.map((nestedBlock, nestedBlockIndex) => {
+          const nestedPath = `${sectionPath}.blocks.${nestedBlockIndex}`
+          return nestedBlock.blockType === 'columnLayout'
+            ? resolveColumnLayout({
+                block: nestedBlock,
+                document,
+                path: nestedPath,
+                pathname,
+                searchParams,
+              })
+            : resolveContentLeafBlock({
+                block: nestedBlock,
+                document,
+                path: nestedPath,
+                pathname,
+                searchParams,
+              })
+        }),
+      )
+
+      return { section, sectionPath, resolvedBlocks }
+    }),
+  )
+
+  const emptyFilterBlocks = resolvedSections.flatMap(({ resolvedBlocks }) =>
+    resolvedBlocks.map(({ hasEmptyFilterBlock }) => hasEmptyFilterBlock),
+  )
+  if (shouldHideSectionGroup(block.emptyChildBehavior, emptyFilterBlocks)) {
+    return null
+  }
+
   return (
     <ContentPresentation
       className="sectionGroup"
@@ -250,9 +295,7 @@ async function SectionGroupRenderer({
       presentation={presentation}
     >
       <div className="sectionGroupSections">
-        {sections.map((section, sectionIndex) => {
-          const sectionPath = `${path}.sections.${sectionIndex}`
-          const blocks = (section.blocks ?? []) as SectionContentBlock[]
+        {resolvedSections.map(({ resolvedBlocks, section, sectionPath }) => {
           const sectionPresentation = normalizeContentPresentation(
             section as ContentPresentationData,
           )
@@ -264,28 +307,9 @@ async function SectionGroupRenderer({
               placement="section"
               presentation={sectionPresentation}
             >
-              {blocks.map((nestedBlock, nestedBlockIndex) => {
-                const nestedPath = `${sectionPath}.blocks.${nestedBlockIndex}`
-                return nestedBlock.blockType === 'columnLayout' ? (
-                  <ColumnLayoutRenderer
-                    block={nestedBlock}
-                    document={document}
-                    key={nestedBlock.id ?? nestedPath}
-                    path={nestedPath}
-                    pathname={pathname}
-                    searchParams={searchParams}
-                  />
-                ) : (
-                  <ContentLeafBlockRenderer
-                    block={nestedBlock}
-                    document={document}
-                    key={nestedBlock.id ?? nestedPath}
-                    path={nestedPath}
-                    pathname={pathname}
-                    searchParams={searchParams}
-                  />
-                )
-              })}
+              {resolvedBlocks.map(({ content }, nestedBlockIndex) => (
+                <Fragment key={`${sectionPath}.blocks.${nestedBlockIndex}`}>{content}</Fragment>
+              ))}
             </ContentPresentation>
           )
         })}
@@ -295,17 +319,23 @@ async function SectionGroupRenderer({
 }
 
 async function ColumnLayoutRenderer({
+  ...properties
+}: PositionedRendererProperties & { block: ColumnLayoutBlock }) {
+  return (await resolveColumnLayout(properties)).content
+}
+
+async function resolveColumnLayout({
   block,
   document,
   path,
   pathname,
   searchParams,
-}: PositionedRendererProperties & { block: ColumnLayoutBlock }) {
+}: PositionedRendererProperties & { block: ColumnLayoutBlock }): Promise<ContentBlockResolution> {
   const columns = block.columns ?? []
   const presentation = normalizeContentPresentation(block as ContentPresentationData)
   const hasColumnContent = columns.some((column) => Boolean(column.blocks?.length))
   if (!hasColumnContent) {
-    return null
+    return { content: null, hasEmptyFilterBlock: false }
   }
   const classes = [
     'columnLayout',
@@ -316,48 +346,73 @@ async function ColumnLayoutRenderer({
     .filter(Boolean)
     .join(' ')
 
-  return (
-    <ContentPresentation className={classes} placement="layout" presentation={presentation}>
-      <div className="columnLayoutGrid">
-        {columns.map((column, columnIndex) => {
-          const columnPath = `${path}.columns.${columnIndex}`
-          const blocks = (column.blocks ?? []) as ContentLeafBlock[]
-          const style = { '--column-width': column.width } as CSSProperties
-          const columnPresentation = normalizeContentPresentation(column as ContentPresentationData)
+  const resolvedColumns = await Promise.all(
+    columns.map(async (column, columnIndex) => {
+      const columnPath = `${path}.columns.${columnIndex}`
+      const blocks = (column.blocks ?? []) as ContentLeafBlock[]
+      const resolvedBlocks = await Promise.all(
+        blocks.map((nestedBlock, nestedBlockIndex) =>
+          resolveContentLeafBlock({
+            block: nestedBlock,
+            document,
+            path: `${columnPath}.blocks.${nestedBlockIndex}`,
+            pathname,
+            searchParams,
+          }),
+        ),
+      )
 
-          return (
-            <ContentPresentation
-              className={`columnLayoutColumn${blocks.length ? '' : ' columnLayoutColumn--empty'}`}
-              columnWidth={column.width}
-              key={column.id ?? columnPath}
-              placement="column"
-              presentation={columnPresentation}
-              style={style}
-            >
-              <div className="columnLayoutColumnContent">
-                {blocks.map((nestedBlock, nestedBlockIndex) => {
-                  const nestedBlockPath = `${columnPath}.blocks.${nestedBlockIndex}`
-                  return (
-                    <ContentLeafBlockRenderer
-                      block={nestedBlock}
-                      document={document}
-                      key={nestedBlock.id ?? nestedBlockPath}
-                      path={nestedBlockPath}
-                      pathname={pathname}
-                      searchParams={searchParams}
-                    />
-                  )
-                })}
-              </div>
-            </ContentPresentation>
-          )
-        })}
-      </div>
-    </ContentPresentation>
+      return { blocks, column, columnPath, resolvedBlocks }
+    }),
   )
+
+  return {
+    content: (
+      <ContentPresentation className={classes} placement="layout" presentation={presentation}>
+        <div className="columnLayoutGrid">
+          {resolvedColumns.map(({ blocks, column, columnPath, resolvedBlocks }) => {
+            const style = { '--column-width': column.width } as CSSProperties
+            const columnPresentation = normalizeContentPresentation(
+              column as ContentPresentationData,
+            )
+
+            return (
+              <ContentPresentation
+                className={`columnLayoutColumn${blocks.length ? '' : ' columnLayoutColumn--empty'}`}
+                columnWidth={column.width}
+                key={column.id ?? columnPath}
+                placement="column"
+                presentation={columnPresentation}
+                style={style}
+              >
+                <div className="columnLayoutColumnContent">
+                  {resolvedBlocks.map(({ content }, nestedBlockIndex) => (
+                    <Fragment key={`${columnPath}.blocks.${nestedBlockIndex}`}>{content}</Fragment>
+                  ))}
+                </div>
+              </ContentPresentation>
+            )
+          })}
+        </div>
+      </ContentPresentation>
+    ),
+    hasEmptyFilterBlock: resolvedColumns.some(({ resolvedBlocks }) =>
+      resolvedBlocks.some(({ hasEmptyFilterBlock }) => hasEmptyFilterBlock),
+    ),
+  }
 }
 
 export async function ContentLeafBlockRenderer({
+  ...properties
+}: ContentRendererProperties & {
+  block: ContentLeafBlock
+  path: string
+  presentationPlacement?: 'block' | 'tab'
+}) {
+  return (await resolveContentLeafBlock(properties)).content
+}
+
+async function resolveContentLeafBlock({
   block,
   document,
   path,
@@ -368,14 +423,17 @@ export async function ContentLeafBlockRenderer({
   block: ContentLeafBlock
   path: string
   presentationPlacement?: 'block' | 'tab'
-}) {
+}): Promise<ContentBlockResolution> {
   if (block.blockType === 'heading') {
-    return (
-      <ContentHeading
-        appearance={pathname === '/' ? 'homeSection' : 'default'}
-        heading={normalizeContentHeading(block as ContentHeadingData)}
-      />
-    )
+    return {
+      content: (
+        <ContentHeading
+          appearance={pathname === '/' ? 'homeSection' : 'default'}
+          heading={normalizeContentHeading(block as ContentHeadingData)}
+        />
+      ),
+      hasEmptyFilterBlock: false,
+    }
   }
 
   if (block.blockType === 'actionLinks') {
@@ -384,48 +442,57 @@ export async function ContentLeafBlockRenderer({
       siteContactEmail: siteSettings.contactEmail,
     })
     if (!items.length) {
-      return null
+      return { content: null, hasEmptyFilterBlock: false }
     }
 
-    return (
-      <ul
-        className={`actionLinks actionLinks--${block.layout ?? 'inline'} actionLinks--align-${block.alignment ?? 'start'}`}
-      >
-        {items.map((item, itemIndex) => (
-          <li key={`${item.link.href}-${itemIndex}`}>
-            <PresentedLink item={item} />
-          </li>
-        ))}
-      </ul>
-    )
+    return {
+      content: (
+        <ul
+          className={`actionLinks actionLinks--${block.layout ?? 'inline'} actionLinks--align-${block.alignment ?? 'start'}`}
+        >
+          {items.map((item, itemIndex) => (
+            <li key={`${item.link.href}-${itemIndex}`}>
+              <PresentedLink item={item} />
+            </li>
+          ))}
+        </ul>
+      ),
+      hasEmptyFilterBlock: false,
+    }
   }
 
   if (block.blockType === 'card') {
-    return <CardBlockSection block={block} />
+    return {
+      content: <CardBlockSection block={block} />,
+      hasEmptyFilterBlock: false,
+    }
   }
 
-  const content = await renderPresentedLeafBlock({
+  const resolution = await resolvePresentedLeafBlock({
     block,
     document,
     path,
     pathname,
     searchParams,
   })
-  if (!content) {
-    return null
+  if (!resolution.content) {
+    return resolution
   }
 
-  return (
-    <ContentPresentation
-      placement={presentationPlacement}
-      presentation={normalizeContentPresentation(block as ContentPresentationData)}
-    >
-      {content}
-    </ContentPresentation>
-  )
+  return {
+    content: (
+      <ContentPresentation
+        placement={presentationPlacement}
+        presentation={normalizeContentPresentation(block as ContentPresentationData)}
+      >
+        {resolution.content}
+      </ContentPresentation>
+    ),
+    hasEmptyFilterBlock: resolution.hasEmptyFilterBlock,
+  }
 }
 
-async function renderPresentedLeafBlock({
+async function resolvePresentedLeafBlock({
   block,
   document,
   path,
@@ -434,43 +501,68 @@ async function renderPresentedLeafBlock({
 }: ContentRendererProperties & {
   block: PresentedContentLeafBlock
   path: string
-}): Promise<ReactNode> {
+}): Promise<ContentBlockResolution> {
   switch (block.blockType) {
     case 'richText':
-      return (
-        <CmsRichText
-          className={`richText richText--${block.textStyle ?? 'default'}`}
-          data={block.content}
-        />
-      )
+      return {
+        content: (
+          <CmsRichText
+            className={`richText richText--${block.textStyle ?? 'default'}`}
+            data={block.content}
+          />
+        ),
+        hasEmptyFilterBlock: false,
+      }
     case 'memberProfiles':
-      return MemberProfilesSection({ block })
+      return { content: await MemberProfilesSection({ block }), hasEmptyFilterBlock: false }
     case 'mediaGallery':
-    case 'attachments':
-      return MediaBlockSection({
+    case 'attachments': {
+      const resolution = await resolveMediaBlockSection({
         block,
         blockPath: path,
         pathname,
         searchParams,
       })
+      return createFilterBlockResolution(block.blockType, resolution)
+    }
     case 'documents':
-      return DocumentBlockSection({
-        block,
-        blockPath: path,
-        pathname,
-        searchParams,
-      })
-    case 'listing':
-      return ListingBlockSection({
+      return {
+        content: await DocumentBlockSection({
+          block,
+          blockPath: path,
+          pathname,
+          searchParams,
+        }),
+        hasEmptyFilterBlock: false,
+      }
+    case 'listing': {
+      const resolution = await resolveListingBlockSection({
         block,
         blockPath: path,
         document,
         pathname,
         searchParams,
       })
-    case 'carousel':
-      return CarouselBlockSection({ block, document })
+      return createFilterBlockResolution(block.blockType, resolution)
+    }
+    case 'carousel': {
+      const resolution = await resolveCarouselBlockSection({ block, document })
+      return createFilterBlockResolution(block.blockType, resolution)
+    }
     case 'contentCalendar':
-      return ContentCalendarBlockSection({ block })
+      return {
+        content: await ContentCalendarBlockSection({ block }),
+        hasEmptyFilterBlock: false,
+      }
+  }
+}
+
+function createFilterBlockResolution(
+  blockType: string,
+  resolution: { content: ReactNode; isEmpty: boolean },
+): ContentBlockResolution {
+  return {
+    content: resolution.content,
+    hasEmptyFilterBlock: isSectionGroupEmptyAwareBlockType(blockType) && resolution.isEmpty,
   }
 }

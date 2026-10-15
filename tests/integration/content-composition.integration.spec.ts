@@ -123,6 +123,7 @@ describe('content composition integration', () => {
         layout: [
           {
             blockType: 'sectionGroup',
+            emptyChildBehavior: 'hideGroup',
             frame: 'outline',
             sections: [
               {
@@ -188,6 +189,7 @@ describe('content composition integration', () => {
     if (sectionGroup?.blockType !== 'sectionGroup') throw new Error('Missing section group')
 
     expect(sectionGroup).toMatchObject({
+      emptyChildBehavior: 'hideGroup',
       frame: 'outline',
       surface: 'default',
     })
@@ -237,7 +239,10 @@ describe('content composition integration', () => {
       overrideAccess: true,
       where: { parent: { equals: page.id } },
     })
-    expect(versions.docs[0]?.version.layout[0]).toMatchObject({ blockType: 'sectionGroup' })
+    expect(versions.docs[0]?.version.layout[0]).toMatchObject({
+      blockType: 'sectionGroup',
+      emptyChildBehavior: 'hideGroup',
+    })
   })
 
   it('rejects a document used as a surface image through Local API', async () => {

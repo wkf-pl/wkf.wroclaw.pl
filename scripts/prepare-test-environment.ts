@@ -40,7 +40,15 @@ export async function prepareFreshTestSchema({
 
 async function main(): Promise<void> {
   loadIntegrationTestEnvironment()
-  await runCommand('docker', ['compose', 'up', '--wait', 'postgres-test', 'azurite'])
+  await runCommand('docker', [
+    'compose',
+    '--profile',
+    'test',
+    'up',
+    '--wait',
+    'postgres-test',
+    'azurite',
+  ])
   await prepareFreshTestSchema({
     expectedMigrationNames: getExpectedMigrationNames(),
     getAppliedMigrationNames,
