@@ -1,3 +1,114 @@
+diff --git a/dist/elements/ArrayAction/index.d.ts b/dist/elements/ArrayAction/index.d.ts
+index 857b93b0dd4c25496f0510c9a6df6312fa34b13c..601964e0203e23a9192bc76a67a1c32e75b58074 100644
+--- a/dist/elements/ArrayAction/index.d.ts
++++ b/dist/elements/ArrayAction/index.d.ts
+@@ -2,7 +2,7 @@ import React from 'react';
+ import './index.scss';
+ export type Props = {
+     addRow: (current: number, blockType?: string) => Promise<void> | void;
+-    copyRow: (index: number) => void;
++    copyRow: (index: number, cut?: boolean) => void;
+     duplicateRow: (current: number) => void;
+     hasMaxRows: boolean;
+     index: number;
+diff --git a/dist/elements/ArrayAction/index.js b/dist/elements/ArrayAction/index.js
+index d6d944c0dea21214266d9c15aa4447e030206093..f562a702e589e0c8820f6018ba0695d23a852b87 100644
+--- a/dist/elements/ArrayAction/index.js
++++ b/dist/elements/ArrayAction/index.js
+@@ -3,8 +3,6 @@
+ import { c as _c } from "react/compiler-runtime";
+ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+-import React from 'react';
+ import { ChevronIcon } from '../../icons/Chevron/index.js';
+-import { CopyIcon } from '../../icons/Copy/index.js';
+ import { MoreIcon } from '../../icons/More/index.js';
+ import { PlusIcon } from '../../icons/Plus/index.js';
+ import { XIcon } from '../../icons/X/index.js';
+@@ -12,6 +10,21 @@ import { useTranslation } from '../../providers/Translation/index.js';
+ import { ClipboardActionLabel } from '../ClipboardAction/ClipboardActionLabel.js';
+ import './index.scss';
+ import { Popup, PopupList } from '../Popup/index.js';
++const ScissorsIcon = () => /*#__PURE__*/_jsx("svg", {
++  className: "icon icon--scissors",
++  fill: "none",
++  height: 20,
++  viewBox: "0 0 20 20",
++  width: 20,
++  xmlns: "http://www.w3.org/2000/svg",
++  children: /*#__PURE__*/_jsx("path", {
++    d: "M5.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm0 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM7.3 7.3 17 17M7.3 12.7 17 3",
++    stroke: "currentColor",
++    strokeLinecap: "round",
++    strokeLinejoin: "round",
++    strokeWidth: 1.4
++  })
++});
+ const baseClass = 'array-actions';
+ export const ArrayAction = t0 => {
+   const $ = _c(12);
+@@ -65,22 +78,20 @@ export const ArrayAction = t0 => {
+               className: `${baseClass}__action-chevron`,
+               children: _jsx(ChevronIcon, {})
+             }), t("general:moveDown")]
+-          }), !hasMaxRows && _jsxs(React.Fragment, {
+-            children: [_jsxs(PopupList.Button, {
+-              className: `${baseClass}__action ${baseClass}__add`,
+-              onClick: () => {
+-                addRow(index + 1);
+-                close();
+-              },
+-              children: [_jsx(PlusIcon, {}), t("general:addBelow")]
+-            }), _jsxs(PopupList.Button, {
+-              className: `${baseClass}__action ${baseClass}__duplicate`,
+-              onClick: () => {
+-                duplicateRow(index);
+-                close();
+-              },
+-              children: [_jsx(CopyIcon, {}), t("general:duplicate")]
+-            })]
++          }), !hasMaxRows && _jsxs(PopupList.Button, {
++            className: `${baseClass}__action ${baseClass}__add`,
++            onClick: () => {
++              addRow(index + 1);
++              close();
++            },
++            children: [_jsx(PlusIcon, {}), t("general:addBelow")]
++          }), _jsxs(PopupList.Button, {
++            className: `${baseClass}__action ${baseClass}__cut`,
++            onClick: () => {
++              copyRow(index, true);
++              close();
++            },
++            children: [_jsx(ScissorsIcon, {}), "Wytnij wiersz"]
+           }), _jsx(PopupList.Button, {
+             className: `${baseClass}__action ${baseClass}__copy`,
+             onClick: () => {
+diff --git a/dist/elements/ClipboardAction/clipboardUtilities.js b/dist/elements/ClipboardAction/clipboardUtilities.js
+index cdfcb0545589af20d5c95363ee0ad172d113d627..f28aaecc387809425ccb7a1faa0f59cd3af88430 100644
+--- a/dist/elements/ClipboardAction/clipboardUtilities.js
++++ b/dist/elements/ClipboardAction/clipboardUtilities.js
+@@ -48,6 +48,20 @@ export function clipboardPaste({
+     return t('error:invalidClipboardData');
+   }
+   onPaste(dataToPaste);
++  if (dataToPaste.cut === true) {
++    try {
++      localStorage.setItem(localStorageClipboardKey, JSON.stringify({
++        ...dataToPaste,
++        cut: false
++      }));
++    } catch (_err) {
++      try {
++        localStorage.removeItem(localStorageClipboardKey);
++      } catch (_removeErr) {
++        // The paste has already succeeded, so storage cleanup must not turn it into an error.
++      }
++    }
++  }
+   return true;
+ }
+ //# sourceMappingURL=clipboardUtilities.js.map
+\ No newline at end of file
 diff --git a/dist/elements/ClipboardAction/isClipboardDataValid.js b/dist/elements/ClipboardAction/isClipboardDataValid.js
 index ea14aa7a4d6c737e04280ce3923b66075ee61a55..d8ce18e8d3543c382093066e3adac1ce6f9fb023 100644
 --- a/dist/elements/ClipboardAction/isClipboardDataValid.js
@@ -23,20 +134,70 @@ index ea14aa7a4d6c737e04280ce3923b66075ee61a55..d8ce18e8d3543c382093066e3adac1ce
      });
    } else {
 diff --git a/dist/elements/ClipboardAction/mergeFormStateFromClipboard.js b/dist/elements/ClipboardAction/mergeFormStateFromClipboard.js
-index 1f81629d77f976c88253e9707be5dcd30fb75b95..de2798e6d20f12cf8e8b33e4c45fab3d2b387381 100644
+index 1f81629d77f976c88253e9707be5dcd30fb75b95..c4b4b9460d8b2ccfc651b11dad31618fb6a810f1 100644
 --- a/dist/elements/ClipboardAction/mergeFormStateFromClipboard.js
 +++ b/dist/elements/ClipboardAction/mergeFormStateFromClipboard.js
-@@ -55,6 +55,9 @@ export function mergeFormStateFromClipboard({
+@@ -7,6 +7,45 @@ const ObjectId = 'default' in ObjectIdImport ? ObjectIdImport.default : ObjectId
+ function isStrictPathPrefix(key, prefix) {
+   return key === prefix || key.startsWith(`${prefix}.`);
+ }
++function removeFormStateRow(formState, path, rowIndex) {
++  const remainingFields = {};
++  const rowStates = [];
++  for (const [fieldPath, fieldState] of Object.entries(formState)) {
++    if (fieldPath.indexOf(`${path}.`) !== 0) {
++      remainingFields[fieldPath] = fieldState;
++      continue;
++    }
++    const [fieldRowIndex] = fieldPath.replace(`${path}.`, '').split('.');
++    if (!rowStates[fieldRowIndex]) {
++      rowStates[fieldRowIndex] = {};
++    }
++    const relativeFieldPath = fieldPath.replace(`${path}.${String(fieldRowIndex)}.`, '');
++    rowStates[fieldRowIndex][relativeFieldPath] = {
++      ...fieldState
++    };
++  }
++  rowStates.splice(rowIndex, 1);
++  const rowMetadata = [...(formState[path]?.rows || [])];
++  rowMetadata.splice(rowIndex, 1);
++  const flattenedRowStates = {};
++  rowStates.forEach((rowState, currentRowIndex) => {
++    for (const [relativeFieldPath, fieldState] of Object.entries(rowState)) {
++      flattenedRowStates[`${path}.${currentRowIndex}.${relativeFieldPath}`] = {
++        ...fieldState
++      };
++    }
++  });
++  return {
++    ...remainingFields,
++    [path]: {
++      ...formState[path],
++      disableFormData: rowStates.length > 0,
++      rows: rowMetadata,
++      value: rowStates.length
++    },
++    ...flattenedRowStates
++  };
++}
+ export function reduceFormStateByPath({
+   formState,
+   path,
+@@ -55,6 +94,13 @@ export function mergeFormStateFromClipboard({
    const pasteIntoField = typeof rowIndex !== 'number';
    const fromRowToField = !copyFromField && pasteIntoField;
    const isArray = typeFromClipboard === 'array';
 +  const existingTargetRows = Array.isArray(formState[path]?.rows) ? formState[path].rows : [];
 +  const appendedRowIndex = existingTargetRows.length;
-+  const sourceRow = typeof rowIndexFromClipboard === 'number' && Array.isArray(formState[pathFromClipboard]?.rows) ? formState[pathFromClipboard].rows[rowIndexFromClipboard] : undefined;
++  const sourceRowPath = typeof rowIndexFromClipboard === 'number' ? `${pathFromClipboard}.${rowIndexFromClipboard}` : undefined;
++  const sourceRowID = sourceRowPath ? dataFromClipboard[`${sourceRowPath}.id`]?.value : undefined;
++  const sourceRows = Array.isArray(formState[pathFromClipboard]?.rows) ? formState[pathFromClipboard].rows : [];
++  const currentSourceRowIndex = sourceRowID == null ? -1 : sourceRows.findIndex(row => row?.id === sourceRowID);
++  const sourceRow = currentSourceRowIndex >= 0 ? sourceRows[currentSourceRowIndex] : typeof rowIndexFromClipboard === 'number' ? sourceRows[rowIndexFromClipboard] : undefined;
    let pathToReplace;
    if (copyFromField && pasteIntoField) {
      pathToReplace = pathFromClipboard;
-@@ -67,28 +70,29 @@ export function mergeFormStateFromClipboard({
+@@ -67,28 +113,29 @@ export function mergeFormStateFromClipboard({
    if (!pasteIntoField) {
      targetSegment = `${path}.${rowIndex}`;
    } else if (fromRowToField) {
@@ -70,17 +231,17 @@ index 1f81629d77f976c88253e9707be5dcd30fb75b95..de2798e6d20f12cf8e8b33e4c45fab3d
 +      appendedRow.customComponents = {
 +        RowLabel: sourceRow.customComponents.RowLabel
 +      };
-+    }
+     }
 +    if (!isArray && typeof blockTypeFromClipboard === 'string') {
 +      appendedRow.blockType = blockTypeFromClipboard;
-     }
++    }
 +    formState[path].rows = [...existingTargetRows, appendedRow];
 +    formState[path].value = formState[path].rows.length;
 +    formState[path].disableFormData = true;
    }
    // Map to track old IDs to new IDs for regenerating nested IDs
    const idReplacements = new Map();
-@@ -103,20 +107,17 @@ export function mergeFormStateFromClipboard({
+@@ -103,20 +150,17 @@ export function mergeFormStateFromClipboard({
      const customComponents = isArray ? formState[newPath]?.customComponents : undefined;
      const validate = isArray ? formState[newPath]?.validate : undefined;
      // If this is an ID field, generate a new ID to prevent duplicates
@@ -112,3 +273,119 @@ index 1f81629d77f976c88253e9707be5dcd30fb75b95..de2798e6d20f12cf8e8b33e4c45fab3d
      }
      formState[newPath] = {
        customComponents,
+@@ -152,6 +196,13 @@ export function mergeFormStateFromClipboard({
+       }
+     }
+   }
++  const isCut = clipboardData.cut === true;
++  const isPastingOntoSourceRow = !pasteIntoField && path === pathFromClipboard && rowIndex === currentSourceRowIndex;
++  const currentSourceRowPath = currentSourceRowIndex >= 0 ? `${pathFromClipboard}.${currentSourceRowIndex}` : undefined;
++  const isPastingIntoSourceRow = currentSourceRowPath ? isStrictPathPrefix(path, currentSourceRowPath) : false;
++  if (isCut && currentSourceRowIndex >= 0 && !isPastingOntoSourceRow && !isPastingIntoSourceRow) {
++    return removeFormStateRow(formState, pathFromClipboard, currentSourceRowIndex);
++  }
+   return formState;
+ }
+ //# sourceMappingURL=mergeFormStateFromClipboard.js.map
+\ No newline at end of file
+diff --git a/dist/elements/ClipboardAction/types.d.ts b/dist/elements/ClipboardAction/types.d.ts
+index c6e7ec63689fa23757b57c2c4afd097fa144264b..cfc770434439e40e83317a992bbb2a375ab7bcf0 100644
+--- a/dist/elements/ClipboardAction/types.d.ts
++++ b/dist/elements/ClipboardAction/types.d.ts
+@@ -15,6 +15,7 @@ export type ClipboardCopyFieldsData = {
+     type: 'array';
+ };
+ export type ClipboardCopyData = {
++    cut?: boolean;
+     path: string;
+     rowIndex?: number;
+ } & (ClipboardCopyBlocksData | ClipboardCopyFieldsData);
+@@ -23,6 +24,7 @@ export type ClipboardCopyActionArgs = {
+     t: TFunction;
+ } & ClipboardCopyData;
+ export type ClipboardPasteData = {
++    cut?: boolean;
+     data: FormStateWithoutComponents;
+     path: string;
+     rowIndex?: number;
+diff --git a/dist/fields/Array/ArrayRow.d.ts b/dist/fields/Array/ArrayRow.d.ts
+index 08c57499c75b131928219aefa1821972e415f3d4..2c8d02078e70b9c56be358632270d7df0807c6a8 100644
+--- a/dist/fields/Array/ArrayRow.d.ts
++++ b/dist/fields/Array/ArrayRow.d.ts
+@@ -4,7 +4,7 @@ import type { UseDraggableSortableReturn } from '../../elements/DraggableSortabl
+ import './index.scss';
+ type ArrayRowProps = {
+     readonly addRow: (rowIndex: number) => Promise<void> | void;
+-    readonly copyRow: (rowIndex: number) => void;
++    readonly copyRow: (rowIndex: number, cut?: boolean) => void;
+     readonly CustomRowLabel?: React.ReactNode;
+     readonly duplicateRow: (rowIndex: number) => void;
+     readonly errorCount: number;
+diff --git a/dist/fields/Array/index.js b/dist/fields/Array/index.js
+index 8f770a0be4ee51d76b5a5dd48d7459b2dada7c28..2cb917531de383a644bbc4eb583a6c57da53f029 100644
+--- a/dist/fields/Array/index.js
++++ b/dist/fields/Array/index.js
+@@ -218,7 +218,7 @@ export const ArrayFieldComponent = props => {
+       collapsed: collapsedIDs_0
+     });
+   }, [dispatchFields, path, rows, setDocFieldPreferences]);
+-  const copyRow = useCallback(rowIndex_2 => {
++  const copyRow = useCallback((rowIndex_2, cut = false) => {
+     const formState = {
+       ...getFields()
+     };
+@@ -230,6 +230,7 @@ export const ArrayFieldComponent = props => {
+         path,
+         rowIndex: rowIndex_2
+       }),
++      cut,
+       path,
+       rowIndex: rowIndex_2,
+       t
+diff --git a/dist/fields/Blocks/BlockRow.d.ts b/dist/fields/Blocks/BlockRow.d.ts
+index 824a3b7fed5d20f9e33f241bf70a980f328eee5d..4763ec7541fd3f34e27e73fa29da384109369759 100644
+--- a/dist/fields/Blocks/BlockRow.d.ts
++++ b/dist/fields/Blocks/BlockRow.d.ts
+@@ -5,7 +5,7 @@ type BlocksFieldProps = {
+     addRow: (rowIndex: number, blockType: string) => Promise<void> | void;
+     block: ClientBlock;
+     blocks: (ClientBlock | string)[] | ClientBlock[];
+-    copyRow: (rowIndex: number) => void;
++    copyRow: (rowIndex: number, cut?: boolean) => void;
+     duplicateRow: (rowIndex: number) => void;
+     errorCount: number;
+     fields: ClientField[];
+diff --git a/dist/fields/Blocks/RowActions.d.ts b/dist/fields/Blocks/RowActions.d.ts
+index 164ee6b80bd95f9956b5b329993b7556d33043a8..5136ac3b036626e30d2fea7c9c121402b4c9660a 100644
+--- a/dist/fields/Blocks/RowActions.d.ts
++++ b/dist/fields/Blocks/RowActions.d.ts
+@@ -4,7 +4,7 @@ export declare const RowActions: React.FC<{
+     readonly addRow: (rowIndex: number, blockType: string) => Promise<void> | void;
+     readonly blocks: (ClientBlock | string)[];
+     readonly blockType: string;
+-    readonly copyRow: (rowIndex: number) => void;
++    readonly copyRow: (rowIndex: number, cut?: boolean) => void;
+     readonly duplicateRow: (rowIndex: number, blockType: string) => void;
+     readonly fields: ClientField[];
+     readonly hasMaxRows?: boolean;
+diff --git a/dist/fields/Blocks/index.js b/dist/fields/Blocks/index.js
+index d6c27b585a6ba1452793f150a04d10eeabd5fc78..ed1f36d1d0fc3840cab9c8122bd4d9ac101e56e4 100644
+--- a/dist/fields/Blocks/index.js
++++ b/dist/fields/Blocks/index.js
+@@ -236,7 +236,7 @@ const BlocksFieldComponent = props => {
+       collapsed: collapsedIDs_0
+     });
+   }, [dispatchFields, path, rows, setDocFieldPreferences]);
+-  const copyRow = useCallback(rowIndex_2 => {
++  const copyRow = useCallback((rowIndex_2, cut = false) => {
+     const clipboardResult = clipboardCopy({
+       type,
+       blocks: clientBlocks,
+@@ -247,6 +247,7 @@ const BlocksFieldComponent = props => {
+         path,
+         rowIndex: rowIndex_2
+       }),
++      cut,
+       path,
+       rowIndex: rowIndex_2,
+       t
