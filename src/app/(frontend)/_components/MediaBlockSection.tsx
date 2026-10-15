@@ -16,7 +16,11 @@ type MediaBlockSectionProperties = {
   searchParams: Record<string, string | string[] | undefined>
 }
 
-export async function MediaBlockSection({
+export async function MediaBlockSection(properties: MediaBlockSectionProperties) {
+  return (await resolveMediaBlockSection(properties)).content
+}
+
+export async function resolveMediaBlockSection({
   block,
   blockPath,
   pathname,
@@ -46,28 +50,31 @@ export async function MediaBlockSection({
     redirect(createPaginatedURL(pathname, searchParams, parameterName, result.totalPages))
   }
 
-  return (
-    <div className={`mediaBlock mediaBlock-${kind}`}>
-      {result.items.length ? (
-        kind === 'mediaGallery' ? (
-          <MediaGallery items={result.items} view={block.view} />
+  return {
+    content: (
+      <div className={`mediaBlock mediaBlock-${kind}`}>
+        {result.items.length ? (
+          kind === 'mediaGallery' ? (
+            <MediaGallery items={result.items} view={block.view} />
+          ) : (
+            <AttachmentList items={result.items} view={block.view} />
+          )
         ) : (
-          <AttachmentList items={result.items} view={block.view} />
-        )
-      ) : (
-        <p className="emptyState">{block.emptyMessage || getDefaultEmptyMessage(kind)}</p>
-      )}
-      {block.pagination ? (
-        <ContentPagination
-          currentPage={result.page}
-          parameterName={parameterName}
-          pathname={pathname}
-          searchParams={searchParams}
-          totalPages={result.totalPages}
-        />
-      ) : null}
-    </div>
-  )
+          <p className="emptyState">{block.emptyMessage || getDefaultEmptyMessage(kind)}</p>
+        )}
+        {block.pagination ? (
+          <ContentPagination
+            currentPage={result.page}
+            parameterName={parameterName}
+            pathname={pathname}
+            searchParams={searchParams}
+            totalPages={result.totalPages}
+          />
+        ) : null}
+      </div>
+    ),
+    isEmpty: result.items.length === 0,
+  }
 }
 
 function getManualMedia(block: AttachmentsBlock | MediaGalleryBlock): (Media | number)[] {

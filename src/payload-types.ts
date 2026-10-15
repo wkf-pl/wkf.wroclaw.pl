@@ -1723,6 +1723,10 @@ export interface SectionGroupBlock {
   surfaceImage?: (number | null) | Media;
   surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
   surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  /**
+   * Dotyczy Listingu, Galerii mediów, Karuzeli i Załączników, również wewnątrz układu kolumnowego.
+   */
+  emptyChildBehavior?: ('show' | 'hideGroup') | null;
   sections: {
     frame?: ('none' | 'outline') | null;
     surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
@@ -2785,6 +2789,7 @@ export interface SectionGroupBlockSelect<T extends boolean = true> {
   surfaceImage?: T;
   surfaceHorizontalPosition?: T;
   surfaceVerticalPosition?: T;
+  emptyChildBehavior?: T;
   sections?:
     | T
     | {

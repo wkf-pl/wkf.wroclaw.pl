@@ -22,19 +22,25 @@ import { ContentPagination } from './ContentPagination'
 
 type ContentDocument = Event | EventCycle | HomepageSection | Page | Partner | Post
 
-export async function ListingBlockSection({
-  block,
-  blockPath,
-  document,
-  pathname,
-  searchParams,
-}: {
+type ListingBlockSectionProperties = {
   block: ListingBlock
   blockPath: string
   document: ContentDocument
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
-}) {
+}
+
+export async function ListingBlockSection(properties: ListingBlockSectionProperties) {
+  return (await resolveListingBlockSection(properties)).content
+}
+
+export async function resolveListingBlockSection({
+  block,
+  blockPath,
+  document,
+  pathname,
+  searchParams,
+}: ListingBlockSectionProperties) {
   const { parameterName, requestedPage } = resolveBlockPagination({
     blockId: block.id,
     blockPath,
@@ -64,20 +70,23 @@ export async function ListingBlockSection({
     redirect(createPaginatedURL(pathname, searchParams, parameterName, result.totalPages))
   }
 
-  return (
-    <div className="listingBlock">
-      <ContentList emptyMessage={block.emptyMessage} items={result.items} view={block.view} />
-      {block.pagination ? (
-        <ContentPagination
-          currentPage={result.page}
-          parameterName={parameterName}
-          pathname={pathname}
-          searchParams={searchParams}
-          totalPages={result.totalPages}
-        />
-      ) : null}
-    </div>
-  )
+  return {
+    content: (
+      <div className="listingBlock">
+        <ContentList emptyMessage={block.emptyMessage} items={result.items} view={block.view} />
+        {block.pagination ? (
+          <ContentPagination
+            currentPage={result.page}
+            parameterName={parameterName}
+            pathname={pathname}
+            searchParams={searchParams}
+            totalPages={result.totalPages}
+          />
+        ) : null}
+      </div>
+    ),
+    isEmpty: result.items.length === 0,
+  }
 }
 
 function getManualItems(block: ListingBlock): ManualContentReference[] {

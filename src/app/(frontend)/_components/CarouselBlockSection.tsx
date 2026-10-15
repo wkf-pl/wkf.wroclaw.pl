@@ -18,13 +18,19 @@ import { ContentCarousel } from './ContentCarousel'
 
 type ContentDocument = Event | EventCycle | HomepageSection | Page | Partner | Post
 
-export async function CarouselBlockSection({
-  block,
-  document,
-}: {
+type CarouselBlockSectionProperties = {
   block: CarouselBlock
   document: ContentDocument
-}) {
+}
+
+export async function CarouselBlockSection(properties: CarouselBlockSectionProperties) {
+  return (await resolveCarouselBlockSection(properties)).content
+}
+
+export async function resolveCarouselBlockSection({
+  block,
+  document,
+}: CarouselBlockSectionProperties) {
   const result = await findPublicContent({
     categoryId: getRelationshipId(block.category),
     eventCycleId:
@@ -42,7 +48,10 @@ export async function CarouselBlockSection({
     tagId: getRelationshipId(block.tag),
   })
 
-  return <ContentCarousel emptyMessage={block.emptyMessage} items={result.items} />
+  return {
+    content: <ContentCarousel emptyMessage={block.emptyMessage} items={result.items} />,
+    isEmpty: result.items.length === 0,
+  }
 }
 
 function getCarouselParentId(block: CarouselBlock, document: ContentDocument): number | undefined {

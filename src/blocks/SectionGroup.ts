@@ -31,6 +31,22 @@ export const SectionGroupBlock: Block = {
       fields: [
         ...createContentPresentationFields(),
         {
+          name: 'emptyChildBehavior',
+          type: 'select',
+          admin: {
+            description:
+              'Dotyczy Listingu, Galerii mediów, Karuzeli i Załączników, również wewnątrz układu kolumnowego.',
+            isClearable: false,
+          },
+          dbName: 'empty_child',
+          defaultValue: 'show',
+          label: 'Gdy blok zasilany treścią jest pusty',
+          options: [
+            { label: 'Pokaż grupę', value: 'show' },
+            { label: 'Ukryj całą grupę', value: 'hideGroup' },
+          ],
+        },
+        {
           name: 'sections',
           type: 'array',
           fields: [
