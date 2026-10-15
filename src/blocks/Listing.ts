@@ -28,21 +28,27 @@ export const validateManualListingItems: Validate<unknown, unknown, ListingSibli
     return 'Wybierz co najmniej jedną treść.'
   }
 
-  const itemKeys = value.flatMap((row) => {
+  const itemKeys = value.map((row) => {
     if (!row || typeof row !== 'object' || !('item' in row)) {
-      return []
+      return null
     }
 
     const item = row.item
     if (!item || typeof item !== 'object' || !('relationTo' in item) || !('value' in item)) {
-      return []
+      return null
     }
 
     const id = getFormRelationshipId(item.value)
-    return typeof item.relationTo === 'string' && id !== undefined
-      ? [`${item.relationTo}:${String(id)}`]
-      : []
+    return typeof item.relationTo === 'string' &&
+      listingSources.some((source) => source === item.relationTo) &&
+      id !== undefined
+      ? `${item.relationTo}:${String(id)}`
+      : null
   })
+
+  if (itemKeys.some((itemKey) => itemKey === null)) {
+    return 'Wybierz cel dla każdej treści.'
+  }
 
   return new Set(itemKeys).size === itemKeys.length
     ? true

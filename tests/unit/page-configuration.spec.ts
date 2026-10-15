@@ -459,6 +459,11 @@ describe('page configuration', () => {
       } as never),
     ).toBeTypeOf('string')
     expect(
+      validateManualListingItems([{ item: { relationTo: 'documents' } }], {
+        siblingData: { selectionMode: 'manual' },
+      } as never),
+    ).toBe('Wybierz cel dla każdej treści.')
+    expect(
       validateManualListingItems(
         [
           { item: { relationTo: 'pages', value: 7 } },

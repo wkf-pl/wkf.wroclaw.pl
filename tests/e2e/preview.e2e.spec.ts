@@ -7,7 +7,9 @@ import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
 const draftSlug = 'e2e-draft-preview'
+const invalidDraftSlug = 'e2e-invalid-draft-preview'
 const navigationTimeout = 20_000
+let invalidDraftPageID: number | string
 let draftPageID: number | string
 let draftPostID: number | string
 let payload: Payload
@@ -17,7 +19,7 @@ test.beforeAll(async () => {
   await payload.delete({
     collection: 'pages',
     overrideAccess: true,
-    where: { slug: { equals: draftSlug } },
+    where: { slug: { in: [draftSlug, invalidDraftSlug] } },
   })
   await payload.delete({
     collection: 'posts',
@@ -43,7 +45,13 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       author: editor.id,
-      layout: [],
+      layout: [
+        {
+          blockType: 'heading',
+          heading: 'Treść poprawnego szkicu strony',
+          headingLevel: 'h2',
+        },
+      ],
       slug: draftSlug,
       title: 'Szkic widoczny wyłącznie w podglądzie',
     },
@@ -52,12 +60,43 @@ test.beforeAll(async () => {
   })
   draftPageID = draftPage.id
 
+  const invalidDraftPage = await payload.create({
+    collection: 'pages',
+    data: {
+      author: editor.id,
+      layout: [
+        {
+          blockType: 'listing',
+          eventTimeFilter: 'all',
+          pageSize: 12,
+          pagination: true,
+          parentFilter: 'none',
+          selectionMode: 'filters',
+          sort: 'newest',
+          sources: ['pages'],
+          view: 'cards',
+        },
+      ],
+      slug: invalidDraftSlug,
+      title: 'Szkic z walidacją przed podglądem',
+    },
+    draft: true,
+    overrideAccess: true,
+  })
+  invalidDraftPageID = invalidDraftPage.id
+
   const draftPost = await payload.create({
     collection: 'posts',
     data: {
       author: editor.id,
       excerpt: 'Streszczenie testowego szkicu wpisu.',
-      layout: [],
+      layout: [
+        {
+          blockType: 'heading',
+          heading: 'Treść poprawnego szkicu wpisu',
+          headingLevel: 'h2',
+        },
+      ],
       slug: draftSlug,
       title: 'Szkic wpisu widoczny wyłącznie w podglądzie',
     },
@@ -72,7 +111,7 @@ test.afterAll(async () => {
     await payload.delete({
       collection: 'pages',
       overrideAccess: true,
-      where: { slug: { equals: draftSlug } },
+      where: { slug: { in: [draftSlug, invalidDraftSlug] } },
     })
     await payload.delete({
       collection: 'posts',
@@ -142,4 +181,41 @@ test('saves a draft before opening it from the admin preview button and can leav
       name: 'Szkic wpisu widoczny wyłącznie w podglądzie',
     }),
   ).toBeVisible()
+})
+
+test('validates required manual Listing targets before opening draft preview', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto(`/admin/collections/pages/${invalidDraftPageID}`)
+
+  const selectionModeField = page.locator('#field-layout__0__selectionMode')
+  await selectionModeField.getByRole('combobox').click()
+  await page.locator('.rs__menu').getByText('Ręczny', { exact: true }).click()
+
+  const itemsField = page.locator('#field-layout__0__items')
+  await itemsField.getByRole('button', { name: 'Dodaj Treść' }).click()
+
+  const typeLabel = page.locator('label').filter({ hasText: 'Typ treści' })
+  const targetLabel = page.locator('label').filter({ hasText: 'Cel' })
+  const typeField = typeLabel.locator('xpath=ancestor::div[contains(@class, "field-type")][1]')
+  const targetField = targetLabel.locator('xpath=ancestor::div[contains(@class, "field-type")][1]')
+  await typeField.locator('.rs__control').click()
+  await page.locator('.rs__menu').getByText('Dokument', { exact: true }).click()
+
+  const previewRequests: string[] = []
+  page.on('request', (request) => {
+    if (
+      request.method() === 'PATCH' &&
+      request.url().includes(`/api/pages/${invalidDraftPageID}`)
+    ) {
+      previewRequests.push(request.url())
+    }
+  })
+  const openPageCount = page.context().pages().length
+
+  await page.locator('#preview-button').click()
+
+  await expect(targetField.locator('.field-error')).toBeVisible()
+  await expect(page.locator('#preview-button')).toHaveText('Podgląd')
+  await expect.poll(() => page.context().pages().length).toBe(openPageCount)
+  expect(previewRequests).toEqual([])
 })
