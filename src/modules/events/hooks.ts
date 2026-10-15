@@ -42,19 +42,6 @@ export const applyEventCycleDefaults: CollectionBeforeValidateHook = async ({
   })
   data = mergeEventCycleDefaults(data, cycle)
 
-  if (
-    data.startAt &&
-    !data.endAt &&
-    typeof cycle.eventDefaults.defaultDurationMinutes === 'number'
-  ) {
-    const start = new Date(String(data.startAt))
-    if (!Number.isNaN(start.getTime())) {
-      data.endAt = new Date(
-        start.getTime() + cycle.eventDefaults.defaultDurationMinutes * 60_000,
-      ).toISOString()
-    }
-  }
-
   return data
 }
 

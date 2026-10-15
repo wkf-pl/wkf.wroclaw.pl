@@ -2,12 +2,15 @@ import type { Field } from 'payload'
 
 type TaxonomyFieldsOptions = {
   position?: 'main' | 'sidebar'
+  width?: string
 }
 
 export function createTaxonomyFields({
   position = 'sidebar',
+  width,
 }: TaxonomyFieldsOptions = {}): Field[] {
   const adminPosition = position === 'sidebar' ? { position: 'sidebar' as const } : {}
+  const adminWidth = width ? { width } : {}
 
   return [
     {
@@ -15,6 +18,7 @@ export function createTaxonomyFields({
       type: 'relationship',
       admin: {
         ...adminPosition,
+        ...adminWidth,
         placeholder: '<brak>',
       },
       label: 'Kategoria',
@@ -25,6 +29,7 @@ export function createTaxonomyFields({
       type: 'relationship',
       admin: {
         ...adminPosition,
+        ...adminWidth,
         placeholder: '<brak>',
       },
       hasMany: true,

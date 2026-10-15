@@ -15,11 +15,14 @@ import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/int
 
 const slugs = {
   cancelled: 'integration-cancelled-event',
+  completed: 'integration-completed-event',
   cycle: 'integration-event-cycle',
   cycleEvent: 'integration-cycle-event',
   cycleEventSecond: 'integration-cycle-event-second',
   draft: 'integration-draft-event',
   endpointCycle: 'integration-endpoint-event-cycle',
+  endpointScheduleCycle: 'integration-endpoint-schedule-cycle',
+  endpointSchedulePrevious: 'integration-endpoint-schedule-previous',
   members: 'integration-members-event',
   partner: 'integration-events-partner',
   public: 'integration-public-event',
@@ -100,11 +103,13 @@ async function cleanup() {
       slug: {
         in: [
           slugs.cancelled,
+          slugs.completed,
           slugs.public,
           slugs.members,
           slugs.draft,
           slugs.cycleEvent,
           slugs.cycleEventSecond,
+          slugs.endpointSchedulePrevious,
         ],
       },
     },
@@ -112,7 +117,9 @@ async function cleanup() {
   await payload.delete({
     collection: 'event-cycles',
     overrideAccess: true,
-    where: { slug: { in: [slugs.cycle, slugs.endpointCycle] } },
+    where: {
+      slug: { in: [slugs.cycle, slugs.endpointCycle, slugs.endpointScheduleCycle] },
+    },
   })
   await payload.delete({
     collection: 'partners',
@@ -182,6 +189,35 @@ function eventData(
 }
 
 describe('events integration', () => {
+  it('returns an ended scheduled Event as completed', async () => {
+    const event = await payload.create({
+      collection: 'events',
+      data: {
+        ...eventData(slugs.completed, 'public', 'published'),
+        endAt: '2020-01-01T18:00:00.000Z',
+        startAt: '2020-01-01T16:00:00.000Z',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+
+    expect(event.eventStatus).toBe('completed')
+
+    const rereadEvent = await payload.findByID({
+      collection: 'events',
+      depth: 0,
+      id: event.id,
+      overrideAccess: true,
+    })
+    expect(rereadEvent.eventStatus).toBe('completed')
+
+    const calendarResponse = await getCalendar(
+      new Request('http://localhost/events/calendar.json?month=2020-01'),
+    )
+    const calendarData = (await calendarResponse.json()) as { events: { slug: string }[] }
+    expect(calendarData.events.map(({ slug }) => slug)).toContain(slugs.completed)
+  })
+
   it('enforces collection access in Event creation endpoints', async () => {
     const anonymousCycleResponse = await createEventFromCycleEndpoint.handler(
       createEndpointRequest({ id: -1, user: null }),
@@ -234,6 +270,17 @@ describe('events integration', () => {
       expect(allowedCycleResponse.status).toBe(201)
       const allowedCycleBody = (await allowedCycleResponse.json()) as { doc: { id: number } }
       createdEventIds.push(allowedCycleBody.doc.id)
+      const createdCycleEvent = await payload.findByID({
+        collection: 'events',
+        depth: 0,
+        id: allowedCycleBody.doc.id,
+        overrideAccess: true,
+      })
+      expect(extractRichTextText(createdCycleEvent.excerpt)).toBe('Endpoint event excerpt')
+      expect(createdCycleEvent.layout).toHaveLength(1)
+      expect(JSON.stringify(createdCycleEvent.layout)).toContain('Integration event content')
+      expect(createdCycleEvent.startAt).toBeNull()
+      expect(createdCycleEvent.endAt).toBeNull()
 
       const deniedNextResponse = await createNextEventEndpoint.handler(
         createEndpointRequest({
@@ -272,6 +319,72 @@ describe('events integration', () => {
       for (const eventId of createdEventIds) {
         await payload.delete({ collection: 'events', id: eventId, overrideAccess: true })
       }
+    }
+  })
+
+  it('calculates the next Cycle Event dates from the latest dated Event', async () => {
+    const cycle = await payload.create({
+      collection: 'event-cycles',
+      data: {
+        _status: 'published',
+        author: author.id,
+        eventDefaults: {
+          capacityMode: 'unlimited',
+          defaultDayCount: 1,
+          defaultEndTime: '22:00',
+          defaultStartTime: '18:00',
+          eventType: 1,
+          excerpt: createRichTextDocument(['Scheduled endpoint event excerpt']),
+          layout: layout(),
+          location: { city: 'Wrocław', country: 'Polska', venueName: 'WKF' },
+          participation: 'public',
+          recurrenceType: 'weekly',
+          recurrenceWeekday: 'tuesday',
+          weekInterval: 2,
+        },
+        excerpt: createRichTextDocument(['Scheduled endpoint integration cycle']),
+        layout: layout(),
+        slug: slugs.endpointScheduleCycle,
+        title: 'Scheduled endpoint integration cycle',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+    const previousEvent = await payload.create({
+      collection: 'events',
+      data: {
+        ...eventData(slugs.endpointSchedulePrevious, 'public', 'published'),
+        cycle: cycle.id,
+        startAt: '2030-03-12T17:00:00.000Z',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+    let createdEventID: number | undefined
+
+    try {
+      const response = await createEventFromCycleEndpoint.handler(
+        createEndpointRequest({ id: cycle.id, user: author }),
+      )
+      expect(response.status).toBe(201)
+      const body = (await response.json()) as { doc: { id: number } }
+      createdEventID = body.doc.id
+      const createdEvent = await payload.findByID({
+        collection: 'events',
+        depth: 0,
+        id: createdEventID,
+        overrideAccess: true,
+      })
+
+      expect(createdEvent.startAt).toBe('2030-03-26T17:00:00.000Z')
+      expect(createdEvent.endAt).toBe('2030-03-26T21:00:00.000Z')
+      expect(JSON.stringify(createdEvent.layout)).toContain('Integration event content')
+    } finally {
+      if (createdEventID) {
+        await payload.delete({ collection: 'events', id: createdEventID, overrideAccess: true })
+      }
+      await payload.delete({ collection: 'events', id: previousEvent.id, overrideAccess: true })
+      await payload.delete({ collection: 'event-cycles', id: cycle.id, overrideAccess: true })
     }
   })
 
@@ -320,7 +433,7 @@ describe('events integration', () => {
       where: { slug: { in: Object.values(slugs) } },
     })
     expect(anonymous.docs.map((event) => event.slug).sort()).toEqual(
-      [slugs.cancelled, slugs.members, slugs.public].sort(),
+      [slugs.cancelled, slugs.completed, slugs.members, slugs.public].sort(),
     )
 
     const publicListing = await findPublicContent({
@@ -333,6 +446,7 @@ describe('events integration', () => {
     })
     expect(publicListing.items.map((item) => item.url)).toContain(`/events/${slugs.public}`)
     expect(publicListing.items.map((item) => item.url)).toContain(`/events/${slugs.members}`)
+    expect(publicListing.items.map((item) => item.url)).not.toContain(`/events/${slugs.completed}`)
 
     const publicPartner = await findPublishedPartnerBySlug(slugs.partner)
     const partnerEvents = await findEventsForPartner(partner.id)

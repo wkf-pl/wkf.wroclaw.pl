@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { RasterIcon } from '@/components/RasterIcon'
 import { createContentMetadata } from '@/modules/content/content-metadata'
 import { extractRichTextText } from '@/modules/content/rich-text'
+import { resolveEventStatus } from '@/modules/events/event-status'
 import { buildGoogleMapsURL } from '@/modules/events/map-embed'
 import { findPostsRelatedToEvent, findPublishedEventBySlug } from '@/modules/events/public-events'
 import { createEventStructuredData } from '@/modules/events/structured-data'
@@ -85,7 +86,12 @@ export default async function EventPage({ params, searchParams }: Properties) {
         collection="events"
         description={extractRichTextText(event.excerpt)}
         document={event}
-        eyebrow={<EventHeroEyebrow eventStatus={event.eventStatus} eventType={event.eventType} />}
+        eyebrow={
+          <EventHeroEyebrow
+            eventStatus={resolveEventStatus(event.eventStatus, event)}
+            eventType={event.eventType}
+          />
+        }
         heroContent={
           cycle ? (
             <nav aria-label="Cykl wydarzenia" className="eventHeroLinks">

@@ -213,7 +213,7 @@ test('applies selected Cycle defaults to an Event form without overwriting value
   await expect(page.getByRole('textbox', { name: 'Funkcja' })).toHaveValue('Osoba prowadząca')
   await expect(page.getByText('Partner: Partner domyślny E2E', { exact: true })).toBeVisible()
   await expect(page.getByText('Link: Informacje o wydarzeniu', { exact: true })).toBeVisible()
-  await expect(page.getByRole('textbox', { name: 'Adres', exact: true })).toHaveValue(
+  await expect(page.locator('#field-externalLinks__0__customAddress')).toHaveValue(
     'example.com/wydarzenie',
   )
   const saveResponse = page.waitForResponse(
@@ -244,6 +244,9 @@ test('creates a Cycle Event draft without asking for a date or generating a slug
   await expect(page.locator('#field-startAt input')).toHaveValue('')
   await expect(page.locator('#field-slug')).toHaveValue('')
   await expect(page.getByRole('button', { name: 'Dodaj następne' })).toBeVisible()
+  await expect(
+    page.locator('[contenteditable="true"]').filter({ hasText: 'E2E content' }),
+  ).toBeVisible()
 
   const eventID = Number(page.url().split('/').at(-1))
   await payload.delete({ collection: 'events', id: eventID, overrideAccess: true })

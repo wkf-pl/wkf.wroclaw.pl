@@ -17,10 +17,12 @@ const validators: Record<ValidationKind, ClientValidator> = {
 
 export function BlurValidatedTextInput({
   children,
+  inputType = 'text',
   properties,
   validateValue,
 }: {
   children?: ReactNode
+  inputType?: 'text' | 'time'
   properties: TextFieldClientProps
   validateValue: ClientValidator
 }) {
@@ -55,6 +57,7 @@ export function BlurValidatedTextInput({
   const htmlAttributes = {
     autoComplete: admin?.autoComplete || undefined,
     onBlur: () => setHasBlurred(true),
+    type: inputType,
   }
 
   return (

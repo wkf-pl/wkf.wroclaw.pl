@@ -11,9 +11,15 @@ import {
   timeModeOptions,
 } from './constants'
 import { normalizeGoogleMapsEmbedField, validateGoogleMapsEmbed } from './map-embed'
+import { resolveEventStatusField } from './event-status'
 import { validatePostalCode, validateVenueWebsite } from './validation'
 
-export { validatePostalCode, validateVenueWebsite } from './validation'
+export {
+  validateClockTime,
+  validateDefaultEndTime,
+  validatePostalCode,
+  validateVenueWebsite,
+} from './validation'
 
 type CapacitySiblingData = { capacity?: unknown; capacityMode?: unknown }
 type ScheduleSiblingData = { endAt?: unknown; eventStatus?: unknown; startAt?: unknown }
@@ -38,7 +44,10 @@ export function validateEventEnd(
     : 'Koniec wydarzenia nie może poprzedzać początku.'
 }
 
-export function createLocationFields({ prefix = '' }: { prefix?: string } = {}): Field[] {
+export function createLocationFields({
+  compactAddressRow = false,
+  prefix = '',
+}: { compactAddressRow?: boolean; prefix?: string } = {}): Field[] {
   return [
     {
       type: 'row',
@@ -64,36 +73,72 @@ export function createLocationFields({ prefix = '' }: { prefix?: string } = {}):
         },
       ],
     },
-    {
-      name: `${prefix}streetAddress`,
-      type: 'text',
-      label: 'Ulica i numer',
-    },
-    {
-      type: 'row',
-      fields: [
-        {
-          name: `${prefix}postalCode`,
-          type: 'text',
-          admin: {
-            components: {
-              Field: '/components/admin/BlurValidatedTextField#BlurValidatedTextField',
-            },
-            custom: { validationKind: 'postalCode' },
-            width: '25%',
+    ...(compactAddressRow
+      ? [
+          {
+            type: 'row' as const,
+            fields: [
+              {
+                name: `${prefix}streetAddress`,
+                type: 'text' as const,
+                admin: { width: '50%' },
+                label: 'Adres',
+              },
+              {
+                name: `${prefix}postalCode`,
+                type: 'text' as const,
+                admin: {
+                  components: {
+                    Field: '/components/admin/BlurValidatedTextField#BlurValidatedTextField',
+                  },
+                  custom: { validationKind: 'postalCode' },
+                  width: '25%',
+                },
+                label: 'Kod pocztowy',
+                validate: validatePostalCode,
+              },
+              {
+                name: `${prefix}city`,
+                type: 'text' as const,
+                admin: { width: '25%' },
+                defaultValue: 'Wrocław',
+                label: 'Miejscowość',
+              },
+            ],
           },
-          label: 'Kod pocztowy',
-          validate: validatePostalCode,
-        },
-        {
-          name: `${prefix}city`,
-          type: 'text',
-          admin: { width: '75%' },
-          defaultValue: 'Wrocław',
-          label: 'Miejscowość',
-        },
-      ],
-    },
+        ]
+      : [
+          {
+            name: `${prefix}streetAddress`,
+            type: 'text' as const,
+            label: 'Ulica i numer',
+          },
+          {
+            type: 'row' as const,
+            fields: [
+              {
+                name: `${prefix}postalCode`,
+                type: 'text' as const,
+                admin: {
+                  components: {
+                    Field: '/components/admin/BlurValidatedTextField#BlurValidatedTextField',
+                  },
+                  custom: { validationKind: 'postalCode' },
+                  width: '25%',
+                },
+                label: 'Kod pocztowy',
+                validate: validatePostalCode,
+              },
+              {
+                name: `${prefix}city`,
+                type: 'text' as const,
+                admin: { width: '75%' },
+                defaultValue: 'Wrocław',
+                label: 'Miejscowość',
+              },
+            ],
+          },
+        ]),
     {
       name: `${prefix}mapEmbedURL`,
       type: 'text',
@@ -125,21 +170,16 @@ export function createParticipationFields({ prefix = '' }: { prefix?: string } =
         {
           name: `${prefix}participation`,
           type: 'select',
-          admin: { isClearable: false },
+          admin: { isClearable: false, width: '50%' },
           defaultValue: 'public',
           label: 'Uczestnictwo',
           options: [...participationOptions],
           required: true,
         },
-      ],
-    },
-    {
-      type: 'row',
-      fields: [
         {
           name: `${prefix}capacityMode`,
           type: 'select',
-          admin: { isClearable: false, width: '50%' },
+          admin: { isClearable: false, width: '25%' },
           defaultValue: 'unlimited',
           label: 'Liczba miejsc',
           options: [...capacityModeOptions],
@@ -150,7 +190,7 @@ export function createParticipationFields({ prefix = '' }: { prefix?: string } =
           type: 'number',
           admin: {
             condition: (_data, siblingData) => siblingData[`${prefix}capacityMode`] !== 'unlimited',
-            width: '50%',
+            width: '25%',
           },
           label: 'Miejsca',
           min: 1,
@@ -257,27 +297,13 @@ export function createExternalLinksField({
 export function createScheduleFields(): Field[] {
   return [
     {
-      type: 'row',
-      fields: [
-        {
-          name: 'timeMode',
-          type: 'select',
-          admin: { isClearable: false, width: '50%' },
-          defaultValue: 'timed',
-          label: 'Sposób podania czasu',
-          options: [...timeModeOptions],
-          required: true,
-        },
-        {
-          name: 'eventStatus',
-          type: 'select',
-          admin: { isClearable: false, width: '50%' },
-          defaultValue: 'scheduled',
-          label: 'Stan wydarzenia',
-          options: [...eventStatusOptions],
-          required: true,
-        },
-      ],
+      name: 'timeMode',
+      type: 'select',
+      admin: { hidden: true },
+      defaultValue: 'timed',
+      label: 'Sposób podania czasu',
+      options: [...timeModeOptions],
+      required: true,
     },
     {
       type: 'row',
@@ -291,7 +317,7 @@ export function createScheduleFields(): Field[] {
               pickerAppearance: 'dayAndTime',
               timeFormat: 'HH:mm',
             },
-            width: '50%',
+            width: '33.333%',
           },
           index: true,
           label: 'Początek',
@@ -306,11 +332,24 @@ export function createScheduleFields(): Field[] {
               pickerAppearance: 'dayAndTime',
               timeFormat: 'HH:mm',
             },
-            width: '50%',
+            width: '33.333%',
           },
           index: true,
           label: 'Koniec',
           validate: validateEventEnd,
+        },
+        {
+          name: 'eventStatus',
+          type: 'select',
+          admin: { isClearable: false, width: '33.333%' },
+          defaultValue: 'scheduled',
+          hooks: {
+            afterRead: [resolveEventStatusField],
+            beforeChange: [resolveEventStatusField],
+          },
+          label: 'Stan wydarzenia',
+          options: [...eventStatusOptions],
+          required: true,
         },
       ],
     },

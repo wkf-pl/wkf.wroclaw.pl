@@ -649,12 +649,14 @@ export interface EventCycle {
     )[];
     category?: (number | null) | Category;
     tags?: (number | Tag)[] | null;
-    defaultTimeMode?: ('timed' | 'allDay') | null;
-    /**
-     * Format GG:MM, np. 18:00
-     */
+    recurrenceType?: ('daily' | 'weekly' | 'monthlyDate' | 'monthlyWeekday') | null;
+    weekInterval?: number | null;
+    monthDay?: number | null;
+    weekOfMonth?: number | null;
+    recurrenceWeekday?: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday') | null;
+    defaultDayCount?: number | null;
     defaultStartTime?: string | null;
-    defaultDurationMinutes?: number | null;
+    defaultEndTime?: string | null;
     location: {
       venueName?: string | null;
       venueWebsite?: string | null;
@@ -1125,9 +1127,9 @@ export interface Event {
     | TabbedContentBlock
   )[];
   timeMode: 'timed' | 'allDay';
-  eventStatus: 'scheduled' | 'cancelled' | 'postponed' | 'rescheduled';
   startAt: string;
   endAt?: string | null;
+  eventStatus: 'scheduled' | 'completed' | 'cancelled' | 'postponed' | 'rescheduled';
   location: {
     venueName?: string | null;
     venueWebsite?: string | null;
@@ -2982,9 +2984,9 @@ export interface EventsSelect<T extends boolean = true> {
         tabs?: T | TabbedContentBlockSelect<T>;
       };
   timeMode?: T;
-  eventStatus?: T;
   startAt?: T;
   endAt?: T;
+  eventStatus?: T;
   location?:
     | T
     | {
@@ -3117,9 +3119,14 @@ export interface EventCyclesSelect<T extends boolean = true> {
             };
         category?: T;
         tags?: T;
-        defaultTimeMode?: T;
+        recurrenceType?: T;
+        weekInterval?: T;
+        monthDay?: T;
+        weekOfMonth?: T;
+        recurrenceWeekday?: T;
+        defaultDayCount?: T;
         defaultStartTime?: T;
-        defaultDurationMinutes?: T;
+        defaultEndTime?: T;
         location?:
           | T
           | {

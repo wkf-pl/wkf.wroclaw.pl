@@ -56,9 +56,17 @@ function applyIfEmpty(data: Data, field: string, value: unknown): void {
   const currentValue = data[field]
   const isEmptyFormArray = Array.isArray(value) && currentValue === 0
   const isEmptyRichText = field === 'excerpt' && isRichTextEmpty(currentValue)
+  const isEmptyDefaultLayout =
+    field === 'layout' &&
+    Array.isArray(currentValue) &&
+    currentValue.length === 1 &&
+    currentValue[0] !== null &&
+    typeof currentValue[0] === 'object' &&
+    currentValue[0].blockType === 'richText' &&
+    isRichTextEmpty(currentValue[0].content)
   const hasRichTextValue = field !== 'excerpt' || !isRichTextEmpty(value)
   if (
-    (isEmpty(currentValue) || isEmptyFormArray || isEmptyRichText) &&
+    (isEmpty(currentValue) || isEmptyFormArray || isEmptyRichText || isEmptyDefaultLayout) &&
     !isEmpty(value) &&
     hasRichTextValue
   ) {
@@ -81,7 +89,6 @@ export function mergeEventCycleDefaults(currentData: Data, cycle: EventCycle): D
     'tags',
     defaults.tags?.map((item) => getFormRelationshipId(item) ?? item),
   )
-  applyIfEmpty(data, 'timeMode', defaults.defaultTimeMode)
   applyIfEmpty(data, 'participation', defaults.participation)
   applyIfEmpty(data, 'capacityMode', defaults.capacityMode)
   applyIfEmpty(data, 'capacity', defaults.capacity)

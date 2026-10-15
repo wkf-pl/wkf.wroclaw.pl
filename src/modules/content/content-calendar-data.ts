@@ -170,7 +170,7 @@ function createEventConditions(
 ): Where[] {
   return [
     published,
-    { eventStatus: { in: ['scheduled', 'rescheduled'] } },
+    { eventStatus: { in: ['scheduled', 'rescheduled', 'completed'] } },
     { startAt: { greater_than_equal: bounds.start } },
     { startAt: { less_than: bounds.end } },
     ...createTaxonomyConditions(filters),

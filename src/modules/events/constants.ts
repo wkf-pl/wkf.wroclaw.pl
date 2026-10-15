@@ -2,10 +2,13 @@ export const WARSAW_TIME_ZONE = 'Europe/Warsaw'
 
 export const eventStatusOptions = [
   { label: 'Zaplanowane', value: 'scheduled' },
+  { label: 'Zakończone', value: 'completed' },
   { label: 'Odwołane', value: 'cancelled' },
   { label: 'Przełożone — nowy termin nieznany', value: 'postponed' },
   { label: 'Przeniesione na nowy termin', value: 'rescheduled' },
 ] as const
+
+export type EventStatus = (typeof eventStatusOptions)[number]['value']
 
 export const timeModeOptions = [
   { label: 'Określone godziny', value: 'timed' },

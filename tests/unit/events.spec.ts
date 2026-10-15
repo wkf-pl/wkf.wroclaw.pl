@@ -12,6 +12,8 @@ import { Events } from '@/collections/Events'
 import { eventTypeIconColors, isEventTypeIconColor } from '@/modules/events/event-types'
 import {
   validateCapacity,
+  validateClockTime,
+  validateDefaultEndTime,
   validateEventEnd,
   validatePostalCode,
   validateVenueWebsite,
@@ -107,17 +109,62 @@ describe('events model', () => {
     expect(isEventTypeIconColor('custom-red')).toBe(false)
   })
 
-  it('keeps participation as the only audience-related Event field', () => {
-    const row = flattenFields(Events.fields).find(
+  it('uses the requested shared participation row in Events and Cycle defaults', () => {
+    for (const fields of [Events.fields, EventCycles.fields]) {
+      const row = flattenFields(fields).find(
+        (field) =>
+          field.type === 'row' &&
+          field.fields.some((item) => 'name' in item && item.name === 'participation'),
+      )
+      expect(row?.type).toBe('row')
+      if (row?.type !== 'row') throw new Error('Missing participation row')
+      expect(
+        row.fields.map((field) => ({
+          name: 'name' in field ? field.name : null,
+          width: field.admin?.width,
+        })),
+      ).toEqual([
+        { name: 'participation', width: '50%' },
+        { name: 'capacityMode', width: '25%' },
+        { name: 'capacity', width: '25%' },
+      ])
+    }
+  })
+
+  it('hides the Event time mode and places schedule fields in one equal row', () => {
+    const fields = flattenFields(Events.fields)
+    expect(fields.find((field) => 'name' in field && field.name === 'timeMode')).toMatchObject({
+      admin: { hidden: true },
+      defaultValue: 'timed',
+      type: 'select',
+    })
+
+    const scheduleRow = fields.find(
       (field) =>
         field.type === 'row' &&
-        field.fields.some((item) => 'name' in item && item.name === 'participation'),
+        field.fields.some((item) => 'name' in item && item.name === 'startAt'),
     )
-    expect(row?.type).toBe('row')
-    if (row?.type !== 'row') throw new Error('Missing participation row')
-    expect(row.fields.map((field) => ('name' in field ? field.name : null))).toEqual([
-      'participation',
+    expect(scheduleRow?.type).toBe('row')
+    if (scheduleRow?.type !== 'row') throw new Error('Missing Event schedule row')
+    expect(
+      scheduleRow.fields.map((field) => ({
+        name: 'name' in field ? field.name : null,
+        width: field.admin?.width,
+      })),
+    ).toEqual([
+      { name: 'startAt', width: '33.333%' },
+      { name: 'endAt', width: '33.333%' },
+      { name: 'eventStatus', width: '33.333%' },
     ])
+
+    const eventStatus = fields.find((field) => 'name' in field && field.name === 'eventStatus')
+    expect(eventStatus).toMatchObject({
+      hooks: {
+        afterRead: [expect.any(Function)],
+        beforeChange: [expect.any(Function)],
+      },
+      options: expect.arrayContaining([{ label: 'Zakończone', value: 'completed' }]),
+    })
   })
 
   it('organizes cycle fields into tabs and includes a default Event title', () => {
@@ -147,6 +194,138 @@ describe('events model', () => {
         (field) => 'name' in field && field.name === 'eventType',
       ),
     ).toMatchObject({ relationTo: 'event-types', required: true, type: 'relationship' })
+  })
+
+  it('defines the requested recurrence and timing fields for Cycle Event defaults', () => {
+    const cycleFields = flattenFields(EventCycles.fields)
+    const recurrenceType = cycleFields.find(
+      (field) => 'name' in field && field.name === 'recurrenceType',
+    )
+    const weekInterval = cycleFields.find(
+      (field) => 'name' in field && field.name === 'weekInterval',
+    )
+    const recurrenceWeekday = cycleFields.find(
+      (field) => 'name' in field && field.name === 'recurrenceWeekday',
+    )
+    const monthDay = cycleFields.find((field) => 'name' in field && field.name === 'monthDay')
+    const weekOfMonth = cycleFields.find((field) => 'name' in field && field.name === 'weekOfMonth')
+
+    expect(recurrenceType).toMatchObject({
+      defaultValue: 'weekly',
+      label: 'Interwał',
+      options: [
+        { label: 'Codziennie', value: 'daily' },
+        { label: 'Co określoną liczbę tygodni', value: 'weekly' },
+        { label: 'Co miesiąc określonego dnia', value: 'monthlyDate' },
+        { label: 'W określonym tygodniu miesiąca', value: 'monthlyWeekday' },
+      ],
+      type: 'select',
+    })
+    expect(recurrenceType).toMatchObject({ admin: { width: '50%' } })
+    expect(weekInterval).toMatchObject({
+      admin: { width: '25%' },
+      defaultValue: 2,
+      max: 4,
+      min: 1,
+      type: 'number',
+    })
+    expect(recurrenceWeekday).toMatchObject({
+      admin: { width: '25%' },
+      defaultValue: 'tuesday',
+      type: 'select',
+    })
+    expect(monthDay).toMatchObject({ admin: { width: '25%' }, max: 31, min: 1, type: 'number' })
+    expect(weekOfMonth).toMatchObject({
+      admin: { width: '25%' },
+      max: 4,
+      min: 1,
+      type: 'number',
+    })
+
+    const timingRow = cycleFields.find(
+      (field) =>
+        field.type === 'row' &&
+        field.fields.some((item) => 'name' in item && item.name === 'defaultDayCount'),
+    )
+    expect(timingRow?.type).toBe('row')
+    if (timingRow?.type !== 'row') throw new Error('Missing Cycle default timing row')
+    expect(
+      timingRow.fields.map((field) => ({
+        label: 'label' in field ? field.label : undefined,
+        name: 'name' in field ? field.name : undefined,
+        width: field.admin?.width,
+      })),
+    ).toEqual([
+      { label: 'Ilość dni', name: 'defaultDayCount', width: '33.333%' },
+      { label: 'Godzina rozpoczęcia', name: 'defaultStartTime', width: '33.333%' },
+      { label: 'Godzina zakończenia', name: 'defaultEndTime', width: '33.333%' },
+    ])
+  })
+
+  it('places the Cycle default address fields in one 50/25/25 row', () => {
+    const addressRow = flattenFields(EventCycles.fields).find(
+      (field) =>
+        field.type === 'row' &&
+        field.fields.some((item) => 'name' in item && item.name === 'streetAddress') &&
+        field.fields.some((item) => 'name' in item && item.name === 'postalCode') &&
+        field.fields.some((item) => 'name' in item && item.name === 'city'),
+    )
+    expect(addressRow?.type).toBe('row')
+    if (addressRow?.type !== 'row') throw new Error('Missing Cycle default address row')
+    expect(
+      addressRow.fields.map((field) => ({
+        label: 'label' in field ? field.label : undefined,
+        name: 'name' in field ? field.name : undefined,
+        width: field.admin?.width,
+      })),
+    ).toEqual([
+      { label: 'Adres', name: 'streetAddress', width: '50%' },
+      { label: 'Kod pocztowy', name: 'postalCode', width: '25%' },
+      { label: 'Miejscowość', name: 'city', width: '25%' },
+    ])
+  })
+
+  it('places the Event address fields in one 50/25/25 row', () => {
+    const addressRow = flattenFields(Events.fields).find(
+      (field) =>
+        field.type === 'row' &&
+        field.fields.some((item) => 'name' in item && item.name === 'streetAddress') &&
+        field.fields.some((item) => 'name' in item && item.name === 'postalCode') &&
+        field.fields.some((item) => 'name' in item && item.name === 'city'),
+    )
+    expect(addressRow?.type).toBe('row')
+    if (addressRow?.type !== 'row') throw new Error('Missing Event address row')
+    expect(
+      addressRow.fields.map((field) => ({
+        label: 'label' in field ? field.label : undefined,
+        name: 'name' in field ? field.name : undefined,
+        width: field.admin?.width,
+      })),
+    ).toEqual([
+      { label: 'Adres', name: 'streetAddress', width: '50%' },
+      { label: 'Kod pocztowy', name: 'postalCode', width: '25%' },
+      { label: 'Miejscowość', name: 'city', width: '25%' },
+    ])
+  })
+
+  it('places Cycle default taxonomy fields in one equal row', () => {
+    const taxonomyRow = flattenFields(EventCycles.fields).find(
+      (field) =>
+        field.type === 'row' &&
+        field.fields.some((item) => 'name' in item && item.name === 'category') &&
+        field.fields.some((item) => 'name' in item && item.name === 'tags'),
+    )
+    expect(taxonomyRow?.type).toBe('row')
+    if (taxonomyRow?.type !== 'row') throw new Error('Missing Cycle default taxonomy row')
+    expect(
+      taxonomyRow.fields.map((field) => ({
+        name: 'name' in field ? field.name : undefined,
+        width: field.admin?.width,
+      })),
+    ).toEqual([
+      { name: 'category', width: '50%' },
+      { name: 'tags', width: '50%' },
+    ])
   })
 
   it('uses Streszczenie as the only short promotional copy for Events and Cycles', () => {
@@ -372,6 +551,26 @@ describe('events model', () => {
         siblingData: { startAt: '2026-09-08T16:00:00Z' },
       }),
     ).toBeTypeOf('string')
+  })
+
+  it('validates Cycle default clock times and one-day chronological order', () => {
+    expect(validateClockTime('18:00')).toBe(true)
+    expect(validateClockTime('24:00')).toBeTypeOf('string')
+    expect(
+      validateDefaultEndTime('17:00', {
+        siblingData: { defaultDayCount: 1, defaultStartTime: '18:00' },
+      }),
+    ).toBeTypeOf('string')
+    expect(
+      validateDefaultEndTime('17:00', {
+        siblingData: { defaultDayCount: 2, defaultStartTime: '18:00' },
+      }),
+    ).toBe(true)
+    expect(
+      validateDefaultEndTime('22:00', {
+        siblingData: { defaultDayCount: 1, defaultStartTime: '18:00' },
+      }),
+    ).toBe(true)
   })
 })
 
