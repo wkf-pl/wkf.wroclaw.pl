@@ -37,8 +37,6 @@ import { ListingBlockLabel as ListingBlockLabel_d53c993bb109710411f82eaaf564eeff
 import { CarouselBlockLabel as CarouselBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { ContentCalendarBlockLabel as ContentCalendarBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { MediaGalleryBlockLabel as MediaGalleryBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
-import { DocumentEntryRowLabel as DocumentEntryRowLabel_7df88ed2249a8684b8a631fb72da10d5 } from '../../../components/admin/DocumentEntryRowLabel'
-import { DocumentsBlockLabel as DocumentsBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { AttachmentsBlockLabel as AttachmentsBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { MemberProfileEntryRowLabel as MemberProfileEntryRowLabel_d89d5b210a246731bf987576398d455f } from '../../../components/admin/MemberProfileEntryRowLabel'
 import { MemberProfilesBlockLabel as MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
@@ -136,8 +134,6 @@ export const importMap = {
   "/components/admin/ContentBlockLabel#CarouselBlockLabel": CarouselBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ContentBlockLabel#ContentCalendarBlockLabel": ContentCalendarBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ContentBlockLabel#MediaGalleryBlockLabel": MediaGalleryBlockLabel_d53c993bb109710411f82eaaf564eeff,
-  "/components/admin/DocumentEntryRowLabel#DocumentEntryRowLabel": DocumentEntryRowLabel_7df88ed2249a8684b8a631fb72da10d5,
-  "/components/admin/ContentBlockLabel#DocumentsBlockLabel": DocumentsBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ContentBlockLabel#AttachmentsBlockLabel": AttachmentsBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/MemberProfileEntryRowLabel#MemberProfileEntryRowLabel": MemberProfileEntryRowLabel_d89d5b210a246731bf987576398d455f,
   "/components/admin/ContentBlockLabel#MemberProfilesBlockLabel": MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff,

@@ -8,7 +8,7 @@ import { CmsRichText } from '@/components/CmsRichText'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
 import { getDocumentTypeLabel } from '@/modules/documents/document-types'
 import { formatEventDate } from '@/modules/events/presentation'
-import type { Document, Media } from '@/payload-types'
+import type { Media } from '@/payload-types'
 
 import { CmsImage } from './CmsImage'
 import { TaxonomyLinks } from './TaxonomyLinks'
@@ -18,15 +18,10 @@ type ContentCarouselProperties = {
   items: ContentCarouselItem[]
 }
 
-export type DocumentCarouselItem = {
-  document: Document
-  kind: 'documents'
-  url: string
-}
-
-export type ContentCarouselItem = DocumentCarouselItem | PublicContentListItem
+export type ContentCarouselItem = PublicContentListItem
 
 const contentKindLabels: Record<PublicContentListItem['kind'], string> = {
+  documents: 'Dokument',
   'event-cycles': 'Cykl wydarzeń',
   events: 'Wydarzenie',
   pages: 'Strona',

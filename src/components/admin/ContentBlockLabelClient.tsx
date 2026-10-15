@@ -200,12 +200,6 @@ export function AttachmentsBlockLabelClient() {
   return <BlockLabel prefix="Załączniki" value={getPresentationDescription(data)} />
 }
 
-export function DocumentsBlockLabelClient() {
-  const { data } = useRowLabel<PresentedBlockData>()
-
-  return <BlockLabel prefix="Dokumenty" value={getPresentationDescription(data)} />
-}
-
 export function MemberProfilesBlockLabelClient() {
   const { data } = useRowLabel<PresentedBlockData>()
 

@@ -1,6 +1,6 @@
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, PayloadRequest } from 'payload'
 
-import type { Event, EventCycle, Page, Post } from '@/payload-types'
+import type { Document, Event, EventCycle, Page, Post } from '@/payload-types'
 import { getRelationshipId } from '@/lib/relationships'
 import { invalidateContentSource } from '@/modules/cache/invalidate-public-data'
 import { extractRichTextText } from '@/modules/content/rich-text'
@@ -13,6 +13,7 @@ const contentListingSourceSelect = {
   category: true,
   createdAt: true,
   cycle: true,
+  documentDate: true,
   endAt: true,
   excerpt: true,
   heroImage: true,
@@ -22,12 +23,14 @@ const contentListingSourceSelect = {
   publishedAt: true,
   slug: true,
   startAt: true,
+  summary: true,
   tags: true,
   title: true,
   updatedAt: true,
 } as const
 
 function buildPublicURL(source: TaxonomizableCollectionSlug, slug: string): string {
+  if (source === 'documents') return `/dokumenty/${slug}`
   if (source === 'posts') return `/blog/${slug}`
   if (source === 'events') return `/events/${slug}`
   if (source === 'event-cycles') return `/events/series/${slug}`
@@ -37,6 +40,7 @@ function buildPublicURL(source: TaxonomizableCollectionSlug, slug: string): stri
 function createIndexData(source: TaxonomizableCollectionSlug, document: TaxonomizableDocument) {
   const event = source === 'events' ? (document as Event) : null
   const cycle = source === 'event-cycles' ? (document as EventCycle) : null
+  const contentDocument = source === 'documents' ? (document as Document) : null
   const page = source === 'pages' ? (document as Page) : null
   const post = source === 'posts' ? (document as Post) : null
 
@@ -46,13 +50,18 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
     eventEndAt: event?.endAt ?? null,
     eventStartAt: event?.startAt ?? null,
     excerpt:
+      contentDocument?.summary?.trim() ||
       page?.listingExcerpt?.trim() ||
       post?.excerpt ||
       extractRichTextText(event?.excerpt ?? cycle?.excerpt) ||
       null,
-    heroImage: getRelationshipId(document.heroImage) ?? null,
+    heroImage:
+      getRelationshipId(
+        page?.heroImage ?? post?.heroImage ?? event?.heroImage ?? cycle?.heroImage,
+      ) ?? null,
     parentPage: page ? (getRelationshipId(page.parent) ?? null) : null,
-    sortDate: event?.startAt ?? document.publishedAt ?? document.createdAt,
+    sortDate:
+      contentDocument?.documentDate ?? event?.startAt ?? document.publishedAt ?? document.createdAt,
     source,
     sourceDocumentId: document.id,
     sourceUpdatedAt: document.updatedAt,
@@ -133,7 +142,13 @@ export async function syncContentListingItem(
 }
 
 function isTaxonomizableCollection(value: string): value is TaxonomizableCollectionSlug {
-  return value === 'pages' || value === 'posts' || value === 'events' || value === 'event-cycles'
+  return (
+    value === 'pages' ||
+    value === 'posts' ||
+    value === 'events' ||
+    value === 'event-cycles' ||
+    value === 'documents'
+  )
 }
 
 export const syncContentListingAfterChange: CollectionAfterChangeHook = async ({

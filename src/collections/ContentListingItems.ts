@@ -2,7 +2,7 @@ import type { Access, CollectionConfig } from 'payload'
 
 import { isPublicRequest } from '@/modules/content/public-access'
 
-const sourceResources = ['pages', 'posts', 'events', 'event-cycles'] as const
+const sourceResources = ['pages', 'posts', 'events', 'event-cycles', 'documents'] as const
 
 const readContentListingItems: Access = ({ isReadingStaticFile, req }) =>
   isPublicRequest(req, isReadingStaticFile)

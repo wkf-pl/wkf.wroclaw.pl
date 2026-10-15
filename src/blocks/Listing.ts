@@ -11,7 +11,7 @@ type ListingSiblingData = {
   sources?: unknown
 }
 
-export const listingSources = ['pages', 'posts', 'events', 'event-cycles'] as const
+export const listingSources = ['pages', 'posts', 'events', 'event-cycles', 'documents'] as const
 
 const filtersCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.selectionMode === 'filters'
@@ -108,6 +108,7 @@ export const ListingBlock: Block = {
         label: 'Widok',
         options: [
           { label: 'Karty', value: 'cards' },
+          { label: 'Karuzela', value: 'carousel' },
           { label: 'Lista kompaktowa', value: 'compact' },
           { label: 'Siatka', value: 'grid' },
           { label: 'Kafelki', value: 'tiles' },
@@ -167,6 +168,7 @@ export const ListingBlock: Block = {
           label: 'Źródła',
           options: listingSources.map((source) => {
             const labels = {
+              documents: 'Dokumenty',
               'event-cycles': 'Cykle wydarzeń',
               events: 'Wydarzenia',
               pages: 'Strony',

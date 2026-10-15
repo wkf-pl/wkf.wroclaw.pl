@@ -3,10 +3,11 @@ import Link from 'next/link'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
 
 import { ContentCard } from './ContentCard'
+import { ContentCarousel } from './ContentCarousel'
 import { ContentListingMeta } from './ContentListingMeta'
 import { ContentTile } from './ContentTile'
 
-export type ContentListView = 'cards' | 'compact' | 'grid' | 'tiles'
+export type ContentListView = 'cards' | 'carousel' | 'compact' | 'grid' | 'tiles'
 
 type ContentListProperties = {
   emptyMessage?: null | string
@@ -17,6 +18,10 @@ type ContentListProperties = {
 export function ContentList({ emptyMessage, items, view }: ContentListProperties) {
   if (!items.length) {
     return <p className="emptyState">{emptyMessage || 'Nie ma opublikowanych treści.'}</p>
+  }
+
+  if (view === 'carousel') {
+    return <ContentCarousel emptyMessage={emptyMessage} items={items} />
   }
 
   if (view === 'tiles') {
