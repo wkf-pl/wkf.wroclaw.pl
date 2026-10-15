@@ -70,6 +70,7 @@ services:
 
   postgres-test:
     image: postgres:17.10-alpine3.23
+    profiles: [test]
     command:
       - postgres
       - -c
