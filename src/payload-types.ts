@@ -1129,7 +1129,7 @@ export interface Event {
   timeMode: 'timed' | 'allDay';
   startAt: string;
   endAt?: string | null;
-  eventStatus: 'scheduled' | 'cancelled' | 'postponed' | 'rescheduled';
+  eventStatus: 'scheduled' | 'completed' | 'cancelled' | 'postponed' | 'rescheduled';
   location: {
     venueName?: string | null;
     venueWebsite?: string | null;

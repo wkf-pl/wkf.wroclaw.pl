@@ -15,6 +15,7 @@ import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/int
 
 const slugs = {
   cancelled: 'integration-cancelled-event',
+  completed: 'integration-completed-event',
   cycle: 'integration-event-cycle',
   cycleEvent: 'integration-cycle-event',
   cycleEventSecond: 'integration-cycle-event-second',
@@ -102,6 +103,7 @@ async function cleanup() {
       slug: {
         in: [
           slugs.cancelled,
+          slugs.completed,
           slugs.public,
           slugs.members,
           slugs.draft,
@@ -187,6 +189,35 @@ function eventData(
 }
 
 describe('events integration', () => {
+  it('returns an ended scheduled Event as completed', async () => {
+    const event = await payload.create({
+      collection: 'events',
+      data: {
+        ...eventData(slugs.completed, 'public', 'published'),
+        endAt: '2020-01-01T18:00:00.000Z',
+        startAt: '2020-01-01T16:00:00.000Z',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+
+    expect(event.eventStatus).toBe('completed')
+
+    const rereadEvent = await payload.findByID({
+      collection: 'events',
+      depth: 0,
+      id: event.id,
+      overrideAccess: true,
+    })
+    expect(rereadEvent.eventStatus).toBe('completed')
+
+    const calendarResponse = await getCalendar(
+      new Request('http://localhost/events/calendar.json?month=2020-01'),
+    )
+    const calendarData = (await calendarResponse.json()) as { events: { slug: string }[] }
+    expect(calendarData.events.map(({ slug }) => slug)).toContain(slugs.completed)
+  })
+
   it('enforces collection access in Event creation endpoints', async () => {
     const anonymousCycleResponse = await createEventFromCycleEndpoint.handler(
       createEndpointRequest({ id: -1, user: null }),
@@ -402,7 +433,7 @@ describe('events integration', () => {
       where: { slug: { in: Object.values(slugs) } },
     })
     expect(anonymous.docs.map((event) => event.slug).sort()).toEqual(
-      [slugs.cancelled, slugs.members, slugs.public].sort(),
+      [slugs.cancelled, slugs.completed, slugs.members, slugs.public].sort(),
     )
 
     const publicListing = await findPublicContent({
@@ -415,6 +446,7 @@ describe('events integration', () => {
     })
     expect(publicListing.items.map((item) => item.url)).toContain(`/events/${slugs.public}`)
     expect(publicListing.items.map((item) => item.url)).toContain(`/events/${slugs.members}`)
+    expect(publicListing.items.map((item) => item.url)).not.toContain(`/events/${slugs.completed}`)
 
     const publicPartner = await findPublishedPartnerBySlug(slugs.partner)
     const partnerEvents = await findEventsForPartner(partner.id)

@@ -65,12 +65,28 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "_event_cycles_v" DROP COLUMN "version_event_defaults_default_time_mode";
   ALTER TABLE "_event_cycles_v" DROP COLUMN "version_event_defaults_default_duration_minutes";
   DROP TYPE "public"."enum_event_cycles_event_defaults_default_time_mode";
-  DROP TYPE "public"."enum__event_cycles_v_version_event_defaults_default_time_mode";`)
+  DROP TYPE "public"."enum__event_cycles_v_version_event_defaults_default_time_mode";
+  ALTER TYPE "public"."enum_events_event_status" ADD VALUE 'completed' BEFORE 'cancelled';
+  ALTER TYPE "public"."enum__events_v_version_event_status" ADD VALUE 'completed' BEFORE 'cancelled';`)
 }
 
 export async function down({ db }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
-   CREATE TYPE "public"."enum_event_cycles_event_defaults_default_time_mode" AS ENUM('timed', 'allDay');
+   ALTER TABLE "events" ALTER COLUMN "event_status" SET DATA TYPE text;
+  ALTER TABLE "events" ALTER COLUMN "event_status" SET DEFAULT 'scheduled'::text;
+  UPDATE "events" SET "event_status" = 'scheduled' WHERE "event_status" = 'completed';
+  DROP TYPE "public"."enum_events_event_status";
+  CREATE TYPE "public"."enum_events_event_status" AS ENUM('scheduled', 'cancelled', 'postponed', 'rescheduled');
+  ALTER TABLE "events" ALTER COLUMN "event_status" SET DEFAULT 'scheduled'::"public"."enum_events_event_status";
+  ALTER TABLE "events" ALTER COLUMN "event_status" SET DATA TYPE "public"."enum_events_event_status" USING "event_status"::"public"."enum_events_event_status";
+  ALTER TABLE "_events_v" ALTER COLUMN "version_event_status" SET DATA TYPE text;
+  ALTER TABLE "_events_v" ALTER COLUMN "version_event_status" SET DEFAULT 'scheduled'::text;
+  UPDATE "_events_v" SET "version_event_status" = 'scheduled' WHERE "version_event_status" = 'completed';
+  DROP TYPE "public"."enum__events_v_version_event_status";
+  CREATE TYPE "public"."enum__events_v_version_event_status" AS ENUM('scheduled', 'cancelled', 'postponed', 'rescheduled');
+  ALTER TABLE "_events_v" ALTER COLUMN "version_event_status" SET DEFAULT 'scheduled'::"public"."enum__events_v_version_event_status";
+  ALTER TABLE "_events_v" ALTER COLUMN "version_event_status" SET DATA TYPE "public"."enum__events_v_version_event_status" USING "version_event_status"::"public"."enum__events_v_version_event_status";
+  CREATE TYPE "public"."enum_event_cycles_event_defaults_default_time_mode" AS ENUM('timed', 'allDay');
   CREATE TYPE "public"."enum__event_cycles_v_version_event_defaults_default_time_mode" AS ENUM('timed', 'allDay');
   ALTER TABLE "event_cycles" ADD COLUMN "event_defaults_default_time_mode" "enum_event_cycles_event_defaults_default_time_mode" DEFAULT 'timed';
   ALTER TABLE "event_cycles" ADD COLUMN "event_defaults_default_duration_minutes" numeric;

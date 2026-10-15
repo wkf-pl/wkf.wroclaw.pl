@@ -156,6 +156,15 @@ describe('events model', () => {
       { name: 'endAt', width: '33.333%' },
       { name: 'eventStatus', width: '33.333%' },
     ])
+
+    const eventStatus = fields.find((field) => 'name' in field && field.name === 'eventStatus')
+    expect(eventStatus).toMatchObject({
+      hooks: {
+        afterRead: [expect.any(Function)],
+        beforeChange: [expect.any(Function)],
+      },
+      options: expect.arrayContaining([{ label: 'Zakończone', value: 'completed' }]),
+    })
   })
 
   it('organizes cycle fields into tabs and includes a default Event title', () => {

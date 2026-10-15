@@ -33,7 +33,7 @@ async function findCalendarMonthUncached(month: string): Promise<CalendarMonthPa
       where: {
         and: [
           published,
-          { eventStatus: { in: ['scheduled', 'rescheduled'] } },
+          { eventStatus: { in: ['scheduled', 'rescheduled', 'completed'] } },
           { startAt: { greater_than_equal: bounds.start } },
           { startAt: { less_than: bounds.end } },
         ],

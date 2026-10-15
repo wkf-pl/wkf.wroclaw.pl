@@ -36178,14 +36178,6 @@
           "notNull": false,
           "default": "'timed'"
         },
-        "event_status": {
-          "name": "event_status",
-          "type": "enum_events_event_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'scheduled'"
-        },
         "start_at": {
           "name": "start_at",
           "type": "timestamp(3) with time zone",
@@ -36197,6 +36189,14 @@
           "type": "timestamp(3) with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "event_status": {
+          "name": "event_status",
+          "type": "enum_events_event_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'scheduled'"
         },
         "location_venue_name": {
           "name": "location_venue_name",
@@ -44267,14 +44267,6 @@
           "notNull": false,
           "default": "'timed'"
         },
-        "version_event_status": {
-          "name": "version_event_status",
-          "type": "enum__events_v_version_event_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'scheduled'"
-        },
         "version_start_at": {
           "name": "version_start_at",
           "type": "timestamp(3) with time zone",
@@ -44286,6 +44278,14 @@
           "type": "timestamp(3) with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "version_event_status": {
+          "name": "version_event_status",
+          "type": "enum__events_v_version_event_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'scheduled'"
         },
         "version_location_venue_name": {
           "name": "version_location_venue_name",
@@ -93594,6 +93594,7 @@
       "schema": "public",
       "values": [
         "scheduled",
+        "completed",
         "cancelled",
         "postponed",
         "rescheduled"
@@ -94328,6 +94329,7 @@
       "schema": "public",
       "values": [
         "scheduled",
+        "completed",
         "cancelled",
         "postponed",
         "rescheduled"
@@ -98753,6 +98755,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "49b71e1a-73be-442d-8ccb-d0dbd16691f0",
+  "id": "2a640458-26f4-4850-b57a-da09015e7d0e",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

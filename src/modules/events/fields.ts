@@ -11,6 +11,7 @@ import {
   timeModeOptions,
 } from './constants'
 import { normalizeGoogleMapsEmbedField, validateGoogleMapsEmbed } from './map-embed'
+import { resolveEventStatusField } from './event-status'
 import { validatePostalCode, validateVenueWebsite } from './validation'
 
 export {
@@ -342,6 +343,10 @@ export function createScheduleFields(): Field[] {
           type: 'select',
           admin: { isClearable: false, width: '33.333%' },
           defaultValue: 'scheduled',
+          hooks: {
+            afterRead: [resolveEventStatusField],
+            beforeChange: [resolveEventStatusField],
+          },
           label: 'Stan wydarzenia',
           options: [...eventStatusOptions],
           required: true,
