@@ -143,7 +143,7 @@
 }
 
 .pageBlocks > *,
-.pageBlocks > :is(.listingBlock, .documentsBlock, .mediaBlock, .memberProfilesBlock) > * {
+.pageBlocks > :is(.listingBlock, .mediaBlock, .memberProfilesBlock) > * {
   width: 100%;
   max-width: none;
   margin-inline: 0;

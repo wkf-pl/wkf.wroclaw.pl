@@ -168,18 +168,16 @@
     display: block;
   }
 
-  :is(.contentList-grid, .documentList-grid, .mediaList-grid, .mediaList-cards, .memberGrid) {
+  :is(.contentList-grid, .mediaList-grid, .mediaList-cards, .memberGrid) {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .contentList-compact .contentCardContent,
-  .documentList-list .documentListItemContent,
   .memberGrid-list .memberCard {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .contentList-compact .contentCardContent,
-  .documentList-list .documentListItemContent {
+  .contentList-compact .contentCardContent {
     gap: 0.45rem;
   }
 
@@ -199,13 +197,13 @@
 }
 
 @container content-block (width <= 54rem) {
-  :is(.contentList-tiles, .documentList-tiles) {
+  .contentList-tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @container content-block (width <= 36rem) {
-  :is(.contentList-tiles, .documentList-tiles) {
+  .contentList-tiles {
     grid-template-columns: minmax(0, 1fr);
   }
 }

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 import { ContentList } from '@/app/(frontend)/_components/ContentList'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
-import type { Event, EventCycle, Media, Page, Post } from '@/payload-types'
+import type { Document, Event, EventCycle, Media, Page, Post } from '@/payload-types'
 
 import { readFrontendStyles } from '../helpers/frontend-styles'
 import { createLexicalDocument } from '../helpers/lexical-document'
@@ -90,15 +90,32 @@ function createEventCycleItem(): Extract<PublicContentListItem, { kind: 'event-c
   }
 }
 
+function createDocumentItem(): Extract<PublicContentListItem, { kind: 'documents' }> {
+  return {
+    document: {
+      category: null,
+      documentDate: '2026-08-26T00:00:00.000Z',
+      documentNumber: '4/2026',
+      documentType: 'resolution',
+      id: 5,
+      slug: 'uchwala-testowa',
+      summary: 'Opis dokumentu w Listingu.',
+      tags: [],
+      title: 'Uchwała testowa',
+    } as unknown as Document,
+    kind: 'documents',
+    url: '/dokumenty/uchwala-testowa',
+  }
+}
+
 describe('frontend content listing', () => {
   it('limits widescreen card images to the grid view', () => {
     const frontendStyles = readFrontendStyles()
     const cardImageRule = frontendStyles.match(/\.contentCardImage\s*\{(?<declarations>[^}]*)\}/)
     const cardImageDeclarations = cardImageRule?.groups?.declarations
-    const gridCardImageSelector =
-      ':is(.contentList-grid, .documentList-grid) > article.contentCard > .contentCardImage'
+    const gridCardImageSelector = '.contentList-grid > article.contentCard > .contentCardImage'
     const gridCardImageRule = frontendStyles.match(
-      /:is\(\.contentList-grid, \.documentList-grid\) > article\.contentCard > \.contentCardImage\s*\{(?<declarations>[^}]*)\}/,
+      /\.contentList-grid > article\.contentCard > \.contentCardImage\s*\{(?<declarations>[^}]*)\}/,
     )
     const gridCardImageDeclarations = gridCardImageRule?.groups?.declarations
     const contentCardImageAspectRatioSelectors = [
@@ -139,7 +156,7 @@ describe('frontend content listing', () => {
       /\.newsImageFallback,\s*\.cardBlockImageFallback,\s*\.contentCardImageFallback\s*\{[^}]*placeholder-nebula\.webp/,
     )
     expect(frontendStyles).toMatch(
-      /:is\(\.contentList-grid, \.contentList-cards, \.documentList-grid, \.documentList-cards\)[^{]*> \.contentCardImageFallback\s*\{[^}]*height: 100%;/,
+      /:is\(\.contentList-grid, \.contentList-cards\)[^{]*> \.contentCardImageFallback\s*\{[^}]*height: 100%;/,
     )
   })
 
@@ -179,6 +196,24 @@ describe('frontend content listing', () => {
     )
 
     expect(markup).toContain(`<time dateTime="${date}">`)
+  })
+
+  it('renders documents in every Listing view, including the carousel', () => {
+    const documentItem = createDocumentItem()
+
+    for (const view of ['cards', 'carousel', 'compact', 'grid', 'tiles'] as const) {
+      const markup = renderToStaticMarkup(
+        createElement(ContentList, {
+          items: [documentItem],
+          view,
+        }),
+      )
+
+      expect(markup).toContain('Uchwała testowa')
+      expect(markup).toContain('href="/dokumenty/uchwala-testowa"')
+      expect(markup).toContain('Uchwała')
+      expect(markup).toContain('26 sierpnia 2026')
+    }
   })
 
   it('renders event-specific card data from the full Event entity', () => {
@@ -278,13 +313,13 @@ describe('frontend content listing', () => {
     const frontendStyles = readFrontendStyles()
 
     expect(frontendStyles).toMatch(
-      /:is\(\.contentList-tiles, \.documentList-tiles\) \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/,
+      /\.contentList-tiles \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/,
     )
     expect(frontendStyles).toMatch(
-      /@container content-block \(width <= 54rem\) \{[\s\S]*?:is\(\.contentList-tiles, \.documentList-tiles\) \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/,
+      /@container content-block \(width <= 54rem\) \{[\s\S]*?\.contentList-tiles \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/,
     )
     expect(frontendStyles).toMatch(
-      /@container content-block \(width <= 36rem\) \{[\s\S]*?:is\(\.contentList-tiles, \.documentList-tiles\) \{[^}]*grid-template-columns: minmax\(0, 1fr\);/,
+      /@container content-block \(width <= 36rem\) \{[\s\S]*?\.contentList-tiles \{[^}]*grid-template-columns: minmax\(0, 1fr\);/,
     )
   })
 
@@ -299,31 +334,29 @@ describe('frontend content listing', () => {
     )
   })
 
-  it('groups compact content and document rows into one table-like frame', () => {
+  it('groups compact content rows into one table-like frame', () => {
     const frontendStyles = readFrontendStyles()
 
     expect(frontendStyles).toMatch(
-      /:is\(\.listingBlock, \.documentsBlock\):has\(\s*> :is\(\.contentList-compact, \.documentList-list\)\s*\) \{[^}]*width: 100%;/,
+      /\.listingBlock:has\(> \.contentList-compact\) \{[^}]*width: 100%;/,
     )
     expect(frontendStyles).toMatch(
-      /:is\(\.contentList-compact, \.documentList-list\) \{[^}]*gap: 0;[^}]*overflow: hidden;[^}]*width: 100%;[^}]*border: 1px solid[^}]*border-radius: 0\.75rem;/,
+      /\.contentList-compact \{[^}]*gap: 0;[^}]*overflow: hidden;[^}]*width: 100%;[^}]*border: 1px solid[^}]*border-radius: 0\.75rem;/,
     )
     expect(frontendStyles).toMatch(
-      /:is\(\.contentList-compact > \.contentCard, \.documentList-list > \.documentListItem\) \{[^}]*border: 0;[^}]*border-bottom: 1px solid[^}]*border-radius: 0;[^}]*background: transparent;/,
+      /\.contentList-compact > \.contentCard \{[^}]*border: 0;[^}]*border-bottom: 1px solid[^}]*border-radius: 0;[^}]*background: transparent;/,
     )
     expect(frontendStyles).toMatch(
-      /:is\(\.contentList-compact \.contentCardContent, \.documentList-list \.documentListItemContent\) \{[^}]*grid-template-columns: minmax\(18rem, 5fr\) minmax\(0, 7fr\);[^}]*gap: 0;/,
+      /\.contentList-compact \.contentCardContent \{[^}]*grid-template-columns: minmax\(18rem, 5fr\) minmax\(0, 7fr\);[^}]*gap: 0;/,
     )
-    expect(frontendStyles).toMatch(
-      /:is\(\.contentList-compact, \.documentList-list\) h2 a \{[^}]*color: var\(--ivory\);/,
-    )
+    expect(frontendStyles).toMatch(/\.contentList-compact h2 a \{[^}]*color: var\(--ivory\);/)
   })
 
   it('keeps the approved larger gap before taxonomy in every detailed card', () => {
     const frontendStyles = readFrontendStyles()
 
     expect(frontendStyles).toMatch(
-      /:is\(\.contentList-cards, \.documentList-cards\) \.contentCardContent > \.taxonomyLinks \{[\s\S]*?margin: 1\.75rem 0 0;/,
+      /\.contentList-cards \.contentCardContent > \.taxonomyLinks \{[\s\S]*?margin: 1\.75rem 0 0;/,
     )
   })
 
@@ -331,15 +364,14 @@ describe('frontend content listing', () => {
     const frontendStyles = readFrontendStyles()
 
     expect(frontendStyles).toMatch(
-      /:is\(\.contentList-grid, \.documentList-grid\) \.contentCardContent > \.taxonomyLinks \{[\s\S]*?margin: auto 0 0;[\s\S]*?padding-top: 2rem;/,
+      /\.contentList-grid \.contentCardContent > \.taxonomyLinks \{[\s\S]*?margin: auto 0 0;[\s\S]*?padding-top: 2rem;/,
     )
     expect(frontendStyles).toMatch(/\.contentCardFacts--grid \{[\s\S]*?margin-bottom: 1\.5rem;/)
   })
 
-  it('lets content and document grids fill the width of their section', () => {
+  it('lets content grids fill the width of their section', () => {
     const frontendStyles = readFrontendStyles()
 
     expect(frontendStyles).toMatch(/\.contentList-grid \{[^}]*width: 100%;/)
-    expect(frontendStyles).toMatch(/\.documentList-grid \{[^}]*width: 100%;/)
   })
 })

@@ -2,10 +2,6 @@ import type { PublicContentListItem } from '@/modules/content/content-listing'
 import { getDocumentTypeLabel } from '@/modules/documents/document-types'
 import { formatEventStartDate } from '@/modules/events/presentation'
 
-import type { DocumentCardItem } from './ContentCard'
-
-type ContentListingMetaItem = DocumentCardItem | PublicContentListItem
-
 const publicationDateFormatter = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric',
   month: 'long',
@@ -18,7 +14,7 @@ export function ContentListingMeta({
   item,
 }: {
   className?: string
-  item: ContentListingMetaItem
+  item: PublicContentListItem
 }) {
   switch (item.kind) {
     case 'documents':

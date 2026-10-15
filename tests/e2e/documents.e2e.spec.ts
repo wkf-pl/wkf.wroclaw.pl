@@ -47,10 +47,11 @@ test.beforeAll(async () => {
         author: author.id,
         layout: [
           {
-            blockType: 'documents',
-            items: [{ document: document.id }],
+            blockType: 'listing',
+            items: [{ item: { relationTo: 'documents', value: document.id } }],
             pageSize: 12,
             pagination: false,
+            parentFilter: 'none',
             selectionMode: 'manual',
             sort: 'newest',
             view: 'cards',

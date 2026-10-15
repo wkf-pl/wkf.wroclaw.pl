@@ -5,7 +5,7 @@ import { RasterIcon } from '@/components/RasterIcon'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
 import { getDocumentTypeLabel } from '@/modules/documents/document-types'
 import { formatEventDate, formatEventStartDate } from '@/modules/events/presentation'
-import type { Document, EventCycle, Media } from '@/payload-types'
+import type { EventCycle, Media } from '@/payload-types'
 
 import { CmsImage } from './CmsImage'
 import { TaxonomyLinks } from './TaxonomyLinks'
@@ -17,13 +17,7 @@ const publicationDateFormatter = new Intl.DateTimeFormat('pl-PL', {
   year: 'numeric',
 })
 
-export type DocumentCardItem = {
-  document: Document
-  kind: 'documents'
-  url: string
-}
-
-export type ContentCardItem = DocumentCardItem | PublicContentListItem
+export type ContentCardItem = PublicContentListItem
 export type ContentCardView = 'cards' | 'grid'
 
 export function ContentCard({

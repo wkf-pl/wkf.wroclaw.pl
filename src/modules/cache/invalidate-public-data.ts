@@ -14,6 +14,7 @@ import {
 } from './public-data-cache'
 
 const tagsBySource: Record<TaxonomizableCollectionSlug, string[]> = {
+  documents: [publicCacheTags.contentListings, publicCacheTags.sitemap],
   'event-cycles': [
     publicCacheTags.eventCycles,
     publicCacheTags.contentListings,

@@ -2,20 +2,27 @@ import { getPayload, type Payload, type Where } from 'payload'
 
 import config from '@payload-config'
 
-import type { ContentListingItem, Event, EventCycle, Page, Post } from '@/payload-types'
+import type { ContentListingItem, Document, Event, EventCycle, Page, Post } from '@/payload-types'
 import { getFormRelationshipId, type RelationshipID } from '@/lib/relationships'
 import { normalizeListingWindow, paginateInMemory } from '@/modules/content/listing-window'
 import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 
-export const taxonomizableCollectionSlugs = ['pages', 'posts', 'events', 'event-cycles'] as const
+export const taxonomizableCollectionSlugs = [
+  'pages',
+  'posts',
+  'events',
+  'event-cycles',
+  'documents',
+] as const
 export type TaxonomizableCollectionSlug = (typeof taxonomizableCollectionSlugs)[number]
-export type TaxonomizableDocument = Event | EventCycle | Page | Post
+export type TaxonomizableDocument = Document | Event | EventCycle | Page | Post
 export type ContentListingSort =
   'eventDateAscending' | 'newest' | 'oldest' | 'titleAscending' | 'titleDescending'
 
 export type PublicContentListItem =
+  | { document: Document; kind: 'documents'; url: string }
   | { document: EventCycle; kind: 'event-cycles'; url: string }
   | { document: Event; kind: 'events'; url: string }
   | { document: Page; kind: 'pages'; url: string }
@@ -235,6 +242,7 @@ async function hydratePublicContentItems(
   selectedItems: readonly SelectedListingItem[],
 ): Promise<PublicContentListItem[]> {
   const idsBySource: Record<TaxonomizableCollectionSlug, number[]> = {
+    documents: [],
     'event-cycles': [],
     events: [],
     pages: [],
@@ -245,13 +253,15 @@ async function hydratePublicContentItems(
     idsBySource[item.source].push(item.sourceDocumentId)
   }
 
-  const [eventCycles, events, pages, posts] = await Promise.all([
+  const [documents, eventCycles, events, pages, posts] = await Promise.all([
+    findPublishedDocuments(payload, idsBySource.documents),
     findPublishedEventCycles(payload, idsBySource['event-cycles']),
     findPublishedEvents(payload, idsBySource.events),
     findPublishedPages(payload, idsBySource.pages),
     findPublishedPosts(payload, idsBySource.posts),
   ])
   const documentsByReference = new Map<string, TaxonomizableDocument>([
+    ...documents.map((document) => [`documents:${document.id}`, document] as const),
     ...eventCycles.map((document) => [`event-cycles:${document.id}`, document] as const),
     ...events.map((document) => [`events:${document.id}`, document] as const),
     ...pages.map((document) => [`pages:${document.id}`, document] as const),
@@ -263,6 +273,8 @@ async function hydratePublicContentItems(
     if (!document) return []
 
     switch (item.source) {
+      case 'documents':
+        return [{ document: document as Document, kind: item.source, url: item.url }]
       case 'event-cycles':
         return [{ document: document as EventCycle, kind: item.source, url: item.url }]
       case 'events':
@@ -277,6 +289,24 @@ async function hydratePublicContentItems(
 
 function uniqueIds(ids: readonly number[]): number[] {
   return [...new Set(ids)]
+}
+
+async function findPublishedDocuments(
+  payload: Payload,
+  ids: readonly number[],
+): Promise<Document[]> {
+  if (!ids.length) return []
+  const result = await payload.find({
+    collection: 'documents',
+    context: publicRequestContext,
+    depth: 1,
+    draft: false,
+    overrideAccess: false,
+    pagination: false,
+    user: null,
+    where: { id: { in: uniqueIds(ids) } },
+  })
+  return result.docs
 }
 
 async function findPublishedEventCycles(

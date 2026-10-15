@@ -3,8 +3,8 @@ import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
 import type { Category, Document, Role, Tag, User } from '@/payload-types'
+import { findPublicContent } from '@/modules/content/content-listing'
 import { publicRequestContext } from '@/modules/content/public-access'
-import { findDocumentListing } from '@/modules/documents/document-listing'
 
 import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/integration-author'
 
@@ -181,27 +181,36 @@ describe('document website access integration', () => {
     )
   })
 
-  it('filters the Documents block by taxonomy and preserves manual order', async () => {
-    const filteredResult = await findDocumentListing({
+  it('filters Listing documents by taxonomy and preserves manual order', async () => {
+    const filteredResult = await findPublicContent({
       categoryId: documentCategory.id,
       page: 1,
       pageSize: 10,
       pagination: false,
-      selectionMode: 'filters',
       sort: 'newest',
+      sources: ['documents'],
       tagId: documentTag.id,
     })
-    expect(filteredResult.items.map(({ id }) => id)).toEqual([publicDocument.id])
+    expect(filteredResult.items.map(({ document, kind }) => [kind, document.id])).toEqual([
+      ['documents', publicDocument.id],
+    ])
 
-    const manualResult = await findDocumentListing({
-      manualDocuments: [roleDocument.id, publicDocument.id],
+    const manualResult = await findPublicContent({
+      manualItems: [
+        { relationTo: 'documents', value: roleDocument.id },
+        { relationTo: 'documents', value: publicDocument.id },
+      ],
       page: 1,
       pageSize: 10,
       pagination: false,
       selectionMode: 'manual',
       sort: 'newest',
+      sources: [],
     })
-    expect(manualResult.items.map(({ id }) => id)).toEqual([roleDocument.id, publicDocument.id])
+    expect(manualResult.items.map(({ document, kind }) => [kind, document.id])).toEqual([
+      ['documents', roleDocument.id],
+      ['documents', publicDocument.id],
+    ])
   })
 
   it('keeps public results independent from the signed-in role without granting CMS access', async () => {

@@ -9,7 +9,6 @@ import { CardBlock } from '@/blocks/Card'
 import { CarouselBlock } from '@/blocks/Carousel'
 import { ContentCalendarBlock, validateContentCalendarSources } from '@/blocks/ContentCalendar'
 import { ColumnLayoutBlock } from '@/blocks/ColumnLayout'
-import { DocumentsBlock } from '@/blocks/Documents'
 import { HeadingBlock } from '@/blocks/Heading'
 import { MemberProfilesBlock } from '@/blocks/MemberProfiles'
 import { RichTextBlock } from '@/blocks/RichText'
@@ -92,7 +91,6 @@ describe('page configuration', () => {
       ListingBlock.admin?.images?.thumbnail,
       CarouselBlock.admin?.images?.thumbnail,
       MediaGalleryBlock.admin?.images?.thumbnail,
-      DocumentsBlock.admin?.images?.thumbnail,
       AttachmentsBlock.admin?.images?.thumbnail,
       MemberProfilesBlock.admin?.images?.thumbnail,
       HeadingBlock.admin?.images?.thumbnail,
@@ -118,10 +116,6 @@ describe('page configuration', () => {
       {
         alt: 'Schematyczna ikona siatki zdjęć',
         url: '/assets/block-thumbnails/media-gallery.png',
-      },
-      {
-        alt: 'Schematyczna ikona listy dokumentów',
-        url: '/assets/block-thumbnails/documents.png',
       },
       {
         alt: 'Schematyczna ikona dokumentów połączonych spinaczem',
@@ -168,7 +162,6 @@ describe('page configuration', () => {
       ListingBlock.admin?.group,
       CarouselBlock.admin?.group,
       MediaGalleryBlock.admin?.group,
-      DocumentsBlock.admin?.group,
       AttachmentsBlock.admin?.group,
       MemberProfilesBlock.admin?.group,
       HeadingBlock.admin?.group,
@@ -178,7 +171,6 @@ describe('page configuration', () => {
       ColumnLayoutBlock.admin?.group,
       SectionGroupBlock.admin?.group,
     ]).toEqual([
-      'Treści',
       'Treści',
       'Treści',
       'Treści',
@@ -386,12 +378,25 @@ describe('page configuration', () => {
         },
       },
       label: 'Treść',
-      relationTo: ['pages', 'posts', 'events', 'event-cycles'],
+      relationTo: ['pages', 'posts', 'events', 'event-cycles', 'documents'],
       required: true,
       type: 'relationship',
     })
     expect(itemsField.admin?.condition?.({}, { selectionMode: 'manual' }, {} as never)).toBe(true)
     expect(itemsField.admin?.condition?.({}, { selectionMode: 'filters' }, {} as never)).toBe(false)
+    expect(findField(ListingBlock.fields, 'sources')).toMatchObject({
+      options: expect.arrayContaining([{ label: 'Dokumenty', value: 'documents' }]),
+    })
+    expect(findField(ListingBlock.fields, 'view')).toMatchObject({
+      options: expect.arrayContaining([{ label: 'Karuzela', value: 'carousel' }]),
+    })
+  })
+
+  it('does not register the removed Documents block', () => {
+    const layoutField = findField(Pages.fields, 'layout')
+    if (layoutField.type !== 'blocks') throw new Error('Expected the Page layout field')
+
+    expect(layoutField.blocks.map((block) => block.slug)).not.toContain('documents')
   })
 
   it('configures Carousel selection like Listing without pagination', () => {
@@ -425,11 +430,16 @@ describe('page configuration', () => {
     })
     expect(itemsField).toMatchObject({ label: 'Treści', type: 'array' })
     expect(itemField).toMatchObject({
-      relationTo: ['pages', 'posts', 'events', 'event-cycles'],
+      relationTo: ['pages', 'posts', 'events', 'event-cycles', 'documents'],
       required: true,
       type: 'relationship',
     })
-    expect(sourcesField).toMatchObject({ hasMany: true, label: 'Źródła', type: 'select' })
+    expect(sourcesField).toMatchObject({
+      hasMany: true,
+      label: 'Źródła',
+      options: expect.arrayContaining([{ label: 'Dokumenty', value: 'documents' }]),
+      type: 'select',
+    })
     expect(slideLimitField).toMatchObject({
       defaultValue: 5,
       label: 'Maksymalna liczba slajdów',
@@ -448,6 +458,11 @@ describe('page configuration', () => {
         siblingData: { selectionMode: 'manual' },
       } as never),
     ).toBeTypeOf('string')
+    expect(
+      validateManualListingItems([{ item: { relationTo: 'documents' } }], {
+        siblingData: { selectionMode: 'manual' },
+      } as never),
+    ).toBe('Wybierz cel dla każdej treści.')
     expect(
       validateManualListingItems(
         [

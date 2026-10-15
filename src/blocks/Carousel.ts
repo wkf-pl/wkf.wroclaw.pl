@@ -82,6 +82,7 @@ export const CarouselBlock: Block = {
           label: 'Źródła',
           options: listingSources.map((source) => {
             const labels = {
+              documents: 'Dokumenty',
               'event-cycles': 'Cykle wydarzeń',
               events: 'Wydarzenia',
               pages: 'Strony',

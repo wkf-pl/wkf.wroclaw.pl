@@ -5,13 +5,14 @@ import type { RelationshipFieldClientProps } from 'payload'
 import type { CSSProperties } from 'react'
 import { useState } from 'react'
 
-type ListingSource = 'event-cycles' | 'events' | 'pages' | 'posts'
+type ListingSource = 'documents' | 'event-cycles' | 'events' | 'pages' | 'posts'
 
 const listingSourceOptions: Array<{ label: string; value: ListingSource }> = [
   { label: 'Strona', value: 'pages' },
   { label: 'Wpis', value: 'posts' },
   { label: 'Wydarzenie', value: 'events' },
   { label: 'Cykl wydarzeń', value: 'event-cycles' },
+  { label: 'Dokument', value: 'documents' },
 ]
 
 type ListingItemValue = {

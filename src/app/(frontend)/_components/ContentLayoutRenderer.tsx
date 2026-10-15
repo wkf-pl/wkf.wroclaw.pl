@@ -20,7 +20,6 @@ import type {
   CarouselBlock,
   ColumnLayoutBlock,
   ContentCalendarBlock,
-  DocumentsBlock,
   Event,
   EventCycle,
   HeadingBlock,
@@ -40,7 +39,6 @@ import { ContentHeading, ContentPresentation } from './ContentPresentation'
 import { CardBlockSection } from './CardBlockSection'
 import { resolveCarouselBlockSection } from './CarouselBlockSection'
 import { ContentCalendarBlockSection } from './ContentCalendarBlockSection'
-import { DocumentBlockSection } from './DocumentBlockSection'
 import { resolveListingBlockSection } from './ListingBlockSection'
 import { resolveMediaBlockSection } from './MediaBlockSection'
 import { MemberProfilesSection } from './MemberProfilesSection'
@@ -54,7 +52,6 @@ type ContentLeafBlock =
   | CardBlock
   | CarouselBlock
   | ContentCalendarBlock
-  | DocumentsBlock
   | HeadingBlock
   | ListingBlock
   | MediaGalleryBlock
@@ -525,16 +522,6 @@ async function resolvePresentedLeafBlock({
       })
       return createFilterBlockResolution(block.blockType, resolution)
     }
-    case 'documents':
-      return {
-        content: await DocumentBlockSection({
-          block,
-          blockPath: path,
-          pathname,
-          searchParams,
-        }),
-        hasEmptyFilterBlock: false,
-      }
     case 'listing': {
       const resolution = await resolveListingBlockSection({
         block,

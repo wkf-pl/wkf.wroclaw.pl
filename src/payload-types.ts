@@ -180,7 +180,7 @@ export interface UserAuthOperations {
  */
 export interface ContentListingItem {
   id: number;
-  source: 'pages' | 'posts' | 'events' | 'event-cycles';
+  source: 'pages' | 'posts' | 'events' | 'event-cycles' | 'documents';
   sourceDocumentId: number;
   sourceUpdatedAt: string;
   title: string;
@@ -295,7 +295,6 @@ export interface Page {
     | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
-    | DocumentsBlock
     | AttachmentsBlock
     | MemberProfilesBlock
     | ColumnLayoutBlock
@@ -594,7 +593,6 @@ export interface EventCycle {
     | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
-    | DocumentsBlock
     | AttachmentsBlock
     | MemberProfilesBlock
     | ColumnLayoutBlock
@@ -640,7 +638,6 @@ export interface EventCycle {
       | CarouselBlock
       | ContentCalendarBlock
       | MediaGalleryBlock
-      | DocumentsBlock
       | AttachmentsBlock
       | MemberProfilesBlock
       | ColumnLayoutBlock
@@ -1052,7 +1049,6 @@ export interface Post {
     | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
-    | DocumentsBlock
     | AttachmentsBlock
     | MemberProfilesBlock
     | ColumnLayoutBlock
@@ -1119,7 +1115,6 @@ export interface Event {
     | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
-    | DocumentsBlock
     | AttachmentsBlock
     | MemberProfilesBlock
     | ColumnLayoutBlock
@@ -1296,7 +1291,7 @@ export interface EventType {
  * via the `definition` "ListingBlock".
  */
 export interface ListingBlock {
-  view: 'cards' | 'compact' | 'grid' | 'tiles';
+  view: 'cards' | 'carousel' | 'compact' | 'grid' | 'tiles';
   frame?: ('none' | 'outline') | null;
   surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
   /**
@@ -1324,11 +1319,15 @@ export interface ListingBlock {
           | {
               relationTo: 'event-cycles';
               value: number | EventCycle;
+            }
+          | {
+              relationTo: 'documents';
+              value: number | Document;
             };
         id?: string | null;
       }[]
     | null;
-  sources?: ('pages' | 'posts' | 'events' | 'event-cycles')[] | null;
+  sources?: ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents')[] | null;
   parentPage?: (number | null) | Page;
   category?: (number | null) | Category;
   tag?: (number | null) | Tag;
@@ -1375,11 +1374,15 @@ export interface CarouselBlock {
           | {
               relationTo: 'event-cycles';
               value: number | EventCycle;
+            }
+          | {
+              relationTo: 'documents';
+              value: number | Document;
             };
         id?: string | null;
       }[]
     | null;
-  sources?: ('pages' | 'posts' | 'events' | 'event-cycles')[] | null;
+  sources?: ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents')[] | null;
   parentPage?: (number | null) | Page;
   category?: (number | null) | Category;
   tag?: (number | null) | Tag;
@@ -1444,37 +1447,6 @@ export interface MediaGalleryBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'mediaGallery';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "DocumentsBlock".
- */
-export interface DocumentsBlock {
-  frame?: ('none' | 'outline') | null;
-  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
-  /**
-   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
-   */
-  surfaceImage?: (number | null) | Media;
-  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
-  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
-  selectionMode: 'manual' | 'filters';
-  items?:
-    | {
-        document: number | Document;
-        id?: string | null;
-      }[]
-    | null;
-  category?: (number | null) | Category;
-  tag?: (number | null) | Tag;
-  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
-  view: 'cards' | 'list' | 'grid' | 'tiles' | 'carousel';
-  pageSize: number;
-  pagination?: boolean | null;
-  emptyMessage?: string | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'documents';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1699,7 +1671,6 @@ export interface ColumnLayoutBlock {
           | CarouselBlock
           | ContentCalendarBlock
           | MediaGalleryBlock
-          | DocumentsBlock
           | AttachmentsBlock
           | MemberProfilesBlock
         )[]
@@ -1745,7 +1716,6 @@ export interface SectionGroupBlock {
       | CarouselBlock
       | ContentCalendarBlock
       | MediaGalleryBlock
-      | DocumentsBlock
       | AttachmentsBlock
       | MemberProfilesBlock
       | ColumnLayoutBlock
@@ -2086,7 +2056,6 @@ export interface TabbedContentBlock {
           | CarouselBlock
           | ContentCalendarBlock
           | MediaGalleryBlock
-          | DocumentsBlock
           | AttachmentsBlock
           | MemberProfilesBlock
           | ColumnLayoutBlock
@@ -2117,7 +2086,6 @@ export interface Partner {
     | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
-    | DocumentsBlock
     | AttachmentsBlock
     | MemberProfilesBlock
     | ColumnLayoutBlock
@@ -2433,7 +2401,6 @@ export interface PagesSelect<T extends boolean = true> {
         carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
-        documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
@@ -2665,33 +2632,6 @@ export interface MediaGalleryBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "DocumentsBlock_select".
- */
-export interface DocumentsBlockSelect<T extends boolean = true> {
-  frame?: T;
-  surface?: T;
-  surfaceImage?: T;
-  surfaceHorizontalPosition?: T;
-  surfaceVerticalPosition?: T;
-  selectionMode?: T;
-  items?:
-    | T
-    | {
-        document?: T;
-        id?: T;
-      };
-  category?: T;
-  tag?: T;
-  sort?: T;
-  view?: T;
-  pageSize?: T;
-  pagination?: T;
-  emptyMessage?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "AttachmentsBlock_select".
  */
 export interface AttachmentsBlockSelect<T extends boolean = true> {
@@ -2770,7 +2710,6 @@ export interface ColumnLayoutBlockSelect<T extends boolean = true> {
               carousel?: T | CarouselBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
-              documents?: T | DocumentsBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
               memberProfiles?: T | MemberProfilesBlockSelect<T>;
             };
@@ -2809,7 +2748,6 @@ export interface SectionGroupBlockSelect<T extends boolean = true> {
               carousel?: T | CarouselBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
-              documents?: T | DocumentsBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
               memberProfiles?: T | MemberProfilesBlockSelect<T>;
               columnLayout?: T | ColumnLayoutBlockSelect<T>;
@@ -2906,7 +2844,6 @@ export interface TabbedContentBlockSelect<T extends boolean = true> {
               carousel?: T | CarouselBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
-              documents?: T | DocumentsBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
               memberProfiles?: T | MemberProfilesBlockSelect<T>;
               columnLayout?: T | ColumnLayoutBlockSelect<T>;
@@ -2937,7 +2874,6 @@ export interface PostsSelect<T extends boolean = true> {
         carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
-        documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
@@ -2981,7 +2917,6 @@ export interface EventsSelect<T extends boolean = true> {
         carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
-        documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
@@ -3083,7 +3018,6 @@ export interface EventCyclesSelect<T extends boolean = true> {
         carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
-        documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
@@ -3115,7 +3049,6 @@ export interface EventCyclesSelect<T extends boolean = true> {
               carousel?: T | CarouselBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
-              documents?: T | DocumentsBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
               memberProfiles?: T | MemberProfilesBlockSelect<T>;
               columnLayout?: T | ColumnLayoutBlockSelect<T>;
@@ -3413,7 +3346,6 @@ export interface PartnersSelect<T extends boolean = true> {
         carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
-        documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
@@ -3835,7 +3767,6 @@ export interface HomepageSection {
     | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
-    | DocumentsBlock
     | AttachmentsBlock
     | MemberProfilesBlock
     | ColumnLayoutBlock
@@ -4180,7 +4111,6 @@ export interface HomepageSectionsSelect<T extends boolean = true> {
         carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
-        documents?: T | DocumentsBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;

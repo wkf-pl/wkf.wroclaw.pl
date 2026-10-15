@@ -1,6 +1,10 @@
 import type { CollectionConfig } from 'payload'
 
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
+import {
+  removeContentListingAfterDelete,
+  syncContentListingAfterChange,
+} from '@/modules/content/content-listing-index'
 import { createTaxonomyFields } from '@/modules/content/taxonomy-fields'
 import { populateSlug } from '@/modules/content/slug'
 import { documentTypeOptions } from '@/modules/documents/document-types'
@@ -170,7 +174,8 @@ export const Documents: CollectionConfig = {
     },
   ],
   hooks: {
-    afterChange: [assignDocumentFiles],
+    afterChange: [assignDocumentFiles, syncContentListingAfterChange],
+    afterDelete: [removeContentListingAfterDelete],
     beforeChange: [setPublishedAt],
     beforeDelete: [deleteDocumentFiles],
     beforeValidate: [validateDocumentFiles],

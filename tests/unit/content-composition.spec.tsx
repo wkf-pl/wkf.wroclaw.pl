@@ -8,7 +8,6 @@ import { ActionLinksBlock } from '@/blocks/ActionLinks'
 import { CardBlock } from '@/blocks/Card'
 import { ContentCalendarBlock } from '@/blocks/ContentCalendar'
 import { ColumnLayoutBlock } from '@/blocks/ColumnLayout'
-import { DocumentsBlock } from '@/blocks/Documents'
 import { HeadingBlock } from '@/blocks/Heading'
 import { ListingBlock } from '@/blocks/Listing'
 import { AttachmentsBlock, MediaGalleryBlock } from '@/blocks/MediaListing'
@@ -114,7 +113,6 @@ describe('content composition', () => {
       ListingBlock,
       MediaGalleryBlock,
       AttachmentsBlock,
-      DocumentsBlock,
       MemberProfilesBlock,
     ]) {
       expect(
@@ -189,12 +187,7 @@ describe('content composition', () => {
     expect(firstRowNames(RichTextBlock.fields)).toEqual(['textStyle', 'frame', 'surface'])
     expect(firstRowNames(MemberProfilesBlock.fields)).toEqual(['view', 'frame', 'surface'])
     expect(firstRowNames(ListingBlock.fields)).toEqual(['view', 'frame', 'surface'])
-    for (const block of [
-      ContentCalendarBlock,
-      MediaGalleryBlock,
-      AttachmentsBlock,
-      DocumentsBlock,
-    ]) {
+    for (const block of [ContentCalendarBlock, MediaGalleryBlock, AttachmentsBlock]) {
       expect(firstRowNames(block.fields)).toEqual(['frame', 'surface'])
     }
 

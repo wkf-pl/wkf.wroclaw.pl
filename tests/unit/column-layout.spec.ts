@@ -193,7 +193,7 @@ describe('column layout', () => {
                         { blockType: 'mediaGallery', marker: 'left-second' },
                       ],
                     },
-                    { blocks: [{ blockType: 'documents', marker: 'right' }] },
+                    { blocks: [{ blockType: 'listing', marker: 'right' }] },
                   ],
                 },
               ],
@@ -238,16 +238,13 @@ describe('column layout', () => {
       '@container content-block (width <= 48rem)',
     )
 
-    expect(frontendStyles).toContain(
-      ':is(.listingBlock, .documentsBlock, .mediaBlock, .memberProfilesBlock)',
-    )
+    expect(frontendStyles).toContain(':is(.listingBlock, .mediaBlock, .memberProfilesBlock)')
     expect(frontendStyles).toContain('container-name: content-block')
     expect(contentBlockQueryIndex).toBeGreaterThan(frontendStyles.lastIndexOf('@media'))
 
     const contentBlockQuery = frontendStyles.slice(contentBlockQueryIndex)
     for (const gridClass of [
       '.contentList-grid',
-      '.documentList-grid',
       '.mediaList-grid',
       '.mediaList-cards',
       '.memberGrid',
