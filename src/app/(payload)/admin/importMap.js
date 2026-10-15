@@ -42,12 +42,12 @@ import { MemberProfileEntryRowLabel as MemberProfileEntryRowLabel_d89d5b210a2467
 import { MemberProfilesBlockLabel as MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { ColumnLayoutTabsField as ColumnLayoutTabsField_432a355624980b16474727ea268404c1 } from '../../../components/admin/TabbedLayoutField'
 import { ColumnLayoutBlockLabel as ColumnLayoutBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
-import { SectionGroupTabsField as SectionGroupTabsField_432a355624980b16474727ea268404c1 } from '../../../components/admin/TabbedLayoutField'
-import { SectionGroupBlockLabel as SectionGroupBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { NavigationItemRowLabel as NavigationItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { TabbedContentTabRowLabel as TabbedContentTabRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { TabbedContentTabsField as TabbedContentTabsField_432a355624980b16474727ea268404c1 } from '../../../components/admin/TabbedLayoutField'
 import { TabbedContentBlockLabel as TabbedContentBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
+import { SectionGroupTabsField as SectionGroupTabsField_432a355624980b16474727ea268404c1 } from '../../../components/admin/TabbedLayoutField'
+import { SectionGroupBlockLabel as SectionGroupBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { HierarchyPath as HierarchyPath_6311b6033928ec6e076fdd24567b1bb0 } from '../../../components/admin/HierarchyPath'
 import { UserRelationshipCell as UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
 import { UserRelationshipField as UserRelationshipField_a467c3b73beceda1dd92aed22692a084 } from '../../../components/admin/UserRelationshipField'
@@ -139,12 +139,12 @@ export const importMap = {
   "/components/admin/ContentBlockLabel#MemberProfilesBlockLabel": MemberProfilesBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/TabbedLayoutField#ColumnLayoutTabsField": ColumnLayoutTabsField_432a355624980b16474727ea268404c1,
   "/components/admin/ContentBlockLabel#ColumnLayoutBlockLabel": ColumnLayoutBlockLabel_d53c993bb109710411f82eaaf564eeff,
-  "/components/admin/TabbedLayoutField#SectionGroupTabsField": SectionGroupTabsField_432a355624980b16474727ea268404c1,
-  "/components/admin/ContentBlockLabel#SectionGroupBlockLabel": SectionGroupBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/DynamicRowLabel#NavigationItemRowLabel": NavigationItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/DynamicRowLabel#TabbedContentTabRowLabel": TabbedContentTabRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/TabbedLayoutField#TabbedContentTabsField": TabbedContentTabsField_432a355624980b16474727ea268404c1,
   "/components/admin/ContentBlockLabel#TabbedContentBlockLabel": TabbedContentBlockLabel_d53c993bb109710411f82eaaf564eeff,
+  "/components/admin/TabbedLayoutField#SectionGroupTabsField": SectionGroupTabsField_432a355624980b16474727ea268404c1,
+  "/components/admin/ContentBlockLabel#SectionGroupBlockLabel": SectionGroupBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/HierarchyPath#HierarchyPath": HierarchyPath_6311b6033928ec6e076fdd24567b1bb0,
   "/components/admin/UserIdentity#UserRelationshipCell": UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53,
   "/components/admin/UserRelationshipField#UserRelationshipField": UserRelationshipField_a467c3b73beceda1dd92aed22692a084,

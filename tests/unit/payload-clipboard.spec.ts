@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs'
 
-import type { ClientBlock, FormState } from 'payload'
+import type { ClientBlock, Field, FormState } from 'payload'
 import { describe, expect, it } from 'vitest'
+
+import { SectionGroupBlock } from '@/blocks/SectionGroup'
+import { TabbedContentBlock } from '@/blocks/TabbedContent'
 
 import { isClipboardDataValid } from '../../node_modules/@payloadcms/ui/dist/elements/ClipboardAction/isClipboardDataValid.js'
 import { mergeFormStateFromClipboard } from '../../node_modules/@payloadcms/ui/dist/elements/ClipboardAction/mergeFormStateFromClipboard.js'
@@ -15,6 +18,24 @@ const sectionGroupBlock = {
   fields: [{ name: 'frame', type: 'select' }],
   slug: 'sectionGroup',
 } as ClientBlock
+
+function findNamedField(fields: Field[], name: string): Field | undefined {
+  for (const field of fields) {
+    if ('name' in field && field.name === name) return field
+
+    if (field.type === 'tabs') {
+      for (const tab of field.tabs) {
+        const nestedField = findNamedField(tab.fields, name)
+        if (nestedField) return nestedField
+      }
+    } else if ('fields' in field && Array.isArray(field.fields)) {
+      const nestedField = findNamedField(field.fields, name)
+      if (nestedField) return nestedField
+    }
+  }
+
+  return undefined
+}
 
 describe('Payload row clipboard compatibility', () => {
   it('keeps clipboard overrides inside the existing Payload client bundle', () => {
@@ -63,6 +84,28 @@ describe('Payload row clipboard compatibility', () => {
         type: 'blocks',
       }),
     ).toBe(false)
+  })
+
+  it('allows tabbed content to be added or pasted into a section group', () => {
+    const sectionBlocksField = findNamedField(SectionGroupBlock.fields, 'blocks')
+    if (!sectionBlocksField || sectionBlocksField.type !== 'blocks') {
+      throw new Error('Missing section blocks field')
+    }
+
+    expect.soft(sectionBlocksField.blocks.map((block) => block.slug)).toContain('tabs')
+    expect(
+      isClipboardDataValid({
+        blocks: [TabbedContentBlock as unknown as ClientBlock],
+        data: {
+          'layout.0.blockType': { value: 'tabs' },
+        },
+        fieldPath: 'layout.1.sections.0.blocks',
+        path: 'layout',
+        rowIndex: 0,
+        schemaBlocks: sectionBlocksField.blocks as unknown as ClientBlock[],
+        type: 'blocks',
+      }),
+    ).toBe(true)
   })
 
   it('keeps strict whole-field validation when the clipboard contains a complete field', () => {

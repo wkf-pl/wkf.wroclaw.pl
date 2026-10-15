@@ -2,9 +2,11 @@
 
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { renderToStaticMarkup } from 'react-dom/server'
 import type { ArrayField, BlocksField, Field, GroupField } from 'payload'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { SectionGroupRenderer } from '@/app/(frontend)/_components/ContentLayoutRenderer'
 import { TabbedContentFrame } from '@/app/(frontend)/_components/TabbedContentFrame'
 import { TabbedContentBlock } from '@/blocks/TabbedContent'
 import { createContentLayoutField } from '@/modules/content/layout-field'
@@ -134,6 +136,49 @@ describe('tabbed content block', () => {
       'layout.0.tabs.0.blocks.0',
       'layout.0.tabs.0.blocks.1.columns.0.blocks.0',
     ])
+  })
+
+  it('renders and exposes tab contents nested in a section group', async () => {
+    const sectionGroup = {
+      blockType: 'sectionGroup',
+      sections: [
+        {
+          blocks: [
+            {
+              blockType: 'tabs',
+              tabs: [
+                {
+                  blocks: [{ blockType: 'heading', heading: 'Treść pierwszej zakładki' }],
+                  label: 'Pierwsza',
+                },
+                {
+                  blocks: [{ blockType: 'heading', heading: 'Treść drugiej zakładki' }],
+                  label: 'Druga',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+    const references = [...walkContentLeafBlocks([sectionGroup])]
+    const rendered = await SectionGroupRenderer({
+      block: sectionGroup as never,
+      document: {} as never,
+      path: 'layout.0',
+      pathname: '/test',
+      searchParams: {},
+    })
+    const markup = renderToStaticMarkup(rendered)
+
+    expect(references.map(({ block }) => block.blockType)).toEqual(['heading', 'heading'])
+    expect(references.map(({ path }) => path)).toEqual([
+      'layout.0.sections.0.blocks.0.tabs.0.blocks.0',
+      'layout.0.sections.0.blocks.0.tabs.1.blocks.0',
+    ])
+    expect(markup).toContain('class="tabbedContent"')
+    expect(markup).toContain('Treść pierwszej zakładki')
+    expect(markup).toContain('Treść drugiej zakładki')
   })
 
   it('keeps the event-frame hierarchy and responsive menu layout in frontend styles', () => {

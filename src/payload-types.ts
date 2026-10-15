@@ -1719,6 +1719,7 @@ export interface SectionGroupBlock {
       | AttachmentsBlock
       | MemberProfilesBlock
       | ColumnLayoutBlock
+      | TabbedContentBlock
     )[];
     id?: string | null;
   }[];
@@ -2751,6 +2752,7 @@ export interface SectionGroupBlockSelect<T extends boolean = true> {
               attachments?: T | AttachmentsBlockSelect<T>;
               memberProfiles?: T | MemberProfilesBlockSelect<T>;
               columnLayout?: T | ColumnLayoutBlockSelect<T>;
+              tabs?: T | TabbedContentBlockSelect<T>;
             };
         id?: T;
       };
