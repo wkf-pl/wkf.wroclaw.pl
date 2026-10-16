@@ -255,6 +255,20 @@ describe('deployment workflows', () => {
     }
   })
 
+  it('uses environment-specific expectations for public deployment routes', () => {
+    const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
+
+    expect(deploymentScript).toContain('expected_root_status="401"')
+    expect(deploymentScript).toContain('expected_admin_status="401"')
+    expect(deploymentScript).toContain('expected_robots_status="401"')
+    expect(deploymentScript).toMatch(
+      /if \[\[ "\$target_environment" == "staging" \]\]; then[\s\S]*expected_root_status="200"[\s\S]*expected_admin_status="200"[\s\S]*expected_robots_status="200"/,
+    )
+    expect(deploymentScript).toContain('"$root_status" == "$expected_root_status"')
+    expect(deploymentScript).toContain('"$admin_status" == "$expected_admin_status"')
+    expect(deploymentScript).toContain('"$robots_status" != "$expected_robots_status"')
+  })
+
   it('keeps each environment within its availability and resource limits', () => {
     const mainTemplate = readFileSync('infra/azure/main.bicep', 'utf8')
     const applicationTemplate = readFileSync('infra/azure/modules/application.bicep', 'utf8')

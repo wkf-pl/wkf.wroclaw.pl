@@ -421,6 +421,15 @@ read_http_status() {
 
 health_deadline=$((SECONDS + health_timeout_seconds))
 health_check_attempt=0
+expected_root_status="401"
+expected_admin_status="401"
+expected_robots_status="401"
+
+if [[ "$target_environment" == "staging" ]]; then
+  expected_root_status="200"
+  expected_admin_status="200"
+  expected_robots_status="200"
+fi
 
 while ((SECONDS < health_deadline)); do
   health_check_attempt=$((health_check_attempt + 1))
@@ -440,19 +449,21 @@ while ((SECONDS < health_deadline)); do
     admin_status="skipped"
   fi
 
-  echo "Deployment check ${health_check_attempt}: /api/health=${health_status:-000} /api/health/live=${liveness_status:-000} /=${root_status:-000} /admin=${admin_status:-000}"
+  echo "Deployment check ${health_check_attempt}: /api/health=${health_status:-000} (expected 200) /api/health/live=${liveness_status:-000} (expected 200) /=${root_status:-000} (expected ${expected_root_status}) /admin=${admin_status:-000} (expected ${expected_admin_status})"
 
   health_check_succeeded=false
-  if [[ "$health_status" == "200" && "$liveness_status" == "200" && "$root_status" == "401" && "$admin_status" == "401" ]]; then
+  if [[ "$health_status" == "200" && "$liveness_status" == "200" && "$root_status" == "$expected_root_status" && "$admin_status" == "$expected_admin_status" ]]; then
     health_check_succeeded=true
+    robots_status="$(read_http_status '/robots.txt')"
+    echo "Deployment check ${health_check_attempt}: /robots.txt=${robots_status:-000} (expected ${expected_robots_status})"
 
-    if [[ "$target_environment" == "staging" || "$target_environment" == "prod" ]]; then
-      robots_status="$(read_http_status '/robots.txt')"
+    if [[ "$robots_status" != "$expected_robots_status" ]]; then
+      health_check_succeeded=false
+    elif [[ "$expected_robots_status" == "200" ]]; then
       robots_content="$(curl --connect-timeout 3 --max-time 8 --silent "https://${application_fqdn}/robots.txt" || true)"
-      echo "Deployment check ${health_check_attempt}: /robots.txt=${robots_status:-000}, expected Disallow: /"
+      echo "Deployment check ${health_check_attempt}: /robots.txt content expected to include Disallow: /"
 
-      if [[ "$robots_status" != "200" ]] \
-        || ! grep --fixed-strings --line-regexp 'Disallow: /' <<<"$robots_content" >/dev/null; then
+      if ! grep --fixed-strings --line-regexp 'Disallow: /' <<<"$robots_content" >/dev/null; then
         health_check_succeeded=false
       fi
     fi
