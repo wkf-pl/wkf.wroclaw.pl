@@ -74,6 +74,14 @@ get_active_revision() {
     --output tsv 2>/dev/null || true
 }
 
+get_latest_revision() {
+  az containerapp show \
+    --name "$application_name" \
+    --resource-group "$resource_group_name" \
+    --query properties.latestRevisionName \
+    --output tsv 2>/dev/null || true
+}
+
 get_revision_image() {
   local revision_name="$1"
 
@@ -167,28 +175,61 @@ deactivate_revisions_except() {
     --output tsv 2>/dev/null || true)
 }
 
+wait_for_revision_ready() {
+  local revision_name="$1"
+  local revision_active=""
+  local revision_health_state=""
+  local revision_running_state=""
+  local deadline=$((SECONDS + health_timeout_seconds))
+
+  while ((SECONDS < deadline)); do
+    read -r revision_active revision_health_state revision_running_state < <(az containerapp revision show \
+      --name "$application_name" \
+      --resource-group "$resource_group_name" \
+      --revision "$revision_name" \
+      --query '{active: properties.active, health: properties.healthState, running: properties.runningState}' \
+      --output tsv 2>/dev/null || true)
+
+    if [[ "${revision_active,,}" == "true" && "$revision_health_state" == "Healthy" ]]; then
+      echo "Restored previous revision: $revision_name ($revision_running_state)" >&2
+      return 0
+    fi
+
+    sleep 5
+  done
+
+  echo "Previous revision did not become active and healthy within ${health_timeout_seconds} seconds: $revision_name (active=${revision_active:-unknown}, health=${revision_health_state:-unknown}, running=${revision_running_state:-unknown})" >&2
+  return 1
+}
+
 restore_previous_revision() {
-  local previous_revision_active=""
+  local latest_revision=""
 
   [[ -n "$previous_revision" ]] || return 0
 
+  latest_revision="$(get_latest_revision)"
+  if [[ -n "$latest_revision" && "$latest_revision" != "$previous_revision" ]]; then
+    if ! az containerapp revision deactivate \
+      --name "$application_name" \
+      --resource-group "$resource_group_name" \
+      --revision "$latest_revision" \
+      --output none; then
+      echo "Could not deactivate the failed revision during rollback: $latest_revision" >&2
+      return 1
+    fi
+  fi
+
   deactivate_revisions_except "$previous_revision"
-  previous_revision_active="$(az containerapp revision show \
+  if ! az containerapp revision activate \
     --name "$application_name" \
     --resource-group "$resource_group_name" \
     --revision "$previous_revision" \
-    --query properties.active \
-    --output tsv 2>/dev/null || true)"
-
-  if [[ "$previous_revision_active" != "true" ]]; then
-    az containerapp revision activate \
-      --resource-group "$resource_group_name" \
-      --revision "$previous_revision" \
-      --output none
-    echo "Reactivated previous revision: $previous_revision" >&2
-  else
-    echo "Previous revision remained active: $previous_revision" >&2
+    --output none; then
+    echo "Could not reactivate the previous revision during rollback: $previous_revision" >&2
+    return 1
   fi
+
+  wait_for_revision_ready "$previous_revision"
 }
 
 rollback_deployment() {
@@ -207,7 +248,9 @@ rollback_deployment() {
   fi
 
   if [[ "$maintenance_started" == "true" || "$application_update_started" == "true" ]]; then
-    restore_previous_revision
+    if ! restore_previous_revision; then
+      echo "Automatic application rollback failed. Restore the previous revision manually: $previous_revision" >&2
+    fi
   fi
 
   exit "$failure_status"

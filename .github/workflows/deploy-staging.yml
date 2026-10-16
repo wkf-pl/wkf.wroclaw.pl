@@ -51,10 +51,6 @@ jobs:
       PROVISION_INFRASTRUCTURE_OVERRIDE: ${{ inputs.provision_infrastructure }}
       RUN_MIGRATIONS_OVERRIDE: ${{ inputs.run_migrations }}
       SOURCE_SHA: ${{ github.sha }}
-      STAGING_ENTRA_ALLOWED_GROUP_ID: ${{ vars.ENTRA_ALLOWED_GROUP_ID }}
-      STAGING_ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
-      STAGING_ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
-      STAGING_ENTRA_TENANT_ID: ${{ vars.ENTRA_TENANT_ID }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v6

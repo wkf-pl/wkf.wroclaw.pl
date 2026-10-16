@@ -54,7 +54,7 @@ param maximumReplicas int = 1
 param monthlyBudgetAmount int
 
 @description('First day of the initial monthly budget period.')
-param budgetStartDate string = utcNow('yyyy-MM-01')
+param budgetStartDate string
 
 @minValue(1)
 @description('Sustained CPU threshold in nanocores. The default is 80% of the 0.5 vCPU application limit.')
