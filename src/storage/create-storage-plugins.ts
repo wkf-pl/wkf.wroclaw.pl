@@ -3,6 +3,8 @@ import type { Plugin } from 'payload'
 
 import { getEnvironmentBoolean, getRequiredEnvironmentVariable } from '@/lib/env'
 
+import { getStorageContainerClient } from './get-storage-container-client'
+
 export function createStoragePlugins(): Plugin[] {
   return [
     azureStorage({
@@ -13,8 +15,8 @@ export function createStoragePlugins(): Plugin[] {
         'member-profile-images': { prefix: 'member-profiles' },
         media: true,
       },
-      connectionString: getRequiredEnvironmentVariable('AZURE_STORAGE_CONNECTION_STRING'),
       containerName: getRequiredEnvironmentVariable('AZURE_STORAGE_CONTAINER_NAME'),
+      getStorageClient: getStorageContainerClient,
     }),
   ]
 }

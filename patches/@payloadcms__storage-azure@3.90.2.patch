@@ -1,0 +1,57 @@
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index 5ea1834..487a8b0 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -1,3 +1,4 @@
++import type { ContainerClient } from '@azure/storage-blob';
+ import type { ClientUploadsAccess, CollectionOptions } from '@payloadcms/plugin-cloud-storage/types';
+ import type { Plugin, UploadCollectionSlug } from 'payload';
+ import { getStorageClient as getStorageClientFunc } from './utils/getStorageClient.js';
+@@ -58,7 +59,11 @@ export type AzureStorageOptions = {
+     /**
+      * Azure Blob storage connection string
+      */
+-    connectionString: string;
++    connectionString?: string;
++    /**
++     * Provides a preconfigured Azure Blob container client.
++     */
++    getStorageClient?: () => ContainerClient;
+     /**
+      * Public access level applied to a container that the plugin creates via
+      * `allowContainerCreate`. Has no effect on containers that already exist.
+diff --git a/dist/index.js b/dist/index.js
+index c32b805..f0ac429 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -5,9 +5,14 @@ import { getGenerateSignedURLHandler } from './generateSignedURL.js';
+ import { isAzureClientUploadAllowed } from './isClientUploadAllowed.js';
+ import { getStorageClient as getStorageClientFunc } from './utils/getStorageClient.js';
+ export const azureStorage = (azureStorageOptions)=>(incomingConfig)=>{
+-        const getStorageClient = ()=>getStorageClientFunc({
+-                connectionString: azureStorageOptions.connectionString,
+-                containerName: azureStorageOptions.containerName
+-            });
++        const getStorageClient = azureStorageOptions.getStorageClient ?? (()=>{
++            if (!azureStorageOptions.connectionString) {
++                throw new Error('Either connectionString or getStorageClient must be configured');
++            }
++            return getStorageClientFunc({
++                    connectionString: azureStorageOptions.connectionString,
++                    containerName: azureStorageOptions.containerName
++                });
++        });
+         const isPluginDisabled = azureStorageOptions.enabled === false;
+         const clientUploadCollections = Object.fromEntries(Object.entries(azureStorageOptions.collections).filter(([slug])=>isAzureClientUploadAllowed(incomingConfig.collections?.find((collection)=>collection.slug === slug))));
+@@ -31,10 +36,7 @@ export const azureStorage = (azureStorageOptions)=>(incomingConfig)=>{
+             return incomingConfig;
+         }
+         const createContainerIfNotExists = async ()=>{
+-            const containerClient = getStorageClientFunc({
+-                connectionString: azureStorageOptions.connectionString,
+-                containerName: azureStorageOptions.containerName
+-            });
++            const containerClient = getStorageClient();
+             // Private by default; public access is opt-in via `containerAccess`.
+             const containerAccess = azureStorageOptions.containerAccess ?? 'private';
+             if (containerAccess === 'private') {

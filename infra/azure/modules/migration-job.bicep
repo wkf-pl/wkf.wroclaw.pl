@@ -26,7 +26,11 @@ param smtpSkipVerify bool
 param smtpUser string
 
 @secure()
-param storageConnectionString string
+param storageConnectionString string = ''
+
+param storageAuthenticationMode string = 'connection-string'
+param storageIdentityClientId string = ''
+param storageIdentityId string = ''
 
 param tags object
 
@@ -39,11 +43,12 @@ var migrationSecrets = concat([
     name: 'payload-secret'
     value: payloadSecret
   }
+], storageConnectionString != '' ? [
   {
     name: 'storage-connection-string'
     value: storageConnectionString
   }
-], smtpPassword != '' ? [
+] : [], smtpPassword != '' ? [
   {
     name: 'smtp-password'
     value: smtpPassword
@@ -60,9 +65,19 @@ var migrationEnvironmentVariables = concat([
     value: 'false'
   }
   {
+    name: 'AZURE_STORAGE_AUTH_MODE'
+    value: storageAuthenticationMode
+  }
+  {
+    name: 'AZURE_STORAGE_IDENTITY_CLIENT_ID'
+    value: storageIdentityClientId
+  }
+], storageConnectionString != '' ? [
+  {
     name: 'AZURE_STORAGE_CONNECTION_STRING'
     secretRef: 'storage-connection-string'
   }
+] : [], [
   {
     name: 'AZURE_STORAGE_CONTAINER_NAME'
     value: containerName
@@ -74,6 +89,14 @@ var migrationEnvironmentVariables = concat([
   {
     name: 'PAYLOAD_SECRET'
     secretRef: 'payload-secret'
+  }
+  {
+    name: 'DATABASE_POOL_MAX'
+    value: '2'
+  }
+  {
+    name: 'PAYLOAD_RUN_MIGRATIONS_ON_START'
+    value: 'true'
   }
   {
     name: 'SERVER_URL'
@@ -120,9 +143,11 @@ resource migrationJob 'Microsoft.App/jobs@2024-03-01' = {
   tags: tags
   identity: {
     type: 'UserAssigned'
-    userAssignedIdentities: {
+    userAssignedIdentities: union({
       '${registryIdentityId}': {}
-    }
+    }, storageIdentityId != '' ? {
+      '${storageIdentityId}': {}
+    } : {})
   }
   properties: {
     environmentId: containerAppEnvironmentId

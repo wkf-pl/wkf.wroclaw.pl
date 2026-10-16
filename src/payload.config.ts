@@ -30,7 +30,12 @@ import {
 } from './collections'
 import { createEmailAdapter } from './email/create-email-adapter'
 import { Footer, HomepageHero, HomepageSections, Navigation, SiteSettings } from './globals'
-import { getOptionalEnvironmentVariable, getRequiredEnvironmentVariable } from './lib/env'
+import {
+  getEnvironmentBoolean,
+  getEnvironmentInteger,
+  getOptionalEnvironmentVariable,
+  getRequiredEnvironmentVariable,
+} from './lib/env'
 import { createStoragePlugins } from './storage/create-storage-plugins'
 import { generateHierarchyLabel, generateHierarchyURL } from './modules/content/hierarchy'
 import {
@@ -42,6 +47,7 @@ import {
 const fileName = fileURLToPath(import.meta.url)
 const directoryName = path.dirname(fileName)
 const serverURL = getOptionalEnvironmentVariable('SERVER_URL')
+const runProductionMigrations = getEnvironmentBoolean('PAYLOAD_RUN_MIGRATIONS_ON_START')
 const trustedOrigins = getTrustedOrigins(serverURL)
 const adminDescription = 'Panel administracyjny Wrocławskiego Klubu Fantastyki'
 const polishAdminLanguage = {
@@ -150,12 +156,14 @@ export default buildConfig({
     outputFile: path.resolve(directoryName, 'payload-types.ts'),
   },
   db: postgresAdapter({
+    disableCreateDatabase: true,
     migrationDir: path.resolve(directoryName, '../migrations'),
     push: false,
     pool: {
       connectionString: getRequiredEnvironmentVariable('DATABASE_URL'),
+      max: getEnvironmentInteger('DATABASE_POOL_MAX', 8),
     },
-    prodMigrations: migrations,
+    ...(runProductionMigrations ? { prodMigrations: migrations } : {}),
   }),
   sharp,
   plugins: [

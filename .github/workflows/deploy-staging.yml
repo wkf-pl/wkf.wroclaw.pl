@@ -173,11 +173,11 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Log in to Azure Container Registry
-        if: steps.plan.outputs.should_deploy == 'true' && steps.plan.outputs.build_image == 'true'
+        if: steps.plan.outputs.should_deploy == 'true'
         run: az acr login --name "${{ steps.registry.outputs.registry_name }}"
 
       - name: Set up Docker Buildx
-        if: steps.plan.outputs.should_deploy == 'true' && steps.plan.outputs.build_image == 'true'
+        if: steps.plan.outputs.should_deploy == 'true'
         uses: docker/setup-buildx-action@v4
 
       - name: Build and push immutable application image
@@ -190,6 +190,18 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.registry.outputs.login_server }}/wkf-online:${{ env.SOURCE_SHA }}
+
+      - name: Build and push immutable operations image
+        if: steps.plan.outputs.should_deploy == 'true'
+        id: operations-image
+        uses: docker/build-push-action@v7
+        with:
+          cache-from: type=gha,scope=wkf-operations
+          cache-to: type=gha,mode=max,scope=wkf-operations
+          context: .
+          file: Dockerfile.operations
+          push: true
+          tags: ${{ steps.registry.outputs.login_server }}/wkf-operations:${{ env.SOURCE_SHA }}
 
       - name: Resolve deployment image
         if: steps.plan.outputs.should_deploy == 'true'
@@ -247,11 +259,13 @@ jobs:
         if: steps.rollout.outputs.deployed == 'true'
         env:
           IMAGE_DIGEST: ${{ steps.deployment-image.outputs.digest }}
+          OPERATIONS_IMAGE_DIGEST: ${{ steps.operations-image.outputs.digest }}
         run: |
           {
             echo "## Staging deployment"
             echo
             echo "Image digest for production promotion: \`$IMAGE_DIGEST\`"
+            echo "Operations image digest: \`$OPERATIONS_IMAGE_DIGEST\`"
             echo "Source commit: \`$SOURCE_SHA\`"
             echo "Infrastructure reconciled: \`${{ steps.plan.outputs.provision_infrastructure }}\`"
             echo "Migrations executed: \`${{ steps.plan.outputs.run_migrations }}\`"

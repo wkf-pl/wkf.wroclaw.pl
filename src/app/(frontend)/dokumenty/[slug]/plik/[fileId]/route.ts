@@ -1,11 +1,11 @@
-import { getStorageClient } from '@payloadcms/storage-azure'
 import { getPayload } from 'payload'
 
 import config from '@payload-config'
 
-import { getRequiredEnvironmentVariable } from '@/lib/env'
 import { publicRequestContext } from '@/modules/content/public-access'
 import type { Document } from '@/payload-types'
+import { getStorageContainerClient } from '@/storage/get-storage-container-client'
+import { parseHTTPRange } from '@/storage/parse-http-range'
 
 export async function GET(
   request: Request,
@@ -49,10 +49,7 @@ export async function GET(
   })
   if (!file.filename) return new Response(null, { status: 404 })
 
-  const storageClient = getStorageClient({
-    connectionString: getRequiredEnvironmentVariable('AZURE_STORAGE_CONNECTION_STRING'),
-    containerName: getRequiredEnvironmentVariable('AZURE_STORAGE_CONTAINER_NAME'),
-  })
+  const storageClient = getStorageContainerClient()
   const prefix = file.prefix?.replace(/^\/+|\/+$/g, '') || 'documents'
   const blobClient = storageClient.getBlockBlobClient(`${prefix}/${file.filename}`)
 
@@ -61,7 +58,7 @@ export async function GET(
     const fileSize = properties.contentLength
     if (!fileSize) return new Response(null, { status: 404 })
 
-    const range = parseRange(request.headers.get('range'), fileSize)
+    const range = parseHTTPRange(request.headers.get('range'), fileSize)
     if (range === false) {
       return new Response(null, {
         headers: { 'Content-Range': `bytes */${fileSize}` },
@@ -91,17 +88,4 @@ export async function GET(
   } catch {
     return new Response(null, { status: 404 })
   }
-}
-
-function parseRange(
-  value: null | string,
-  fileSize: number,
-): false | null | { end: number; start: number } {
-  if (!value) return null
-  const match = /^bytes=(\d+)-(\d*)$/.exec(value)
-  if (!match) return false
-  const start = Number.parseInt(match[1], 10)
-  const requestedEnd = match[2] ? Number.parseInt(match[2], 10) : fileSize - 1
-  const end = Math.min(requestedEnd, fileSize - 1)
-  return start <= end && start < fileSize ? { end, start } : false
 }

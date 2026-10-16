@@ -3,6 +3,34 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 describe('deployment workflows', () => {
+  it('pins and verifies the Payload Azure adapter patch used for managed identity', () => {
+    const packageConfiguration = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      dependencies: Record<string, string>
+    }
+    const workspaceConfiguration = readFileSync('pnpm-workspace.yaml', 'utf8')
+    const adapterPatch = readFileSync('patches/@payloadcms__storage-azure@3.90.2.patch', 'utf8')
+
+    expect(packageConfiguration.dependencies['@payloadcms/storage-azure']).toBe('3.90.2')
+    expect(workspaceConfiguration).toContain(
+      "'@payloadcms/storage-azure@3.90.2': patches/@payloadcms__storage-azure@3.90.2.patch",
+    )
+    expect(adapterPatch).toContain('getStorageClient?: () => ContainerClient')
+    expect(adapterPatch).toContain('azureStorageOptions.getStorageClient ??')
+  })
+
+  it('keeps automatic production migrations out of the application runtime', () => {
+    const payloadConfiguration = readFileSync('src/payload.config.ts', 'utf8')
+
+    expect(payloadConfiguration).toContain(
+      "getEnvironmentBoolean('PAYLOAD_RUN_MIGRATIONS_ON_START')",
+    )
+    expect(payloadConfiguration).toContain('disableCreateDatabase: true')
+    expect(payloadConfiguration).toContain("getEnvironmentInteger('DATABASE_POOL_MAX', 8)")
+    expect(payloadConfiguration).toContain(
+      'runProductionMigrations ? { prodMigrations: migrations } : {}',
+    )
+  })
+
   it('classifies application, infrastructure, and migration changes independently', () => {
     const classifier = readFileSync('scripts/classify-deployment.sh', 'utf8')
 
@@ -94,7 +122,9 @@ describe('deployment workflows', () => {
     expect(stagingDataScript).toContain(
       `--query "properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value"`,
     )
-    expect(storageTemplate).toContain('isVersioningEnabled: enableStagingCheckpoints')
+    expect(storageTemplate).toContain(
+      'isVersioningEnabled: enableStagingCheckpoints || enableProductionProtection',
+    )
     expect(storageTemplate).toContain('containerDeleteRetentionPolicy')
     expect(storageTemplate).toContain('deleteRetentionPolicy')
   })
@@ -206,5 +236,108 @@ describe('deployment workflows', () => {
       /type: 'Readiness'[\s\S]*path: '\/api\/health'[\s\S]*periodSeconds: 10/,
     )
     expect(applicationTemplate).not.toMatch(/^\s*'\/health'\s*$/m)
+  })
+
+  it('defines the accepted private and low-cost production posture', () => {
+    const productionParameters = readFileSync('infra/azure/environments/prod.bicepparam', 'utf8')
+    const networkTemplate = readFileSync('infra/azure/modules/network.bicep', 'utf8')
+    const postgresTemplate = readFileSync('infra/azure/modules/postgres.bicep', 'utf8')
+    const storageTemplate = readFileSync('infra/azure/modules/storage.bicep', 'utf8')
+    const applicationTemplate = readFileSync('infra/azure/modules/application.bicep', 'utf8')
+
+    expect(productionParameters).toContain("param postgresSkuName = 'Standard_B1ms'")
+    expect(productionParameters).toContain('param postgresBackupRetentionDays = 35')
+    expect(productionParameters).toContain('param monthlyBudgetAmount = 50')
+    expect(productionParameters).not.toContain("param customDomainName = 'wkf.wroclaw.pl'")
+    expect(networkTemplate).toContain("'10.20.0.0/24'")
+    expect(networkTemplate).toContain("addressPrefix: '10.20.0.0/27'")
+    expect(networkTemplate).toContain("addressPrefix: '10.20.0.32/28'")
+    expect(postgresTemplate).toContain("publicNetworkAccess: 'Disabled'")
+    expect(postgresTemplate).toContain("value: 'pg_stat_statements,pgaudit'")
+    expect(postgresTemplate).toContain("value: 'ROLE,DDL'")
+    expect(postgresTemplate).toContain("category: 'PostgreSQLLogs'")
+    expect(postgresTemplate).not.toContain("categoryGroup: 'audit'")
+    expect(storageTemplate).toContain("skuName string = 'Standard_LRS'")
+    expect(storageTemplate).toContain('allowSharedKeyAccess: allowSharedKeyAccess')
+    expect(storageTemplate).toContain('daysAfterCreationGreaterThan: 90')
+    expect(applicationTemplate).toContain("unauthenticatedClientAction: 'Return401'")
+    expect(applicationTemplate).toContain("name: 'PUBLIC_LAUNCH_ENABLED'")
+    expect(applicationTemplate).toContain("value: 'false'")
+  })
+
+  it('separates production provisioning, role bootstrap, migration, and application launch', () => {
+    const productionWorkflow = readFileSync('.github/workflows/deploy-production.yml', 'utf8')
+    const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
+    const bootstrapScript = readFileSync('scripts/operations/bootstrap-postgres-roles.sql', 'utf8')
+    const grantsScript = readFileSync('scripts/operations/reconcile-postgres-grants.sql', 'utf8')
+
+    expect(productionWorkflow).toContain('group: production-operations')
+    expect(productionWorkflow).toContain('- provision\n          - bootstrap\n          - deploy')
+    expect(productionWorkflow).toContain("$GITHUB_REF\" != 'refs/heads/master'")
+    expect(productionWorkflow).not.toContain('infra/azure/shared.bicep')
+    expect(readFileSync('infra/azure/modules/registry-roles.bicep', 'utf8')).toContain(
+      'resource deploymentRegistryPull',
+    )
+    expect(deploymentScript).toContain('--provision-only')
+    expect(deploymentScript).toContain('isConfigPendingRestart')
+    expect(deploymentScript).toContain('reconcile-grants')
+    expect(bootstrapScript).toContain('REVOKE CREATE ON SCHEMA public FROM PUBLIC')
+    expect(bootstrapScript).toContain('CREATE ROLE wkf_migrator')
+    expect(bootstrapScript).toContain('CREATE ROLE wkf_runtime')
+    expect(bootstrapScript).toContain('NOCREATEDB NOCREATEROLE')
+    expect(bootstrapScript).toContain('CREATE EXTENSION IF NOT EXISTS pgaudit')
+    expect(bootstrapScript).not.toContain('REASSIGN OWNED BY CURRENT_USER')
+    expect(grantsScript).toContain('GRANT SELECT, INSERT, UPDATE, DELETE')
+    expect(grantsScript).toContain('ALTER DEFAULT PRIVILEGES')
+  })
+
+  it('publishes and serializes immutable production operation images', () => {
+    const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
+    const productionWorkflow = readFileSync('.github/workflows/deploy-production.yml', 'utf8')
+    const importWorkflow = readFileSync('.github/workflows/import-production-data.yml', 'utf8')
+
+    expect(stagingWorkflow).toContain('file: Dockerfile.operations')
+    expect(stagingWorkflow).toContain('/wkf-operations:${{ env.SOURCE_SHA }}')
+    expect(stagingWorkflow).toContain('Operations image digest')
+    expect(productionWorkflow).toContain('wkf-operations@${OPERATIONS_IMAGE_DIGEST}')
+    expect(importWorkflow).toContain('group: production-operations')
+    expect(importWorkflow).toContain('environment: prod')
+    expect(importWorkflow).toContain("CONFIRMATION\" != 'IMPORT'")
+    expect(importWorkflow).toContain('stop_failed_preview')
+  })
+
+  it('validates a complete checkpoint before replacing production data', () => {
+    const importScript = readFileSync('scripts/operations/import-production-checkpoint.sh', 'utf8')
+    const stagingCheckpointScript = readFileSync('scripts/manage-staging-data.sh', 'utf8')
+
+    expect(stagingCheckpointScript).toContain('media-manifest.jsonl')
+    expect(stagingCheckpointScript).toContain('mediaManifestSha256')
+    expect(importScript).toContain('Production import requires the exact confirmation value IMPORT')
+    expect(importScript).toContain('Checkpoint database checksum does not match')
+    expect(importScript).toContain('Checkpoint is missing media blob')
+    expect(importScript).toContain('Checkpoint media count does not match its media manifest')
+    expect(importScript).toContain('Checkpoint media checksum mismatch')
+    expect(importScript.indexOf('Checkpoint validated before destructive work')).toBeLessThan(
+      importScript.indexOf('azcopy remove "$production_url"'),
+    )
+    expect(importScript).toContain('TRUNCATE TABLE users_sessions, payload_locked_documents')
+  })
+
+  it('keeps off-site backup publication encrypted and atomic', () => {
+    const backupScript = readFileSync('scripts/operations/backup-offsite.sh', 'utf8')
+    const validatorScript = readFileSync('scripts/operations/validate-offsite-backup.sh', 'utf8')
+    const restoreScript = readFileSync('scripts/operations/restore-offsite-backup.sh', 'utf8')
+
+    expect(backupScript).toContain('pg_dump')
+    expect(backupScript).toContain('age --recipient')
+    expect(backupScript).toContain('.MessageContent | fromjson | .Path')
+    expect(backupScript).not.toMatch(/azcopy list[^\n]*--recursive/)
+    expect(backupScript).toContain('rename $remote_partial_directory $remote_final_directory')
+    expect(backupScript).toContain('deployedSourceSha')
+    expect(backupScript).toContain('migrationState')
+    expect(validatorScript).toContain('pg_restore --list')
+    expect(validatorScript).toContain('Validated blob count does not match')
+    expect(restoreScript).toContain("confirmation\" != 'RESTORE'")
+    expect(restoreScript).toContain('TRUNCATE TABLE users_sessions, payload_locked_documents')
   })
 })

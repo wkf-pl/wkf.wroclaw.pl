@@ -28,6 +28,12 @@ param payloadSecret string
 @secure()
 param postgresAdministratorPassword string
 
+@secure()
+param postgresMigratorPassword string = ''
+
+@secure()
+param postgresRuntimePassword string = ''
+
 param postgresAdministratorLogin string = 'wkfadmin'
 param postgresDatabaseName string = 'wkf'
 param postgresSkuName string
@@ -82,6 +88,8 @@ var registryName = '${resourcePrefix}${uniqueString(subscription().id)}'
 module environment './modules/environment.bicep' = {
   name: 'environment-${environmentName}'
   params: {
+    budgetStartDate: budgetStartDate
+    cpuAlertThresholdNanocores: cpuAlertThresholdNanocores
     customDomainCertificateId: customDomainCertificateId
     customDomainName: customDomainName
     deployApplication: deployApplication
@@ -101,6 +109,8 @@ module environment './modules/environment.bicep' = {
     postgresAdministratorPassword: postgresAdministratorPassword
     postgresBackupRetentionDays: postgresBackupRetentionDays
     postgresDatabaseName: postgresDatabaseName
+    postgresMigratorPassword: postgresMigratorPassword
+    postgresRuntimePassword: postgresRuntimePassword
     postgresSkuName: postgresSkuName
     postgresSkuTier: postgresSkuTier
     postgresStorageSizeGB: postgresStorageSizeGB
@@ -116,8 +126,6 @@ module environment './modules/environment.bicep' = {
     smtpSkipVerify: smtpSkipVerify
     smtpUser: smtpUser
     sourceSha: sourceSha
-    budgetStartDate: budgetStartDate
-    cpuAlertThresholdNanocores: cpuAlertThresholdNanocores
     tags: {
       application: 'wkf-online'
       environment: environmentName
@@ -127,5 +135,16 @@ module environment './modules/environment.bicep' = {
 
 output applicationName string = environment.outputs.applicationName
 output applicationUrl string = environment.outputs.applicationUrl
+output containerAppEnvironmentId string = environment.outputs.containerAppEnvironmentId
 output migrationJobName string = environment.outputs.migrationJobName
+output operationsIdentityClientId string = environment.outputs.operationsIdentityClientId
+output operationsIdentityId string = environment.outputs.operationsIdentityId
+output operationsIdentityPrincipalId string = environment.outputs.operationsIdentityPrincipalId
+output postgresServerId string = environment.outputs.postgresServerId
+output postgresServerName string = environment.outputs.postgresServerName
+output registryIdentityPrincipalId string = environment.outputs.registryIdentityPrincipalId
 output resourceGroupName string = resourceGroup().name
+output storageAccountId string = environment.outputs.storageAccountId
+output storageContainerId string = environment.outputs.storageContainerId
+output storageIdentityClientId string = environment.outputs.storageIdentityClientId
+output storageIdentityPrincipalId string = environment.outputs.storageIdentityPrincipalId

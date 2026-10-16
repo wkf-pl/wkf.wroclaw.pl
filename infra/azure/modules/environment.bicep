@@ -1,3 +1,5 @@
+param budgetStartDate string
+param cpuAlertThresholdNanocores int
 param customDomainCertificateId string
 param customDomainName string
 param deployApplication bool
@@ -16,6 +18,7 @@ param location string
 @minValue(1)
 @maxValue(1)
 param maximumReplicas int
+
 param monthlyBudgetAmount int
 
 @minValue(0)
@@ -32,6 +35,13 @@ param postgresAdministratorPassword string
 
 param postgresBackupRetentionDays int
 param postgresDatabaseName string
+
+@secure()
+param postgresMigratorPassword string
+
+@secure()
+param postgresRuntimePassword string
+
 param postgresSkuName string
 param postgresSkuTier string
 param postgresStorageSizeGB int
@@ -50,15 +60,15 @@ param smtpSecure bool
 param smtpSkipVerify bool
 param smtpUser string
 param sourceSha string
-param budgetStartDate string
-param cpuAlertThresholdNanocores int
 param tags object
 
 var applicationName = '${resourcePrefix}-${environmentName}'
 var containerAppEnvironmentName = '${resourcePrefix}-${environmentName}'
+var isProduction = environmentName == 'prod'
 var migrationJobName = '${resourcePrefix}-${environmentName}-migrate'
 var postgresServerName = '${resourcePrefix}-${environmentName}-${uniqueString(resourceGroup().id)}'
 var storageAccountName = '${resourcePrefix}${environmentName}${uniqueString(resourceGroup().id)}'
+var storageAuthenticationMode = isProduction ? 'managed-identity' : 'connection-string'
 
 module monitoring './monitoring.bicep' = {
   name: 'monitoring'
@@ -69,10 +79,20 @@ module monitoring './monitoring.bicep' = {
   }
 }
 
+module network './network.bicep' = if (isProduction) {
+  name: 'network'
+  params: {
+    location: location
+    name: '${resourcePrefix}-${environmentName}'
+    tags: tags
+  }
+}
+
 module containerAppEnvironment './container-app-environment.bicep' = {
   name: 'container-app-environment'
   params: {
     environmentName: containerAppEnvironmentName
+    infrastructureSubnetId: isProduction ? network!.outputs.containerAppsSubnetId : ''
     location: location
     logAnalyticsCustomerId: monitoring.outputs.customerId
     logAnalyticsSharedKey: monitoring.outputs.sharedKey
@@ -84,8 +104,12 @@ module storage './storage.bicep' = {
   name: 'storage'
   params: {
     accountName: storageAccountName
+    allowSharedKeyAccess: !isProduction
+    allowedSubnetId: isProduction ? network!.outputs.containerAppsSubnetId : ''
+    enableProductionProtection: isProduction
     enableStagingCheckpoints: environmentName == 'staging'
     location: location
+    skuName: isProduction ? 'Standard_ZRS' : 'Standard_LRS'
     tags: tags
   }
 }
@@ -97,7 +121,11 @@ module postgres './postgres.bicep' = {
     administratorPassword: postgresAdministratorPassword
     backupRetentionDays: postgresBackupRetentionDays
     databaseName: postgresDatabaseName
+    delegatedSubnetId: isProduction ? network!.outputs.postgresSubnetId : ''
+    enableAudit: isProduction
     location: location
+    logAnalyticsWorkspaceId: monitoring.outputs.id
+    privateDnsZoneId: isProduction ? network!.outputs.postgresPrivateDnsZoneId : ''
     serverName: postgresServerName
     skuName: postgresSkuName
     skuTier: postgresSkuTier
@@ -117,7 +145,24 @@ resource registryIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023
   tags: tags
 }
 
-var databaseUrl = 'postgresql://${postgresAdministratorLogin}:${uriComponent(postgresAdministratorPassword)}@${postgres.outputs.fullyQualifiedDomainName}:5432/${postgres.outputs.databaseName}?sslmode=require'
+resource storageIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = if (isProduction) {
+  name: '${resourcePrefix}-${environmentName}-storage'
+  location: location
+  tags: tags
+}
+
+resource operationsIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = if (isProduction) {
+  name: '${resourcePrefix}-${environmentName}-operations'
+  location: location
+  tags: tags
+}
+
+var runtimeDatabaseLogin = isProduction ? 'wkf_runtime' : postgresAdministratorLogin
+var runtimeDatabasePassword = isProduction ? postgresRuntimePassword : postgresAdministratorPassword
+var migratorDatabaseLogin = isProduction ? 'wkf_migrator' : postgresAdministratorLogin
+var migratorDatabasePassword = isProduction ? postgresMigratorPassword : postgresAdministratorPassword
+var runtimeDatabaseUrl = 'postgresql://${runtimeDatabaseLogin}:${uriComponent(runtimeDatabasePassword)}@${postgres.outputs.fullyQualifiedDomainName}:5432/${postgres.outputs.databaseName}?sslmode=require'
+var migratorDatabaseUrl = 'postgresql://${migratorDatabaseLogin}:${uriComponent(migratorDatabasePassword)}@${postgres.outputs.fullyQualifiedDomainName}:5432/${postgres.outputs.databaseName}?sslmode=require'
 var technicalApplicationUrl = 'https://${applicationName}.${containerAppEnvironment.outputs.defaultDomain}'
 var serverUrl = customDomainName == '' ? technicalApplicationUrl : 'https://${customDomainName}'
 
@@ -130,7 +175,7 @@ module application './application.bicep' = if (deployApplication) {
     containerName: storage.outputs.containerName
     customDomainCertificateId: customDomainCertificateId
     customDomainName: customDomainName
-    databaseUrl: databaseUrl
+    databaseUrl: runtimeDatabaseUrl
     enableEntraAuthentication: enableEntraAuthentication
     entraAllowedGroupId: entraAllowedGroupId
     entraClientId: entraClientId
@@ -153,7 +198,10 @@ module application './application.bicep' = if (deployApplication) {
     smtpSkipVerify: smtpSkipVerify
     smtpUser: smtpUser
     sourceSha: sourceSha
+    storageAuthenticationMode: storageAuthenticationMode
     storageConnectionString: storage.outputs.connectionString
+    storageIdentityClientId: isProduction ? storageIdentity!.properties.clientId : ''
+    storageIdentityId: isProduction ? storageIdentity!.id : ''
     tags: tags
   }
 }
@@ -168,6 +216,8 @@ module costGuardrails './cost-guardrails.bicep' = if (deployApplication) {
     environmentName: environmentName
     location: location
     monthlyBudgetAmount: monthlyBudgetAmount
+    postgresServerId: postgres.outputs.id
+    postgresServerName: postgres.outputs.name
     resourcePrefix: resourcePrefix
     tags: tags
   }
@@ -182,7 +232,7 @@ module migrationJob './migration-job.bicep' = {
     accountBaseUrl: storage.outputs.accountBaseUrl
     containerAppEnvironmentId: containerAppEnvironment.outputs.id
     containerName: storage.outputs.containerName
-    databaseUrl: databaseUrl
+    databaseUrl: migratorDatabaseUrl
     imageReference: imageReference
     jobName: migrationJobName
     location: location
@@ -198,11 +248,51 @@ module migrationJob './migration-job.bicep' = {
     smtpSecure: smtpSecure
     smtpSkipVerify: smtpSkipVerify
     smtpUser: smtpUser
+    storageAuthenticationMode: storageAuthenticationMode
     storageConnectionString: storage.outputs.connectionString
+    storageIdentityClientId: isProduction ? storageIdentity!.properties.clientId : ''
+    storageIdentityId: isProduction ? storageIdentity!.id : ''
     tags: tags
+  }
+}
+
+resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' existing = if (isProduction) {
+  name: postgres.outputs.name
+}
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = if (isProduction) {
+  name: storage.outputs.accountName
+}
+
+resource postgresDeleteLock 'Microsoft.Authorization/locks@2020-05-01' = if (isProduction) {
+  name: 'protect-postgresql'
+  scope: postgresServer
+  properties: {
+    level: 'CanNotDelete'
+    notes: 'Production PostgreSQL must not be deleted without explicitly removing this lock.'
+  }
+}
+
+resource storageDeleteLock 'Microsoft.Authorization/locks@2020-05-01' = if (isProduction) {
+  name: 'protect-storage'
+  scope: storageAccount
+  properties: {
+    level: 'CanNotDelete'
+    notes: 'Production Blob Storage must not be deleted without explicitly removing this lock.'
   }
 }
 
 output applicationName string = applicationName
 output applicationUrl string = serverUrl
+output containerAppEnvironmentId string = containerAppEnvironment.outputs.id
 output migrationJobName string = migrationJob.outputs.name
+output operationsIdentityClientId string = isProduction ? operationsIdentity!.properties.clientId : ''
+output operationsIdentityId string = isProduction ? operationsIdentity!.id : ''
+output operationsIdentityPrincipalId string = isProduction ? operationsIdentity!.properties.principalId : ''
+output postgresServerId string = postgres.outputs.id
+output postgresServerName string = postgres.outputs.name
+output registryIdentityPrincipalId string = registryIdentity.properties.principalId
+output storageAccountId string = storage.outputs.accountId
+output storageContainerId string = storage.outputs.containerId
+output storageIdentityClientId string = isProduction ? storageIdentity!.properties.clientId : ''
+output storageIdentityPrincipalId string = isProduction ? storageIdentity!.properties.principalId : ''

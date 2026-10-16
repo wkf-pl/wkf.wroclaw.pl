@@ -1,0 +1,34 @@
+DO $roles$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'wkf_migrator') THEN
+    CREATE ROLE wkf_migrator LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'wkf_runtime') THEN
+    CREATE ROLE wkf_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION;
+  END IF;
+END
+$roles$;
+
+SELECT format('ALTER ROLE wkf_migrator PASSWORD %L', :'migrator_password') \gexec
+SELECT format('ALTER ROLE wkf_runtime PASSWORD %L', :'runtime_password') \gexec
+
+REVOKE ALL ON DATABASE :DBNAME FROM PUBLIC;
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+GRANT CONNECT, TEMPORARY ON DATABASE :DBNAME TO wkf_migrator;
+GRANT CONNECT ON DATABASE :DBNAME TO wkf_runtime;
+GRANT USAGE, CREATE ON SCHEMA public TO wkf_migrator;
+GRANT USAGE ON SCHEMA public TO wkf_runtime;
+
+\if :install_audit_extension
+CREATE EXTENSION IF NOT EXISTS pgaudit;
+\endif
+
+SELECT format('ALTER DATABASE %I OWNER TO wkf_migrator', current_database()) \gexec
+ALTER SCHEMA public OWNER TO wkf_migrator;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO wkf_runtime;
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO wkf_runtime;
+ALTER DEFAULT PRIVILEGES FOR ROLE wkf_migrator IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO wkf_runtime;
+ALTER DEFAULT PRIVILEGES FOR ROLE wkf_migrator IN SCHEMA public
+  GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO wkf_runtime;

@@ -35,6 +35,8 @@
     "verify:compose": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/verify-compose.ts"
   },
   "dependencies": {
+    "@azure/identity": "4.14.0",
+    "@azure/storage-blob": "12.34.0",
     "@payloadcms/db-postgres": "3.90.2",
     "@payloadcms/email-nodemailer": "3.90.2",
     "@payloadcms/next": "3.90.2",

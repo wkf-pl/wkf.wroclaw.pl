@@ -1,0 +1,209 @@
+name: Import staging checkpoint to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      checkpoint_name:
+        description: Immutable staging checkpoint name
+        required: true
+        type: string
+      operations_image_digest:
+        description: Operations image digest reported by staging
+        required: true
+        type: string
+      confirmation:
+        description: Enter IMPORT to allow destructive replacement of production data
+        required: true
+        type: string
+
+concurrency:
+  group: production-operations
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+      POSTGRES_MIGRATOR_PASSWORD: ${{ secrets.POSTGRES_MIGRATOR_PASSWORD }}
+    steps:
+      - name: Check out master
+        uses: actions/checkout@v6
+        with:
+          ref: master
+
+      - name: Validate destructive-operation inputs
+        env:
+          CHECKPOINT_NAME: ${{ inputs.checkpoint_name }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          OPERATIONS_IMAGE_DIGEST: ${{ inputs.operations_image_digest }}
+        run: |
+          if [[ "$GITHUB_REF" != 'refs/heads/master' ]]; then
+            echo 'Production imports may only be dispatched from master.' >&2
+            exit 1
+          fi
+          if [[ "$CONFIRMATION" != 'IMPORT' ]]; then
+            echo 'Production import requires the exact confirmation value IMPORT.' >&2
+            exit 1
+          fi
+          if [[ ! "$CHECKPOINT_NAME" =~ ^[a-z0-9][a-z0-9-]{2,62}$ ]]; then
+            echo 'Invalid checkpoint name.' >&2
+            exit 1
+          fi
+          if [[ ! "$OPERATIONS_IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo 'operations_image_digest must be a sha256 digest.' >&2
+            exit 1
+          fi
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+
+      - name: Install Container Apps CLI extension
+        run: az extension add --name containerapp --upgrade
+
+      - name: Resolve immutable operation and production resources
+        id: resources
+        env:
+          OPERATIONS_IMAGE_DIGEST: ${{ inputs.operations_image_digest }}
+        run: |
+          production_resource_group='rg-wkf-prod'
+          registry_name="$(az acr list --resource-group rg-wkf-shared --query '[0].name' --output tsv)"
+          az acr repository show --name "$registry_name" --image "wkf-operations@${OPERATIONS_IMAGE_DIGEST}" --output none
+          registry_server="$(az acr show --name "$registry_name" --query loginServer --output tsv)"
+          staging_storage_name="$(az storage account list --resource-group rg-wkf-staging --query '[0].name' --output tsv)"
+          production_storage_name="$(az storage account list --resource-group "$production_resource_group" --query '[0].name' --output tsv)"
+          postgres_fqdn="$(az postgres flexible-server list --resource-group "$production_resource_group" --query '[0].fullyQualifiedDomainName' --output tsv)"
+          active_revision="$(az containerapp revision list --resource-group "$production_resource_group" --name wkf-prod --query 'sort_by([?properties.active], &properties.createdTime)[-1].name' --output tsv)"
+          source_sha="$(az containerapp revision show --resource-group "$production_resource_group" --name wkf-prod --revision "$active_revision" --query "properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value" --output tsv)"
+          operations_identity_id="$(az identity show --resource-group "$production_resource_group" --name wkf-prod-operations --query id --output tsv)"
+          operations_identity_client_id="$(az identity show --resource-group "$production_resource_group" --name wkf-prod-operations --query clientId --output tsv)"
+          registry_identity_id="$(az identity show --resource-group "$production_resource_group" --name wkf-prod-registry --query id --output tsv)"
+          environment_id="$(az containerapp env show --resource-group "$production_resource_group" --name wkf-prod --query id --output tsv)"
+
+          for value in "$registry_name" "$staging_storage_name" "$production_storage_name" "$postgres_fqdn" "$active_revision" "$source_sha" "$operations_identity_id" "$operations_identity_client_id" "$registry_identity_id" "$environment_id"; do
+            if [[ -z "$value" ]]; then
+              echo 'Could not resolve every production import resource.' >&2
+              exit 1
+            fi
+          done
+
+          {
+            echo "active_revision=$active_revision"
+            echo "environment_id=$environment_id"
+            echo "operations_identity_client_id=$operations_identity_client_id"
+            echo "operations_identity_id=$operations_identity_id"
+            echo "operations_image=${registry_server}/wkf-operations@${OPERATIONS_IMAGE_DIGEST}"
+            echo "postgres_fqdn=$postgres_fqdn"
+            echo "production_media_url=https://${production_storage_name}.blob.core.windows.net/media"
+            echo "registry_identity_id=$registry_identity_id"
+            echo "registry_server=$registry_server"
+            echo "source_sha=$source_sha"
+            echo "staging_checkpoint_url=https://${staging_storage_name}.blob.core.windows.net/staging-checkpoints"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Stop production preview and import checkpoint
+        env:
+          CHECKPOINT_NAME: ${{ inputs.checkpoint_name }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          resource_group='rg-wkf-prod'
+          job_name='wkf-prod-import'
+          encoded_password="$(printf '%s' "$POSTGRES_MIGRATOR_PASSWORD" | jq --slurp --raw-input --raw-output @uri)"
+          migrator_url="postgresql://wkf_migrator:${encoded_password}@${{ steps.resources.outputs.postgres_fqdn }}:5432/wkf?sslmode=require"
+
+          az containerapp revision deactivate --resource-group "$resource_group" --revision "${{ steps.resources.outputs.active_revision }}" --output none
+
+          cleanup_job() {
+            az containerapp job delete --resource-group "$resource_group" --name "$job_name" --yes --output none >/dev/null 2>&1 || true
+          }
+          trap cleanup_job EXIT INT TERM
+
+          az deployment group create \
+            --name wkf-prod-import \
+            --resource-group "$resource_group" \
+            --template-file infra/azure/import-job.bicep \
+            --parameters checkpointName="$CHECKPOINT_NAME" containerAppEnvironmentId="${{ steps.resources.outputs.environment_id }}" expectedSourceSha="${{ steps.resources.outputs.source_sha }}" imageReference="${{ steps.resources.outputs.operations_image }}" importConfirmation="$CONFIRMATION" migratorDatabaseUrl="$migrator_url" operationsIdentityClientId="${{ steps.resources.outputs.operations_identity_client_id }}" operationsIdentityId="${{ steps.resources.outputs.operations_identity_id }}" productionMediaContainerUrl="${{ steps.resources.outputs.production_media_url }}" registryIdentityId="${{ steps.resources.outputs.registry_identity_id }}" registryServer="${{ steps.resources.outputs.registry_server }}" stagingCheckpointContainerUrl="${{ steps.resources.outputs.staging_checkpoint_url }}" \
+            --output none
+
+          execution_name="$(az containerapp job start --resource-group "$resource_group" --name "$job_name" --query name --output tsv)"
+          deadline=$((SECONDS + 7200))
+          while ((SECONDS < deadline)); do
+            status="$(az containerapp job execution show --resource-group "$resource_group" --name "$job_name" --job-execution-name "$execution_name" --query properties.status --output tsv)"
+            case "$status" in
+              Succeeded) break ;;
+              Failed | Stopped | Degraded)
+                echo "Import failed with status $status. Production preview remains stopped." >&2
+                exit 1
+                ;;
+            esac
+            sleep 10
+          done
+          if [[ "$status" != 'Succeeded' ]]; then
+            echo 'Import timed out. Production preview remains stopped.' >&2
+            exit 1
+          fi
+          cleanup_job
+          trap - EXIT INT TERM
+
+      - name: Apply migrations and reconcile runtime grants
+        env:
+          OPERATIONS_IMAGE_REFERENCE: ${{ steps.resources.outputs.operations_image }}
+        run: |
+          resource_group='rg-wkf-prod'
+          migration_job='wkf-prod-migrate'
+          execution_name="$(az containerapp job start --resource-group "$resource_group" --name "$migration_job" --query name --output tsv)"
+          deadline=$((SECONDS + 1800))
+          while ((SECONDS < deadline)); do
+            status="$(az containerapp job execution show --resource-group "$resource_group" --name "$migration_job" --job-execution-name "$execution_name" --query properties.status --output tsv)"
+            case "$status" in
+              Succeeded) break ;;
+              Failed | Stopped | Degraded)
+                echo "Migration failed with status $status. Production preview remains stopped." >&2
+                exit 1
+                ;;
+            esac
+            sleep 10
+          done
+          if [[ "$status" != 'Succeeded' ]]; then
+            echo 'Migration timed out. Production preview remains stopped.' >&2
+            exit 1
+          fi
+          bash scripts/run-production-database-operation.sh reconcile-grants "$OPERATIONS_IMAGE_REFERENCE"
+
+      - name: Restart preview and run anonymous smoke checks
+        run: |
+          resource_group='rg-wkf-prod'
+          active_revision='${{ steps.resources.outputs.active_revision }}'
+          smoke_succeeded=false
+          stop_failed_preview() {
+            if [[ "$smoke_succeeded" != 'true' ]]; then
+              az containerapp revision deactivate --resource-group "$resource_group" --revision "$active_revision" --output none >/dev/null 2>&1 || true
+            fi
+          }
+          trap stop_failed_preview EXIT INT TERM
+
+          az containerapp revision activate --resource-group "$resource_group" --revision "$active_revision" --output none
+          fqdn="$(az containerapp show --resource-group "$resource_group" --name wkf-prod --query properties.configuration.ingress.fqdn --output tsv)"
+          deadline=$((SECONDS + 600))
+          while ((SECONDS < deadline)); do
+            health="$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${fqdn}/api/health" || true)"
+            live="$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${fqdn}/api/health/live" || true)"
+            root="$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${fqdn}/" || true)"
+            admin="$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${fqdn}/admin" || true)"
+            if [[ "$health" == '200' && "$live" == '200' && "$root" == '401' && "$admin" == '401' ]]; then
+              smoke_succeeded=true
+              echo "Production import smoke checks succeeded: https://${fqdn}"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Production preview did not pass smoke checks after import.' >&2
+          exit 1

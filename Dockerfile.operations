@@ -1,0 +1,19 @@
+FROM postgres:17.10-bookworm
+
+ARG AZCOPY_DOWNLOAD_URL=https://aka.ms/downloadazcopy-v10-linux
+
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends age ca-certificates curl jq openssh-client \
+    && curl --fail --location --silent --show-error "$AZCOPY_DOWNLOAD_URL" --output /tmp/azcopy.tar.gz \
+    && tar --extract --gzip --file /tmp/azcopy.tar.gz --directory /tmp \
+    && install --mode 0755 /tmp/azcopy_linux_amd64_*/azcopy /usr/local/bin/azcopy \
+    && rm --recursive --force /var/lib/apt/lists/* /tmp/azcopy.tar.gz /tmp/azcopy_linux_amd64_*
+
+COPY --chmod=0755 scripts/operations /opt/wkf
+
+RUN useradd --create-home --uid 10001 operations
+
+USER operations
+WORKDIR /work
+
+ENTRYPOINT ["/bin/bash"]

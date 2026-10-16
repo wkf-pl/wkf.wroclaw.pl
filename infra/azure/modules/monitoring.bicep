@@ -18,6 +18,7 @@ resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
 }
 
 output customerId string = workspace.properties.customerId
+output id string = workspace.id
 
 @secure()
 output sharedKey string = workspace.listKeys().primarySharedKey
