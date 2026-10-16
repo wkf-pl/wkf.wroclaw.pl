@@ -56,6 +56,7 @@ export async function resolveListingBlockSection({
       ('calendarFeedKey' in document ? document.id : undefined),
     eventTimeFilter: block.eventTimeFilter ?? 'all',
     manualItems: getManualItems(block),
+    maxAgeDays: block.maxAgeDays ?? 0,
     page: requestedPage,
     pageSize: block.pageSize,
     pagination: Boolean(block.pagination),

@@ -40,12 +40,24 @@ describe('content listing index synchronization', () => {
     expect(storedPage.listingExcerpt).toBe('Page excerpt')
     expect(index).toMatchObject({
       excerpt: 'Page excerpt',
+      hasSignificantDate: false,
+      significantDate: null,
       source: 'pages',
       sourceDocumentId: fixture.page.id,
       title: fixture.page.title,
       url: `/${fixture.slugs.page}`,
     })
     expect(index).not.toHaveProperty('layout')
+  })
+
+  it('stores the source-specific significant date', async () => {
+    const pageIndex = await findListingIndex('pages', fixture.page.id)
+    const postIndex = await findListingIndex('posts', fixture.post.id)
+
+    expect(pageIndex?.significantDate).toBeNull()
+    expect(pageIndex?.hasSignificantDate).toBe(false)
+    expect(postIndex?.significantDate).toBe(fixture.post.publishedAt)
+    expect(postIndex?.hasSignificantDate).toBe(true)
   })
 
   it('rebuilds a missing index entry with the migration backfill primitive', async () => {

@@ -294,7 +294,7 @@ describe('page configuration', () => {
       ['sources', 'parentPage'],
       ['category', 'tag'],
       ['eventTimeFilter', 'eventCycle'],
-      ['sort', 'pageSize', 'pagination'],
+      ['maxAgeDays', 'sort', 'pageSize', 'pagination'],
     ])
     expect(describeFieldOrder(listingFields)).toEqual([
       'selectionMode',
@@ -302,7 +302,7 @@ describe('page configuration', () => {
       ['sources', 'parentPage'],
       ['category', 'tag'],
       ['eventTimeFilter', 'eventCycle'],
-      ['sort', 'pageSize', 'pagination'],
+      ['maxAgeDays', 'sort', 'pageSize', 'pagination'],
       'parentFilter',
       'emptyMessage',
     ])
@@ -313,9 +313,31 @@ describe('page configuration', () => {
     })
     expect(rows.at(-1)).toMatchObject({
       fields: [
-        { admin: { width: '33.333%' }, name: 'sort' },
-        { admin: { width: '33.333%' }, name: 'pageSize' },
-        { admin: { width: '33.333%' }, name: 'pagination' },
+        {
+          admin: {
+            description: '0 wyłącza filtr wieku; wyższa wartość określa maksymalny wiek w dniach.',
+            step: 1,
+            width: '25%',
+          },
+          defaultValue: 0,
+          label: 'Zakres czasu',
+          max: 366,
+          min: 0,
+          name: 'maxAgeDays',
+          type: 'number',
+        },
+        {
+          admin: { width: '25%' },
+          name: 'sort',
+          options: [
+            { label: 'Najnowsze', value: 'newest' },
+            { label: 'Najstarsze', value: 'oldest' },
+            { label: 'Tytuł A–Z', value: 'titleAscending' },
+            { label: 'Tytuł Z–A', value: 'titleDescending' },
+          ],
+        },
+        { admin: { width: '25%' }, name: 'pageSize' },
+        { admin: { width: '25%' }, name: 'pagination' },
       ],
     })
   })
@@ -404,6 +426,8 @@ describe('page configuration', () => {
     const itemsField = findField(CarouselBlock.fields, 'items')
     const sourcesField = findField(CarouselBlock.fields, 'sources')
     const slideLimitField = findField(CarouselBlock.fields, 'slideLimit')
+    const maxAgeDaysField = findField(CarouselBlock.fields, 'maxAgeDays')
+    const sortField = findField(CarouselBlock.fields, 'sort')
     const paginationField = flattenFields(CarouselBlock.fields).find(
       (field) => 'name' in field && field.name === 'pagination',
     )
@@ -441,12 +465,34 @@ describe('page configuration', () => {
       type: 'select',
     })
     expect(slideLimitField).toMatchObject({
+      admin: { width: '33.333%' },
       defaultValue: 5,
       label: 'Maksymalna liczba slajdów',
       max: 20,
       min: 1,
       required: true,
       type: 'number',
+    })
+    expect(maxAgeDaysField).toMatchObject({
+      admin: {
+        description: '0 wyłącza filtr wieku; wyższa wartość określa maksymalny wiek w dniach.',
+        step: 1,
+        width: '33.333%',
+      },
+      defaultValue: 0,
+      label: 'Zakres czasu',
+      max: 366,
+      min: 0,
+      type: 'number',
+    })
+    expect(sortField).toMatchObject({
+      admin: { width: '33.333%' },
+      options: [
+        { label: 'Najnowsze', value: 'newest' },
+        { label: 'Najstarsze', value: 'oldest' },
+        { label: 'Tytuł A–Z', value: 'titleAscending' },
+        { label: 'Tytuł Z–A', value: 'titleDescending' },
+      ],
     })
     expect(paginationField).toBeUndefined()
     expect(pageSizeField).toBeUndefined()

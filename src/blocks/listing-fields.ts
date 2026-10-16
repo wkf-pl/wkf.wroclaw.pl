@@ -5,6 +5,24 @@ import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-conf
 const filtersCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.selectionMode === 'filters'
 
+export function createMaxAgeDaysField(width: string): Field {
+  return {
+    name: 'maxAgeDays',
+    type: 'number',
+    admin: {
+      condition: filtersCondition,
+      description: '0 wyłącza filtr wieku; wyższa wartość określa maksymalny wiek w dniach.',
+      step: 1,
+      width,
+    },
+    defaultValue: 0,
+    label: 'Zakres czasu',
+    max: 366,
+    min: 0,
+    required: true,
+  }
+}
+
 export function createListingTaxonomyRow({
   conditional = false,
   trailingField,
@@ -41,13 +59,17 @@ export function createListingTaxonomyRow({
   }
 }
 
-export function createListingPaginationRow({ leadingField }: { leadingField?: Field } = {}): Field {
-  const fieldWidth = leadingField ? '33.333%' : '50%'
+export function createListingPaginationRow({
+  leadingField,
+  secondaryLeadingField,
+}: { leadingField?: Field; secondaryLeadingField?: Field } = {}): Field {
+  const fieldWidth = secondaryLeadingField ? '25%' : leadingField ? '33.333%' : '50%'
 
   return {
     type: 'row',
     fields: [
       ...(leadingField ? [leadingField] : []),
+      ...(secondaryLeadingField ? [secondaryLeadingField] : []),
       {
         name: 'pageSize',
         type: 'number',

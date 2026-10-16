@@ -1,5 +1,6 @@
 import type { Access, CollectionConfig } from 'payload'
 
+import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import { isPublicRequest } from '@/modules/content/public-access'
 
 const sourceResources = ['pages', 'posts', 'events', 'event-cycles', 'documents'] as const
@@ -30,7 +31,14 @@ export const ContentListingItems: CollectionConfig = {
     { name: 'title', type: 'text', index: true, required: true },
     { name: 'url', type: 'text', required: true },
     { name: 'excerpt', type: 'textarea' },
-    { name: 'sortDate', type: 'date', index: true, required: true },
+    {
+      name: 'hasSignificantDate',
+      type: 'checkbox',
+      admin: createBooleanSwitchAdmin(),
+      defaultValue: false,
+      index: true,
+    },
+    { name: 'significantDate', type: 'date', index: true },
     { name: 'eventStartAt', type: 'date', index: true },
     { name: 'eventEndAt', type: 'date', index: true },
     { name: 'heroImage', type: 'upload', relationTo: 'media' },
@@ -42,7 +50,7 @@ export const ContentListingItems: CollectionConfig = {
   graphQL: false,
   indexes: [
     { fields: ['source', 'sourceDocumentId'], unique: true },
-    { fields: ['source', 'sortDate'] },
+    { fields: ['source', 'significantDate'] },
     { fields: ['source', 'title'] },
   ],
   lockDocuments: false,

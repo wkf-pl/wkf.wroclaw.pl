@@ -66,6 +66,7 @@ describe('filter-capable block resolution', () => {
       block: {
         blockType: 'listing',
         emptyMessage: 'Brak treści.',
+        maxAgeDays: 30,
         pageSize: 10,
         pagination: false,
         selectionMode: 'filters',
@@ -81,6 +82,9 @@ describe('filter-capable block resolution', () => {
 
     expect(resolution.isEmpty).toBe(true)
     expect(renderToStaticMarkup(resolution.content)).toContain('Brak treści.')
+    expect(listingMocks.findPublicContent).toHaveBeenCalledWith(
+      expect.objectContaining({ maxAgeDays: 30 }),
+    )
   })
 
   it('reports an empty Carousel while preserving its standalone empty state', async () => {
@@ -88,6 +92,7 @@ describe('filter-capable block resolution', () => {
       block: {
         blockType: 'carousel',
         emptyMessage: 'Brak slajdów.',
+        maxAgeDays: 14,
         selectionMode: 'filters',
         slideLimit: 5,
         sort: 'newest',
@@ -98,6 +103,9 @@ describe('filter-capable block resolution', () => {
 
     expect(resolution.isEmpty).toBe(true)
     expect(renderToStaticMarkup(resolution.content)).toContain('Brak slajdów.')
+    expect(listingMocks.findPublicContent).toHaveBeenCalledWith(
+      expect.objectContaining({ maxAgeDays: 14 }),
+    )
   })
 
   it.each([

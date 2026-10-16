@@ -182,6 +182,18 @@ describe('document website access integration', () => {
   })
 
   it('filters Listing documents by taxonomy and preserves manual order', async () => {
+    const documentIndex = await payload.find({
+      collection: 'content-listing-items',
+      depth: 0,
+      limit: 1,
+      overrideAccess: true,
+      where: {
+        and: [
+          { source: { equals: 'documents' } },
+          { sourceDocumentId: { equals: publicDocument.id } },
+        ],
+      },
+    })
     const filteredResult = await findPublicContent({
       categoryId: documentCategory.id,
       page: 1,
@@ -194,6 +206,10 @@ describe('document website access integration', () => {
     expect(filteredResult.items.map(({ document, kind }) => [kind, document.id])).toEqual([
       ['documents', publicDocument.id],
     ])
+    expect(documentIndex.docs[0]).toMatchObject({
+      hasSignificantDate: true,
+      significantDate: publicDocument.documentDate,
+    })
 
     const manualResult = await findPublicContent({
       manualItems: [

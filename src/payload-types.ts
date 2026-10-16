@@ -186,7 +186,8 @@ export interface ContentListingItem {
   title: string;
   url: string;
   excerpt?: string | null;
-  sortDate: string;
+  hasSignificantDate?: boolean | null;
+  significantDate?: string | null;
   eventStartAt?: string | null;
   eventEndAt?: string | null;
   heroImage?: (number | null) | Media;
@@ -1333,7 +1334,11 @@ export interface ListingBlock {
   tag?: (number | null) | Tag;
   eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
   eventCycle?: (number | null) | EventCycle;
-  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending') | null;
+  /**
+   * 0 wyłącza filtr wieku; wyższa wartość określa maksymalny wiek w dniach.
+   */
+  maxAgeDays?: number | null;
+  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
   pageSize: number;
   pagination?: boolean | null;
   parentFilter: 'none' | 'current' | 'specific';
@@ -1388,7 +1393,11 @@ export interface CarouselBlock {
   tag?: (number | null) | Tag;
   eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
   eventCycle?: (number | null) | EventCycle;
-  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending' | 'eventDateAscending') | null;
+  /**
+   * 0 wyłącza filtr wieku; wyższa wartość określa maksymalny wiek w dniach.
+   */
+  maxAgeDays?: number | null;
+  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
   slideLimit: number;
   parentFilter: 'none' | 'current' | 'specific';
   emptyMessage?: string | null;
@@ -2372,7 +2381,8 @@ export interface ContentListingItemsSelect<T extends boolean = true> {
   title?: T;
   url?: T;
   excerpt?: T;
-  sortDate?: T;
+  hasSignificantDate?: T;
+  significantDate?: T;
   eventStartAt?: T;
   eventEndAt?: T;
   heroImage?: T;
@@ -2549,6 +2559,7 @@ export interface ListingBlockSelect<T extends boolean = true> {
   tag?: T;
   eventTimeFilter?: T;
   eventCycle?: T;
+  maxAgeDays?: T;
   sort?: T;
   pageSize?: T;
   pagination?: T;
@@ -2580,6 +2591,7 @@ export interface CarouselBlockSelect<T extends boolean = true> {
   tag?: T;
   eventTimeFilter?: T;
   eventCycle?: T;
+  maxAgeDays?: T;
   sort?: T;
   slideLimit?: T;
   parentFilter?: T;
