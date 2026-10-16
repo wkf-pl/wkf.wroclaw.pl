@@ -12,7 +12,7 @@ describe('robots metadata', () => {
   })
 
   it('allows indexing on the production website', () => {
-    expect(createRobotsMetadata('https://wkf.wroclaw.pl')).toEqual({
+    expect(createRobotsMetadata('https://wkf.wroclaw.pl', true)).toEqual({
       rules: {
         allow: '/',
         userAgent: '*',
@@ -20,10 +20,14 @@ describe('robots metadata', () => {
     })
   })
 
-  it.each([undefined, 'https://wkf-staging.example.com'])(
-    'blocks indexing outside production for %s',
-    (serverUrl) => {
-      expect(createRobotsMetadata(serverUrl)).toEqual({
+  it.each([
+    [undefined, false],
+    ['https://wkf-staging.example.com', false],
+    ['https://wkf.wroclaw.pl', false],
+  ] as const)(
+    'blocks indexing outside a public launch for %s',
+    (serverUrl, publicLaunchEnabled) => {
+      expect(createRobotsMetadata(serverUrl, publicLaunchEnabled)).toEqual({
         rules: {
           disallow: '/',
           userAgent: '*',

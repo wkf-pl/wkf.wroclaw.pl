@@ -4,11 +4,12 @@
 
 set -Eeuo pipefail
 
-target_environment="${1:?Usage: deploy-azure.sh <staging|prod> <image-reference> [--maintenance] [--provision]}"
-target_image_reference="${2:?Usage: deploy-azure.sh <staging|prod> <image-reference> [--maintenance] [--provision]}"
+target_environment="${1:?Usage: deploy-azure.sh <staging|prod> <image-reference> [--maintenance] [--provision|--provision-only]}"
+target_image_reference="${2:?Usage: deploy-azure.sh <staging|prod> <image-reference> [--maintenance] [--provision|--provision-only]}"
 shift 2
 
 provision_infrastructure=false
+provision_only=false
 run_migrations=false
 
 for deployment_option in "$@"; do
@@ -18,6 +19,10 @@ for deployment_option in "$@"; do
       ;;
     --provision)
       provision_infrastructure=true
+      ;;
+    --provision-only)
+      provision_infrastructure=true
+      provision_only=true
       ;;
     *)
       echo "Unknown deployment option: $deployment_option" >&2
@@ -254,9 +259,38 @@ if [[ "$provision_infrastructure" == "true" ]]; then
     --parameters "$parameter_file" \
     --parameters customDomainCertificateId="${CUSTOM_DOMAIN_CERTIFICATE_ID:-}" deployApplication="$deploy_application" location="$azure_location" resourcePrefix="$resource_prefix" sourceSha="$infrastructure_source_sha" \
     --output none
+
+  if [[ "$target_environment" == 'prod' ]]; then
+    postgres_server_name="$(az postgres flexible-server list \
+      --resource-group "$resource_group_name" \
+      --query '[0].name' \
+      --output tsv)"
+    postgres_restart_pending="$(az postgres flexible-server parameter show \
+      --resource-group "$resource_group_name" \
+      --server-name "$postgres_server_name" \
+      --name shared_preload_libraries \
+      --query isConfigPendingRestart \
+      --output tsv)"
+    if [[ "$postgres_restart_pending" == 'true' ]]; then
+      echo 'Restarting production PostgreSQL to activate audit preload libraries.'
+      az postgres flexible-server restart \
+        --resource-group "$resource_group_name" \
+        --name "$postgres_server_name" \
+        --output none
+    fi
+  fi
+
+  if [[ "$provision_only" == "true" ]]; then
+    trap - ERR
+    echo "Infrastructure provisioning completed without starting the application: $resource_group_name"
+    exit 0
+  fi
 elif [[ "$application_exists" != "true" ]]; then
-  echo "The application does not exist. Re-run the deployment with --provision." >&2
-  exit 1
+  if [[ "$target_environment" != "prod" ]] || ! az containerapp job show --name "$migration_job_name" --resource-group "$resource_group_name" --output none 2>/dev/null; then
+    echo "The application does not exist. Re-run the deployment with --provision." >&2
+    exit 1
+  fi
+  echo 'Continuing the prepared production launch after infrastructure provisioning and role bootstrap.'
 fi
 
 if [[ "$run_migrations" == "true" ]]; then
@@ -297,6 +331,13 @@ if [[ "$run_migrations" == "true" ]]; then
 
   run_migration_job "migrate"
   migration_completed=true
+  if [[ "$target_environment" == "prod" ]]; then
+    if [[ -z "${OPERATIONS_IMAGE_REFERENCE:-}" ]]; then
+      echo 'OPERATIONS_IMAGE_REFERENCE is required to reconcile production grants.' >&2
+      exit 1
+    fi
+    bash scripts/run-production-database-operation.sh reconcile-grants "$OPERATIONS_IMAGE_REFERENCE"
+  fi
 else
   echo "No migration changes detected; database maintenance was skipped."
 fi
@@ -359,10 +400,10 @@ while ((SECONDS < health_deadline)); do
   echo "Deployment check ${health_check_attempt}: /api/health=${health_status:-000} /api/health/live=${liveness_status:-000} /=${root_status:-000} /admin=${admin_status:-000}"
 
   health_check_succeeded=false
-  if [[ "$health_status" == "200" && "$liveness_status" == "200" && "$root_status" == "200" && "$admin_status" == "200" ]]; then
+  if [[ "$health_status" == "200" && "$liveness_status" == "200" && "$root_status" == "401" && "$admin_status" == "401" ]]; then
     health_check_succeeded=true
 
-    if [[ "$target_environment" == "staging" ]]; then
+    if [[ "$target_environment" == "staging" || "$target_environment" == "prod" ]]; then
       robots_status="$(read_http_status '/robots.txt')"
       robots_content="$(curl --connect-timeout 3 --max-time 8 --silent "https://${application_fqdn}/robots.txt" || true)"
       echo "Deployment check ${health_check_attempt}: /robots.txt=${robots_status:-000}, expected Disallow: /"

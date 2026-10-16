@@ -1,11 +1,15 @@
 param accountName string
+param allowSharedKeyAccess bool = true
+param allowedSubnetId string = ''
 param containerName string = 'media'
+param enableProductionProtection bool = false
 param enableStagingCheckpoints bool
 param location string
+param skuName string = 'Standard_LRS'
 param tags object
 
 var checkpointContainerName = 'staging-checkpoints'
-var softDeleteRetentionDays = 14
+var softDeleteRetentionDays = enableProductionProtection ? 30 : 14
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: accountName
@@ -13,13 +17,27 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   tags: tags
   kind: 'StorageV2'
   sku: {
-    name: 'Standard_LRS'
+    name: skuName
   }
   properties: {
     accessTier: 'Hot'
     allowBlobPublicAccess: false
-    allowSharedKeyAccess: true
+    allowSharedKeyAccess: allowSharedKeyAccess
     minimumTlsVersion: 'TLS1_2'
+    networkAcls: allowedSubnetId != '' ? {
+      bypass: 'None'
+      defaultAction: 'Deny'
+      virtualNetworkRules: [
+        {
+          action: 'Allow'
+          id: allowedSubnetId
+          state: 'Succeeded'
+        }
+      ]
+    } : {
+      bypass: 'AzureServices'
+      defaultAction: 'Allow'
+    }
     supportsHttpsTrafficOnly: true
   }
 }
@@ -30,14 +48,14 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01'
   properties: {
     containerDeleteRetentionPolicy: {
       days: softDeleteRetentionDays
-      enabled: enableStagingCheckpoints
+      enabled: enableStagingCheckpoints || enableProductionProtection
     }
     deleteRetentionPolicy: {
       allowPermanentDelete: false
       days: softDeleteRetentionDays
-      enabled: enableStagingCheckpoints
+      enabled: enableStagingCheckpoints || enableProductionProtection
     }
-    isVersioningEnabled: enableStagingCheckpoints
+    isVersioningEnabled: enableStagingCheckpoints || enableProductionProtection
   }
 }
 
@@ -57,12 +75,32 @@ resource checkpointContainer 'Microsoft.Storage/storageAccounts/blobServices/con
   }
 }
 
-resource checkpointLifecyclePolicy 'Microsoft.Storage/storageAccounts/managementPolicies@2023-05-01' = if (enableStagingCheckpoints) {
+resource lifecyclePolicy 'Microsoft.Storage/storageAccounts/managementPolicies@2023-05-01' = if (enableStagingCheckpoints || enableProductionProtection) {
   parent: storageAccount
   name: 'default'
   properties: {
     policy: {
-      rules: [
+      rules: concat(enableProductionProtection ? [
+        {
+          definition: {
+            actions: {
+              version: {
+                delete: {
+                  daysAfterCreationGreaterThan: 90
+                }
+              }
+            }
+            filters: {
+              blobTypes: [
+                'blockBlob'
+              ]
+            }
+          }
+          enabled: true
+          name: 'delete-production-blob-versions-after-90-days'
+          type: 'Lifecycle'
+        }
+      ] : [], enableStagingCheckpoints ? [
         {
           definition: {
             actions: {
@@ -104,15 +142,18 @@ resource checkpointLifecyclePolicy 'Microsoft.Storage/storageAccounts/management
           name: 'delete-staging-rescue-checkpoints'
           type: 'Lifecycle'
         }
-      ]
+      ] : [])
     }
   }
 }
 
 output accountBaseUrl string = 'https://${storageAccount.name}.blob.${environment().suffixes.storage}'
+output accountId string = storageAccount.id
+output accountName string = storageAccount.name
 
 @secure()
-output connectionString string = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+output connectionString string = allowSharedKeyAccess ? 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}' : ''
 
+output containerId string = mediaContainer.id
 output containerName string = mediaContainer.name
 output checkpointContainerName string = enableStagingCheckpoints ? checkpointContainer.name : ''

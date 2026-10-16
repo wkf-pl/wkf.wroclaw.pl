@@ -45,7 +45,11 @@ param smtpUser string
 param sourceSha string
 
 @secure()
-param storageConnectionString string
+param storageConnectionString string = ''
+
+param storageAuthenticationMode string = 'connection-string'
+param storageIdentityClientId string = ''
+param storageIdentityId string = ''
 
 param tags object
 
@@ -58,11 +62,12 @@ var applicationSecrets = concat([
     name: 'payload-secret'
     value: payloadSecret
   }
+], storageConnectionString != '' ? [
   {
     name: 'storage-connection-string'
     value: storageConnectionString
   }
-], smtpPassword != '' ? [
+] : [], smtpPassword != '' ? [
   {
     name: 'smtp-password'
     value: smtpPassword
@@ -84,9 +89,19 @@ var applicationEnvironmentVariables = concat([
     value: 'false'
   }
   {
+    name: 'AZURE_STORAGE_AUTH_MODE'
+    value: storageAuthenticationMode
+  }
+  {
+    name: 'AZURE_STORAGE_IDENTITY_CLIENT_ID'
+    value: storageIdentityClientId
+  }
+], storageConnectionString != '' ? [
+  {
     name: 'AZURE_STORAGE_CONNECTION_STRING'
     secretRef: 'storage-connection-string'
   }
+] : [], [
   {
     name: 'AZURE_STORAGE_CONTAINER_NAME'
     value: containerName
@@ -98,6 +113,10 @@ var applicationEnvironmentVariables = concat([
   {
     name: 'PAYLOAD_SECRET'
     secretRef: 'payload-secret'
+  }
+  {
+    name: 'PUBLIC_LAUNCH_ENABLED'
+    value: 'false'
   }
   {
     name: 'SERVER_URL'
@@ -149,9 +168,11 @@ resource application 'Microsoft.App/containerApps@2024-03-01' = {
   tags: tags
   identity: {
     type: 'UserAssigned'
-    userAssignedIdentities: {
+    userAssignedIdentities: union({
       '${registryIdentityId}': {}
-    }
+    }, storageIdentityId != '' ? {
+      '${storageIdentityId}': {}
+    } : {})
   }
   properties: {
     environmentId: containerAppEnvironmentId
@@ -234,7 +255,7 @@ resource authentication 'Microsoft.App/containerApps/authConfigs@2024-03-01' = i
         '/api/health/live'
       ]
       redirectToProvider: 'azureactivedirectory'
-      unauthenticatedClientAction: 'AllowAnonymous'
+      unauthenticatedClientAction: 'Return401'
     }
     httpSettings: {
       requireHttps: true

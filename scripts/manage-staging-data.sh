@@ -269,8 +269,13 @@ create_checkpoint() {
   local database_dump_path="$temporary_directory/$target_checkpoint_name.dump"
   local database_checksum_path="$database_dump_path.sha256"
   local manifest_path="$temporary_directory/$target_checkpoint_name.json"
+  local media_manifest_path="$temporary_directory/$target_checkpoint_name-media.jsonl"
+  local media_manifest_checksum
   local media_blob_count
   local source_blob
+  local temporary_blob_path="$temporary_directory/checkpoint-media-blob"
+
+  : >"$media_manifest_path"
 
   if checkpoint_blob_exists "$checkpoint_prefix/manifest.json"; then
     echo "Checkpoint already exists and will not be overwritten: $target_checkpoint_name" >&2
@@ -310,11 +315,25 @@ create_checkpoint() {
         "$source_blob" \
         "$checkpoint_container_name" \
         "$checkpoint_prefix/media/$source_blob"
+      az storage blob download \
+        --container-name "$checkpoint_container_name" \
+        --name "$checkpoint_prefix/media/$source_blob" \
+        --file "$temporary_blob_path" \
+        --overwrite true \
+        --output none
+      jq --compact-output --null-input \
+        --arg name "$source_blob" \
+        --arg sha256 "$(sha256sum "$temporary_blob_path" | cut -d ' ' -f1)" \
+        --argjson size "$(wc --bytes <"$temporary_blob_path")" \
+        '{name: $name, sha256: $sha256, size: $size}' >>"$media_manifest_path"
+      rm --force -- "$temporary_blob_path"
     fi
   done < <(az storage blob list \
     --container-name "$media_container_name" \
     --query '[].name' \
     --output tsv)
+
+  media_manifest_checksum="$(sha256sum "$media_manifest_path" | cut -d ' ' -f1)"
 
   jq -n \
     --arg checkpointName "$target_checkpoint_name" \
@@ -322,10 +341,17 @@ create_checkpoint() {
     --arg databaseName "$database_name" \
     --arg deployedSourceSha "$deployed_source_sha" \
     --arg imageReference "$active_image_reference" \
+    --arg mediaManifestSha256 "$media_manifest_checksum" \
     --argjson mediaBlobCount "$media_blob_count" \
-    '{checkpointName: $checkpointName, createdAt: $createdAt, databaseName: $databaseName, deployedSourceSha: $deployedSourceSha, imageReference: $imageReference, mediaBlobCount: $mediaBlobCount}' \
+    '{checkpointName: $checkpointName, createdAt: $createdAt, databaseName: $databaseName, deployedSourceSha: $deployedSourceSha, imageReference: $imageReference, mediaBlobCount: $mediaBlobCount, mediaManifestSha256: $mediaManifestSha256}' \
     >"$manifest_path"
 
+  az storage blob upload \
+    --container-name "$checkpoint_container_name" \
+    --name "$checkpoint_prefix/media-manifest.jsonl" \
+    --file "$media_manifest_path" \
+    --overwrite false \
+    --output none
   az storage blob upload \
     --container-name "$checkpoint_container_name" \
     --name "$checkpoint_prefix/database.dump" \
@@ -354,16 +380,23 @@ download_and_validate_checkpoint() {
   local database_dump_path="$temporary_directory/restore.dump"
   local database_checksum_path="$temporary_directory/restore.sha256"
   local manifest_path="$temporary_directory/restore-manifest.json"
+  local media_manifest_path="$temporary_directory/restore-media-manifest.jsonl"
   local expected_media_blob_count
   local actual_media_blob_count
 
-  for required_blob in manifest.json database.dump database.sha256; do
+  for required_blob in manifest.json database.dump database.sha256 media-manifest.jsonl; do
     if ! checkpoint_blob_exists "$checkpoint_prefix/$required_blob"; then
       echo "Checkpoint is incomplete: missing $required_blob in $source_checkpoint_name" >&2
       return 1
     fi
   done
 
+  az storage blob download \
+    --container-name "$checkpoint_container_name" \
+    --name "$checkpoint_prefix/media-manifest.jsonl" \
+    --file "$media_manifest_path" \
+    --overwrite true \
+    --output none
   az storage blob download \
     --container-name "$checkpoint_container_name" \
     --name "$checkpoint_prefix/database.dump" \
@@ -393,6 +426,14 @@ download_and_validate_checkpoint() {
     pg_restore --list /work/restore.dump >/dev/null
 
   expected_media_blob_count="$(jq -r '.mediaBlobCount' "$manifest_path")"
+  if [[ "$(sha256sum "$media_manifest_path" | cut -d ' ' -f1)" != "$(jq -r '.mediaManifestSha256' "$manifest_path")" ]]; then
+    echo 'Checkpoint media manifest checksum does not match.' >&2
+    return 1
+  fi
+  if [[ "$(wc --lines <"$media_manifest_path")" != "$expected_media_blob_count" ]]; then
+    echo 'Checkpoint media manifest entry count does not match.' >&2
+    return 1
+  fi
   actual_media_blob_count="$(az storage blob list \
     --container-name "$checkpoint_container_name" \
     --prefix "$checkpoint_prefix/media/" \

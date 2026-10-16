@@ -1,13 +1,16 @@
 import type { MetadataRoute } from 'next'
 
-import { getOptionalEnvironmentVariable } from '@/lib/env'
+import { getEnvironmentBoolean, getOptionalEnvironmentVariable } from '@/lib/env'
 
 const productionServerUrl = 'https://wkf.wroclaw.pl'
 
 export const dynamic = 'force-dynamic'
 
-export function createRobotsMetadata(serverUrl?: string): MetadataRoute.Robots {
-  if (serverUrl !== productionServerUrl) {
+export function createRobotsMetadata(
+  serverUrl: string | undefined,
+  publicLaunchEnabled = false,
+): MetadataRoute.Robots {
+  if (!publicLaunchEnabled || serverUrl !== productionServerUrl) {
     return {
       rules: {
         disallow: '/',
@@ -25,5 +28,8 @@ export function createRobotsMetadata(serverUrl?: string): MetadataRoute.Robots {
 }
 
 export default function robots(): MetadataRoute.Robots {
-  return createRobotsMetadata(getOptionalEnvironmentVariable('SERVER_URL'))
+  return createRobotsMetadata(
+    getOptionalEnvironmentVariable('SERVER_URL'),
+    getEnvironmentBoolean('PUBLIC_LAUNCH_ENABLED'),
+  )
 }

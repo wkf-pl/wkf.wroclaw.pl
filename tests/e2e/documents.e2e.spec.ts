@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
+import { getStorageContainerClient } from '@/storage/get-storage-container-client'
 
 import {
   createPublishedDocumentFixture,
@@ -167,10 +168,21 @@ test('renders the public documents register without account actions', async ({ p
   expect(fileResponse.ok()).toBe(true)
   expect(fileResponse.headers()['content-type']).toBe('application/pdf')
   expect(fileResponse.headers()['content-disposition']).toContain('inline;')
+  expect(fileResponse.headers()['accept-ranges']).toBe('bytes')
+  const rangeResponse = await page.request.get(filePath, { headers: { Range: 'bytes=0-9' } })
+  expect(rangeResponse.status()).toBe(206)
+  expect(rangeResponse.headers()['content-range']).toMatch(/^bytes 0-9\/\d+$/)
+  expect(rangeResponse.headers()['content-length']).toBe('10')
+  expect((await rangeResponse.body()).byteLength).toBe(10)
   const downloadResponse = await page.request.get(`${filePath}?download=1`)
   expect(downloadResponse.ok()).toBe(true)
   expect(downloadResponse.headers()['content-type']).toBe('application/pdf')
   expect(downloadResponse.headers()['content-disposition']).toContain('attachment;')
+
+  const blobClient = getStorageContainerClient().getBlobClient(`documents/${fixtureName}.pdf`)
+  expect(await blobClient.exists()).toBe(true)
+  await deletePublishedDocumentFixture(payload, fixtureName)
+  expect(await blobClient.exists()).toBe(false)
 
   const loginResponse = await page.goto('/login')
   expect(loginResponse?.status()).toBe(404)
