@@ -12,6 +12,7 @@ param postgresBackupRetentionDays = 35
 param minimumReplicas = 1
 param maximumReplicas = 1
 param monthlyBudgetAmount = 50
+param budgetStartDate = '2026-10-01'
 
 param smtpHost = readEnvironmentVariable('SMTP_HOST')
 param smtpUser = readEnvironmentVariable('SMTP_USER')

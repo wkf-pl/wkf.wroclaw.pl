@@ -84,11 +84,20 @@ describe('deployment workflows', () => {
   it('preserves deployment safety boundaries', () => {
     const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
     const applicationTemplate = readFileSync('infra/azure/modules/application.bicep', 'utf8')
+    const restorePreviousRevision = deploymentScript
+      .split('restore_previous_revision() {')[1]
+      ?.split('\n}\n\nrollback_deployment()')[0]
 
     expect(deploymentScript).toContain('sort_by([?properties.active], &properties.createdTime)')
     expect(deploymentScript).toContain('DEPLOYMENT_HEALTH_TIMEOUT_SECONDS:-600')
     expect(deploymentScript).toContain('No migration changes detected')
     expect(deploymentScript).toContain('restore_previous_revision')
+    expect(restorePreviousRevision).toBeDefined()
+    expect(restorePreviousRevision).toContain('get_latest_revision')
+    expect(restorePreviousRevision).toContain('az containerapp revision deactivate')
+    expect(restorePreviousRevision).toContain('az containerapp revision activate')
+    expect(restorePreviousRevision).toContain('wait_for_revision_ready')
+    expect(restorePreviousRevision).not.toContain('previous_revision_active')
     expect(deploymentScript).toContain('infrastructure_image_reference="$target_image_reference"')
     expect(deploymentScript).toMatch(
       /infrastructure_image_reference="\$target_image_reference"[\s\S]*application_update_started=true/,
@@ -97,6 +106,39 @@ describe('deployment workflows', () => {
       /if \[\[ "\$run_migrations" == "true" \]\]; then[\s\S]*infrastructure_image_reference="\$previous_image_reference"/,
     )
     expect(applicationTemplate).toContain("name: 'DEPLOYED_SOURCE_SHA'")
+  })
+
+  it('keeps Azure budget start dates stable across monthly reconciliations', () => {
+    const mainTemplate = readFileSync('infra/azure/main.bicep', 'utf8')
+    const stagingParameters = readFileSync('infra/azure/environments/staging.bicepparam', 'utf8')
+    const productionParameters = readFileSync('infra/azure/environments/prod.bicepparam', 'utf8')
+    const subscriptionBudgetTemplate = readFileSync('infra/azure/subscription-budget.bicep', 'utf8')
+
+    expect(mainTemplate).toContain('param budgetStartDate string')
+    expect(mainTemplate).not.toContain("budgetStartDate string = utcNow('yyyy-MM-01')")
+    expect(stagingParameters).toContain("param budgetStartDate = '2026-09-01'")
+    expect(productionParameters).toContain("param budgetStartDate = '2026-10-01'")
+    expect(subscriptionBudgetTemplate).toContain('param budgetStartDate string')
+    expect(subscriptionBudgetTemplate).not.toContain(
+      "budgetStartDate string = utcNow('yyyy-MM-01')",
+    )
+  })
+
+  it('keeps staging public while protecting the production dry launch with Entra', () => {
+    const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
+    const stagingParameters = readFileSync('infra/azure/environments/staging.bicepparam', 'utf8')
+    const productionParameters = readFileSync('infra/azure/environments/prod.bicepparam', 'utf8')
+    const applicationTemplate = readFileSync('infra/azure/modules/application.bicep', 'utf8')
+
+    expect(stagingParameters).toContain('param enableEntraAuthentication = false')
+    expect(stagingParameters).not.toContain('STAGING_ENTRA_')
+    expect(stagingWorkflow).not.toContain('STAGING_ENTRA_')
+    expect(productionParameters).toContain('param enableEntraAuthentication = true')
+    expect(applicationTemplate).toContain(
+      "resource authentication 'Microsoft.App/containerApps/authConfigs@2024-03-01' = {",
+    )
+    expect(applicationTemplate).toContain('properties: enableEntraAuthentication')
+    expect(applicationTemplate).toContain("unauthenticatedClientAction: 'AllowAnonymous'")
   })
 
   it('serializes staging deployments and protected data operations', () => {

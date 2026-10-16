@@ -245,45 +245,54 @@ resource application 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
-resource authentication 'Microsoft.App/containerApps/authConfigs@2024-03-01' = if (enableEntraAuthentication) {
+resource authentication 'Microsoft.App/containerApps/authConfigs@2024-03-01' = {
   parent: application
   name: 'current'
-  properties: {
-    globalValidation: {
-      excludedPaths: [
-        '/api/health'
-        '/api/health/live'
-      ]
-      redirectToProvider: 'azureactivedirectory'
-      unauthenticatedClientAction: 'Return401'
-    }
-    httpSettings: {
-      requireHttps: true
-    }
-    identityProviders: {
-      azureActiveDirectory: {
-        enabled: true
-        isAutoProvisioned: false
-        registration: {
-          clientId: entraClientId
-          clientSecretSettingName: 'entra-client-secret'
-          openIdIssuer: '${environment().authentication.loginEndpoint}${entraTenantId}/v2.0'
+  properties: enableEntraAuthentication
+    ? {
+        globalValidation: {
+          excludedPaths: [
+            '/api/health'
+            '/api/health/live'
+          ]
+          redirectToProvider: 'azureactivedirectory'
+          unauthenticatedClientAction: 'Return401'
         }
-        validation: {
-          defaultAuthorizationPolicy: {
-            allowedPrincipals: {
-              groups: [
-                entraAllowedGroupId
-              ]
+        httpSettings: {
+          requireHttps: true
+        }
+        identityProviders: {
+          azureActiveDirectory: {
+            enabled: true
+            isAutoProvisioned: false
+            registration: {
+              clientId: entraClientId
+              clientSecretSettingName: 'entra-client-secret'
+              openIdIssuer: '${environment().authentication.loginEndpoint}${entraTenantId}/v2.0'
+            }
+            validation: {
+              defaultAuthorizationPolicy: {
+                allowedPrincipals: {
+                  groups: [
+                    entraAllowedGroupId
+                  ]
+                }
+              }
             }
           }
         }
+        platform: {
+          enabled: true
+        }
       }
-    }
-    platform: {
-      enabled: true
-    }
-  }
+    : {
+        globalValidation: {
+          unauthenticatedClientAction: 'AllowAnonymous'
+        }
+        platform: {
+          enabled: false
+        }
+      }
 }
 
 output fqdn string = application.properties.configuration.ingress.fqdn

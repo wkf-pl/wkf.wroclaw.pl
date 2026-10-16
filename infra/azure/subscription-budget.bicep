@@ -2,7 +2,10 @@ targetScope = 'subscription'
 
 @minValue(1)
 param amount int = 120
-param budgetStartDate string = utcNow('yyyy-MM-01')
+
+@description('First day of the initial monthly budget period. Keep this value stable after creation.')
+param budgetStartDate string
+
 param resourcePrefix string = 'wkf'
 
 resource monthlyBudget 'Microsoft.Consumption/budgets@2023-11-01' = {
