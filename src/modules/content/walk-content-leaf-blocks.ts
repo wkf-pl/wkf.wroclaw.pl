@@ -95,6 +95,8 @@ function* walkSectionGroupLeafBlocks(
       const nestedPath = `${sectionPath}.blocks.${blockIndex}`
       if (nestedCandidate.blockType === 'columnLayout') {
         yield* walkColumnLeafBlocks(nestedCandidate, nestedPath)
+      } else if (nestedCandidate.blockType === 'tabs') {
+        yield* walkTabbedContentLeafBlocks(nestedCandidate, nestedPath)
       } else if (nestedCandidate.blockType !== 'sectionGroup') {
         yield { block: nestedCandidate, path: nestedPath }
       }
@@ -246,6 +248,8 @@ function* walkSectionGroupPresentations(
       const nestedPath = `${sectionPath}.blocks.${blockIndex}`
       if (nestedCandidate.blockType === 'columnLayout') {
         yield* walkColumnPresentations(nestedCandidate, nestedPath)
+      } else if (nestedCandidate.blockType === 'tabs') {
+        yield* walkTabbedContentPresentations(nestedCandidate, nestedPath)
       } else if (isPresentedBlock(nestedCandidate)) {
         yield createPresentationReference(nestedCandidate, nestedPath)
       }

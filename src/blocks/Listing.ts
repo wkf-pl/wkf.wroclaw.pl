@@ -3,7 +3,11 @@ import type { Block, Validate } from 'payload'
 import { getFormRelationshipId } from '@/lib/relationships'
 import { createContentPresentationFields } from '@/modules/content/content-presentation'
 
-import { createListingPaginationRow, createListingTaxonomyRow } from './listing-fields'
+import {
+  createListingPaginationRow,
+  createListingTaxonomyRow,
+  createMaxAgeDaysField,
+} from './listing-fields'
 
 type ListingSiblingData = {
   parentFilter?: unknown
@@ -230,10 +234,11 @@ export const ListingBlock: Block = {
       ],
     },
     createListingPaginationRow({
-      leadingField: {
+      leadingField: createMaxAgeDaysField('25%'),
+      secondaryLeadingField: {
         name: 'sort',
         type: 'select',
-        admin: { condition: filtersCondition, isClearable: false, width: '33.333%' },
+        admin: { condition: filtersCondition, isClearable: false, width: '25%' },
         defaultValue: 'newest',
         label: 'Sortowanie',
         options: [
@@ -241,7 +246,6 @@ export const ListingBlock: Block = {
           { label: 'Najstarsze', value: 'oldest' },
           { label: 'Tytuł A–Z', value: 'titleAscending' },
           { label: 'Tytuł Z–A', value: 'titleDescending' },
-          { label: 'Termin wydarzenia', value: 'eventDateAscending' },
         ],
         required: true,
       },

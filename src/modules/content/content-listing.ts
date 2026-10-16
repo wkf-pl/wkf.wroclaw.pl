@@ -18,8 +18,7 @@ export const taxonomizableCollectionSlugs = [
 ] as const
 export type TaxonomizableCollectionSlug = (typeof taxonomizableCollectionSlugs)[number]
 export type TaxonomizableDocument = Document | Event | EventCycle | Page | Post
-export type ContentListingSort =
-  'eventDateAscending' | 'newest' | 'oldest' | 'titleAscending' | 'titleDescending'
+export type ContentListingSort = 'newest' | 'oldest' | 'titleAscending' | 'titleDescending'
 
 export type PublicContentListItem =
   | { document: Document; kind: 'documents'; url: string }
@@ -33,6 +32,7 @@ export type FindPublicContentOptions = {
   eventCycleId?: number
   eventTimeFilter?: 'all' | 'past' | 'upcoming'
   manualItems?: ManualContentReference[]
+  maxAgeDays?: number
   page: number
   pageSize: number
   pagination: boolean
@@ -115,6 +115,7 @@ export async function findPublicContent(
     categoryIds,
     eventCycleId: options.eventCycleId,
     eventTimeFilter: options.eventTimeFilter,
+    maxAgeDays: options.maxAgeDays ?? 0,
     ...normalizeListingWindow(options),
     parentId: options.parentId,
     sort: options.sort,
@@ -201,6 +202,16 @@ function createListingWhere(options: CachedFindPublicContentOptions): Where {
     })
   }
 
+  const significantDateThreshold = getSignificantDateThreshold(options.maxAgeDays)
+  if (significantDateThreshold) {
+    conditions.push({
+      or: [
+        { significantDate: { exists: false } },
+        { significantDate: { greater_than_equal: significantDateThreshold } },
+      ],
+    })
+  }
+
   const now = new Date().toISOString()
   if (options.eventTimeFilter === 'upcoming') {
     conditions.push({
@@ -221,17 +232,25 @@ function createListingWhere(options: CachedFindPublicContentOptions): Where {
   return { and: conditions }
 }
 
+function getSignificantDateThreshold(maxAgeDays: number | undefined): string | undefined {
+  if (maxAgeDays === undefined || !Number.isFinite(maxAgeDays) || maxAgeDays <= 0) {
+    return undefined
+  }
+
+  const normalizedMaxAgeDays = Math.min(366, Math.floor(maxAgeDays))
+  return new Date(Date.now() - normalizedMaxAgeDays * 86_400_000).toISOString()
+}
+
 function getPayloadSort(sort: ContentListingSort): string[] {
   switch (sort) {
     case 'oldest':
-    case 'eventDateAscending':
-      return ['sortDate', 'title', 'source', 'sourceDocumentId']
+      return ['-hasSignificantDate', 'significantDate', 'title', 'source', 'sourceDocumentId']
     case 'titleAscending':
-      return ['title', '-sortDate', 'source', 'sourceDocumentId']
+      return ['title', '-significantDate', 'source', 'sourceDocumentId']
     case 'titleDescending':
-      return ['-title', '-sortDate', 'source', 'sourceDocumentId']
+      return ['-title', '-significantDate', 'source', 'sourceDocumentId']
     default:
-      return ['-sortDate', 'title', 'source', 'sourceDocumentId']
+      return ['-hasSignificantDate', '-significantDate', 'title', 'source', 'sourceDocumentId']
   }
 }
 

@@ -50,6 +50,7 @@ import * as migration_20261015_122648_event_cycle_schedule from './20261015_1226
 import * as migration_20261015_175630_section_group_empty_child_behavior from './20261015_175630_section_group_empty_child_behavior'
 import * as migration_20261015_204147_documents_listing_schema from './20261015_204147_documents_listing_schema'
 import * as migration_20261015_204148_documents_listing_consolidation from './20261015_204148_documents_listing_consolidation'
+import * as migration_20261016_001005_significant_date_listing_age from './20261016_001005_significant_date_listing_age'
 
 export const migrations = [
   {
@@ -311,5 +312,10 @@ export const migrations = [
     up: migration_20261015_204148_documents_listing_consolidation.up,
     down: migration_20261015_204148_documents_listing_consolidation.down,
     name: '20261015_204148_documents_listing_consolidation',
+  },
+  {
+    up: migration_20261016_001005_significant_date_listing_age.up,
+    down: migration_20261016_001005_significant_date_listing_age.down,
+    name: '20261016_001005_significant_date_listing_age',
   },
 ]

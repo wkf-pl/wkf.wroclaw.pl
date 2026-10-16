@@ -161,6 +161,13 @@ describe('content composition integration', () => {
                     surface: 'transparent',
                     verticalAlignment: 'center',
                   },
+                  {
+                    blockType: 'tabs',
+                    tabs: [
+                      { blocks: [richText('Pierwsza zakładka')], label: 'Pierwsza' },
+                      { blocks: [richText('Druga zakładka')], label: 'Druga' },
+                    ],
+                  },
                 ],
                 surface: 'image',
                 surfaceHorizontalPosition: 'right',
@@ -230,6 +237,14 @@ describe('content composition integration', () => {
       blockType: 'richText',
       frame: 'outline',
       surface: 'inverse',
+    })
+    const tabbedContent = sectionGroup.sections[0]?.blocks[2]
+    expect(tabbedContent).toMatchObject({
+      blockType: 'tabs',
+      tabs: [
+        { label: 'Pierwsza', blocks: [{ blockType: 'richText' }] },
+        { label: 'Druga', blocks: [{ blockType: 'richText' }] },
+      ],
     })
 
     const versions = await payload.findVersions({

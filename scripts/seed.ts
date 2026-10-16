@@ -646,7 +646,7 @@ async function ensureHomepageContent(author: User, image?: Media): Promise<void>
           parentFilter: 'none',
           selectionMode: 'filters',
           slideLimit: 6,
-          sort: 'eventDateAscending',
+          sort: 'oldest',
           sources: ['events'],
         },
         {

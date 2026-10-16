@@ -48,6 +48,22 @@ describe('content listing and pagination', () => {
     expect(childResult.items[0]?.document).toHaveProperty('layout')
   })
 
+  it('sorts dated content by its significant date and undated content by title', async () => {
+    const result = await findPublicContent({
+      page: 1,
+      pageSize: 12,
+      pagination: false,
+      sort: 'oldest',
+      sources: ['pages', 'posts'],
+    })
+
+    expect(result.items.map(({ document, kind }) => [kind, document.title])).toEqual([
+      ['posts', fixture.post.title],
+      ['pages', fixture.childPage.title],
+      ['pages', fixture.page.title],
+    ])
+  })
+
   it('preserves manual mixed-content order before pagination', async () => {
     const result = await findPublicContent({
       manualItems: [
@@ -68,6 +84,45 @@ describe('content listing and pagination', () => {
     ])
     expect(result.totalDocs).toBe(3)
     expect(result.totalPages).toBe(2)
+  })
+
+  it('filters dated content by age while retaining content without a significant date', async () => {
+    const recentPost = await fixture.payload.create({
+      collection: 'posts',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        excerpt: 'Recent post excerpt',
+        layout: [{ blockType: 'richText', content: createLexicalDocument('Recent content') }],
+        publishedAt: new Date(Date.now() - 86_400_000).toISOString(),
+        slug: 'integration-listing-recent-post',
+        title: 'Integration recent post',
+      },
+      overrideAccess: true,
+    })
+
+    try {
+      const result = await findPublicContent({
+        maxAgeDays: 30,
+        page: 1,
+        pageSize: 20,
+        pagination: false,
+        sort: 'newest',
+        sources: ['pages', 'posts'],
+      })
+      const references = result.items.map(({ document, kind }) => `${kind}:${document.id}`)
+
+      expect(references).toContain(`posts:${recentPost.id}`)
+      expect(references).toContain(`pages:${fixture.page.id}`)
+      expect(references).toContain(`pages:${fixture.childPage.id}`)
+      expect(references).not.toContain(`posts:${fixture.post.id}`)
+    } finally {
+      await fixture.payload.delete({
+        collection: 'posts',
+        id: recentPost.id,
+        overrideAccess: true,
+      })
+    }
   })
 
   it('stores ordered polymorphic relationships in a manual Listing block', async () => {

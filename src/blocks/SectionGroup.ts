@@ -3,6 +3,7 @@ import type { Block } from 'payload'
 import { createContentPresentationFields } from '@/modules/content/content-presentation'
 
 import { ColumnLayoutBlock } from './ColumnLayout'
+import { TabbedContentBlock } from './TabbedContent'
 import { contentLeafBlocks } from './contentLeafBlocks'
 
 export const SectionGroupBlock: Block = {
@@ -55,7 +56,7 @@ export const SectionGroupBlock: Block = {
               name: 'blocks',
               type: 'blocks',
               admin: { initCollapsed: false },
-              blocks: [...contentLeafBlocks, ColumnLayoutBlock],
+              blocks: [...contentLeafBlocks, ColumnLayoutBlock, TabbedContentBlock],
               label: 'Bloki sekcji',
               labels: {
                 plural: 'Bloki sekcji',
