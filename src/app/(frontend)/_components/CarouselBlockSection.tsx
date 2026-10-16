@@ -38,6 +38,7 @@ export async function resolveCarouselBlockSection({
       ('calendarFeedKey' in document ? document.id : undefined),
     eventTimeFilter: block.eventTimeFilter ?? 'all',
     manualItems: (block.items?.map(({ item }) => item) ?? []) as ManualContentReference[],
+    maxAgeDays: block.maxAgeDays ?? 0,
     page: 1,
     pageSize: block.slideLimit,
     pagination: false,

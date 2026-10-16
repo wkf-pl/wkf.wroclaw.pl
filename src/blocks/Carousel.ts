@@ -8,7 +8,7 @@ import {
   validateManualListingItems,
   validateParentPage,
 } from './Listing'
-import { createListingTaxonomyRow } from './listing-fields'
+import { createListingTaxonomyRow, createMaxAgeDaysField } from './listing-fields'
 
 const filtersCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.selectionMode === 'filters'
@@ -140,10 +140,11 @@ export const CarouselBlock: Block = {
     {
       type: 'row',
       fields: [
+        createMaxAgeDaysField('33.333%'),
         {
           name: 'sort',
           type: 'select',
-          admin: { condition: filtersCondition, isClearable: false, width: '50%' },
+          admin: { condition: filtersCondition, isClearable: false, width: '33.333%' },
           defaultValue: 'newest',
           label: 'Sortowanie',
           options: [
@@ -151,14 +152,13 @@ export const CarouselBlock: Block = {
             { label: 'Najstarsze', value: 'oldest' },
             { label: 'Tytuł A–Z', value: 'titleAscending' },
             { label: 'Tytuł Z–A', value: 'titleDescending' },
-            { label: 'Termin wydarzenia', value: 'eventDateAscending' },
           ],
           required: true,
         },
         {
           name: 'slideLimit',
           type: 'number',
-          admin: { width: '50%' },
+          admin: { width: '33.333%' },
           defaultValue: 5,
           label: 'Maksymalna liczba slajdów',
           max: 20,

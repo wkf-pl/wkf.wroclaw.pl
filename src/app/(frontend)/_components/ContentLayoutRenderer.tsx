@@ -61,7 +61,7 @@ type PresentedContentLeafBlock = Exclude<
   ContentLeafBlock,
   ActionLinksBlock | CardBlock | HeadingBlock
 >
-type SectionContentBlock = ColumnLayoutBlock | ContentLeafBlock
+type SectionContentBlock = ColumnLayoutBlock | TabbedContentBlock | ContentLeafBlock
 type TabbedContentSectionBlock = ColumnLayoutBlock | ContentLeafBlock
 type ContentLayoutBlock =
   ColumnLayoutBlock | SectionGroupBlock | TabbedContentBlock | ContentLeafBlock
@@ -178,38 +178,43 @@ async function TabbedContentRenderer({
   const headerLeftItems = resolvePresentedLinks(block.headerLeftItems ?? [], resolutionOptions)
   const headerRightItems = resolvePresentedLinks(block.headerRightItems ?? [], resolutionOptions)
   const footerItems = resolvePresentedLinks(block.footerItems ?? [], resolutionOptions)
-  const renderedTabs: TabbedContentFrameTab[] = tabs.map((tab, tabIndex) => {
-    const tabPath = `${path}.tabs.${tabIndex}`
-    const blocks = (tab.blocks ?? []) as TabbedContentSectionBlock[]
+  const renderedTabs: TabbedContentFrameTab[] = await Promise.all(
+    tabs.map(async (tab, tabIndex) => {
+      const tabPath = `${path}.tabs.${tabIndex}`
+      const blocks = (tab.blocks ?? []) as TabbedContentSectionBlock[]
+      const resolvedBlocks = await Promise.all(
+        blocks.map((nestedBlock, nestedBlockIndex) => {
+          const nestedPath = `${tabPath}.blocks.${nestedBlockIndex}`
+          return nestedBlock.blockType === 'columnLayout'
+            ? resolveColumnLayout({
+                block: nestedBlock,
+                document,
+                path: nestedPath,
+                pathname,
+                searchParams,
+              })
+            : resolveContentLeafBlock({
+                block: nestedBlock,
+                document,
+                path: nestedPath,
+                pathname,
+                presentationPlacement: 'tab',
+                searchParams,
+              })
+        }),
+      )
 
-    return {
-      content: blocks.map((nestedBlock, nestedBlockIndex) => {
-        const nestedPath = `${tabPath}.blocks.${nestedBlockIndex}`
-        return nestedBlock.blockType === 'columnLayout' ? (
-          <ColumnLayoutRenderer
-            block={nestedBlock}
-            document={document}
-            key={nestedBlock.id ?? nestedPath}
-            path={nestedPath}
-            pathname={pathname}
-            searchParams={searchParams}
-          />
-        ) : (
-          <ContentLeafBlockRenderer
-            block={nestedBlock}
-            document={document}
-            key={nestedBlock.id ?? nestedPath}
-            path={nestedPath}
-            pathname={pathname}
-            presentationPlacement="tab"
-            searchParams={searchParams}
-          />
-        )
-      }),
-      id: tab.id ?? `tab-${tabIndex}`,
-      label: tab.label,
-    }
-  })
+      return {
+        content: resolvedBlocks.map(({ content }, nestedBlockIndex) => (
+          <Fragment key={blocks[nestedBlockIndex]?.id ?? `${tabPath}.blocks.${nestedBlockIndex}`}>
+            {content}
+          </Fragment>
+        )),
+        id: tab.id ?? `tab-${tabIndex}`,
+        label: tab.label,
+      }
+    }),
+  )
 
   return (
     <TabbedContentFrame
@@ -254,23 +259,38 @@ export async function SectionGroupRenderer({
       const sectionPath = `${path}.sections.${sectionIndex}`
       const blocks = (section.blocks ?? []) as SectionContentBlock[]
       const resolvedBlocks = await Promise.all(
-        blocks.map((nestedBlock, nestedBlockIndex) => {
+        blocks.map(async (nestedBlock, nestedBlockIndex) => {
           const nestedPath = `${sectionPath}.blocks.${nestedBlockIndex}`
-          return nestedBlock.blockType === 'columnLayout'
-            ? resolveColumnLayout({
+          if (nestedBlock.blockType === 'columnLayout') {
+            return resolveColumnLayout({
+              block: nestedBlock,
+              document,
+              path: nestedPath,
+              pathname,
+              searchParams,
+            })
+          }
+
+          if (nestedBlock.blockType === 'tabs') {
+            return {
+              content: await TabbedContentRenderer({
                 block: nestedBlock,
                 document,
                 path: nestedPath,
                 pathname,
                 searchParams,
-              })
-            : resolveContentLeafBlock({
-                block: nestedBlock,
-                document,
-                path: nestedPath,
-                pathname,
-                searchParams,
-              })
+              }),
+              hasEmptyFilterBlock: false,
+            }
+          }
+
+          return resolveContentLeafBlock({
+            block: nestedBlock,
+            document,
+            path: nestedPath,
+            pathname,
+            searchParams,
+          })
         }),
       )
 

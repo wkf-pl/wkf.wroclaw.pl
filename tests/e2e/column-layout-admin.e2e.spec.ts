@@ -543,6 +543,58 @@ test('appends an allowed copied block to section blocks and rejects a forbidden 
   await expect(movedSectionRows).toHaveCount(2)
 })
 
+test('cuts a block row only after it is pasted successfully', async ({ page }) => {
+  const staticChildrenErrors: string[] = []
+  page.on('console', (message) => {
+    if (
+      message.type() === 'error' &&
+      message.text().includes('Static children should always be an array')
+    ) {
+      staticChildrenErrors.push(message.text())
+    }
+  })
+
+  await login({ page, user: editorTestUser })
+  await page.goto(`/admin/collections/pages/${clipboardFixturePage.id}`)
+
+  const layoutField = page.locator('#field-layout')
+  const showAllButton = layoutField
+    .locator(':scope > .blocks-field__header')
+    .getByRole('button', { name: 'Pokaż wszystkie' })
+  await showAllButton.click()
+
+  const topLevelRows = layoutField.locator('.blocks-field__row')
+  await expect(topLevelRows).toHaveCount(2)
+  await layoutField
+    .locator('#layout-row-0 > div > div > .collapsible__actions-wrap .array-actions__button')
+    .click()
+  await expect(page.getByRole('button', { name: 'Zduplikuj' })).toHaveCount(0)
+  const cutRowButton = page.getByRole('button', { name: 'Wytnij wiersz' })
+  await expect(cutRowButton.locator('svg.icon--scissors')).toBeVisible()
+  await cutRowButton.click()
+
+  await expect(topLevelRows).toHaveCount(2)
+  const sectionTabs = topLevelRows.nth(1).locator('.wkf-layout-tabs[data-layout-kind="sections"]')
+  await sectionTabs.getByRole('tab', { name: 'Sekcja 1' }).click()
+  const sectionBlocks = page.locator('#field-layout__1__sections__0__blocks')
+  await sectionBlocks.locator(':scope > .blocks-field__header .clipboard-action__popup').click()
+  await page.getByRole('button', { name: 'Wklej pole' }).click()
+
+  await expect(topLevelRows).toHaveCount(1)
+  await expect(topLevelRows.first()).toContainText('Grupa sekcji')
+  await topLevelRows
+    .first()
+    .locator('.wkf-layout-tabs[data-layout-kind="sections"]')
+    .getByRole('tab', { name: 'Sekcja 1' })
+    .click()
+  const movedSectionBlocks = page.locator('#field-layout__0__sections__0__blocks')
+  await expect(movedSectionBlocks.locator('.blocks-field__row')).toHaveCount(2)
+  await expect(movedSectionBlocks.locator('.blocks-field__row').nth(1)).toContainText(
+    'Układ kolumnowy',
+  )
+  expect(staticChildrenErrors).toEqual([])
+})
+
 function activePanel(field: import('@playwright/test').Locator) {
   return field.getByRole('tabpanel')
 }

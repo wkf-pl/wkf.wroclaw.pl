@@ -171,6 +171,7 @@ describe('column layout', () => {
     expect(sectionBlocksField.blocks.map((block) => block.slug)).toEqual([
       ...contentLeafBlocks.map((block) => block.slug),
       'columnLayout',
+      'tabs',
     ])
   })
 

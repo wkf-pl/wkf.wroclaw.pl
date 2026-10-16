@@ -441,7 +441,7 @@ describe('events integration', () => {
       page: 1,
       pageSize: 10,
       pagination: true,
-      sort: 'eventDateAscending',
+      sort: 'oldest',
       sources: ['events'],
     })
     expect(publicListing.items.map((item) => item.url)).toContain(`/events/${slugs.public}`)
@@ -525,6 +525,19 @@ describe('events integration', () => {
         },
       },
     })
+    const cycleIndex = await payload.find({
+      collection: 'content-listing-items',
+      depth: 0,
+      limit: 1,
+      overrideAccess: true,
+      where: {
+        and: [{ source: { equals: 'event-cycles' } }, { sourceDocumentId: { equals: cycle.id } }],
+      },
+    })
+    expect(cycleIndex.docs[0]).toMatchObject({
+      hasSignificantDate: false,
+      significantDate: null,
+    })
     expect(cycle.eventDefaults.title).toBe('Integration cycle')
     const event = await payload.create({
       collection: 'events',
@@ -550,6 +563,19 @@ describe('events integration', () => {
         location: { country: 'Polska' },
       },
     })
+    const eventIndex = await payload.find({
+      collection: 'content-listing-items',
+      depth: 0,
+      limit: 1,
+      overrideAccess: true,
+      where: {
+        and: [{ source: { equals: 'events' } }, { sourceDocumentId: { equals: event.id } }],
+      },
+    })
+    expect(eventIndex.docs[0]).toMatchObject({
+      hasSignificantDate: true,
+      significantDate: event.startAt,
+    })
     expect(extractRichTextText(event.excerpt)).toBe('Copied cycle excerpt')
     expect(event.location.venueName).toBe('Cycle venue')
     expect(
@@ -567,7 +593,7 @@ describe('events integration', () => {
       page: 1,
       pageSize: 10,
       pagination: true,
-      sort: 'eventDateAscending',
+      sort: 'oldest',
       sources: ['events'],
     })
     expect(cycleListing.items.map((item) => item.url).sort()).toEqual(

@@ -43,6 +43,8 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
   const contentDocument = source === 'documents' ? (document as Document) : null
   const page = source === 'pages' ? (document as Page) : null
   const post = source === 'posts' ? (document as Post) : null
+  const significantDate =
+    contentDocument?.documentDate ?? event?.startAt ?? post?.publishedAt ?? null
 
   return {
     category: getRelationshipId(document.category) ?? null,
@@ -59,9 +61,9 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
       getRelationshipId(
         page?.heroImage ?? post?.heroImage ?? event?.heroImage ?? cycle?.heroImage,
       ) ?? null,
+    hasSignificantDate: significantDate !== null,
     parentPage: page ? (getRelationshipId(page.parent) ?? null) : null,
-    sortDate:
-      contentDocument?.documentDate ?? event?.startAt ?? document.publishedAt ?? document.createdAt,
+    significantDate,
     source,
     sourceDocumentId: document.id,
     sourceUpdatedAt: document.updatedAt,
