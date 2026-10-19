@@ -239,6 +239,7 @@ module migrationJob './migration-job.bicep' = {
     payloadSecret: payloadSecret
     registryIdentityId: registryIdentity.id
     registryServer: registry.properties.loginServer
+    replicaTimeoutSeconds: isProduction ? 3600 : 1800
     serverUrl: serverUrl
     smtpFromAddress: smtpFromAddress
     smtpFromName: smtpFromName

@@ -52,6 +52,16 @@ if [[ ! "$health_timeout_seconds" =~ ^[1-9][0-9]*$ ]]; then
   exit 1
 fi
 
+if [[ "$target_environment" == "prod" ]]; then
+  migration_timeout_seconds="${MIGRATION_TIMEOUT_SECONDS:-3600}"
+else
+  migration_timeout_seconds="${MIGRATION_TIMEOUT_SECONDS:-1800}"
+fi
+if [[ ! "$migration_timeout_seconds" =~ ^[1-9][0-9]*$ ]]; then
+  echo "MIGRATION_TIMEOUT_SECONDS must be a positive integer." >&2
+  exit 1
+fi
+
 azure_location="${AZURE_LOCATION:-polandcentral}"
 resource_prefix="${AZURE_RESOURCE_PREFIX:-wkf}"
 resource_group_name="rg-${resource_prefix}-${target_environment}"
@@ -108,7 +118,7 @@ wait_for_migration_job() {
   local execution_name="$1"
   local migration_direction="$2"
   local execution_status=""
-  local deadline=$((SECONDS + 1800))
+  local deadline=$((SECONDS + migration_timeout_seconds))
 
   while ((SECONDS < deadline)); do
     execution_status="$(az containerapp job execution show \
@@ -131,7 +141,7 @@ wait_for_migration_job() {
     sleep 10
   done
 
-  echo "Migration ${migration_direction} execution ${execution_name} did not finish within 30 minutes." >&2
+  echo "Migration ${migration_direction} execution ${execution_name} did not finish within ${migration_timeout_seconds} seconds." >&2
   return 1
 }
 
@@ -146,6 +156,7 @@ run_migration_job() {
     --image "$target_image_reference" \
     --command ./node_modules/.bin/payload \
     --args "$payload_command" \
+    --replica-timeout "$migration_timeout_seconds" \
     --output none
 
   execution_name="$(az containerapp job start \

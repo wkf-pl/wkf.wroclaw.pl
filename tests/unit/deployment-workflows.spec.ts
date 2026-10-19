@@ -113,6 +113,20 @@ describe('deployment workflows', () => {
     expect(applicationTemplate).toContain("name: 'DEPLOYED_SOURCE_SHA'")
   })
 
+  it('allows first production migrations to finish on the burstable database tier', () => {
+    const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
+    const environmentTemplate = readFileSync('infra/azure/modules/environment.bicep', 'utf8')
+    const migrationJobTemplate = readFileSync('infra/azure/modules/migration-job.bicep', 'utf8')
+
+    expect(deploymentScript).toContain('MIGRATION_TIMEOUT_SECONDS:-3600')
+    expect(deploymentScript).toContain('MIGRATION_TIMEOUT_SECONDS:-1800')
+    expect(deploymentScript).toContain('SECONDS + migration_timeout_seconds')
+    expect(deploymentScript).toContain('--replica-timeout "$migration_timeout_seconds"')
+    expect(environmentTemplate).toContain('replicaTimeoutSeconds: isProduction ? 3600 : 1800')
+    expect(migrationJobTemplate).toContain('param replicaTimeoutSeconds int')
+    expect(migrationJobTemplate).toContain('replicaTimeout: replicaTimeoutSeconds')
+  })
+
   it('keeps Azure budget start dates stable across monthly reconciliations', () => {
     const mainTemplate = readFileSync('infra/azure/main.bicep', 'utf8')
     const stagingParameters = readFileSync('infra/azure/environments/staging.bicepparam', 'utf8')
