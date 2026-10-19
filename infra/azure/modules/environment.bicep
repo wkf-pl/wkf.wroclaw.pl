@@ -257,11 +257,11 @@ module migrationJob './migration-job.bicep' = {
 }
 
 resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' existing = if (isProduction) {
-  name: postgres.outputs.name
+  name: postgresServerName
 }
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = if (isProduction) {
-  name: storage.outputs.accountName
+  name: storageAccountName
 }
 
 resource postgresDeleteLock 'Microsoft.Authorization/locks@2020-05-01' = if (isProduction) {

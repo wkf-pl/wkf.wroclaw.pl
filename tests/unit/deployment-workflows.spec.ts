@@ -69,6 +69,9 @@ describe('deployment workflows', () => {
 
   it('runs every repository-level validation in CI', () => {
     const continuousIntegrationWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+    const endToEndJob = continuousIntegrationWorkflow
+      .split('  end-to-end:')[1]
+      ?.split('\n  validate-container:')[0]
 
     expect(continuousIntegrationWorkflow).toContain('run: pnpm format:check')
     expect(continuousIntegrationWorkflow).toContain('run: pnpm generate:importmap')
@@ -79,6 +82,8 @@ describe('deployment workflows', () => {
     expect(continuousIntegrationWorkflow).toContain('run: pnpm test:integration')
     expect(continuousIntegrationWorkflow).toContain('playwright install --with-deps chromium')
     expect(continuousIntegrationWorkflow).toContain('run: pnpm test:e2e:ci')
+    expect(endToEndJob).toBeDefined()
+    expect(endToEndJob).toContain('runs-on: ubuntu-24.04')
   })
 
   it('preserves deployment safety boundaries', () => {
@@ -319,6 +324,19 @@ describe('deployment workflows', () => {
     expect(applicationTemplate).toContain("unauthenticatedClientAction: 'Return401'")
     expect(applicationTemplate).toContain("name: 'PUBLIC_LAUNCH_ENABLED'")
     expect(applicationTemplate).toContain("value: 'false'")
+  })
+
+  it('uses deterministic names for resources targeted by production locks', () => {
+    const environmentTemplate = readFileSync('infra/azure/modules/environment.bicep', 'utf8')
+
+    expect(environmentTemplate).toMatch(/resource postgresServer[^}]+name: postgresServerName/)
+    expect(environmentTemplate).toMatch(/resource storageAccount[^}]+name: storageAccountName/)
+    expect(environmentTemplate).not.toMatch(
+      /resource postgresServer[^}]+name: postgres\.outputs\.name/,
+    )
+    expect(environmentTemplate).not.toMatch(
+      /resource storageAccount[^}]+name: storage\.outputs\.accountName/,
+    )
   })
 
   it('separates production provisioning, role bootstrap, migration, and application launch', () => {
