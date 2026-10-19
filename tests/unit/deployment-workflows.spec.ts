@@ -129,6 +129,25 @@ describe('deployment workflows', () => {
     )
   })
 
+  it('serializes PostgreSQL configuration and creates deletion locks after their targets', () => {
+    const postgresTemplate = readFileSync('infra/azure/modules/postgres.bicep', 'utf8')
+    const environmentTemplate = readFileSync('infra/azure/modules/environment.bicep', 'utf8')
+
+    expect(postgresTemplate).toMatch(/resource logConnections[\s\S]*?dependsOn: \[\s*database\s*\]/)
+    expect(postgresTemplate).toMatch(
+      /resource logDisconnections[\s\S]*?dependsOn: \[\s*logConnections\s*\]/,
+    )
+    expect(postgresTemplate).toMatch(
+      /resource extensions[\s\S]*?dependsOn: \[\s*logDisconnections\s*\]/,
+    )
+    expect(environmentTemplate).toMatch(
+      /resource postgresDeleteLock[\s\S]*?dependsOn: \[\s*postgres\s*\]/,
+    )
+    expect(environmentTemplate).toMatch(
+      /resource storageDeleteLock[\s\S]*?dependsOn: \[\s*storage\s*\]/,
+    )
+  })
+
   it('keeps staging public while protecting the production dry launch with Entra', () => {
     const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
     const stagingParameters = readFileSync('infra/azure/environments/staging.bicepparam', 'utf8')

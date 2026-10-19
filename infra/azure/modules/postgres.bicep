@@ -80,6 +80,9 @@ resource logConnections 'Microsoft.DBforPostgreSQL/flexibleServers/configuration
     source: 'user-override'
     value: 'on'
   }
+  dependsOn: [
+    database
+  ]
 }
 
 resource logDisconnections 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = if (enableAudit) {
@@ -89,6 +92,9 @@ resource logDisconnections 'Microsoft.DBforPostgreSQL/flexibleServers/configurat
     source: 'user-override'
     value: 'on'
   }
+  dependsOn: [
+    logConnections
+  ]
 }
 
 resource extensions 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = if (enableAudit) {
@@ -98,6 +104,9 @@ resource extensions 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@20
     source: 'user-override'
     value: 'pg_stat_statements,pgaudit'
   }
+  dependsOn: [
+    logDisconnections
+  ]
 }
 
 resource sharedPreloadLibraries 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = if (enableAudit) {

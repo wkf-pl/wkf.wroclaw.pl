@@ -271,6 +271,9 @@ resource postgresDeleteLock 'Microsoft.Authorization/locks@2020-05-01' = if (isP
     level: 'CanNotDelete'
     notes: 'Production PostgreSQL must not be deleted without explicitly removing this lock.'
   }
+  dependsOn: [
+    postgres
+  ]
 }
 
 resource storageDeleteLock 'Microsoft.Authorization/locks@2020-05-01' = if (isProduction) {
@@ -280,6 +283,9 @@ resource storageDeleteLock 'Microsoft.Authorization/locks@2020-05-01' = if (isPr
     level: 'CanNotDelete'
     notes: 'Production Blob Storage must not be deleted without explicitly removing this lock.'
   }
+  dependsOn: [
+    storage
+  ]
 }
 
 output applicationName string = applicationName
