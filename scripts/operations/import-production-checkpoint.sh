@@ -25,7 +25,8 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-azcopy login --identity --identity-client-id "$AZURE_STORAGE_IDENTITY_CLIENT_ID"
+export AZCOPY_AUTO_LOGIN_TYPE=MSI
+export AZCOPY_MSI_CLIENT_ID="$AZURE_STORAGE_IDENTITY_CLIENT_ID"
 
 checkpoint_url="${STAGING_CHECKPOINT_CONTAINER_URL%/}/$CHECKPOINT_NAME"
 production_url="${PRODUCTION_MEDIA_CONTAINER_URL%/}"

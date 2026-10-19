@@ -59,7 +59,8 @@ put $encrypted_path $remote_partial_directory/database.dump.age
 EOF
 rm --force -- "$database_path" "$encrypted_path"
 
-azcopy login --identity --identity-client-id "$AZURE_STORAGE_IDENTITY_CLIENT_ID"
+export AZCOPY_AUTO_LOGIN_TYPE=MSI
+export AZCOPY_MSI_CLIENT_ID="$AZURE_STORAGE_IDENTITY_CLIENT_ID"
 
 azcopy list "${PRODUCTION_MEDIA_CONTAINER_URL%/}" --machine-readable --output-type=json \
   | jq --raw-output 'select(.MessageType == "ListObject") | .MessageContent | fromjson | .Path' \
