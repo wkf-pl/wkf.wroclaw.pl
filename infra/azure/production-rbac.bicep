@@ -52,6 +52,7 @@ module stagingCheckpointRole './modules/staging-checkpoint-role.bicep' = {
   name: 'production-operations-staging-checkpoint-role'
   scope: resourceGroup('rg-wkf-staging')
   params: {
+    deploymentPrincipalId: deploymentPrincipalId
     operationsIdentityPrincipalId: operationsIdentityPrincipalId
   }
 }

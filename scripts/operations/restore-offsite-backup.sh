@@ -31,7 +31,8 @@ blob_path="$temporary_directory/blob"
 age --decrypt --identity "$AGE_IDENTITY_FILE" --output "$manifest_path" "$backup_directory/manifest.json.age"
 age --decrypt --identity "$AGE_IDENTITY_FILE" --output "$database_path" "$backup_directory/$(jq --raw-output '.database.archiveFile' "$manifest_path")"
 
-azcopy login --identity --identity-client-id "$AZURE_STORAGE_IDENTITY_CLIENT_ID"
+export AZCOPY_AUTO_LOGIN_TYPE=MSI
+export AZCOPY_MSI_CLIENT_ID="$AZURE_STORAGE_IDENTITY_CLIENT_ID"
 azcopy remove "${PRODUCTION_MEDIA_CONTAINER_URL%/}" --recursive=true --output-type=text
 
 pg_restore --clean --if-exists --no-owner --no-privileges --dbname "$POSTGRES_MIGRATOR_URL" "$database_path"

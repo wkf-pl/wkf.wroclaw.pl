@@ -432,6 +432,21 @@ describe('deployment workflows', () => {
     )
   })
 
+  it('grants production deployment discovery only on the staging storage account', () => {
+    const productionRoleTemplate = readFileSync('infra/azure/production-rbac.bicep', 'utf8')
+    const stagingCheckpointRoleModule = readFileSync(
+      'infra/azure/modules/staging-checkpoint-role.bicep',
+      'utf8',
+    )
+
+    expect(productionRoleTemplate).toContain('deploymentPrincipalId: deploymentPrincipalId')
+    expect(stagingCheckpointRoleModule).toContain("'acdd72a7-3385-48ef-bd42-f606fba81ae7'")
+    expect(stagingCheckpointRoleModule).toContain('scope: stagingStorageAccount')
+    expect(stagingCheckpointRoleModule).toContain(
+      'guid(stagingStorageAccount.id, deploymentPrincipalId, readerRoleDefinitionId)',
+    )
+  })
+
   it('publishes and serializes immutable production operation images', () => {
     const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
     const productionWorkflow = readFileSync('.github/workflows/deploy-production.yml', 'utf8')
@@ -445,6 +460,19 @@ describe('deployment workflows', () => {
     expect(importWorkflow).toContain('environment: prod')
     expect(importWorkflow).toContain("CONFIRMATION\" != 'IMPORT'")
     expect(importWorkflow).toContain('stop_failed_preview')
+  })
+
+  it('supports safe retries after a stopped preview and transient ARM failures', () => {
+    const importWorkflow = readFileSync('.github/workflows/import-production-data.yml', 'utf8')
+    const databaseOperationScript = readFileSync(
+      'scripts/run-production-database-operation.sh',
+      'utf8',
+    )
+
+    expect(importWorkflow).toContain('sort_by(@, &properties.createdTime)[-1].name')
+    expect(databaseOperationScript).toContain('run_arm_deployment_with_retry')
+    expect(databaseOperationScript).toContain('Service Unavailable')
+    expect(databaseOperationScript).toContain('HTTP 503')
   })
 
   it('validates a complete checkpoint before replacing production data', () => {
@@ -462,6 +490,22 @@ describe('deployment workflows', () => {
       importScript.indexOf('azcopy remove "$production_url"'),
     )
     expect(importScript).toContain('TRUNCATE TABLE users_sessions, payload_locked_documents')
+  })
+
+  it('uses keyring-free managed identity authentication for AzCopy operations', () => {
+    const operationScripts = [
+      'scripts/operations/import-production-checkpoint.sh',
+      'scripts/operations/backup-offsite.sh',
+      'scripts/operations/restore-offsite-backup.sh',
+    ].map((scriptPath) => readFileSync(scriptPath, 'utf8'))
+
+    for (const operationScript of operationScripts) {
+      expect(operationScript).toContain('export AZCOPY_AUTO_LOGIN_TYPE=MSI')
+      expect(operationScript).toContain(
+        'export AZCOPY_MSI_CLIENT_ID="$AZURE_STORAGE_IDENTITY_CLIENT_ID"',
+      )
+      expect(operationScript).not.toContain('azcopy login')
+    }
   })
 
   it('keeps off-site backup publication encrypted and atomic', () => {
