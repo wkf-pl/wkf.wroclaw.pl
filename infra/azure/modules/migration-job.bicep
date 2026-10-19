@@ -12,6 +12,10 @@ param payloadSecret string
 
 param registryIdentityId string
 param registryServer string
+
+@minValue(1)
+param replicaTimeoutSeconds int
+
 param serverUrl string
 param smtpFromAddress string
 param smtpFromName string
@@ -163,7 +167,7 @@ resource migrationJob 'Microsoft.App/jobs@2024-03-01' = {
         }
       ]
       replicaRetryLimit: 1
-      replicaTimeout: 1800
+      replicaTimeout: replicaTimeoutSeconds
       secrets: migrationSecrets
       triggerType: 'Manual'
     }
