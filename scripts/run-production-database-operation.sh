@@ -28,6 +28,30 @@ registry_identity_name='wkf-prod-registry'
 postgres_database_name='wkf'
 postgres_administrator_login='wkfadmin'
 
+run_arm_deployment_with_retry() {
+  local attempt
+  local command_output
+  local maximum_attempts=3
+
+  for ((attempt = 1; attempt <= maximum_attempts; attempt++)); do
+    if command_output="$("$@" 2>&1)"; then
+      [[ -n "$command_output" ]] && printf '%s\n' "$command_output"
+      return 0
+    fi
+
+    printf '%s\n' "$command_output" >&2
+    if [[ "$command_output" != *'Service Unavailable'* && "$command_output" != *'HTTP 503'* ]]; then
+      return 1
+    fi
+    if ((attempt == maximum_attempts)); then
+      return 1
+    fi
+
+    echo "Azure Resource Manager is temporarily unavailable; retrying deployment after attempt $attempt." >&2
+    sleep $((attempt * 15))
+  done
+}
+
 container_app_environment_id="$(az containerapp env show --resource-group "$resource_group_name" --name "$container_app_environment_name" --query id --output tsv)"
 registry_identity_id="$(az identity show --resource-group "$resource_group_name" --name "$registry_identity_name" --query id --output tsv)"
 registry_server="${operations_image_reference%%/*}"
@@ -71,7 +95,7 @@ if [[ "$operation" == 'bootstrap' ]]; then
   job_name='wkf-prod-bootstrap'
   administrator_database_url="postgresql://${postgres_administrator_login}:$(printf '%s' "$POSTGRES_ADMIN_PASSWORD" | jq --slurp --raw-input --raw-output @uri)@${postgres_fqdn}:5432/${postgres_database_name}?sslmode=require"
 
-  az deployment group create \
+  run_arm_deployment_with_retry az deployment group create \
     --name wkf-prod-bootstrap \
     --resource-group "$resource_group_name" \
     --template-file infra/azure/bootstrap-job.bicep \
@@ -86,7 +110,7 @@ else
   job_name='wkf-prod-reconcile-grants'
   migrator_database_url="postgresql://wkf_migrator:$(printf '%s' "$POSTGRES_MIGRATOR_PASSWORD" | jq --slurp --raw-input --raw-output @uri)@${postgres_fqdn}:5432/${postgres_database_name}?sslmode=require"
 
-  az deployment group create \
+  run_arm_deployment_with_retry az deployment group create \
     --name wkf-prod-reconcile-grants \
     --resource-group "$resource_group_name" \
     --template-file infra/azure/grants-job.bicep \

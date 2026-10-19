@@ -462,6 +462,19 @@ describe('deployment workflows', () => {
     expect(importWorkflow).toContain('stop_failed_preview')
   })
 
+  it('supports safe retries after a stopped preview and transient ARM failures', () => {
+    const importWorkflow = readFileSync('.github/workflows/import-production-data.yml', 'utf8')
+    const databaseOperationScript = readFileSync(
+      'scripts/run-production-database-operation.sh',
+      'utf8',
+    )
+
+    expect(importWorkflow).toContain('sort_by(@, &properties.createdTime)[-1].name')
+    expect(databaseOperationScript).toContain('run_arm_deployment_with_retry')
+    expect(databaseOperationScript).toContain('Service Unavailable')
+    expect(databaseOperationScript).toContain('HTTP 503')
+  })
+
   it('validates a complete checkpoint before replacing production data', () => {
     const importScript = readFileSync('scripts/operations/import-production-checkpoint.sh', 'utf8')
     const stagingCheckpointScript = readFileSync('scripts/manage-staging-data.sh', 'utf8')

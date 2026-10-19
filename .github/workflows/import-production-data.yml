@@ -81,7 +81,7 @@ jobs:
           staging_storage_name="$(az storage account list --resource-group rg-wkf-staging --query '[0].name' --output tsv)"
           production_storage_name="$(az storage account list --resource-group "$production_resource_group" --query '[0].name' --output tsv)"
           postgres_fqdn="$(az postgres flexible-server list --resource-group "$production_resource_group" --query '[0].fullyQualifiedDomainName' --output tsv)"
-          active_revision="$(az containerapp revision list --resource-group "$production_resource_group" --name wkf-prod --query 'sort_by([?properties.active], &properties.createdTime)[-1].name' --output tsv)"
+          active_revision="$(az containerapp revision list --resource-group "$production_resource_group" --name wkf-prod --query 'sort_by(@, &properties.createdTime)[-1].name' --output tsv)"
           source_sha="$(az containerapp revision show --resource-group "$production_resource_group" --name wkf-prod --revision "$active_revision" --query "properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value" --output tsv)"
           operations_identity_id="$(az identity show --resource-group "$production_resource_group" --name wkf-prod-operations --query id --output tsv)"
           operations_identity_client_id="$(az identity show --resource-group "$production_resource_group" --name wkf-prod-operations --query clientId --output tsv)"
