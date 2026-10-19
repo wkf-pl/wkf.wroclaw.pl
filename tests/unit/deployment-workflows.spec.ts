@@ -321,6 +321,19 @@ describe('deployment workflows', () => {
     expect(applicationTemplate).toContain("value: 'false'")
   })
 
+  it('uses deterministic names for resources targeted by production locks', () => {
+    const environmentTemplate = readFileSync('infra/azure/modules/environment.bicep', 'utf8')
+
+    expect(environmentTemplate).toMatch(/resource postgresServer[^}]+name: postgresServerName/)
+    expect(environmentTemplate).toMatch(/resource storageAccount[^}]+name: storageAccountName/)
+    expect(environmentTemplate).not.toMatch(
+      /resource postgresServer[^}]+name: postgres\.outputs\.name/,
+    )
+    expect(environmentTemplate).not.toMatch(
+      /resource storageAccount[^}]+name: storage\.outputs\.accountName/,
+    )
+  })
+
   it('separates production provisioning, role bootstrap, migration, and application launch', () => {
     const productionWorkflow = readFileSync('.github/workflows/deploy-production.yml', 'utf8')
     const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
