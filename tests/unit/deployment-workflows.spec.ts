@@ -384,6 +384,40 @@ describe('deployment workflows', () => {
     expect(grantsScript).toContain('ALTER DEFAULT PRIVILEGES')
   })
 
+  it('can adopt existing production bootstrap role assignments without replacing them', () => {
+    const productionRoleTemplate = readFileSync('infra/azure/production-rbac.bicep', 'utf8')
+    const deploymentRoleModule = readFileSync(
+      'infra/azure/modules/production-deployment-role.bicep',
+      'utf8',
+    )
+    const registryRoleModule = readFileSync('infra/azure/modules/registry-roles.bicep', 'utf8')
+
+    expect(productionRoleTemplate).toContain(
+      "param deploymentContributorRoleAssignmentName string = ''",
+    )
+    expect(productionRoleTemplate).toContain(
+      "param deploymentRegistryReaderRoleAssignmentName string = ''",
+    )
+    expect(productionRoleTemplate).toContain(
+      "param deploymentRegistryPullRoleAssignmentName string = ''",
+    )
+    expect(productionRoleTemplate).toContain(
+      "param registryIdentityPullRoleAssignmentName string = ''",
+    )
+    expect(deploymentRoleModule).toContain(
+      'empty(roleAssignmentName) ? guid(resourceGroup().id, deploymentPrincipalId',
+    )
+    expect(registryRoleModule).toContain(
+      'empty(deploymentReaderRoleAssignmentName) ? guid(registry.id, deploymentPrincipalId',
+    )
+    expect(registryRoleModule).toContain(
+      'empty(deploymentPullRoleAssignmentName) ? guid(registry.id, deploymentPrincipalId',
+    )
+    expect(registryRoleModule).toContain(
+      'empty(registryPullRoleAssignmentName) ? guid(registry.id, registryIdentityPrincipalId',
+    )
+  })
+
   it('publishes and serializes immutable production operation images', () => {
     const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
     const productionWorkflow = readFileSync('.github/workflows/deploy-production.yml', 'utf8')

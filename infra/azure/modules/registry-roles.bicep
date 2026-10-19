@@ -1,8 +1,11 @@
 targetScope = 'resourceGroup'
 
 param deploymentPrincipalId string
+param deploymentPullRoleAssignmentName string = ''
+param deploymentReaderRoleAssignmentName string = ''
 param operationsIdentityPrincipalId string
 param registryIdentityPrincipalId string
+param registryPullRoleAssignmentName string = ''
 param registryName string
 
 var acrPullRoleDefinitionId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
@@ -12,8 +15,12 @@ resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' existing =
   name: registryName
 }
 
+var resolvedDeploymentPullRoleAssignmentName = empty(deploymentPullRoleAssignmentName) ? guid(registry.id, deploymentPrincipalId, acrPullRoleDefinitionId) : deploymentPullRoleAssignmentName
+var resolvedDeploymentReaderRoleAssignmentName = empty(deploymentReaderRoleAssignmentName) ? guid(registry.id, deploymentPrincipalId, readerRoleDefinitionId) : deploymentReaderRoleAssignmentName
+var resolvedRegistryPullRoleAssignmentName = empty(registryPullRoleAssignmentName) ? guid(registry.id, registryIdentityPrincipalId, acrPullRoleDefinitionId) : registryPullRoleAssignmentName
+
 resource deploymentRegistryReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(registry.id, deploymentPrincipalId, readerRoleDefinitionId)
+  name: resolvedDeploymentReaderRoleAssignmentName
   scope: registry
   properties: {
     principalId: deploymentPrincipalId
@@ -23,7 +30,7 @@ resource deploymentRegistryReader 'Microsoft.Authorization/roleAssignments@2022-
 }
 
 resource deploymentRegistryPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(registry.id, deploymentPrincipalId, acrPullRoleDefinitionId)
+  name: resolvedDeploymentPullRoleAssignmentName
   scope: registry
   properties: {
     principalId: deploymentPrincipalId
@@ -33,7 +40,7 @@ resource deploymentRegistryPull 'Microsoft.Authorization/roleAssignments@2022-04
 }
 
 resource registryPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(registry.id, registryIdentityPrincipalId, acrPullRoleDefinitionId)
+  name: resolvedRegistryPullRoleAssignmentName
   scope: registry
   properties: {
     principalId: registryIdentityPrincipalId
