@@ -24,6 +24,7 @@ function prepareMockCommands(directory: string): void {
   const binaryDirectory = join(directory, 'bin')
   const azcopyPath = join(binaryDirectory, 'azcopy')
   const pgRestorePath = join(binaryDirectory, 'pg_restore')
+  const psqlPath = join(binaryDirectory, 'psql')
 
   writeFileSync(
     azcopyPath,
@@ -32,7 +33,11 @@ set -eu
 case "$1" in
   login) exit 0 ;;
   copy)
+    cat >/dev/null
     source_name="\${2##*/}"
+    case "$3" in
+      http*) exit 0 ;;
+    esac
     if [ ! -f "$MOCK_CHECKPOINT_DIRECTORY/$source_name" ]; then
       exit 2
     fi
@@ -46,8 +51,10 @@ esac
 `,
   )
   writeFileSync(pgRestorePath, '#!/bin/sh\nexit 0\n')
+  writeFileSync(psqlPath, '#!/bin/sh\ncat >/dev/null\nexit 0\n')
   chmodSync(azcopyPath, 0o755)
   chmodSync(pgRestorePath, 0o755)
+  chmodSync(psqlPath, 0o755)
 }
 
 function prepareCheckpoint(directory: string, fixture: ImportFixture): void {
@@ -160,5 +167,32 @@ describe('production checkpoint import validation', () => {
 
     expect(result.exitCode).not.toBe(0)
     expect(existsSync(join(directory, 'destructive-remove-started'))).toBe(false)
+  })
+
+  it('processes every media entry when AzCopy consumes its standard input', async () => {
+    const firstMediaContent = 'first-media'
+    const secondMediaContent = 'second-media'
+    const directory = setup({
+      mediaEntries: [
+        {
+          name: 'first-media.txt',
+          sha256: sha256(firstMediaContent),
+          size: Buffer.byteLength(firstMediaContent),
+        },
+        {
+          name: 'second-media.txt',
+          sha256: sha256(secondMediaContent),
+          size: Buffer.byteLength(secondMediaContent),
+        },
+      ],
+    })
+    writeFileSync(join(directory, 'first-media.txt'), firstMediaContent)
+    writeFileSync(join(directory, 'second-media.txt'), secondMediaContent)
+
+    const result = await runImport(directory)
+
+    expect(result.exitCode).toBe(0)
+    expect(result.stderr).toBe('')
+    expect(existsSync(join(directory, 'destructive-remove-started'))).toBe(true)
   })
 })

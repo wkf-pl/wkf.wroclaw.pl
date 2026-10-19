@@ -113,9 +113,9 @@ validate_checkpoint_blob() {
   fi
 }
 
-while IFS= read -r manifest_entry; do
+while IFS= read -r manifest_entry <&3; do
   [[ -n "$manifest_entry" ]] && validate_checkpoint_blob "$manifest_entry"
-done <"$media_manifest_path"
+done 3<"$media_manifest_path"
 
 echo "Checkpoint validated before destructive work: $CHECKPOINT_NAME ($expected_media_count media blobs)."
 
@@ -134,7 +134,7 @@ TRUNCATE TABLE users_sessions, payload_locked_documents CASCADE;
 SQL
 
 copied_media_count=0
-while IFS= read -r manifest_entry; do
+while IFS= read -r manifest_entry <&3; do
   [[ -n "$manifest_entry" ]] || continue
   blob_name="$(jq --raw-output '.name' <<<"$manifest_entry")"
   expected_checksum="$(jq --raw-output '.sha256' <<<"$manifest_entry")"
@@ -146,7 +146,7 @@ while IFS= read -r manifest_entry; do
     exit 1
   fi
   copied_media_count=$((copied_media_count + 1))
-done <"$media_manifest_path"
+done 3<"$media_manifest_path"
 
 if [[ "$copied_media_count" != "$expected_media_count" ]]; then
   echo "Production media count mismatch: expected $expected_media_count, copied $copied_media_count." >&2
