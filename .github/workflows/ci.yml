@@ -90,7 +90,7 @@ jobs:
 
   end-to-end:
     needs: [verify, build-e2e]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
