@@ -21,7 +21,7 @@ permissions:
 jobs:
   backup:
     runs-on: ubuntu-latest
-    environment: prod
+    environment: prod-backup
     env:
       AGE_RECIPIENT: ${{ vars.OFFSITE_BACKUP_AGE_RECIPIENT }}
       BACKUP_QUOTA_GB: ${{ vars.OFFSITE_BACKUP_QUOTA_GB }}
@@ -31,7 +31,7 @@ jobs:
       FTPS_PORT: ${{ vars.OFFSITE_BACKUP_FTPS_PORT }}
       FTPS_REMOTE_ROOT: ${{ vars.OFFSITE_BACKUP_FTPS_REMOTE_ROOT }}
       FTPS_USER: ${{ vars.OFFSITE_BACKUP_FTPS_USER }}
-      POSTGRES_RUNTIME_PASSWORD: ${{ secrets.POSTGRES_RUNTIME_PASSWORD }}
+      POSTGRES_BACKUP_PASSWORD: ${{ secrets.POSTGRES_BACKUP_PASSWORD }}
     steps:
       - name: Check out master
         uses: actions/checkout@v6
@@ -50,9 +50,9 @@ jobs:
             echo 'operations_image_digest must be a sha256 digest.' >&2
             exit 1
           fi
-          for variable_name in AGE_RECIPIENT BACKUP_QUOTA_GB BACKUP_SIGNING_PRIVATE_KEY FTPS_HOST FTPS_PASSWORD FTPS_PORT FTPS_REMOTE_ROOT FTPS_USER POSTGRES_RUNTIME_PASSWORD; do
+          for variable_name in AGE_RECIPIENT BACKUP_QUOTA_GB BACKUP_SIGNING_PRIVATE_KEY FTPS_HOST FTPS_PASSWORD FTPS_PORT FTPS_REMOTE_ROOT FTPS_USER POSTGRES_BACKUP_PASSWORD; do
             if [[ -z "${!variable_name:-}" ]]; then
-              echo "$variable_name is not configured in the prod environment." >&2
+              echo "$variable_name is not configured in the prod-backup environment." >&2
               exit 1
             fi
           done
@@ -171,8 +171,8 @@ jobs:
           }
           trap cleanup EXIT INT TERM
 
-          encoded_password="$(printf '%s' "$POSTGRES_RUNTIME_PASSWORD" | jq --slurp --raw-input --raw-output @uri)"
-          database_url="postgresql://wkf_runtime:${encoded_password}@${POSTGRES_FQDN}:5432/wkf?sslmode=require"
+          encoded_password="$(printf '%s' "$POSTGRES_BACKUP_PASSWORD" | jq --slurp --raw-input --raw-output @uri)"
+          database_url="postgresql://wkf_backup:${encoded_password}@${POSTGRES_FQDN}:5432/wkf?sslmode=require"
 
           az deployment group create \
             --name "$deployment_name" \

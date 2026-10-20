@@ -26,10 +26,15 @@ how to suspend application and PostgreSQL compute deliberately.
 
 ## GitHub environments
 
-Create `staging` and `prod` GitHub environments. The `prod` environment should require manual
-approval.
+Create `staging`, `prod`, and `prod-backup` GitHub environments. The `prod` environment should
+require manual approval. `prod-backup` should be limited to `master`, should not allow administrators
+to bypass its protection rules, and must not require a reviewer because the daily schedule is
+unattended. Use a separate GitHub OIDC application whose federated subject is
+`repo:wkf-pl@291146656/wkf.wroclaw.pl@1343632045:environment:prod-backup` and grant it only the
+production and shared ACR permissions required by the backup workflow. The organization and
+repository IDs are part of WKF's customized GitHub OIDC subject format.
 
-Configure these variables in both environments:
+Configure these variables in every environment:
 
 - `AZURE_CLIENT_ID` — client ID of the application used by GitHub OIDC
 - `AZURE_SUBSCRIPTION_ID`
@@ -55,7 +60,7 @@ one-time `AcrPull` assignment in `rg-wkf-shared`. The workflow cannot change tha
 Production can additionally define `CUSTOM_DOMAIN_CERTIFICATE_ID` with the complete resource ID of
 the certificate assigned to the Container Apps Environment.
 
-Configure these secrets in both environments:
+Configure these secrets in `staging` and `prod`:
 
 - `PAYLOAD_SECRET`
 - `POSTGRES_ADMIN_PASSWORD`
@@ -64,6 +69,31 @@ Production additionally requires the `SMTP_HOST` variable and these secrets:
 
 - `SMTP_USER`
 - `SMTP_PASSWORD`
+- `POSTGRES_MIGRATOR_PASSWORD`
+- `POSTGRES_RUNTIME_PASSWORD`
+- `POSTGRES_BACKUP_PASSWORD` — used only by the role bootstrap; use the same value in `prod-backup`
+
+The `prod-backup` environment additionally requires these variables:
+
+- `OFFSITE_BACKUP_AGE_RECIPIENT`
+- `OFFSITE_BACKUP_FTPS_HOST`
+- `OFFSITE_BACKUP_FTPS_PORT`
+- `OFFSITE_BACKUP_FTPS_REMOTE_ROOT`
+- `OFFSITE_BACKUP_FTPS_USER`
+- `OFFSITE_BACKUP_QUOTA_GB`
+
+Configure only these backup-specific secrets in `prod-backup`:
+
+- `OFFSITE_BACKUP_FTPS_PASSWORD`
+- `OFFSITE_BACKUP_SIGNING_PRIVATE_KEY`
+- `POSTGRES_BACKUP_PASSWORD` — identical to the `prod` bootstrap value
+
+Do not copy the PostgreSQL administrator, migrator, or runtime passwords into `prod-backup`. After
+adding `POSTGRES_BACKUP_PASSWORD` to `prod` and `prod-backup`, run the `bootstrap` phase of
+`deploy-production.yml` once with the current immutable operations-image digest. The ephemeral job
+creates or hardens `wkf_backup`, grants only database/schema access and read access to current and
+future tables and sequences, and then removes itself. Later migration grant reconciliation keeps the
+role read-only.
 
 SMTP is initially disabled on staging. This does not block the website or admin panel, but email
 features remain unavailable until an SMTP server is configured.

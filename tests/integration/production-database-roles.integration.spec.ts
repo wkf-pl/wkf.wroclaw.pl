@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const databaseName = 'wkf_production_roles_test'
 const administratorPassword = 'wkf'
+const backupPassword = 'backup-integration-password'
 const migratorPassword = 'migrator-integration-password'
 const runtimePassword = 'runtime-integration-password'
 
@@ -84,7 +85,7 @@ async function resetRoleTestDatabase(): Promise<void> {
     'wkf',
     'postgres',
     administratorPassword,
-    'DROP ROLE IF EXISTS wkf_runtime; DROP ROLE IF EXISTS wkf_migrator',
+    'DROP ROLE IF EXISTS wkf_backup; DROP ROLE IF EXISTS wkf_runtime; DROP ROLE IF EXISTS wkf_migrator',
   )
   expect(dropRoles.exitCode, dropRoles.stderr).toBe(0)
 }
@@ -105,6 +106,8 @@ beforeAll(async () => {
     psqlArguments('wkf', databaseName, administratorPassword, [
       '--set',
       'install_audit_extension=false',
+      '--set',
+      `backup_password=${backupPassword}`,
       '--set',
       `migrator_password=${migratorPassword}`,
       '--set',
@@ -135,6 +138,57 @@ afterAll(async () => {
 })
 
 describe('production PostgreSQL roles', () => {
+  it('allows the backup role to read tables and sequences', async () => {
+    const result = await runSQL(
+      'wkf_backup',
+      databaseName,
+      backupPassword,
+      'SELECT value FROM role_grant_probe WHERE id = 1; SELECT last_value FROM role_grant_sequence',
+    )
+
+    expect(result.exitCode, result.stderr).toBe(0)
+    expect(result.stdout).toContain('initial')
+  })
+
+  it('allows the backup role to create a complete custom-format dump', async () => {
+    const dumpPath = '/tmp/wkf-backup-role-test.dump'
+    const result = await runDockerCompose([
+      'exec',
+      '-T',
+      '-e',
+      `PGPASSWORD=${backupPassword}`,
+      'postgres-test',
+      'pg_dump',
+      '--host',
+      '127.0.0.1',
+      '--username',
+      'wkf_backup',
+      '--dbname',
+      databaseName,
+      '--format',
+      'custom',
+      '--file',
+      dumpPath,
+    ])
+    const cleanup = await runDockerCompose(['exec', '-T', 'postgres-test', 'rm', '-f', dumpPath])
+
+    expect(result.exitCode, result.stderr).toBe(0)
+    expect(cleanup.exitCode, cleanup.stderr).toBe(0)
+  })
+
+  it.each([
+    ['inserting rows', "INSERT INTO role_grant_probe VALUES (3, 'backup')"],
+    ['updating rows', "UPDATE role_grant_probe SET value = 'backup' WHERE id = 1"],
+    ['deleting rows', 'DELETE FROM role_grant_probe WHERE id = 1'],
+    ['creating tables', 'CREATE TABLE backup_must_not_create (id integer)'],
+    ['creating roles', 'CREATE ROLE backup_must_not_create'],
+  ])('prevents the backup role from %s', async (_operation, sql) => {
+    const result = await runSQL('wkf_backup', databaseName, backupPassword, sql)
+
+    expect(result.exitCode).not.toBe(0)
+    expect(result.stderr).toMatch(/permission denied|must be superuser/)
+  })
+
   it('allows runtime DML and sequence use', async () => {
     const result = await runSQL(
       'wkf_runtime',

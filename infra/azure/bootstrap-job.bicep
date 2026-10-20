@@ -9,6 +9,9 @@ param jobName string = 'wkf-prod-bootstrap'
 param location string = 'polandcentral'
 
 @secure()
+param backupPassword string
+
+@secure()
 param migratorPassword string
 
 param registryIdentityId string
@@ -50,6 +53,10 @@ resource bootstrapJob 'Microsoft.App/jobs@2024-03-01' = {
       replicaTimeout: 900
       secrets: [
         {
+          name: 'backup-password'
+          value: backupPassword
+        }
+        {
           name: 'administrator-database-url'
           value: administratorDatabaseUrl
         }
@@ -73,6 +80,10 @@ resource bootstrapJob 'Microsoft.App/jobs@2024-03-01' = {
             '/opt/wkf/bootstrap-postgres-roles.sh'
           ]
           env: [
+            {
+              name: 'POSTGRES_BACKUP_PASSWORD'
+              secretRef: 'backup-password'
+            }
             {
               name: 'POSTGRES_ADMIN_URL'
               secretRef: 'administrator-database-url'

@@ -68,7 +68,8 @@ same revision during cleanup.
    from a missing tag or when the digest reported by the accepted staging deployment must be
    pinned deliberately.
 4. Select **Run workflow**.
-5. Approve the `prod` environment deployment when GitHub presents **Review deployments**.
+5. Confirm that the job uses the dedicated `prod-backup` environment. It should start without a
+   reviewer so scheduled backups can run unattended.
 6. Watch the **Quiesce production and create encrypted backup** step. A normal run temporarily makes
    the public site unavailable while it captures a coherent database-and-media state.
 7. Require the final summary to contain a backup name in this form:
