@@ -166,40 +166,48 @@ Resource names and health checks can be adjusted with `STAGING_RESOURCE_GROUP_NA
 
 ### Off-site production backup and restore
 
-The manually dispatched **Back up production data off-site** workflow creates a consistent copy of
-the production PostgreSQL database and the complete `media` container. It uses the immutable
-`wkf-operations` image digest reported by staging and shares the `production-operations` lock with
-production deploys and imports. The workflow deactivates the production revision only after the
-ephemeral backup job has been provisioned, waits until its replicas have stopped, and always tries
-to reactivate it during cleanup.
+The **Back up production data off-site** workflow creates a consistent copy of the production
+PostgreSQL database and the complete `media` container. It runs daily at 02:30 UTC or by manual
+dispatch and shares the `production-operations` lock with production deploys and imports. Scheduled
+runs resolve the immutable `wkf-operations` image built for the workflow commit; manual runs may
+instead receive an explicit digest reported by staging. The workflow deactivates the production
+revision only after the ephemeral backup job has been provisioned, waits until its replicas have
+stopped, and always tries to reactivate it during cleanup. The `prod` environment approval still
+applies to scheduled runs, so a scheduled run waits for its required reviewer until that protection
+policy is deliberately changed.
 
 Configure these `prod` environment variables before the first run:
 
 - `OFFSITE_BACKUP_AGE_RECIPIENT` — the public `age` recipient; never store the private identity in
   GitHub or Azure;
-- `OFFSITE_BACKUP_SFTP_HOST`, `OFFSITE_BACKUP_SFTP_PORT`, and `OFFSITE_BACKUP_SFTP_USER`;
-- `OFFSITE_BACKUP_SFTP_REMOTE_ROOT` — an existing dedicated directory without spaces or `..`
-  segments.
+- `OFFSITE_BACKUP_FTPS_HOST`, `OFFSITE_BACKUP_FTPS_PORT`, and `OFFSITE_BACKUP_FTPS_USER`;
+- `OFFSITE_BACKUP_FTPS_REMOTE_ROOT` — `/` for the dedicated MyDevil account restricted to
+  `backups/wkf/incoming`;
+- `OFFSITE_BACKUP_QUOTA_GB` — currently `10`; this documents and validates the destination quota but
+  does not enforce retention from Azure.
 
 Configure these `prod` environment secrets:
 
-- `OFFSITE_BACKUP_SFTP_PRIVATE_KEY` — the key for a dedicated, append-oriented backup account;
-- `OFFSITE_BACKUP_SFTP_KNOWN_HOSTS` — a pinned host-key line obtained through an independent trusted
-  channel;
+- `OFFSITE_BACKUP_FTPS_PASSWORD` — the unique password for the restricted MyDevil FTPS account;
+- `OFFSITE_BACKUP_SIGNING_PRIVATE_KEY` — the unencrypted OpenSSH private key used only to sign
+  manifests;
 - `POSTGRES_RUNTIME_PASSWORD` — already used by production; the backup job deliberately does not
   receive migrator or administrator credentials.
 
 `backup-offsite.sh` creates `production-YYYYMMDDTHHMMSSZ` below the remote root. It streams one blob
 at a time through local ephemeral storage, encrypts the database, every blob, and the manifest with
-`age`, and uploads them below a hidden `.partial` directory. Only after every upload succeeds does
-it rename that directory to its final name. Retention must ignore and may separately clean stale
-`.partial` directories; only non-hidden directories with a valid encrypted manifest are recovery
-points.
+`age`, and uploads them over explicit FTPS with passive mode and certificate validation. The job
+uploads `.complete` last; a directory without this marker is an incomplete transfer and is never a
+recovery point. FTPS credentials are stored in a mode-0600 temporary curl configuration rather than
+passed on the command line.
 
-The job also signs the encrypted manifest with the SFTP SSH key under the
-`wkf-production-backup` namespace. Keep an `allowed_signers` file locally with the matching public
-key, for example `wkf-production-backup ssh-ed25519 AAAA...`. This signature prevents a compromised
-backup destination from replacing the manifest and artifacts with a newly encrypted forgery.
+The job signs the encrypted manifest with a dedicated Ed25519 signing key under the
+`wkf-production-backup` namespace. The matching public key and `allowed_signers` entry are embedded
+in the operations image. These are data-signing keys, not SSH login credentials: do not move them
+to `~/.ssh` merely because OpenSSH supplies the signing format. Keep the private key in the password
+manager and the GitHub environment secret; keep the `age` private identity separately and offline.
+The signature prevents a compromised backup destination from replacing the manifest and artifacts
+with a newly encrypted forgery.
 
 The manifest format records the source SHA, exact application and operations image digests, Payload
 migration rows, database size and SHA-256, and every blob name, size, SHA-256, and encrypted archive
@@ -211,10 +219,8 @@ docker build --file Dockerfile.operations --tag wkf-operations:local .
 docker run --rm \
   --user "$(id -u):$(id -g)" \
   --env AGE_IDENTITY_FILE=/run/age/identity.txt \
-  --env BACKUP_ALLOWED_SIGNERS_FILE=/run/age/allowed_signers \
   --volume "/absolute/path/to/production-YYYYMMDDTHHMMSSZ:/backup:ro" \
   --volume "/absolute/path/to/age-identity.txt:/run/age/identity.txt:ro" \
-  --volume "/absolute/path/to/allowed_signers:/run/age/allowed_signers:ro" \
   wkf-operations:local \
   /opt/wkf/validate-offsite-backup.sh /backup
 ```
@@ -229,9 +235,31 @@ reconciliation, and application smoke checks.
 
 Do not give the long-lived `age` private identity to GitHub or Azure. A production restore will use
 a locally validated copy re-encrypted to a one-time restore recipient; the ephemeral restore job and
-its one-time identity must be deleted after use. The SFTP integration, server-side retention, daily
-01:30 UTC schedule, one-time re-encryption helper, and full restore rehearsal remain disabled until
-the MyDevil account is available.
+its one-time identity must be deleted after use.
+
+On MyDevil, install `archive-offsite-backups.sh` outside the FTPS-visible directory, for example as
+`/usr/home/forseti/bin/wkf-archive-offsite-backups.sh`, and keep these directories owned by the main
+account:
+
+```text
+/usr/home/forseti/remote-backups/wkf/incoming
+/usr/home/forseti/remote-backups/wkf/archive
+/usr/home/forseti/remote-backups/wkf/quarantine
+```
+
+Run the archiver every 15 minutes from the main account's crontab:
+
+```cron
+*/15 * * * * /usr/home/forseti/bin/wkf-archive-offsite-backups.sh >> /usr/home/forseti/remote-backups/wkf/archive-cron.log 2>&1
+```
+
+The script serializes itself with `/usr/bin/lockf`, moves only directories whose `.complete` marker
+matches the directory name, and moves incomplete transfers older than 24 hours to `quarantine`.
+It never deletes an archived backup. Retention remains deliberately disabled until the first full
+backup has measured the actual database and media footprint against the 10 GB quota. The current
+format stores a logically complete encrypted copy of every media blob in every backup; it does not
+yet deduplicate unchanged blobs. The one-time re-encryption helper and full restore rehearsal remain
+follow-up work after the first backup is archived.
 
 ## Builds, tests, and verification
 

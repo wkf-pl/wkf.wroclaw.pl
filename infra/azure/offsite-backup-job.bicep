@@ -17,18 +17,18 @@ param productionImageReference string
 param productionMediaContainerUrl string
 param registryIdentityId string
 param registryServer string
-param sftpHost string
+param ftpsHost string
 
 @secure()
-param sftpKnownHosts string
+param ftpsPassword string
 
-param sftpPort int
+param ftpsPort int
 
 @secure()
-param sftpPrivateKey string
+param manifestSigningPrivateKey string
 
-param sftpRemoteRoot string
-param sftpUser string
+param ftpsRemoteRoot string
+param ftpsUser string
 param tags object = {
   application: 'wkf-online'
   environment: 'prod'
@@ -67,12 +67,12 @@ resource backupJob 'Microsoft.App/jobs@2024-03-01' = {
           value: databaseUrl
         }
         {
-          name: 'sftp-known-hosts'
-          value: sftpKnownHosts
+          name: 'ftps-password'
+          value: ftpsPassword
         }
         {
-          name: 'sftp-private-key'
-          value: sftpPrivateKey
+          name: 'manifest-signing-private-key'
+          value: manifestSigningPrivateKey
         }
       ]
       triggerType: 'Manual'
@@ -119,28 +119,28 @@ resource backupJob 'Microsoft.App/jobs@2024-03-01' = {
               value: productionMediaContainerUrl
             }
             {
-              name: 'SFTP_HOST'
-              value: sftpHost
+              name: 'BACKUP_SIGNING_PRIVATE_KEY'
+              secretRef: 'manifest-signing-private-key'
             }
             {
-              name: 'SFTP_KNOWN_HOSTS'
-              secretRef: 'sftp-known-hosts'
+              name: 'FTPS_HOST'
+              value: ftpsHost
             }
             {
-              name: 'SFTP_PORT'
-              value: string(sftpPort)
+              name: 'FTPS_PASSWORD'
+              secretRef: 'ftps-password'
             }
             {
-              name: 'SFTP_PRIVATE_KEY'
-              secretRef: 'sftp-private-key'
+              name: 'FTPS_PORT'
+              value: string(ftpsPort)
             }
             {
-              name: 'SFTP_REMOTE_ROOT'
-              value: sftpRemoteRoot
+              name: 'FTPS_REMOTE_ROOT'
+              value: ftpsRemoteRoot
             }
             {
-              name: 'SFTP_USER'
-              value: sftpUser
+              name: 'FTPS_USER'
+              value: ftpsUser
             }
           ]
           resources: {
