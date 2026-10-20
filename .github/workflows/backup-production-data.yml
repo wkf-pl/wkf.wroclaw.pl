@@ -157,15 +157,7 @@ jobs:
           application_deactivated=false
 
           reactivate_application() {
-            local attempt
-            for attempt in 1 2 3; do
-              if az containerapp revision activate --resource-group "$resource_group" --revision "$ACTIVE_REVISION" --output none; then
-                return 0
-              fi
-              sleep $((attempt * 10))
-            done
-            echo 'Could not reactivate the production revision after the backup operation.' >&2
-            return 1
+            bash scripts/ensure-containerapp-revision-active.sh "$resource_group" "$application_name" "$ACTIVE_REVISION"
           }
           cleanup() {
             local operation_status=$?
@@ -241,16 +233,8 @@ jobs:
           BACKUP_NAME: ${{ steps.resources.outputs.backup_name }}
         run: |
           resource_group='rg-wkf-prod'
-          for attempt in 1 2 3; do
-            if az containerapp revision activate --resource-group "$resource_group" --revision "$ACTIVE_REVISION" --output none; then
-              break
-            fi
-            if [[ "$attempt" == '3' ]]; then
-              echo 'Could not ensure that the production revision was active after backup.' >&2
-              exit 1
-            fi
-            sleep $((attempt * 10))
-          done
+          application_name='wkf-prod'
+          bash scripts/ensure-containerapp-revision-active.sh "$resource_group" "$application_name" "$ACTIVE_REVISION"
 
           deadline=$((SECONDS + 600))
           while ((SECONDS < deadline)); do
