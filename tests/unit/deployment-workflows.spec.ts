@@ -375,13 +375,19 @@ describe('deployment workflows', () => {
   it('separates production provisioning, role bootstrap, migration, and application launch', () => {
     const productionWorkflow = readFileSync('.github/workflows/deploy-production.yml', 'utf8')
     const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
+    const databaseOperationScript = readFileSync(
+      'scripts/run-production-database-operation.sh',
+      'utf8',
+    )
     const bootstrapScript = readFileSync('scripts/operations/bootstrap-postgres-roles.sql', 'utf8')
     const grantsScript = readFileSync('scripts/operations/reconcile-postgres-grants.sql', 'utf8')
+    const bootstrapJob = readFileSync('infra/azure/bootstrap-job.bicep', 'utf8')
 
     expect(productionWorkflow).toContain('group: production-operations')
     expect(productionWorkflow).toContain('- provision\n          - bootstrap\n          - deploy')
     expect(productionWorkflow).toContain("$GITHUB_REF\" != 'refs/heads/master'")
     expect(productionWorkflow).not.toContain('infra/azure/shared.bicep')
+    expect(productionWorkflow).toContain('POSTGRES_BACKUP_PASSWORD')
     expect(readFileSync('infra/azure/modules/registry-roles.bicep', 'utf8')).toContain(
       'resource deploymentRegistryPull',
     )
@@ -391,10 +397,17 @@ describe('deployment workflows', () => {
     expect(bootstrapScript).toContain('REVOKE CREATE ON SCHEMA public FROM PUBLIC')
     expect(bootstrapScript).toContain('CREATE ROLE wkf_migrator')
     expect(bootstrapScript).toContain('CREATE ROLE wkf_runtime')
+    expect(bootstrapScript).toContain('CREATE ROLE wkf_backup')
     expect(bootstrapScript).toContain('NOCREATEDB NOCREATEROLE')
     expect(bootstrapScript).toContain('CREATE EXTENSION IF NOT EXISTS pgaudit')
     expect(bootstrapScript).not.toContain('REASSIGN OWNED BY CURRENT_USER')
+    expect(bootstrapJob).toContain("name: 'POSTGRES_BACKUP_PASSWORD'")
+    expect(databaseOperationScript).toContain('backupPassword="$POSTGRES_BACKUP_PASSWORD"')
     expect(grantsScript).toContain('GRANT SELECT, INSERT, UPDATE, DELETE')
+    expect(grantsScript).toContain('GRANT SELECT ON ALL TABLES IN SCHEMA public TO wkf_backup')
+    expect(grantsScript).not.toContain(
+      'INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO wkf_backup',
+    )
     expect(grantsScript).toContain('ALTER DEFAULT PRIVILEGES')
   })
 
@@ -559,9 +572,11 @@ describe('deployment workflows', () => {
     const backupJob = readFileSync('infra/azure/offsite-backup-job.bicep', 'utf8')
 
     expect(backupWorkflow).toContain('group: production-operations')
-    expect(backupWorkflow).toContain('environment: prod')
-    expect(backupWorkflow).toContain('POSTGRES_RUNTIME_PASSWORD')
+    expect(backupWorkflow).toContain('environment: prod-backup')
+    expect(backupWorkflow).toContain('POSTGRES_BACKUP_PASSWORD')
+    expect(backupWorkflow).not.toContain('POSTGRES_RUNTIME_PASSWORD')
     expect(backupWorkflow).not.toContain('POSTGRES_MIGRATOR_PASSWORD')
+    expect(backupWorkflow).toContain('postgresql://wkf_backup:')
     expect(backupWorkflow).toContain('az containerapp revision deactivate')
     expect(backupWorkflow).toContain('reactivate_application')
     expect(backupWorkflow).toContain("always() && steps.resources.outcome == 'success'")

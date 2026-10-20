@@ -85,7 +85,7 @@ wait_for_job() {
 }
 
 if [[ "$operation" == 'bootstrap' ]]; then
-  for variable_name in POSTGRES_ADMIN_PASSWORD POSTGRES_MIGRATOR_PASSWORD POSTGRES_RUNTIME_PASSWORD; do
+  for variable_name in POSTGRES_ADMIN_PASSWORD POSTGRES_BACKUP_PASSWORD POSTGRES_MIGRATOR_PASSWORD POSTGRES_RUNTIME_PASSWORD; do
     if [[ -z "${!variable_name:-}" ]]; then
       echo "$variable_name is required for bootstrap." >&2
       exit 1
@@ -99,7 +99,7 @@ if [[ "$operation" == 'bootstrap' ]]; then
     --name wkf-prod-bootstrap \
     --resource-group "$resource_group_name" \
     --template-file infra/azure/bootstrap-job.bicep \
-    --parameters administratorDatabaseUrl="$administrator_database_url" containerAppEnvironmentId="$container_app_environment_id" imageReference="$operations_image_reference" migratorPassword="$POSTGRES_MIGRATOR_PASSWORD" registryIdentityId="$registry_identity_id" registryServer="$registry_server" runtimePassword="$POSTGRES_RUNTIME_PASSWORD" \
+    --parameters administratorDatabaseUrl="$administrator_database_url" backupPassword="$POSTGRES_BACKUP_PASSWORD" containerAppEnvironmentId="$container_app_environment_id" imageReference="$operations_image_reference" migratorPassword="$POSTGRES_MIGRATOR_PASSWORD" registryIdentityId="$registry_identity_id" registryServer="$registry_server" runtimePassword="$POSTGRES_RUNTIME_PASSWORD" \
     --output none
 else
   if [[ -z "${POSTGRES_MIGRATOR_PASSWORD:-}" ]]; then

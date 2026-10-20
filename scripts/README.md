@@ -172,11 +172,10 @@ dispatch and shares the `production-operations` lock with production deploys and
 runs resolve the immutable `wkf-operations` image built for the workflow commit; manual runs may
 instead receive an explicit digest reported by staging. The workflow deactivates the production
 revision only after the ephemeral backup job has been provisioned, waits until its replicas have
-stopped, and always tries to reactivate it during cleanup. The `prod` environment approval still
-applies to scheduled runs, so a scheduled run waits for its required reviewer until that protection
-policy is deliberately changed.
+stopped, and always tries to reactivate it during cleanup. It uses the dedicated `prod-backup`
+environment without a required reviewer so scheduled runs can start unattended.
 
-Configure these `prod` environment variables before the first run:
+Configure these `prod-backup` environment variables before the first run:
 
 - `OFFSITE_BACKUP_AGE_RECIPIENT` — the public `age` recipient; never store the private identity in
   GitHub or Azure;
@@ -186,13 +185,18 @@ Configure these `prod` environment variables before the first run:
 - `OFFSITE_BACKUP_QUOTA_GB` — currently `10`; this documents and validates the destination quota but
   does not enforce retention from Azure.
 
-Configure these `prod` environment secrets:
+Configure these `prod-backup` environment secrets:
 
 - `OFFSITE_BACKUP_FTPS_PASSWORD` — the unique password for the restricted MyDevil FTPS account;
 - `OFFSITE_BACKUP_SIGNING_PRIVATE_KEY` — the unencrypted OpenSSH private key used only to sign
   manifests;
-- `POSTGRES_RUNTIME_PASSWORD` — already used by production; the backup job deliberately does not
-  receive migrator or administrator credentials.
+- `POSTGRES_BACKUP_PASSWORD` — the password for the dedicated `wkf_backup` role; use the same value
+  for the one-time role bootstrap in `prod`.
+
+The backup job deliberately receives no administrator, migrator, or runtime database credential.
+`wkf_backup` can read current and future application tables and sequences for `pg_dump`, but cannot
+write rows, create schema objects, manage roles, or install extensions. Run the production
+`bootstrap` phase once after introducing this secret so the role exists before the first backup.
 
 `backup-offsite.sh` creates `production-YYYYMMDDTHHMMSSZ` below the remote root. It streams one blob
 at a time through local ephemeral storage, encrypts the database, every blob, and the manifest with

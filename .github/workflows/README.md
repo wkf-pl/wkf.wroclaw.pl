@@ -15,12 +15,13 @@
 - `manage-staging-data.yml` is manually dispatched to create or restore a consistent checkpoint of
   the staging PostgreSQL database and Media container. It shares the staging operation lock with
   deployments.
-- `backup-production-data.yml` is a daily 02:30 UTC or manually dispatched, `prod`-approved off-site
-  backup. It temporarily quiesces the production revision, runs an ephemeral Container Apps job,
-  encrypts the PostgreSQL dump and each Media blob separately, and uploads them through explicit
-  FTPS. A `.complete` marker is uploaded last, and the MyDevil archiver moves only marked directories
-  outside the upload account's reach. It shares the `production-operations` lock with deploys and
-  imports. Required `prod` approval also applies to scheduled runs.
+- `backup-production-data.yml` is a daily 02:30 UTC or manually dispatched off-site backup using the
+  dedicated `prod-backup` environment. It temporarily quiesces the production revision, connects to
+  PostgreSQL as the read-only `wkf_backup` role, runs an ephemeral Container Apps job, encrypts the
+  database dump and each Media blob separately, and uploads them through explicit FTPS. A
+  `.complete` marker is uploaded last, and the MyDevil archiver moves only marked directories outside
+  the upload account's reach. It shares the `production-operations` lock with deploys and imports.
+  `prod-backup` must not require a reviewer because scheduled runs cannot be approved reliably.
 
 Azure workflows authenticate through OIDC federation. The roles, variables, secrets, deployment
 behavior, and recovery procedures are documented in the [Azure infrastructure guide](../../infra/azure/README.md).
