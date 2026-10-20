@@ -535,8 +535,23 @@ describe('deployment workflows', () => {
     expect(validatorScript).toContain('Validated blob count does not match')
     expect(validatorScript).toContain('.formatVersion == 2')
     expect(restoreScript).toContain("confirmation\" != 'RESTORE'")
+    expect(restoreScript).toContain('pg_restore --exit-on-error')
     expect(restoreScript).toContain('TRUNCATE TABLE users_sessions, payload_locked_documents')
     expect(restoreScript).toContain('Blob changed after backup validation')
+  })
+
+  it('keeps Azure restore drills isolated from production data and public ingress', () => {
+    const restoreDrill = readFileSync('infra/azure/offsite-restore-drill.bicep', 'utf8')
+
+    expect(restoreDrill).toContain("var sourceContainerName = 'restore-source'")
+    expect(restoreDrill).toContain("var restoredMediaContainerName = 'restored-media'")
+    expect(restoreDrill).toContain("environment: 'restore-drill'")
+    expect(restoreDrill).toContain("lifecycle: 'ephemeral-operation'")
+    expect(restoreDrill).toContain('allowSharedKeyAccess: false')
+    expect(restoreDrill).toContain('external: false')
+    expect(restoreDrill).toContain('restoredApplicationEnabled bool = false')
+    expect(restoreDrill).toContain('storageAllowPublicUpload bool = true')
+    expect(restoreDrill).not.toContain("name: 'wkf-prod'")
   })
 
   it('runs off-site backups as serialized ephemeral production jobs', () => {

@@ -39,7 +39,7 @@ export AZCOPY_AUTO_LOGIN_TYPE=MSI
 export AZCOPY_MSI_CLIENT_ID="$AZURE_STORAGE_IDENTITY_CLIENT_ID"
 azcopy remove "${PRODUCTION_MEDIA_CONTAINER_URL%/}" --recursive=true --output-type=text
 
-pg_restore --clean --if-exists --no-owner --no-privileges --dbname "$POSTGRES_MIGRATOR_URL" "$database_path"
+pg_restore --exit-on-error --clean --if-exists --no-owner --no-privileges --dbname "$POSTGRES_MIGRATOR_URL" "$database_path"
 psql "$POSTGRES_MIGRATOR_URL" --set ON_ERROR_STOP=1 <<'SQL'
 TRUNCATE TABLE users_sessions, payload_locked_documents CASCADE;
 SQL
