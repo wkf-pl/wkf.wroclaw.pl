@@ -561,4 +561,12 @@ describe('deployment workflows', () => {
     expect(backupJob).toContain("name: 'manifest-signing-private-key'")
     expect(backupJob).toContain("lifecycle: 'ephemeral-operation'")
   })
+
+  it('treats an already active production revision as a successful recovery', () => {
+    const backupWorkflow = readFileSync('.github/workflows/backup-production-data.yml', 'utf8')
+
+    expect(
+      backupWorkflow.match(/bash scripts\/ensure-containerapp-revision-active\.sh/g),
+    ).toHaveLength(2)
+  })
 })
