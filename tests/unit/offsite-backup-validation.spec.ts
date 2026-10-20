@@ -58,6 +58,22 @@ cp "$input" "$output"
 `,
   )
   writeExecutable(
+    join(binaryDirectory, 'age-keygen'),
+    `#!/bin/sh
+set -eu
+case "$1" in
+  -o | --output)
+    printf '%s\n' 'AGE-SECRET-KEY-RESTORE-DRILL' >"$2"
+    printf '%s\n' 'Public key: age1restoretest' >&2
+    ;;
+  -y)
+    printf '%s\n' 'age1restoretest'
+    ;;
+  *) exit 2 ;;
+esac
+`,
+  )
+  writeExecutable(
     join(binaryDirectory, 'azcopy'),
     `#!/bin/sh
 set -eu
@@ -253,6 +269,49 @@ afterEach(() => {
 })
 
 describe('off-site production backup', () => {
+  it('runs local validation with a container identity that exists in the image', async () => {
+    const fixture = setup()
+    const backupDirectory = join(fixture.directory, backupName)
+    const identityPath = join(fixture.directory, 'identity.txt')
+    const dockerArgumentsPath = join(fixture.directory, 'docker-arguments')
+    mkdirSync(backupDirectory)
+    writeExecutable(
+      join(fixture.directory, 'bin', 'docker'),
+      `#!/bin/sh
+set -eu
+printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
+`,
+    )
+
+    const validationResult = await run(
+      'bash',
+      [
+        'scripts/operations/validate-offsite-backup-local.sh',
+        backupDirectory,
+        identityPath,
+        'wkf-operations:test',
+      ],
+      {
+        ...fixture.environment,
+        MOCK_DOCKER_ARGUMENTS: dockerArgumentsPath,
+      },
+    )
+
+    expect(validationResult.exitCode, validationResult.stderr).toBe(0)
+    const dockerArguments = readFileSync(dockerArgumentsPath, 'utf8').split('\n')
+    expect(dockerArguments).toContain('--network')
+    expect(dockerArguments).toContain('none')
+    expect(dockerArguments).toContain('--read-only')
+    expect(dockerArguments).toContain('--cap-drop')
+    expect(dockerArguments).toContain('ALL')
+    expect(dockerArguments).toContain('--cap-add')
+    expect(dockerArguments).toContain('DAC_READ_SEARCH')
+    expect(dockerArguments).toContain('--user')
+    expect(dockerArguments).toContain('0:0')
+    expect(dockerArguments).toContain(`${backupDirectory}:/backup:ro`)
+    expect(dockerArguments).toContain(`${identityPath}:/run/age/identity.txt:ro`)
+  })
+
   it('backs up every blob and publishes a verifiable encrypted manifest', async () => {
     const fixture = setup()
 
@@ -302,6 +361,47 @@ describe('off-site production backup', () => {
     expect(validationResult.stdout).toContain(
       `Backup validation succeeded: ${backupName} (2 blobs)`,
     )
+  })
+
+  it('re-encrypts a validated backup for a one-time restore identity', async () => {
+    const fixture = setup()
+    const backupResult = await run(
+      'bash',
+      ['scripts/operations/backup-offsite.sh'],
+      fixture.environment,
+    )
+    expect(backupResult.exitCode, `${backupResult.stderr}\n${backupResult.stdout}`).toBe(0)
+    const backupDirectory = join(fixture.remoteRoot, backupName)
+    const restoreBundleRoot = join(fixture.directory, 'restore-bundle')
+
+    const preparationResult = await run(
+      'bash',
+      [
+        'scripts/operations/prepare-offsite-restore-bundle.sh',
+        backupDirectory,
+        join(fixture.directory, 'identity.txt'),
+        restoreBundleRoot,
+      ],
+      fixture.environment,
+    )
+
+    expect(preparationResult.exitCode, preparationResult.stderr).toBe(0)
+    const reEncryptedBackup = join(restoreBundleRoot, backupName)
+    expect(existsSync(join(reEncryptedBackup, '.complete'))).toBe(true)
+    expect(existsSync(join(restoreBundleRoot, 'secrets', 'age-identity.txt'))).toBe(true)
+    expect(existsSync(join(restoreBundleRoot, 'secrets', 'manifest-signing-key'))).toBe(false)
+
+    const validationResult = await run(
+      'bash',
+      ['scripts/operations/validate-offsite-backup.sh', reEncryptedBackup],
+      {
+        ...fixture.environment,
+        AGE_IDENTITY_FILE: join(restoreBundleRoot, 'secrets', 'age-identity.txt'),
+        BACKUP_ALLOWED_SIGNERS_FILE: join(restoreBundleRoot, 'secrets', 'allowed-signers'),
+        BACKUP_SIGNING_PUBLIC_KEY_FILE: join(restoreBundleRoot, 'secrets', 'manifest-signing.pub'),
+      },
+    )
+    expect(validationResult.exitCode, validationResult.stderr).toBe(0)
   })
 
   it('does not publish the completion marker after an incomplete upload', async () => {

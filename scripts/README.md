@@ -211,31 +211,80 @@ with a newly encrypted forgery.
 
 The manifest format records the source SHA, exact application and operations image digests, Payload
 migration rows, database size and SHA-256, and every blob name, size, SHA-256, and encrypted archive
-path. To verify a downloaded backup locally, build or pull the matching operations image and mount
-both the backup and the private identity read-only:
+path. To verify a downloaded backup locally, build or pull the matching operations image and use
+the local validation wrapper:
 
 ```bash
 docker build --file Dockerfile.operations --tag wkf-operations:local .
-docker run --rm \
-  --user "$(id -u):$(id -g)" \
-  --env AGE_IDENTITY_FILE=/run/age/identity.txt \
-  --volume "/absolute/path/to/production-YYYYMMDDTHHMMSSZ:/backup:ro" \
-  --volume "/absolute/path/to/age-identity.txt:/run/age/identity.txt:ro" \
-  wkf-operations:local \
-  /opt/wkf/validate-offsite-backup.sh /backup
+bash scripts/operations/validate-offsite-backup-local.sh \
+  /absolute/path/to/production-YYYYMMDDTHHMMSSZ \
+  /absolute/path/to/age-identity.txt \
+  wkf-operations:local
 ```
 
 The validator decrypts and authenticates every artifact, checks manifest structure, sizes and
 SHA-256 values, and verifies the custom PostgreSQL archive with `pg_restore --list` without changing
-Azure. `restore-offsite-backup.sh <downloaded-backup-directory> RESTORE` is the destructive low-level
-restore command: it validates the entire backup before removing any production blob, restores the
-database and blobs, and clears sessions and document locks. It must run from the private production
-network while the application is stopped, followed by current migrations, runtime-grant
-reconciliation, and application smoke checks.
+Azure. The wrapper runs the container without networking, with a read-only root filesystem and
+read-only backup and identity mounts. It deliberately uses the image's root identity with only
+`DAC_READ_SEARCH` retained because a mode-0600 host identity cannot be read by the image's
+`operations` user, while an arbitrary host UID may not exist in the image's NSS database.
+
+`restore-offsite-backup.sh <downloaded-backup-directory> RESTORE` is the destructive low-level
+restore command: it validates the entire backup before removing any destination blob, restores the
+database with `pg_restore --exit-on-error`, restores the blobs, and clears sessions and document
+locks. It must run from the private target network while the target application is stopped,
+followed by current migrations, runtime-grant reconciliation, and application smoke checks.
 
 Do not give the long-lived `age` private identity to GitHub or Azure. A production restore will use
 a locally validated copy re-encrypted to a one-time restore recipient; the ephemeral restore job and
 its one-time identity must be deleted after use.
+
+Prepare such a copy locally with the matching operations image:
+
+```bash
+docker run --rm --network none --read-only --user 0:0 \
+  --tmpfs /tmp:rw,nosuid,nodev,noexec,size=1g \
+  --env RESTORE_BUNDLE_OUTPUT_UID="$(id -u)" \
+  --env RESTORE_BUNDLE_OUTPUT_GID="$(id -g)" \
+  --volume "/absolute/path/to/production-YYYYMMDDTHHMMSSZ:/source:ro" \
+  --volume "/absolute/path/to/age-identity.txt:/run/age/source-identity.txt:ro" \
+  --volume "/absolute/path/to/output-parent:/output" \
+  wkf-operations:local \
+  -lc '/opt/wkf/prepare-offsite-restore-bundle.sh /source /run/age/source-identity.txt /output/restore-bundle'
+```
+
+The output contains the re-encrypted backup and a separate `secrets` directory with the one-time
+`age` identity and one-time manifest trust files. Upload only the backup directory. Never upload the
+`secrets` directory.
+
+### Isolated Azure restore drill
+
+`infra/azure/offsite-restore-drill.bicep` provisions an ephemeral restore target in a dedicated
+resource group. It creates a private PostgreSQL B1ms server, separate source and restored-media Blob
+containers, a restore job, and—only when enabled—an application with internal-only ingress. It uses
+the existing operations and registry identities but grants data access only on the temporary
+Storage account.
+
+Use the following sequence:
+
+1. Run an ARM `what-if`, then deploy with `restoredApplicationEnabled=false` and
+   `storageAllowPublicUpload=true`.
+2. Upload only the one-time backup directory to `restore-source` using Entra authentication.
+3. Restrict the temporary Storage account to the Container Apps subnet.
+4. Check `shared_preload_libraries` on the temporary PostgreSQL server. A new server reports
+   `isConfigPendingRestart=true` after enabling `pgaudit`; restart that temporary server and confirm
+   the flag is false before starting the restore job.
+5. Start the restore job and require its `RESTORE_DRILL_RESULT` to report the expected blob and
+   migration counts with zero sessions.
+6. Redeploy with `restoredApplicationEnabled=true` and `storageAllowPublicUpload=false`, then verify
+   health, the public page, admin, and representative range requests from inside the container.
+7. Delete the entire restore-drill resource group and every local one-time secret and decrypted or
+   re-encrypted working copy.
+
+The first deployment temporarily permits authenticated public-network upload to the dedicated
+Storage account. Shared Key and anonymous Blob access remain disabled. Close the network before
+starting the restore job. Never point the drill at the production database or production media
+container.
 
 On MyDevil, install `archive-offsite-backups.sh` outside the FTPS-visible directory, for example as
 `/usr/home/forseti/bin/wkf-archive-offsite-backups.sh`, and keep these directories owned by the main
