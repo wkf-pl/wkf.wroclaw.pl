@@ -117,6 +117,7 @@ environment simultaneously. The detailed procedure and failure behavior are docu
 ## Documentation
 
 - [Architecture decision record index](docs/ADR.md)
+- [Production operations and disaster recovery](docs/Operations.md)
 - [Privacy policy](docs/Privacy.md)
 - [Azure infrastructure](infra/azure/README.md)
 - [Operational scripts](scripts/README.md)

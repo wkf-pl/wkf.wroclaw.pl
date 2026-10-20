@@ -307,8 +307,9 @@ matches the directory name, and moves incomplete transfers older than 24 hours t
 It never deletes an archived backup. Retention remains deliberately disabled until the first full
 backup has measured the actual database and media footprint against the 10 GB quota. The current
 format stores a logically complete encrypted copy of every media blob in every backup; it does not
-yet deduplicate unchanged blobs. The one-time re-encryption helper and full restore rehearsal remain
-follow-up work after the first backup is archived.
+yet deduplicate unchanged blobs. The one-time re-encryption helper and isolated restore drill are
+implemented; see the [production operations runbook](../docs/Operations.md) for the end-to-end
+operator procedures and the boundary before a destructive live-production restore.
 
 ## Builds, tests, and verification
 

@@ -18,9 +18,11 @@ The `environments/staging.bicepparam` and `environments/prod.bicepparam` files c
 non-secret environment differences. Secrets are supplied through environment variables while
 parameters are compiled.
 
-Both environments scale the application from zero to one replica because the local Next Data Cache
-is not shared between replicas. [ADR 0001](../../docs/ADR/0001-content-listing-index-and-public-data-cache.md)
-explains the constraint and the path to later scaling.
+Staging scales the application from zero to one replica. Production keeps exactly one replica
+running. The single-replica maximum exists because the local Next Data Cache is not shared between
+replicas. [ADR 0001](../../docs/ADR/0001-content-listing-index-and-public-data-cache.md) explains the
+constraint and the path to later scaling. The [operations runbook](../../docs/Operations.md) explains
+how to suspend application and PostgreSQL compute deliberately.
 
 ## GitHub environments
 
@@ -66,8 +68,8 @@ Production additionally requires the `SMTP_HOST` variable and these secrets:
 SMTP is initially disabled on staging. This does not block the website or admin panel, but email
 features remain unavailable until an SMTP server is configured.
 
-Staging keeps a Microsoft Entra configuration for optional Easy Auth sign-in and additionally
-requires these variables:
+Production uses Microsoft Entra Easy Auth to require membership in an approved group before a
+request reaches the site or Payload login. Its configuration requires these variables:
 
 - `ENTRA_TENANT_ID`
 - `ENTRA_CLIENT_ID`
@@ -75,16 +77,16 @@ requires these variables:
 
 It also requires the `ENTRA_CLIENT_SECRET` secret.
 
-The staging app registration must emit group identifiers in the token. Easy Auth allows anonymous
-requests to the website and Payload admin panel, while the group selected by
-`ENTRA_ALLOWED_GROUP_ID` restricts accounts used for optional Microsoft sign-in. The Payload admin
-panel still requires its own authentication. Staging also serves a `robots.txt` that blocks the
+The production app registration must emit group identifiers in the token. Health routes remain
+anonymous; `/` and `/admin` return `401` to unauthenticated requests. Payload authentication remains
+a separate second layer for the administration panel. Staging has Easy Auth disabled in its
+committed parameters and allows anonymous access, but still serves a `robots.txt` that blocks the
 entire site from indexing.
 
-After staging is first created, add this redirect URI to the Entra app registration:
+Add this redirect URI to the Entra app registration for every protected application address:
 
 ```text
-https://<staging-address>/.auth/login/aad/callback
+https://<application-address>/.auth/login/aad/callback
 ```
 
 Enable the ID tokens required by the Easy Auth sign-in flow:
@@ -170,7 +172,11 @@ its technical Azure address.
 
 ## Network security
 
-The current version allows PostgreSQL connections from Azure services through the `0.0.0.0` rule.
-This is a functional starting point, but private endpoints and separate virtual networks for staging
-and production should be considered before processing production data. Application database
-connections require TLS through `sslmode=require`.
+Production PostgreSQL has public networking disabled and uses a delegated private subnet plus a
+private DNS zone. Production Blob Storage accepts data traffic only from the Container Apps subnet,
+disables Shared Key authorization, and is accessed through managed identities. Staging retains its
+public PostgreSQL firewall workflow and Shared Key Storage configuration for staging checkpoints.
+All PostgreSQL application connections require TLS through `sslmode=require`.
+
+Operational backup, restore, suspension, and Easy Auth procedures are documented in the
+[production operations runbook](../../docs/Operations.md).
