@@ -164,6 +164,75 @@ Resource names and health checks can be adjusted with `STAGING_RESOURCE_GROUP_NA
 `STAGING_CHECKPOINT_CONTAINER_NAME`, `STAGING_STORAGE_ACCOUNT_NAME`, `LOCAL_AZURITE_CONNECTION_STRING`,
 `LOCAL_APP_URL`, and `STAGING_PULL_HEALTH_TIMEOUT_SECONDS`.
 
+### Off-site production backup and restore
+
+The manually dispatched **Back up production data off-site** workflow creates a consistent copy of
+the production PostgreSQL database and the complete `media` container. It uses the immutable
+`wkf-operations` image digest reported by staging and shares the `production-operations` lock with
+production deploys and imports. The workflow deactivates the production revision only after the
+ephemeral backup job has been provisioned, waits until its replicas have stopped, and always tries
+to reactivate it during cleanup.
+
+Configure these `prod` environment variables before the first run:
+
+- `OFFSITE_BACKUP_AGE_RECIPIENT` — the public `age` recipient; never store the private identity in
+  GitHub or Azure;
+- `OFFSITE_BACKUP_SFTP_HOST`, `OFFSITE_BACKUP_SFTP_PORT`, and `OFFSITE_BACKUP_SFTP_USER`;
+- `OFFSITE_BACKUP_SFTP_REMOTE_ROOT` — an existing dedicated directory without spaces or `..`
+  segments.
+
+Configure these `prod` environment secrets:
+
+- `OFFSITE_BACKUP_SFTP_PRIVATE_KEY` — the key for a dedicated, append-oriented backup account;
+- `OFFSITE_BACKUP_SFTP_KNOWN_HOSTS` — a pinned host-key line obtained through an independent trusted
+  channel;
+- `POSTGRES_RUNTIME_PASSWORD` — already used by production; the backup job deliberately does not
+  receive migrator or administrator credentials.
+
+`backup-offsite.sh` creates `production-YYYYMMDDTHHMMSSZ` below the remote root. It streams one blob
+at a time through local ephemeral storage, encrypts the database, every blob, and the manifest with
+`age`, and uploads them below a hidden `.partial` directory. Only after every upload succeeds does
+it rename that directory to its final name. Retention must ignore and may separately clean stale
+`.partial` directories; only non-hidden directories with a valid encrypted manifest are recovery
+points.
+
+The job also signs the encrypted manifest with the SFTP SSH key under the
+`wkf-production-backup` namespace. Keep an `allowed_signers` file locally with the matching public
+key, for example `wkf-production-backup ssh-ed25519 AAAA...`. This signature prevents a compromised
+backup destination from replacing the manifest and artifacts with a newly encrypted forgery.
+
+The manifest format records the source SHA, exact application and operations image digests, Payload
+migration rows, database size and SHA-256, and every blob name, size, SHA-256, and encrypted archive
+path. To verify a downloaded backup locally, build or pull the matching operations image and mount
+both the backup and the private identity read-only:
+
+```bash
+docker build --file Dockerfile.operations --tag wkf-operations:local .
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --env AGE_IDENTITY_FILE=/run/age/identity.txt \
+  --env BACKUP_ALLOWED_SIGNERS_FILE=/run/age/allowed_signers \
+  --volume "/absolute/path/to/production-YYYYMMDDTHHMMSSZ:/backup:ro" \
+  --volume "/absolute/path/to/age-identity.txt:/run/age/identity.txt:ro" \
+  --volume "/absolute/path/to/allowed_signers:/run/age/allowed_signers:ro" \
+  wkf-operations:local \
+  /opt/wkf/validate-offsite-backup.sh /backup
+```
+
+The validator decrypts and authenticates every artifact, checks manifest structure, sizes and
+SHA-256 values, and verifies the custom PostgreSQL archive with `pg_restore --list` without changing
+Azure. `restore-offsite-backup.sh <downloaded-backup-directory> RESTORE` is the destructive low-level
+restore command: it validates the entire backup before removing any production blob, restores the
+database and blobs, and clears sessions and document locks. It must run from the private production
+network while the application is stopped, followed by current migrations, runtime-grant
+reconciliation, and application smoke checks.
+
+Do not give the long-lived `age` private identity to GitHub or Azure. A production restore will use
+a locally validated copy re-encrypted to a one-time restore recipient; the ephemeral restore job and
+its one-time identity must be deleted after use. The SFTP integration, server-side retention, daily
+01:30 UTC schedule, one-time re-encryption helper, and full restore rehearsal remain disabled until
+the MyDevil account is available.
+
 ## Builds, tests, and verification
 
 ### `pre-push.ts`

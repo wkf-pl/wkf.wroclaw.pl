@@ -1,0 +1,259 @@
+name: Back up production data off-site
+
+on:
+  workflow_dispatch:
+    inputs:
+      operations_image_digest:
+        description: Immutable operations image digest reported by staging
+        required: true
+        type: string
+
+concurrency:
+  group: production-operations
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+      AGE_RECIPIENT: ${{ vars.OFFSITE_BACKUP_AGE_RECIPIENT }}
+      POSTGRES_RUNTIME_PASSWORD: ${{ secrets.POSTGRES_RUNTIME_PASSWORD }}
+      SFTP_HOST: ${{ vars.OFFSITE_BACKUP_SFTP_HOST }}
+      SFTP_KNOWN_HOSTS: ${{ secrets.OFFSITE_BACKUP_SFTP_KNOWN_HOSTS }}
+      SFTP_PORT: ${{ vars.OFFSITE_BACKUP_SFTP_PORT }}
+      SFTP_PRIVATE_KEY: ${{ secrets.OFFSITE_BACKUP_SFTP_PRIVATE_KEY }}
+      SFTP_REMOTE_ROOT: ${{ vars.OFFSITE_BACKUP_SFTP_REMOTE_ROOT }}
+      SFTP_USER: ${{ vars.OFFSITE_BACKUP_SFTP_USER }}
+    steps:
+      - name: Check out master
+        uses: actions/checkout@v6
+        with:
+          ref: master
+
+      - name: Validate backup configuration
+        env:
+          OPERATIONS_IMAGE_DIGEST: ${{ inputs.operations_image_digest }}
+        run: |
+          if [[ "$GITHUB_REF" != 'refs/heads/master' ]]; then
+            echo 'Production backups may only be dispatched from master.' >&2
+            exit 1
+          fi
+          if [[ ! "$OPERATIONS_IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo 'operations_image_digest must be a sha256 digest.' >&2
+            exit 1
+          fi
+          for variable_name in AGE_RECIPIENT POSTGRES_RUNTIME_PASSWORD SFTP_HOST SFTP_KNOWN_HOSTS SFTP_PORT SFTP_PRIVATE_KEY SFTP_REMOTE_ROOT SFTP_USER; do
+            if [[ -z "${!variable_name:-}" ]]; then
+              echo "$variable_name is not configured in the prod environment." >&2
+              exit 1
+            fi
+          done
+          if [[ ! "$SFTP_PORT" =~ ^[0-9]+$ ]] || ((SFTP_PORT < 1 || SFTP_PORT > 65535)); then
+            echo 'OFFSITE_BACKUP_SFTP_PORT must be an integer from 1 to 65535.' >&2
+            exit 1
+          fi
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+
+      - name: Install Container Apps CLI extension
+        run: az extension add --name containerapp --upgrade
+
+      - name: Resolve immutable images and production resources
+        id: resources
+        env:
+          OPERATIONS_IMAGE_DIGEST: ${{ inputs.operations_image_digest }}
+        run: |
+          resource_group='rg-wkf-prod'
+          application_name='wkf-prod'
+          registry_name="$(az acr list --resource-group rg-wkf-shared --query '[0].name' --output tsv)"
+          az acr repository show --name "$registry_name" --image "wkf-operations@${OPERATIONS_IMAGE_DIGEST}" --output none
+          registry_server="$(az acr show --name "$registry_name" --query loginServer --output tsv)"
+          active_revision="$(az containerapp revision list --resource-group "$resource_group" --name "$application_name" --query 'sort_by([?properties.active], &properties.createdTime)[-1].name' --output tsv)"
+          application_image="$(az containerapp revision show --resource-group "$resource_group" --name "$application_name" --revision "$active_revision" --query "properties.template.containers[?name=='application'] | [0].image" --output tsv)"
+          source_sha="$(az containerapp revision show --resource-group "$resource_group" --name "$application_name" --revision "$active_revision" --query "properties.template.containers[?name=='application'] | [0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value" --output tsv)"
+          environment_id="$(az containerapp env show --resource-group "$resource_group" --name wkf-prod --query id --output tsv)"
+          operations_identity_id="$(az identity show --resource-group "$resource_group" --name wkf-prod-operations --query id --output tsv)"
+          operations_identity_client_id="$(az identity show --resource-group "$resource_group" --name wkf-prod-operations --query clientId --output tsv)"
+          registry_identity_id="$(az identity show --resource-group "$resource_group" --name wkf-prod-registry --query id --output tsv)"
+          production_storage_name="$(az storage account list --resource-group "$resource_group" --query '[0].name' --output tsv)"
+          postgres_fqdn="$(az postgres flexible-server list --resource-group "$resource_group" --query '[0].fullyQualifiedDomainName' --output tsv)"
+          application_fqdn="$(az containerapp show --resource-group "$resource_group" --name "$application_name" --query properties.configuration.ingress.fqdn --output tsv)"
+          backup_name="production-$(date -u +%Y%m%dT%H%M%SZ)"
+
+          for value in "$registry_name" "$active_revision" "$application_image" "$source_sha" "$environment_id" "$operations_identity_id" "$operations_identity_client_id" "$registry_identity_id" "$production_storage_name" "$postgres_fqdn" "$application_fqdn"; do
+            if [[ -z "$value" ]]; then
+              echo 'Could not resolve every production backup resource.' >&2
+              exit 1
+            fi
+          done
+          if [[ ! "$application_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
+            echo 'The active production application image is not pinned by digest.' >&2
+            exit 1
+          fi
+          if [[ ! "$source_sha" =~ ^[a-f0-9]{40}$ ]]; then
+            echo 'The active production revision does not contain a full source SHA.' >&2
+            exit 1
+          fi
+
+          {
+            echo "active_revision=$active_revision"
+            echo "application_fqdn=$application_fqdn"
+            echo "application_image=$application_image"
+            echo "backup_name=$backup_name"
+            echo "environment_id=$environment_id"
+            echo "operations_identity_client_id=$operations_identity_client_id"
+            echo "operations_identity_id=$operations_identity_id"
+            echo "operations_image=${registry_server}/wkf-operations@${OPERATIONS_IMAGE_DIGEST}"
+            echo "postgres_fqdn=$postgres_fqdn"
+            echo "production_media_url=https://${production_storage_name}.blob.core.windows.net/media"
+            echo "registry_identity_id=$registry_identity_id"
+            echo "registry_server=$registry_server"
+            echo "source_sha=$source_sha"
+          } >>"$GITHUB_OUTPUT"
+
+      - name: Quiesce production and create encrypted backup
+        env:
+          ACTIVE_REVISION: ${{ steps.resources.outputs.active_revision }}
+          APPLICATION_IMAGE: ${{ steps.resources.outputs.application_image }}
+          BACKUP_NAME: ${{ steps.resources.outputs.backup_name }}
+          ENVIRONMENT_ID: ${{ steps.resources.outputs.environment_id }}
+          OPERATIONS_IDENTITY_CLIENT_ID: ${{ steps.resources.outputs.operations_identity_client_id }}
+          OPERATIONS_IDENTITY_ID: ${{ steps.resources.outputs.operations_identity_id }}
+          OPERATIONS_IMAGE: ${{ steps.resources.outputs.operations_image }}
+          POSTGRES_FQDN: ${{ steps.resources.outputs.postgres_fqdn }}
+          PRODUCTION_MEDIA_URL: ${{ steps.resources.outputs.production_media_url }}
+          REGISTRY_IDENTITY_ID: ${{ steps.resources.outputs.registry_identity_id }}
+          REGISTRY_SERVER: ${{ steps.resources.outputs.registry_server }}
+          SOURCE_SHA: ${{ steps.resources.outputs.source_sha }}
+        run: |
+          resource_group='rg-wkf-prod'
+          application_name='wkf-prod'
+          job_name='wkf-prod-offsite-backup'
+          deployment_name='wkf-prod-offsite-backup'
+          application_deactivated=false
+
+          reactivate_application() {
+            local attempt
+            for attempt in 1 2 3; do
+              if az containerapp revision activate --resource-group "$resource_group" --revision "$ACTIVE_REVISION" --output none; then
+                return 0
+              fi
+              sleep $((attempt * 10))
+            done
+            echo 'Could not reactivate the production revision after the backup operation.' >&2
+            return 1
+          }
+          cleanup() {
+            local operation_status=$?
+            trap - EXIT INT TERM
+            az containerapp job delete --resource-group "$resource_group" --name "$job_name" --yes --output none >/dev/null 2>&1 || true
+            az deployment group delete --resource-group "$resource_group" --name "$deployment_name" >/dev/null 2>&1 || true
+            if [[ "$application_deactivated" == 'true' ]]; then
+              reactivate_application || operation_status=1
+            fi
+            exit "$operation_status"
+          }
+          trap cleanup EXIT INT TERM
+
+          encoded_password="$(printf '%s' "$POSTGRES_RUNTIME_PASSWORD" | jq --slurp --raw-input --raw-output @uri)"
+          database_url="postgresql://wkf_runtime:${encoded_password}@${POSTGRES_FQDN}:5432/wkf?sslmode=require"
+
+          az deployment group create \
+            --name "$deployment_name" \
+            --resource-group "$resource_group" \
+            --template-file infra/azure/offsite-backup-job.bicep \
+            --parameters ageRecipient="$AGE_RECIPIENT" backupName="$BACKUP_NAME" containerAppEnvironmentId="$ENVIRONMENT_ID" databaseUrl="$database_url" deployedSourceSha="$SOURCE_SHA" imageReference="$OPERATIONS_IMAGE" operationsIdentityClientId="$OPERATIONS_IDENTITY_CLIENT_ID" operationsIdentityId="$OPERATIONS_IDENTITY_ID" productionImageReference="$APPLICATION_IMAGE" productionMediaContainerUrl="$PRODUCTION_MEDIA_URL" registryIdentityId="$REGISTRY_IDENTITY_ID" registryServer="$REGISTRY_SERVER" sftpHost="$SFTP_HOST" sftpKnownHosts="$SFTP_KNOWN_HOSTS" sftpPort="$SFTP_PORT" sftpPrivateKey="$SFTP_PRIVATE_KEY" sftpRemoteRoot="$SFTP_REMOTE_ROOT" sftpUser="$SFTP_USER" \
+            --output none
+
+          az containerapp revision deactivate --resource-group "$resource_group" --revision "$ACTIVE_REVISION" --output none
+          application_deactivated=true
+          replica_deadline=$((SECONDS + 120))
+          replica_count='unknown'
+          while ((SECONDS < replica_deadline)); do
+            if ! replica_count="$(az containerapp replica list --resource-group "$resource_group" --name "$application_name" --revision "$ACTIVE_REVISION" --query 'length(@)' --output tsv)"; then
+              sleep 5
+              continue
+            fi
+            if [[ "$replica_count" == '0' ]]; then
+              break
+            fi
+            sleep 5
+          done
+          if [[ "$replica_count" != '0' ]]; then
+            echo 'Production did not become quiescent before the backup deadline.' >&2
+            exit 1
+          fi
+
+          execution_name="$(az containerapp job start --resource-group "$resource_group" --name "$job_name" --query name --output tsv)"
+          deadline=$((SECONDS + 7200))
+          status='Unknown'
+          while ((SECONDS < deadline)); do
+            status="$(az containerapp job execution show --resource-group "$resource_group" --name "$job_name" --job-execution-name "$execution_name" --query properties.status --output tsv)"
+            case "$status" in
+              Succeeded) break ;;
+              Failed | Stopped | Degraded)
+                echo "Off-site backup failed with status $status." >&2
+                exit 1
+                ;;
+            esac
+            sleep 10
+          done
+          if [[ "$status" != 'Succeeded' ]]; then
+            echo 'Off-site backup did not finish within two hours.' >&2
+            exit 1
+          fi
+
+          az containerapp job delete --resource-group "$resource_group" --name "$job_name" --yes --output none
+          az deployment group delete --resource-group "$resource_group" --name "$deployment_name"
+          reactivate_application
+          application_deactivated=false
+          trap - EXIT INT TERM
+
+      - name: Ensure production is active and verify routes
+        if: ${{ always() && steps.resources.outcome == 'success' }}
+        env:
+          ACTIVE_REVISION: ${{ steps.resources.outputs.active_revision }}
+          APPLICATION_FQDN: ${{ steps.resources.outputs.application_fqdn }}
+          BACKUP_NAME: ${{ steps.resources.outputs.backup_name }}
+        run: |
+          resource_group='rg-wkf-prod'
+          for attempt in 1 2 3; do
+            if az containerapp revision activate --resource-group "$resource_group" --revision "$ACTIVE_REVISION" --output none; then
+              break
+            fi
+            if [[ "$attempt" == '3' ]]; then
+              echo 'Could not ensure that the production revision was active after backup.' >&2
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
+
+          deadline=$((SECONDS + 600))
+          while ((SECONDS < deadline)); do
+            health="$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${APPLICATION_FQDN}/api/health" || true)"
+            live="$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${APPLICATION_FQDN}/api/health/live" || true)"
+            root="$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${APPLICATION_FQDN}/" || true)"
+            admin="$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${APPLICATION_FQDN}/admin" || true)"
+            if [[ "$health" == '200' && "$live" == '200' && "$root" == '401' && "$admin" == '401' ]]; then
+              {
+                echo '## Off-site production backup'
+                echo
+                echo "Published: \`$BACKUP_NAME\`"
+                echo "Production checks: health=$health live=$live root=$root admin=$admin"
+              } >>"$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Production did not pass smoke checks after the backup operation.' >&2
+          exit 1
