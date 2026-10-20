@@ -1,11 +1,13 @@
 name: Back up production data off-site
 
 on:
+  schedule:
+    - cron: '30 2 * * *'
   workflow_dispatch:
     inputs:
       operations_image_digest:
-        description: Immutable operations image digest reported by staging
-        required: true
+        description: Optional immutable operations image digest reported by staging
+        required: false
         type: string
 
 concurrency:
@@ -22,13 +24,14 @@ jobs:
     environment: prod
     env:
       AGE_RECIPIENT: ${{ vars.OFFSITE_BACKUP_AGE_RECIPIENT }}
+      BACKUP_QUOTA_GB: ${{ vars.OFFSITE_BACKUP_QUOTA_GB }}
+      BACKUP_SIGNING_PRIVATE_KEY: ${{ secrets.OFFSITE_BACKUP_SIGNING_PRIVATE_KEY }}
+      FTPS_HOST: ${{ vars.OFFSITE_BACKUP_FTPS_HOST }}
+      FTPS_PASSWORD: ${{ secrets.OFFSITE_BACKUP_FTPS_PASSWORD }}
+      FTPS_PORT: ${{ vars.OFFSITE_BACKUP_FTPS_PORT }}
+      FTPS_REMOTE_ROOT: ${{ vars.OFFSITE_BACKUP_FTPS_REMOTE_ROOT }}
+      FTPS_USER: ${{ vars.OFFSITE_BACKUP_FTPS_USER }}
       POSTGRES_RUNTIME_PASSWORD: ${{ secrets.POSTGRES_RUNTIME_PASSWORD }}
-      SFTP_HOST: ${{ vars.OFFSITE_BACKUP_SFTP_HOST }}
-      SFTP_KNOWN_HOSTS: ${{ secrets.OFFSITE_BACKUP_SFTP_KNOWN_HOSTS }}
-      SFTP_PORT: ${{ vars.OFFSITE_BACKUP_SFTP_PORT }}
-      SFTP_PRIVATE_KEY: ${{ secrets.OFFSITE_BACKUP_SFTP_PRIVATE_KEY }}
-      SFTP_REMOTE_ROOT: ${{ vars.OFFSITE_BACKUP_SFTP_REMOTE_ROOT }}
-      SFTP_USER: ${{ vars.OFFSITE_BACKUP_SFTP_USER }}
     steps:
       - name: Check out master
         uses: actions/checkout@v6
@@ -43,18 +46,22 @@ jobs:
             echo 'Production backups may only be dispatched from master.' >&2
             exit 1
           fi
-          if [[ ! "$OPERATIONS_IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+          if [[ -n "$OPERATIONS_IMAGE_DIGEST" && ! "$OPERATIONS_IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
             echo 'operations_image_digest must be a sha256 digest.' >&2
             exit 1
           fi
-          for variable_name in AGE_RECIPIENT POSTGRES_RUNTIME_PASSWORD SFTP_HOST SFTP_KNOWN_HOSTS SFTP_PORT SFTP_PRIVATE_KEY SFTP_REMOTE_ROOT SFTP_USER; do
+          for variable_name in AGE_RECIPIENT BACKUP_QUOTA_GB BACKUP_SIGNING_PRIVATE_KEY FTPS_HOST FTPS_PASSWORD FTPS_PORT FTPS_REMOTE_ROOT FTPS_USER POSTGRES_RUNTIME_PASSWORD; do
             if [[ -z "${!variable_name:-}" ]]; then
               echo "$variable_name is not configured in the prod environment." >&2
               exit 1
             fi
           done
-          if [[ ! "$SFTP_PORT" =~ ^[0-9]+$ ]] || ((SFTP_PORT < 1 || SFTP_PORT > 65535)); then
-            echo 'OFFSITE_BACKUP_SFTP_PORT must be an integer from 1 to 65535.' >&2
+          if [[ ! "$FTPS_PORT" =~ ^[0-9]+$ ]] || ((FTPS_PORT < 1 || FTPS_PORT > 65535)); then
+            echo 'OFFSITE_BACKUP_FTPS_PORT must be an integer from 1 to 65535.' >&2
+            exit 1
+          fi
+          if [[ ! "$BACKUP_QUOTA_GB" =~ ^[1-9][0-9]*$ ]]; then
+            echo 'OFFSITE_BACKUP_QUOTA_GB must be a positive integer.' >&2
             exit 1
           fi
 
@@ -76,6 +83,13 @@ jobs:
           resource_group='rg-wkf-prod'
           application_name='wkf-prod'
           registry_name="$(az acr list --resource-group rg-wkf-shared --query '[0].name' --output tsv)"
+          if [[ -z "$OPERATIONS_IMAGE_DIGEST" ]]; then
+            OPERATIONS_IMAGE_DIGEST="$(az acr repository show --name "$registry_name" --image "wkf-operations:${GITHUB_SHA}" --query digest --output tsv)"
+          fi
+          if [[ ! "$OPERATIONS_IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo 'Could not resolve an immutable operations image for the workflow source SHA.' >&2
+            exit 1
+          fi
           az acr repository show --name "$registry_name" --image "wkf-operations@${OPERATIONS_IMAGE_DIGEST}" --output none
           registry_server="$(az acr show --name "$registry_name" --query loginServer --output tsv)"
           active_revision="$(az containerapp revision list --resource-group "$resource_group" --name "$application_name" --query 'sort_by([?properties.active], &properties.createdTime)[-1].name' --output tsv)"
@@ -172,7 +186,7 @@ jobs:
             --name "$deployment_name" \
             --resource-group "$resource_group" \
             --template-file infra/azure/offsite-backup-job.bicep \
-            --parameters ageRecipient="$AGE_RECIPIENT" backupName="$BACKUP_NAME" containerAppEnvironmentId="$ENVIRONMENT_ID" databaseUrl="$database_url" deployedSourceSha="$SOURCE_SHA" imageReference="$OPERATIONS_IMAGE" operationsIdentityClientId="$OPERATIONS_IDENTITY_CLIENT_ID" operationsIdentityId="$OPERATIONS_IDENTITY_ID" productionImageReference="$APPLICATION_IMAGE" productionMediaContainerUrl="$PRODUCTION_MEDIA_URL" registryIdentityId="$REGISTRY_IDENTITY_ID" registryServer="$REGISTRY_SERVER" sftpHost="$SFTP_HOST" sftpKnownHosts="$SFTP_KNOWN_HOSTS" sftpPort="$SFTP_PORT" sftpPrivateKey="$SFTP_PRIVATE_KEY" sftpRemoteRoot="$SFTP_REMOTE_ROOT" sftpUser="$SFTP_USER" \
+            --parameters ageRecipient="$AGE_RECIPIENT" backupName="$BACKUP_NAME" containerAppEnvironmentId="$ENVIRONMENT_ID" databaseUrl="$database_url" deployedSourceSha="$SOURCE_SHA" ftpsHost="$FTPS_HOST" ftpsPassword="$FTPS_PASSWORD" ftpsPort="$FTPS_PORT" ftpsRemoteRoot="$FTPS_REMOTE_ROOT" ftpsUser="$FTPS_USER" imageReference="$OPERATIONS_IMAGE" manifestSigningPrivateKey="$BACKUP_SIGNING_PRIVATE_KEY" operationsIdentityClientId="$OPERATIONS_IDENTITY_CLIENT_ID" operationsIdentityId="$OPERATIONS_IDENTITY_ID" productionImageReference="$APPLICATION_IMAGE" productionMediaContainerUrl="$PRODUCTION_MEDIA_URL" registryIdentityId="$REGISTRY_IDENTITY_ID" registryServer="$REGISTRY_SERVER" \
             --output none
 
           az containerapp revision deactivate --resource-group "$resource_group" --revision "$ACTIVE_REVISION" --output none

@@ -8,6 +8,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  utimesSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -106,30 +107,48 @@ printf '%s\n' '[{"id":1,"name":"20261019_test","batch":1,"createdAt":"2026-10-19
 `,
   )
   writeExecutable(
-    join(binaryDirectory, 'sftp'),
+    join(binaryDirectory, 'curl'),
     `#!/bin/sh
 set -eu
-while IFS= read -r command; do
-  set -- $command
+upload_file=''
+remote_url=''
+while [ "$#" -gt 0 ]; do
   case "$1" in
-    mkdir)
-      mkdir "$MOCK_SFTP_DIRECTORY/\${2#/}"
+    --config | --connect-timeout | --max-time | --proto | --retry | --retry-delay)
+      shift 2
       ;;
-    put)
-      if [ -n "\${MOCK_SFTP_FAIL_PATTERN:-}" ] && printf '%s' "$3" | grep --quiet "$MOCK_SFTP_FAIL_PATTERN"; then
-        exit 12
-      fi
-      cp "$2" "$MOCK_SFTP_DIRECTORY/\${3#/}"
+    --upload-file)
+      upload_file="$2"
+      shift 2
       ;;
-    rename)
-      mv "$MOCK_SFTP_DIRECTORY/\${2#/}" "$MOCK_SFTP_DIRECTORY/\${3#/}"
+    ftp://*)
+      remote_url="$1"
+      shift
       ;;
-    ls)
-      test -f "$MOCK_SFTP_DIRECTORY/\${2#/}"
-      ;;
-    *) exit 4 ;;
+    *) shift ;;
   esac
 done
+remote_path="\${remote_url#ftp://}"
+remote_path="\${remote_path#*/}"
+if [ -z "$upload_file" ] || [ -z "$remote_url" ]; then
+  exit 4
+fi
+if [ -n "\${MOCK_FTPS_FAIL_PATTERN:-}" ] && printf '%s' "$remote_path" | grep --quiet "$MOCK_FTPS_FAIL_PATTERN"; then
+  exit 12
+fi
+target="$MOCK_FTPS_DIRECTORY/$remote_path"
+mkdir -p "$(dirname "$target")"
+cp "$upload_file" "$target"
+`,
+  )
+  writeExecutable(
+    join(binaryDirectory, 'lockf'),
+    `#!/bin/sh
+set -eu
+if [ "$1" = '-t' ]; then
+  shift 3
+fi
+exec "$@"
 `,
   )
 }
@@ -169,7 +188,6 @@ function setup(): {
     join(directory, 'allowed-signers'),
     `wkf-production-backup ${readFileSync(`${signingKeyPath}.pub`, 'utf8').trim()}\n`,
   )
-  writeFileSync(join(directory, 'known-hosts'), 'backup.example ssh-ed25519 test-key\n')
   prepareMockCommands(directory)
 
   return {
@@ -181,23 +199,24 @@ function setup(): {
       AZURE_STORAGE_IDENTITY_CLIENT_ID: 'test-identity',
       BACKUP_ALLOWED_SIGNERS_FILE: join(directory, 'allowed-signers'),
       BACKUP_NAME: backupName,
+      BACKUP_SIGNING_PRIVATE_KEY_FILE: signingKeyPath,
+      BACKUP_SIGNING_PUBLIC_KEY_FILE: `${signingKeyPath}.pub`,
       DEPLOYED_SOURCE_SHA: sourceSHA,
+      FTPS_HOST: 'backup.example',
+      FTPS_PASSWORD: 'test-password',
+      FTPS_PORT: '21',
+      FTPS_REMOTE_ROOT: 'backups',
+      FTPS_USER: 'wkf-backup',
       MOCK_BLOB_DIRECTORY: blobDirectory,
+      MOCK_FTPS_DIRECTORY: remoteDirectory,
       MOCK_REMOVE_MARKER: join(directory, 'destructive-remove-started'),
       MOCK_RESTORE_DIRECTORY: restoreDirectory,
-      MOCK_SFTP_DIRECTORY: remoteDirectory,
       OPERATIONS_IMAGE_REFERENCE: `wkf.azurecr.io/wkf-operations@sha256:${'c'.repeat(64)}`,
       PATH: `${join(directory, 'bin')}:${process.env.PATH}`,
       POSTGRES_BACKUP_URL: 'postgresql://unused',
       POSTGRES_MIGRATOR_URL: 'postgresql://unused',
       PRODUCTION_IMAGE_REFERENCE: imageReference,
       PRODUCTION_MEDIA_CONTAINER_URL: 'https://production.example/media',
-      SFTP_HOST: 'backup.example',
-      SFTP_KNOWN_HOSTS_FILE: join(directory, 'known-hosts'),
-      SFTP_PORT: '22',
-      SFTP_PRIVATE_KEY_FILE: join(directory, 'private-key'),
-      SFTP_REMOTE_ROOT: 'backups',
-      SFTP_USER: 'wkf-backup',
     },
   }
 }
@@ -247,16 +266,17 @@ describe('off-site production backup', () => {
     expect(backupResult.stderr).toBe('')
     const backupDirectory = join(fixture.remoteRoot, backupName)
     expect(existsSync(backupDirectory)).toBe(true)
-    expect(existsSync(join(fixture.remoteRoot, `.${backupName}.partial`))).toBe(false)
+    expect(existsSync(join(backupDirectory, '.complete'))).toBe(true)
 
     const manifest = JSON.parse(readFileSync(join(backupDirectory, 'manifest.json.age'), 'utf8'))
     expect(manifest).toMatchObject({
       backupName,
       blobCount: 2,
       deployedSourceSha: sourceSHA,
-      formatVersion: 1,
+      formatVersion: 2,
       imageReference,
       operationsImageReference: `wkf.azurecr.io/wkf-operations@sha256:${'c'.repeat(64)}`,
+      signingKeyFingerprint: expect.stringMatching(/^SHA256:/),
     })
     expect(manifest.migrationState).toEqual([
       expect.objectContaining({ batch: 1, name: '20261019_test' }),
@@ -284,17 +304,47 @@ describe('off-site production backup', () => {
     )
   })
 
-  it('does not publish a final directory after an incomplete upload', async () => {
+  it('does not publish the completion marker after an incomplete upload', async () => {
     const fixture = setup()
 
     const backupResult = await run('bash', ['scripts/operations/backup-offsite.sh'], {
       ...fixture.environment,
-      MOCK_SFTP_FAIL_PATTERN: '/blobs/',
+      MOCK_FTPS_FAIL_PATTERN: '/blobs/',
     })
 
     expect(backupResult.exitCode).not.toBe(0)
-    expect(existsSync(join(fixture.remoteRoot, backupName))).toBe(false)
-    expect(existsSync(join(fixture.remoteRoot, `.${backupName}.partial`))).toBe(true)
+    expect(existsSync(join(fixture.remoteRoot, backupName))).toBe(true)
+    expect(existsSync(join(fixture.remoteRoot, backupName, '.complete'))).toBe(false)
+  })
+
+  it('rejects a backup whose completion marker does not authenticate the manifest', async () => {
+    const fixture = setup()
+    const backupResult = await run(
+      'bash',
+      ['scripts/operations/backup-offsite.sh'],
+      fixture.environment,
+    )
+    expect(backupResult.exitCode, `${backupResult.stderr}\n${backupResult.stdout}`).toBe(0)
+    const backupDirectory = join(fixture.remoteRoot, backupName)
+    const completionMarker = join(backupDirectory, '.complete')
+    writeFileSync(
+      completionMarker,
+      readFileSync(completionMarker, 'utf8').replace(/[a-f0-9]{64}/, '0'.repeat(64)),
+    )
+
+    const validationResult = await run(
+      'bash',
+      ['scripts/operations/validate-offsite-backup.sh', backupDirectory],
+      {
+        ...fixture.environment,
+        AGE_IDENTITY_FILE: join(fixture.directory, 'identity.txt'),
+      },
+    )
+
+    expect(validationResult.exitCode).not.toBe(0)
+    expect(validationResult.stderr).toContain(
+      'completion marker checksums do not match the manifest artifacts',
+    )
   })
 
   it('rejects a corrupted blob before restore can start', async () => {
@@ -335,6 +385,14 @@ describe('off-site production backup', () => {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
     manifest.blobs[0].archiveFile = '../../outside.age'
     writeFileSync(manifestPath, JSON.stringify(manifest))
+    const completionMarkerPath = join(backupDirectory, '.complete')
+    writeFileSync(
+      completionMarkerPath,
+      readFileSync(completionMarkerPath, 'utf8').replace(
+        /^manifestSha256=.*$/m,
+        `manifestSha256=${sha256(readFileSync(manifestPath, 'utf8'))}`,
+      ),
+    )
 
     const validationResult = await run(
       'bash',
@@ -400,5 +458,79 @@ describe('off-site production backup', () => {
     expect(
       readFileSync(join(fixture.environment.MOCK_RESTORE_DIRECTORY!, 'second.txt'), 'utf8'),
     ).toBe('second blob')
+  })
+})
+
+describe('MyDevil backup archiver', () => {
+  it('archives complete backups and quarantines only stale incomplete transfers', async () => {
+    const fixture = setup()
+    const incomingDirectory = join(fixture.directory, 'incoming')
+    const archiveDirectory = join(fixture.directory, 'archive')
+    const quarantineDirectory = join(fixture.directory, 'quarantine')
+    mkdirSync(incomingDirectory)
+    mkdirSync(archiveDirectory)
+    mkdirSync(quarantineDirectory)
+
+    const completeName = 'production-20261020T023000Z'
+    const completeDirectory = join(incomingDirectory, completeName)
+    mkdirSync(completeDirectory)
+    writeFileSync(
+      join(completeDirectory, '.complete'),
+      `formatVersion=1\nbackupName=${completeName}\n`,
+    )
+
+    const recentIncompleteName = 'production-20261020T024500Z'
+    mkdirSync(join(incomingDirectory, recentIncompleteName))
+    const staleIncompleteName = 'production-20261019T023000Z'
+    const staleIncompleteDirectory = join(incomingDirectory, staleIncompleteName)
+    mkdirSync(staleIncompleteDirectory)
+    const staleTimestamp = new Date(Date.now() - 25 * 60 * 60 * 1000)
+    utimesSync(staleIncompleteDirectory, staleTimestamp, staleTimestamp)
+
+    const archiverResult = await run('sh', ['scripts/operations/archive-offsite-backups.sh'], {
+      ...fixture.environment,
+      WKF_BACKUP_ARCHIVE_DIRECTORY: archiveDirectory,
+      WKF_BACKUP_ARCHIVER_LOCK_FILE: join(fixture.directory, 'archiver.lock'),
+      WKF_BACKUP_INCOMING_DIRECTORY: incomingDirectory,
+      WKF_BACKUP_LOCK_COMMAND: join(fixture.directory, 'bin', 'lockf'),
+      WKF_BACKUP_QUARANTINE_DIRECTORY: quarantineDirectory,
+    })
+
+    expect(archiverResult.exitCode, archiverResult.stderr).toBe(0)
+    expect(existsSync(join(archiveDirectory, completeName))).toBe(true)
+    expect(existsSync(join(incomingDirectory, recentIncompleteName))).toBe(true)
+    expect(
+      readdirSync(quarantineDirectory).some((name) => name.startsWith(staleIncompleteName)),
+    ).toBe(true)
+  })
+
+  it('leaves a completed directory in incoming when its marker names another backup', async () => {
+    const fixture = setup()
+    const incomingDirectory = join(fixture.directory, 'incoming')
+    const archiveDirectory = join(fixture.directory, 'archive')
+    const quarantineDirectory = join(fixture.directory, 'quarantine')
+    mkdirSync(incomingDirectory)
+    mkdirSync(archiveDirectory)
+    mkdirSync(quarantineDirectory)
+    const directory = join(incomingDirectory, backupName)
+    mkdirSync(directory)
+    writeFileSync(
+      join(directory, '.complete'),
+      'formatVersion=1\nbackupName=production-20261019T210000Z\n',
+    )
+
+    const archiverResult = await run('sh', ['scripts/operations/archive-offsite-backups.sh'], {
+      ...fixture.environment,
+      WKF_BACKUP_ARCHIVE_DIRECTORY: archiveDirectory,
+      WKF_BACKUP_ARCHIVER_LOCK_FILE: join(fixture.directory, 'archiver.lock'),
+      WKF_BACKUP_INCOMING_DIRECTORY: incomingDirectory,
+      WKF_BACKUP_LOCK_COMMAND: join(fixture.directory, 'bin', 'lockf'),
+      WKF_BACKUP_QUARANTINE_DIRECTORY: quarantineDirectory,
+    })
+
+    expect(archiverResult.exitCode).toBe(0)
+    expect(archiverResult.stderr).toContain('Completion marker does not match')
+    expect(existsSync(directory)).toBe(true)
+    expect(readdirSync(archiveDirectory)).toHaveLength(0)
   })
 })
