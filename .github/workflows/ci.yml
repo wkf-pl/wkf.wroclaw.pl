@@ -116,6 +116,9 @@ jobs:
             -C tmp/wkf-next-runtime
           test -f tmp/wkf-next-runtime/server.js
 
+      - name: Use global Ubuntu package mirror
+        run: sudo bash scripts/configure-ci-ubuntu-mirror.sh
+
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 

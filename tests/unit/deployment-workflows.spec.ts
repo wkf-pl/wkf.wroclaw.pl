@@ -1,4 +1,7 @@
-import { readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
@@ -80,6 +83,63 @@ describe('deployment workflows', () => {
     expect(continuousIntegrationWorkflow).toContain('run: pnpm test:e2e:ci')
     expect(endToEndJob).toBeDefined()
     expect(endToEndJob).toContain('runs-on: ubuntu-24.04')
+  })
+
+  it('switches away from the unreliable Azure Ubuntu mirror before installing Playwright', () => {
+    const continuousIntegrationWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+    const endToEndJob = continuousIntegrationWorkflow
+      .split('  end-to-end:')[1]
+      ?.split('\n  validate-container:')[0]
+
+    expect(endToEndJob).toBeDefined()
+    expect(endToEndJob).toContain('sudo bash scripts/configure-ci-ubuntu-mirror.sh')
+    expect(endToEndJob!.indexOf('Use global Ubuntu package mirror')).toBeLessThan(
+      endToEndJob!.indexOf('playwright install --with-deps chromium'),
+    )
+  })
+
+  it('promotes the global Ubuntu archive in the runner mirror list', () => {
+    const fixtureDirectory = mkdtempSync(join(tmpdir(), 'wkf-apt-mirror-'))
+    const ubuntuSourcesPath = join(fixtureDirectory, 'ubuntu.sources')
+    const mirrorListPath = join(fixtureDirectory, 'apt-mirrors.txt')
+
+    writeFileSync(
+      ubuntuSourcesPath,
+      [
+        'Types: deb',
+        'URIs: mirror+file:/etc/apt/apt-mirrors.txt',
+        'Suites: noble noble-updates noble-backports noble-security',
+        '',
+      ].join('\n'),
+    )
+    writeFileSync(
+      mirrorListPath,
+      [
+        'http://azure.archive.ubuntu.com/ubuntu/\tpriority:1',
+        'https://archive.ubuntu.com/ubuntu/\tpriority:2',
+        'https://security.ubuntu.com/ubuntu/\tpriority:3',
+        '',
+      ].join('\n'),
+    )
+
+    try {
+      execFileSync(
+        'bash',
+        ['scripts/configure-ci-ubuntu-mirror.sh', ubuntuSourcesPath, mirrorListPath],
+        { stdio: 'pipe' },
+      )
+
+      expect(readFileSync(mirrorListPath, 'utf8')).toBe(
+        [
+          'http://azure.archive.ubuntu.com/ubuntu/\tpriority:2',
+          'https://archive.ubuntu.com/ubuntu/\tpriority:1',
+          'https://security.ubuntu.com/ubuntu/\tpriority:3',
+          '',
+        ].join('\n'),
+      )
+    } finally {
+      rmSync(fixtureDirectory, { force: true, recursive: true })
+    }
   })
 
   it('preserves deployment safety boundaries', () => {
@@ -521,6 +581,15 @@ describe('deployment workflows', () => {
     expect(productionPull).toContain('PRODUCTION_BACKUP_AGE_IDENTITY_FILE')
     expect(productionPull).toContain('STAGING_PULL_LOCAL_CHECKPOINT_ROOT')
     expect(productionPull).toContain('PRODUCTION_PULL_ALLOW_CODE_MISMATCH')
+  })
+
+  it('keeps the production source SHA query in one shell argument', () => {
+    const restoreWorkflow = readFileSync('.github/workflows/restore-production-offsite.yml', 'utf8')
+
+    expect(restoreWorkflow).toContain(
+      `--query "properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value" --output tsv`,
+    )
+    expect(restoreWorkflow).not.toContain('--query \\"')
   })
 
   it('supports safe retries after a stopped preview and transient ARM failures', () => {
