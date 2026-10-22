@@ -610,6 +610,8 @@ describe('deployment workflows', () => {
     expect(restoreDrill).toContain("lifecycle: 'ephemeral-operation'")
     expect(restoreDrill).toContain('allowSharedKeyAccess: false')
     expect(restoreDrill).toContain('external: false')
+    expect(restoreDrill).toContain("name: 'BACKUP_SIGNING_IDENTITY'")
+    expect(restoreDrill).toContain("value: 'wkf-production-restore'")
     expect(restoreDrill).toContain('restoredApplicationEnabled bool = false')
     expect(restoreDrill).toContain('storageAllowPublicUpload bool = true')
     expect(restoreDrill).not.toContain("name: 'wkf-prod'")
