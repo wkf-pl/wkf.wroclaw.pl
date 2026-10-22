@@ -414,6 +414,7 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
 
   it('re-encrypts a validated backup with dedicated restore keys and a signed descriptor', async () => {
     const fixture = setup()
+    const reboundOperationsImageReference = `wkf.azurecr.io/wkf-operations@sha256:${'d'.repeat(64)}`
     const backupResult = await run(
       'bash',
       ['scripts/operations/backup-offsite.sh'],
@@ -440,7 +441,10 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
         fixture.environment.BACKUP_SIGNING_PRIVATE_KEY_FILE!,
         restoreBundleRoot,
       ],
-      fixture.environment,
+      {
+        ...fixture.environment,
+        RESTORE_OPERATIONS_IMAGE_REFERENCE: reboundOperationsImageReference,
+      },
     )
 
     expect(preparationResult.exitCode, preparationResult.stderr).toBe(0)
@@ -451,11 +455,11 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
     expect(
       JSON.parse(readFileSync(join(reEncryptedBackup, 'manifest.json.age'), 'utf8'))
         .operationsImageReference,
-    ).toBe(fixture.environment.OPERATIONS_IMAGE_REFERENCE)
+    ).toBe(reboundOperationsImageReference)
     expect(
       JSON.parse(readFileSync(join(reEncryptedBackup, 'restore-descriptor.json'), 'utf8'))
         .operationsImageReference,
-    ).toBe(fixture.environment.OPERATIONS_IMAGE_REFERENCE)
+    ).toBe(reboundOperationsImageReference)
 
     const validationResult = await run(
       'bash',

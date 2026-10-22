@@ -58,7 +58,8 @@ age --decrypt \
   --output "$source_manifest" \
   "$backup_directory/manifest.json.age"
 backup_name="$(jq --raw-output '.backupName' "$source_manifest")"
-operations_image_reference="$(jq --raw-output '.operationsImageReference' "$source_manifest")"
+source_operations_image_reference="$(jq --raw-output '.operationsImageReference' "$source_manifest")"
+operations_image_reference="${RESTORE_OPERATIONS_IMAGE_REFERENCE:-$source_operations_image_reference}"
 if [[ ! "$backup_name" =~ ^production-[0-9]{8}T[0-9]{6}Z$ ]]; then
   echo 'The validated source manifest contains an invalid backup name.' >&2
   exit 1
@@ -112,7 +113,8 @@ done < <(jq --raw-output '.blobs[].archiveFile' "$source_manifest")
 
 restore_manifest="$temporary_directory/restore-manifest.json"
 jq --arg signingKeyFingerprint "$restore_signing_fingerprint" \
-  '.signingKeyFingerprint = $signingKeyFingerprint' \
+  --arg operationsImageReference "$operations_image_reference" \
+  '.signingKeyFingerprint = $signingKeyFingerprint | .operationsImageReference = $operationsImageReference' \
   "$source_manifest" >"$restore_manifest"
 
 encrypted_manifest="$bundle_directory/manifest.json.age"
