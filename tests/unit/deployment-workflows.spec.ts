@@ -82,6 +82,22 @@ describe('deployment workflows', () => {
     expect(endToEndJob).toContain('runs-on: ubuntu-24.04')
   })
 
+  it('switches away from the unreliable Azure Ubuntu mirror before installing Playwright', () => {
+    const continuousIntegrationWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+    const endToEndJob = continuousIntegrationWorkflow
+      .split('  end-to-end:')[1]
+      ?.split('\n  validate-container:')[0]
+
+    expect(endToEndJob).toBeDefined()
+    expect(endToEndJob).toContain(
+      "'s|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g'",
+    )
+    expect(endToEndJob).toContain('/etc/apt/sources.list.d/ubuntu.sources')
+    expect(endToEndJob!.indexOf('Use global Ubuntu package mirror')).toBeLessThan(
+      endToEndJob!.indexOf('playwright install --with-deps chromium'),
+    )
+  })
+
   it('preserves deployment safety boundaries', () => {
     const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
     const applicationTemplate = readFileSync('infra/azure/modules/application.bicep', 'utf8')
