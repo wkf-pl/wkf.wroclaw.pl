@@ -26,6 +26,7 @@ function getMediaPreview(value: unknown): MediaPreview | null {
 export function ContentSurfacePreview(properties: UIFieldClientProps) {
   const siblingPath = (name: string): string =>
     `${properties.path.split('.').slice(0, -1).join('.')}.${name}`
+  const surfaceValue = useFormFields(([fields]) => fields[siblingPath('surface')]?.value)
   const imageValue = useFormFields(([fields]) => fields[siblingPath('surfaceImage')]?.value)
   const horizontalPosition = useFormFields(
     ([fields]) => fields[siblingPath('surfaceHorizontalPosition')]?.value,
@@ -40,9 +41,10 @@ export function ContentSurfacePreview(properties: UIFieldClientProps) {
       serverURL,
     },
   } = useConfig()
-  const mediaURL = mediaPreview?.id
-    ? formatAdminURL({ apiRoute, path: `/media/${mediaPreview.id}`, serverURL })
-    : ''
+  const mediaURL =
+    surfaceValue === 'image' && mediaPreview?.id
+      ? formatAdminURL({ apiRoute, path: `/media/${mediaPreview.id}`, serverURL })
+      : ''
   const [{ data: loadedMedia }] = usePayloadAPI(mediaURL, {
     // Payload derives upload URLs from the complete media document. Selecting only
     // the virtual URL fields leaves them null in the REST response.
@@ -55,7 +57,7 @@ export function ContentSurfacePreview(properties: UIFieldClientProps) {
     loadedPreview?.thumbnailURL ||
     loadedPreview?.url
 
-  if (!imageURL) return null
+  if (surfaceValue !== 'image' || !imageURL) return null
 
   const horizontal = ['left', 'center', 'right'].includes(String(horizontalPosition))
     ? String(horizontalPosition)

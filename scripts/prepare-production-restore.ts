@@ -25,6 +25,14 @@ type CommandOptions = {
   restoreSigningPrivateKeyFile?: string
 }
 
+type RestorePreparationDockerOptions = {
+  backupDirectory: string
+  configuration: RestoreConfiguration
+  operationsImage: string
+  outputOwnerGid: number
+  outputOwnerUid: number
+}
+
 function readDotenvFile(filePath: string, required: boolean): Record<string, string> {
   if (!existsSync(filePath)) {
     if (required) {
@@ -110,6 +118,57 @@ function requireReadableFile(filePath: string, name: RestoreConfigurationKey): v
   }
 }
 
+export function createRestorePreparationDockerArguments({
+  backupDirectory,
+  configuration,
+  operationsImage,
+  outputOwnerGid,
+  outputOwnerUid,
+}: RestorePreparationDockerOptions): string[] {
+  return [
+    'run',
+    '--rm',
+    '--network',
+    'none',
+    '--read-only',
+    '--user',
+    '0:0',
+    '--cap-drop',
+    'ALL',
+    '--cap-add',
+    'DAC_READ_SEARCH',
+    '--cap-add',
+    'DAC_OVERRIDE',
+    '--cap-add',
+    'CHOWN',
+    '--security-opt',
+    'no-new-privileges',
+    '--tmpfs',
+    '/tmp:rw,nosuid,nodev,noexec,size=1g',
+    '--env',
+    `RESTORE_BUNDLE_OUTPUT_UID=${outputOwnerUid}`,
+    '--env',
+    `RESTORE_BUNDLE_OUTPUT_GID=${outputOwnerGid}`,
+    '--volume',
+    `${backupDirectory}:/source:ro`,
+    '--volume',
+    `${configuration.BACKUP_AGE_IDENTITY_FILE}:/run/keys/backup-age-identity:ro`,
+    '--volume',
+    `${configuration.RESTORE_AGE_RECIPIENT_FILE}:/run/keys/restore-age-recipient:ro`,
+    '--volume',
+    `${configuration.RESTORE_SIGNING_PRIVATE_KEY_FILE}:/run/keys/restore-signing-private-key:ro`,
+    '--volume',
+    `${configuration.RESTORE_OUTPUT_ROOT}:/output`,
+    operationsImage,
+    '/opt/wkf/prepare-offsite-restore-bundle.sh',
+    '/source',
+    '/run/keys/backup-age-identity',
+    '/run/keys/restore-age-recipient',
+    '/run/keys/restore-signing-private-key',
+    '/output',
+  ]
+}
+
 function main(): void {
   const projectDirectory = resolve(import.meta.dirname, '..')
   const parsedArguments = parseArgs({
@@ -161,44 +220,13 @@ function main(): void {
   )
   runCommand(
     'docker',
-    [
-      'run',
-      '--rm',
-      '--network',
-      'none',
-      '--read-only',
-      '--user',
-      '0:0',
-      '--cap-drop',
-      'ALL',
-      '--cap-add',
-      'DAC_READ_SEARCH',
-      '--security-opt',
-      'no-new-privileges',
-      '--tmpfs',
-      '/tmp:rw,nosuid,nodev,noexec,size=1g',
-      '--env',
-      `RESTORE_BUNDLE_OUTPUT_UID=${process.getuid?.() ?? 0}`,
-      '--env',
-      `RESTORE_BUNDLE_OUTPUT_GID=${process.getgid?.() ?? 0}`,
-      '--volume',
-      `${backupDirectory}:/source:ro`,
-      '--volume',
-      `${configuration.BACKUP_AGE_IDENTITY_FILE}:/run/keys/backup-age-identity:ro`,
-      '--volume',
-      `${configuration.RESTORE_AGE_RECIPIENT_FILE}:/run/keys/restore-age-recipient:ro`,
-      '--volume',
-      `${configuration.RESTORE_SIGNING_PRIVATE_KEY_FILE}:/run/keys/restore-signing-private-key:ro`,
-      '--volume',
-      `${configuration.RESTORE_OUTPUT_ROOT}:/output`,
+    createRestorePreparationDockerArguments({
+      backupDirectory,
+      configuration,
       operationsImage,
-      '/opt/wkf/prepare-offsite-restore-bundle.sh',
-      '/source',
-      '/run/keys/backup-age-identity',
-      '/run/keys/restore-age-recipient',
-      '/run/keys/restore-signing-private-key',
-      '/output',
-    ],
+      outputOwnerGid: process.getgid?.() ?? 0,
+      outputOwnerUid: process.getuid?.() ?? 0,
+    }),
     projectDirectory,
   )
 

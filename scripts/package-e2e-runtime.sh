@@ -7,6 +7,7 @@ set -Eeuo pipefail
 distribution_directory="${NEXT_DIST_DIR:-.next-host}"
 standalone_directory="$distribution_directory/standalone"
 static_directory="$distribution_directory/static"
+preview_properties_file="$distribution_directory/server/preview-props.json"
 archive_path="${1:-tmp/wkf-next-runtime.tar.gz}"
 
 if [[ "$archive_path" != /* ]]; then
@@ -20,6 +21,11 @@ fi
 
 if [[ ! -d "$static_directory" ]]; then
   echo "Missing static Next.js output: $static_directory" >&2
+  exit 1
+fi
+
+if [[ ! -f "$preview_properties_file" ]]; then
+  echo "Missing Next.js preview properties: $preview_properties_file" >&2
   exit 1
 fi
 
@@ -40,6 +46,8 @@ trap cleanup EXIT
 cp -a "$standalone_directory/." "$runtime_staging_directory/"
 mkdir -p "$runtime_distribution_directory/static"
 cp -a "$static_directory/." "$runtime_distribution_directory/static/"
+mkdir -p "$runtime_distribution_directory/server"
+cp -a "$preview_properties_file" "$runtime_distribution_directory/server/preview-props.json"
 mkdir -p "$runtime_staging_directory/public"
 cp -a public/. "$runtime_staging_directory/public/"
 
