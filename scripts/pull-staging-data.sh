@@ -13,9 +13,12 @@ checkpoint_container_name="${STAGING_CHECKPOINT_CONTAINER_NAME:-staging-checkpoi
 local_media_container_name="media"
 application_url="${LOCAL_APP_URL:-http://127.0.0.1:3000}"
 health_timeout_seconds="${STAGING_PULL_HEALTH_TIMEOUT_SECONDS:-180}"
+local_checkpoint_root_input="${STAGING_PULL_LOCAL_CHECKPOINT_ROOT:-}"
+source_label="${STAGING_PULL_SOURCE_LABEL:-staging}"
 
 project_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 temporary_directory=""
+temporary_directory_owned=false
 local_rescue_directory=""
 staging_storage_account_name=""
 staging_storage_account_key=""
@@ -285,7 +288,7 @@ cleanup() {
     fi
   fi
 
-  if [[ -n "$temporary_directory" && -d "$temporary_directory" ]]; then
+  if [[ "$temporary_directory_owned" == "true" && -n "$temporary_directory" && -d "$temporary_directory" ]]; then
     rm -rf -- "$temporary_directory"
   fi
 
@@ -317,6 +320,9 @@ done
 if [[ ! "$health_timeout_seconds" =~ ^[1-9][0-9]*$ ]]; then
   fail "STAGING_PULL_HEALTH_TIMEOUT_SECONDS must be a positive integer."
 fi
+if [[ ! "$source_label" =~ ^[a-z][a-z0-9-]*$ ]]; then
+  fail "STAGING_PULL_SOURCE_LABEL must contain lowercase letters, digits, and hyphens."
+fi
 
 case "$application_url" in
   http://127.0.0.1:* | http://localhost:*) ;;
@@ -324,7 +330,15 @@ case "$application_url" in
 esac
 
 cd "$project_directory"
-temporary_directory="$(mktemp -d)"
+if [[ -n "$local_checkpoint_root_input" ]]; then
+  if [[ ! -d "$local_checkpoint_root_input" ]]; then
+    fail "Local checkpoint root does not exist: $local_checkpoint_root_input"
+  fi
+  temporary_directory="$(realpath -- "$local_checkpoint_root_input")"
+else
+  temporary_directory="$(mktemp -d)"
+  temporary_directory_owned=true
+fi
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
@@ -333,43 +347,45 @@ if is_compose_service_running app; then
   application_was_running=true
 fi
 
-az account show --output none
+if [[ -z "$local_checkpoint_root_input" ]]; then
+  az account show --output none
 
-if [[ -n "${STAGING_STORAGE_ACCOUNT_NAME:-}" ]]; then
-  staging_storage_account_name="$STAGING_STORAGE_ACCOUNT_NAME"
-else
-  mapfile -t staging_storage_accounts < <(
-    az storage account list \
-      --resource-group "$resource_group_name" \
-      --query '[].name' \
-      --output tsv
-  )
+  if [[ -n "${STAGING_STORAGE_ACCOUNT_NAME:-}" ]]; then
+    staging_storage_account_name="$STAGING_STORAGE_ACCOUNT_NAME"
+  else
+    mapfile -t staging_storage_accounts < <(
+      az storage account list \
+        --resource-group "$resource_group_name" \
+        --query '[].name' \
+        --output tsv
+    )
 
-  if [[ "${#staging_storage_accounts[@]}" -ne 1 ]]; then
-    fail "Expected one Storage account in $resource_group_name; set STAGING_STORAGE_ACCOUNT_NAME explicitly."
+    if [[ "${#staging_storage_accounts[@]}" -ne 1 ]]; then
+      fail "Expected one Storage account in $resource_group_name; set STAGING_STORAGE_ACCOUNT_NAME explicitly."
+    fi
+
+    staging_storage_account_name="${staging_storage_accounts[0]}"
   fi
 
-  staging_storage_account_name="${staging_storage_accounts[0]}"
+  staging_storage_account_key="$(az storage account keys list \
+    --resource-group "$resource_group_name" \
+    --account-name "$staging_storage_account_name" \
+    --query '[0].value' \
+    --output tsv)"
+
+  if [[ -z "$staging_storage_account_key" ]]; then
+    fail "Could not resolve the staging Storage account key."
+  fi
+
+  staging_storage blob download-batch \
+    --source "$checkpoint_container_name" \
+    --destination "$temporary_directory" \
+    --pattern "$checkpoint_name/*" \
+    --overwrite true \
+    --no-progress \
+    --output none \
+    --only-show-errors
 fi
-
-staging_storage_account_key="$(az storage account keys list \
-  --resource-group "$resource_group_name" \
-  --account-name "$staging_storage_account_name" \
-  --query '[0].value' \
-  --output tsv)"
-
-if [[ -z "$staging_storage_account_key" ]]; then
-  fail "Could not resolve the staging Storage account key."
-fi
-
-staging_storage blob download-batch \
-  --source "$checkpoint_container_name" \
-  --destination "$temporary_directory" \
-  --pattern "$checkpoint_name/*" \
-  --overwrite true \
-  --no-progress \
-  --output none \
-  --only-show-errors
 
 checkpoint_directory="$temporary_directory/$checkpoint_name"
 database_dump_path="$checkpoint_directory/database.dump"
@@ -402,14 +418,18 @@ fi
 expected_media_blob_count="$(jq -r '.mediaBlobCount' "$checkpoint_manifest_path")"
 deployed_source_sha="$(jq -r '.deployedSourceSha // empty' "$checkpoint_manifest_path")"
 
-staging_storage blob list \
-  --container-name "$checkpoint_container_name" \
-  --prefix "$staging_media_prefix" \
-  --include m \
-  --num-results '*' \
-  --output json \
-  --only-show-errors \
-  >"$staging_media_manifest_path"
+if [[ -z "$local_checkpoint_root_input" ]]; then
+  staging_storage blob list \
+    --container-name "$checkpoint_container_name" \
+    --prefix "$staging_media_prefix" \
+    --include m \
+    --num-results '*' \
+    --output json \
+    --only-show-errors \
+    >"$staging_media_manifest_path"
+elif [[ ! -f "$staging_media_manifest_path" ]]; then
+  fail "Local checkpoint media manifest is missing: $staging_media_manifest_path"
+fi
 
 actual_media_blob_count="$(jq 'length' "$staging_media_manifest_path")"
 
@@ -465,7 +485,7 @@ if [[ "$active_database_connections" != "0" ]]; then
 fi
 
 rescue_timestamp="$(date -u +%Y%m%d-%H%M%S)"
-local_rescue_directory="$project_directory/tmp/staging-pulls/local-before-$rescue_timestamp-$checkpoint_name"
+local_rescue_directory="$project_directory/tmp/${source_label}-pulls/local-before-$rescue_timestamp-$checkpoint_name"
 mkdir -p "$local_rescue_directory/media"
 
 docker compose exec -T postgres sh -c \
@@ -537,5 +557,5 @@ else
 fi
 
 import_succeeded=true
-echo "Imported staging checkpoint into the local environment: $checkpoint_name"
+echo "Imported $source_label checkpoint into the local environment: $checkpoint_name"
 echo "Previous local data backup: $local_rescue_directory"

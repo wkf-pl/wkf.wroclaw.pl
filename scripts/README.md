@@ -164,6 +164,29 @@ Resource names and health checks can be adjusted with `STAGING_RESOURCE_GROUP_NA
 `STAGING_CHECKPOINT_CONTAINER_NAME`, `STAGING_STORAGE_ACCOUNT_NAME`, `LOCAL_AZURITE_CONNECTION_STRING`,
 `LOCAL_APP_URL`, and `STAGING_PULL_HEALTH_TIMEOUT_SECONDS`.
 
+### `pull-production-data.sh`
+
+Imports an authenticated production off-site backup into the local Docker Compose PostgreSQL and
+Azurite services without reading from Azure or changing MyDevil. It is exposed as:
+
+```bash
+export PRODUCTION_BACKUP_AGE_IDENTITY_FILE='/absolute/path/to/wkf-backup.agekey'
+pnpm production:pull production-YYYYMMDDTHHMMSSZ [IMPORT]
+```
+
+By default the script downloads the selected recovery point over the operator's main MyDevil SSH
+identity from the protected archive. `PRODUCTION_BACKUP_LOCAL_DIRECTORY` selects an already
+downloaded copy instead. The long-lived `age` identity remains a read-only local mount and is never
+copied into the project, a container image, GitHub, Azure, or MyDevil.
+
+The script rebuilds and then validates and extracts the backup with `wkf-operations:local`, then
+reuses the same local replacement and rollback engine as `staging:pull`. Set
+`PRODUCTION_PULL_REBUILD_OPERATIONS_IMAGE=false` only to reuse an existing image. It requires the
+backup source commit to be an ancestor of local `HEAD`, creates a rescue point under
+`tmp/production-pulls/local-before-*`, runs
+current migrations, and clears authentication and document-lock state. Only an explicitly reviewed
+`PRODUCTION_PULL_ALLOW_CODE_MISMATCH=true` bypasses the source-SHA guard.
+
 ### Off-site production backup and restore
 
 The **Back up production data off-site** workflow creates a consistent copy of the production
@@ -239,27 +262,50 @@ database with `pg_restore --exit-on-error`, restores the blobs, and clears sessi
 locks. It must run from the private target network while the target application is stopped,
 followed by current migrations, runtime-grant reconciliation, and application smoke checks.
 
-Do not give the long-lived `age` private identity to GitHub or Azure. A production restore will use
-a locally validated copy re-encrypted to a one-time restore recipient; the ephemeral restore job and
-its one-time identity must be deleted after use.
+Do not give the main backup `age` private identity to GitHub or Azure. A production restore uses a
+separate, persistent restore-only `age` key pair and a separate, persistent Ed25519 signing pair.
+GitHub receives the restore `age` identity and public signing material; the signing private key
+remains only on trusted local storage, in the password manager, and on the NAS.
 
-Prepare such a copy locally with the matching operations image:
+Copy `.env.restore.example` to the ignored `.env.restore` and configure absolute paths:
 
-```bash
-docker run --rm --network none --read-only --user 0:0 \
-  --tmpfs /tmp:rw,nosuid,nodev,noexec,size=1g \
-  --env RESTORE_BUNDLE_OUTPUT_UID="$(id -u)" \
-  --env RESTORE_BUNDLE_OUTPUT_GID="$(id -g)" \
-  --volume "/absolute/path/to/production-YYYYMMDDTHHMMSSZ:/source:ro" \
-  --volume "/absolute/path/to/age-identity.txt:/run/age/source-identity.txt:ro" \
-  --volume "/absolute/path/to/output-parent:/output" \
-  wkf-operations:local \
-  -lc '/opt/wkf/prepare-offsite-restore-bundle.sh /source /run/age/source-identity.txt /output/restore-bundle'
+```dotenv
+BACKUP_AGE_IDENTITY_FILE=/absolute/path/to/wkf-backup.agekey
+RESTORE_AGE_RECIPIENT_FILE=/absolute/path/to/wkf-restore.agepub
+RESTORE_SIGNING_PRIVATE_KEY_FILE=/absolute/path/to/wkf-restore-manifest-signing
+RESTORE_OUTPUT_ROOT=/absolute/path/to/wkf-restore-ready
 ```
 
-The output contains the re-encrypted backup and a separate `secrets` directory with the one-time
-`age` identity and one-time manifest trust files. Upload only the backup directory. Never upload the
-`secrets` directory.
+The file contains paths and public values, never private-key contents. Prepare an export with:
+
+```bash
+pnpm backup:prepare-restore /absolute/path/to/production-YYYYMMDDTHHMMSSZ
+```
+
+`--config /absolute/path/to/recovery.env` selects another dotenv file. CLI path options override the
+selected file, which overrides `.env.restore`; the output defaults to `tmp/restore-ready` only when
+`RESTORE_OUTPUT_ROOT` is absent. The wrapper parses dotenv data without shell evaluation, rebuilds
+`wkf-operations:local`, and runs the re-encryption helper in a networkless, read-only container.
+The available overrides are `--backup-age-identity-file`, `--restore-age-recipient-file`,
+`--restore-signing-private-key-file`, and `--output-root`.
+
+The helper reads the immutable `operationsImageReference` from the authenticated source manifest.
+It writes that value, the backup name, and manifest checksums to a signed public
+`restore-descriptor.json`. The workflow verifies this descriptor before selecting and pulling the
+operations image, then requires the encrypted manifest to agree. There is no operator-supplied
+image digest or fallback. Upload the resulting directory but publish `.complete` last.
+
+`download-restore-descriptor-ftps.sh` first fetches only `.complete`, the public descriptor, and its
+signature. `download-offsite-backup-ftps.sh` then fetches the signed encrypted manifest, decrypts
+only that manifest to discover the finite artifact list, downloads exactly those files, and runs
+the full validator. Neither script recurses through the FTPS account or accesses the protected
+archive.
+
+`infra/azure/offsite-restore-job.bicep` creates the ephemeral live-production restore job. The job
+downloads and validates the disposable export again inside the production environment before
+calling `restore-offsite-backup.sh`. The approval-gated workflow deletes the job and deployment
+after the execution; it deliberately leaves the application inactive on any restore, migration,
+grant, or smoke-test failure.
 
 ### Isolated Azure restore drill
 
@@ -273,7 +319,7 @@ Use the following sequence:
 
 1. Run an ARM `what-if`, then deploy with `restoredApplicationEnabled=false` and
    `storageAllowPublicUpload=true`.
-2. Upload only the one-time backup directory to `restore-source` using Entra authentication.
+2. Upload only the prepared restore-export directory to `restore-source` using Entra authentication.
 3. Restrict the temporary Storage account to the Container Apps subnet.
 4. Check `shared_preload_libraries` on the temporary PostgreSQL server. A new server reports
    `isConfigPendingRestart=true` after enabling `pgaudit`; restart that temporary server and confirm
@@ -282,8 +328,8 @@ Use the following sequence:
    migration counts with zero sessions.
 6. Redeploy with `restoredApplicationEnabled=true` and `storageAllowPublicUpload=false`, then verify
    health, the public page, admin, and representative range requests from inside the container.
-7. Delete the entire restore-drill resource group and every local one-time secret and decrypted or
-   re-encrypted working copy.
+7. Delete the entire restore-drill resource group and every local decrypted or prepared working
+   copy. Keep the dedicated restore keys and persistent GitHub secrets.
 
 The first deployment temporarily permits authenticated public-network upload to the dedicated
 Storage account. Shared Key and anonymous Blob access remain disabled. Close the network before
@@ -298,6 +344,7 @@ account:
 /usr/home/forseti/remote-backups/wkf/incoming
 /usr/home/forseti/remote-backups/wkf/archive
 /usr/home/forseti/remote-backups/wkf/quarantine
+/usr/home/forseti/remote-backups/wkf/restore-export
 ```
 
 Run the archiver every 15 minutes from the main account's crontab:
@@ -311,7 +358,7 @@ matches the directory name, and moves incomplete transfers older than 24 hours t
 It never deletes an archived backup. Retention remains deliberately disabled until the first full
 backup has measured the actual database and media footprint against the 10 GB quota. The current
 format stores a logically complete encrypted copy of every media blob in every backup; it does not
-yet deduplicate unchanged blobs. The one-time re-encryption helper and isolated restore drill are
+yet deduplicate unchanged blobs. The restore-export preparation helper and isolated restore drill are
 implemented; see the [production operations runbook](../docs/Operations.md) for the end-to-end
 operator procedures and the boundary before a destructive live-production restore.
 

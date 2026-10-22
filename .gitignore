@@ -13,6 +13,7 @@
 .env
 .env.*
 !.env.example
+!.env.restore.example
 !test.env
 
 # Next.js and TypeScript

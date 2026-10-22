@@ -26,13 +26,20 @@ how to suspend application and PostgreSQL compute deliberately.
 
 ## GitHub environments
 
-Create `staging`, `prod`, and `prod-backup` GitHub environments. The `prod` environment should
-require manual approval. `prod-backup` should be limited to `master`, should not allow administrators
+Create `staging`, `prod`, `prod-backup`, and `prod-restore` GitHub environments. The `prod` and
+`prod-restore` environments should require manual approval. `prod-restore` must be limited to
+`master`, require the production reviewer, and disallow administrator bypass. `prod-backup` should
+be limited to `master`, should not allow administrators
 to bypass its protection rules, and must not require a reviewer because the daily schedule is
 unattended. Use a separate GitHub OIDC application whose federated subject is
 `repo:wkf-pl@291146656/wkf.wroclaw.pl@1343632045:environment:prod-backup` and grant it only the
 production and shared ACR permissions required by the backup workflow. The organization and
 repository IDs are part of WKF's customized GitHub OIDC subject format.
+
+Add another federated credential to the production deployment application for the customized
+subject ending in `environment:prod-restore`. The restore identity keeps the existing resource-group
+`Contributor`, shared-registry `Reader`, and `AcrPull` scope; it must not receive subscription-wide
+permissions or role-assignment management.
 
 Configure these variables in every environment:
 
@@ -88,6 +95,50 @@ Configure only these backup-specific secrets in `prod-backup`:
 - `OFFSITE_BACKUP_SIGNING_PRIVATE_KEY`
 - `POSTGRES_BACKUP_PASSWORD` — identical to the `prod` bootstrap value
 
+The `prod-restore` environment additionally requires these variables for a dedicated MyDevil FTPS
+account rooted at `/usr/home/forseti/remote-backups/wkf/restore-export`:
+
+- `OFFSITE_RESTORE_FTPS_HOST`
+- `OFFSITE_RESTORE_FTPS_PORT`
+- `OFFSITE_RESTORE_FTPS_REMOTE_ROOT` — normally `/` for the restricted account
+- `OFFSITE_RESTORE_FTPS_USER`
+
+Configure these persistent secrets in `prod-restore`:
+
+- `OFFSITE_RESTORE_FTPS_PASSWORD`
+- `POSTGRES_MIGRATOR_PASSWORD` — identical to the `prod` migrator value
+- `OFFSITE_RESTORE_AGE_IDENTITY` — the dedicated restore-only `age` private identity
+- `OFFSITE_RESTORE_ALLOWED_SIGNERS` — an allowed-signers line for identity
+  `wkf-production-restore` and the dedicated restore signing public key
+- `OFFSITE_RESTORE_MANIFEST_SIGNING_PUBLIC_KEY` — the same dedicated restore signing public key
+
+These are stable recovery credentials, not per-incident values. Back up the restore `age` private
+identity and signing private key in the password manager and on the NAS. The signing private key
+must never be stored in GitHub, Azure, or MyDevil. The main production-backup `age` identity and
+backup manifest-signing private key must never be substituted for the dedicated restore keys.
+
+Generate the dedicated pairs once on a trusted workstation:
+
+```bash
+umask 077
+age-keygen --output /secure/offline/wkf-restore.agekey
+age-keygen -y /secure/offline/wkf-restore.agekey \
+  > /secure/offline/wkf-restore.agepub
+ssh-keygen -q -t ed25519 -N '' \
+  -f /secure/offline/wkf-restore-manifest-signing
+ssh-keygen -y -P '' \
+  -f /secure/offline/wkf-restore-manifest-signing \
+  > /secure/offline/wkf-restore-manifest-signing.pub
+printf 'wkf-production-restore %s\n' \
+  "$(cat /secure/offline/wkf-restore-manifest-signing.pub)" \
+  > /secure/offline/wkf-restore-allowed-signers
+```
+
+Store the contents of `wkf-restore.agekey`, `wkf-restore-allowed-signers`, and
+`wkf-restore-manifest-signing.pub` in the corresponding three GitHub secrets. Store only the public
+`wkf-restore.agepub` and paths to the local private files in `.env.restore`. Never store the restore
+signing private key in GitHub.
+
 Do not copy the PostgreSQL administrator, migrator, or runtime passwords into `prod-backup`. After
 adding `POSTGRES_BACKUP_PASSWORD` to `prod` and `prod-backup`, run the `bootstrap` phase of
 `deploy-production.yml` once with the current immutable operations-image digest. The ephemeral job
@@ -127,18 +178,20 @@ az ad app update --id "$ENTRA_CLIENT_ID" --enable-id-token-issuance true
 
 ## Deployments
 
-A push to `master` invokes the reusable `deploy-staging.yml` workflow through
-`deploy-staging-on-master.yml`. Pull requests run CI, including a production Next.js build used by
-the Playwright shards and a cache-aware container image validation, but they do not deploy.
+Pull requests run CI, including a production Next.js build used by the Playwright shards and a
+cache-aware container image validation, but they do not deploy. A merge or push to `master` also
+does not deploy staging. Run `deploy-staging.yml` manually from `master` only when a selected commit
+needs Azure qualification or a production-promotion digest. This allows staging application and
+PostgreSQL compute to remain suspended during normal local development.
 
 Every deployed revision records `DEPLOYED_SOURCE_SHA`. The workflow compares that commit with the
 target and determines automatically whether it needs a new image, full provisioning, and
 migrations. If the active revision does not yet have SHA metadata, the workflow safely enables all
 three actions. A manual run can force or skip provisioning and migrations.
 
-The staging workflow:
+The manually dispatched staging workflow:
 
-1. Skips an obsolete commit that waited in the queue.
+1. Rejects dispatch from any branch other than `master`.
 2. Classifies changes against the active revision.
 3. Reconciles shared resources and complete environment infrastructure only when required.
 4. Builds and pushes one immutable image, or reuses the active digest.
