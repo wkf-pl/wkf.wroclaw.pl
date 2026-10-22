@@ -148,21 +148,21 @@ on every exit path. If the workflow fails:
 
 ### Current automation boundary
 
-The repository contains and has exercised a complete low-level restore engine and an isolated Azure
-restore target. It does **not** currently contain an approval-gated workflow that overwrites the
-live production database and media container from a MyDevil backup. The isolated template is
-deliberately unable to target production resources.
+The approval-gated [Restore production from an off-site backup](../.github/workflows/restore-production-offsite.yml)
+workflow is the only supported live-production restore entry point. It uses the tested
+[`restore-offsite-backup.sh`](../scripts/operations/restore-offsite-backup.sh) engine from an
+ephemeral Container Apps job inside the production private network.
 
-Therefore a full incident recovery has two parts:
+The workflow never receives access to the protected MyDevil `archive`. Before an incident restore,
+an operator validates the selected archive recovery point locally, re-encrypts it with a dedicated
+restore-only `age` recipient, signs it with a dedicated restore-only Ed25519 key, and publishes only
+that disposable copy under `restore-export`. A separate restricted FTPS account can see only
+`restore-export`. Compromise of its GitHub credential cannot read, change, or delete the original
+archive.
 
-1. the repeatable, tested validation and isolated-restore procedure below;
-2. a reviewed incident change that wires the already tested
-   [`restore-offsite-backup.sh`](../scripts/operations/restore-offsite-backup.sh) engine to the live
-   production target.
-
-Do not bypass the second review by running the low-level script from an arbitrary workstation. The
-production PostgreSQL endpoint and Storage account are private, and the restore deletes the complete
-target Blob container before repopulating it.
+Do not run the low-level restore script from a workstation and do not point the normal backup-upload
+account at `restore-export`. The production PostgreSQL endpoint and Storage account are private, and
+the restore replaces both the complete database and Blob container.
 
 ### Phase A — contain the incident
 
@@ -178,29 +178,55 @@ target Blob container before repopulating it.
 ### Phase B — download, authenticate, and prepare the recovery point
 
 1. Follow [Download, validate, and decrypt a MyDevil backup](#download-validate-and-decrypt-a-mydevil-backup).
-2. Build the operations image from the recovery code or pull the exact digest recorded in the
-   authenticated manifest.
-3. Run the local validator and require success for the database archive and every blob.
-4. Create a one-time restore bundle:
+2. Generate the dedicated restore keys once, store their private material in the password manager
+   and on the NAS, and configure the corresponding persistent `prod-restore` secrets as described in
+   the Azure infrastructure guide. Never reuse the main backup encryption or signing key.
+3. Copy [`.env.restore.example`](../.env.restore.example) to the ignored `.env.restore` file and set
+   absolute paths only:
 
-   ```bash
-   export BACKUP_DIRECTORY='/secure/work/production-YYYYMMDDTHHMMSSZ'
-   export AGE_IDENTITY_FILE='/secure/offline/wkf-backup.agekey'
-   export RESTORE_OUTPUT_PARENT='/secure/work/one-time-restore'
-
-   mkdir --parents "$RESTORE_OUTPUT_PARENT"
-   docker run --rm --network none --read-only --user 0:0 \
-     --tmpfs /tmp:rw,nosuid,nodev,noexec,size=1g \
-     --env RESTORE_BUNDLE_OUTPUT_UID="$(id -u)" \
-     --env RESTORE_BUNDLE_OUTPUT_GID="$(id -g)" \
-     --volume "$BACKUP_DIRECTORY:/source:ro" \
-     --volume "$AGE_IDENTITY_FILE:/run/age/source-identity.txt:ro" \
-     --volume "$RESTORE_OUTPUT_PARENT:/output" \
-     wkf-operations:local \
-     -lc '/opt/wkf/prepare-offsite-restore-bundle.sh /source /run/age/source-identity.txt /output/bundle'
+   ```dotenv
+   BACKUP_AGE_IDENTITY_FILE=/secure/offline/wkf-backup.agekey
+   RESTORE_AGE_RECIPIENT_FILE=/secure/offline/wkf-restore.agepub
+   RESTORE_SIGNING_PRIVATE_KEY_FILE=/secure/offline/wkf-restore-manifest-signing
+   RESTORE_OUTPUT_ROOT=/secure/work/wkf-restore-ready
    ```
 
-5. Keep `bundle/secrets` local. Upload only `bundle/<backup-name>` to Azure.
+   This file contains paths and public values only. It must never contain private-key contents.
+
+4. Prepare the restore export with one command:
+
+   ```bash
+   pnpm backup:prepare-restore /secure/work/production-YYYYMMDDTHHMMSSZ
+   ```
+
+   Use `--config /absolute/path/to/recovery.env` for another configuration file. Individual CLI
+   path options override that file, which overrides `.env.restore`. The command validates the
+   source, rebuilds the local operations tool image, re-encrypts one clear artifact at a time, and
+   obtains the immutable operations-image reference from the authenticated source manifest. It
+   writes that reference to a signed public `restore-descriptor.json`; there is no manual digest
+   argument or fallback.
+
+5. Upload the produced `<RESTORE_OUTPUT_ROOT>/<backup-name>` directory to the protected main-account
+   `restore-export` directory. Transfer `.complete` only after every other file succeeds:
+
+   ```bash
+   export RESTORE_OUTPUT_ROOT='/secure/work/wkf-restore-ready'
+   export BACKUP_NAME='production-YYYYMMDDTHHMMSSZ'
+   export RESTORE_EXPORT_ROOT='/usr/home/forseti/remote-backups/wkf/restore-export'
+   rsync --archive --protect-args --exclude='.complete' \
+     "$RESTORE_OUTPUT_ROOT/$BACKUP_NAME/" \
+     "forseti@s47.mydevil.net:${RESTORE_EXPORT_ROOT}/${BACKUP_NAME}/"
+   rsync --archive --protect-args \
+     "$RESTORE_OUTPUT_ROOT/$BACKUP_NAME/.complete" \
+     "forseti@s47.mydevil.net:${RESTORE_EXPORT_ROOT}/${BACKUP_NAME}/.complete"
+   ```
+
+6. Confirm through the dedicated restore FTPS account that the exported directory is readable and
+   that `archive`, `incoming`, and `quarantine` are not visible. The account may modify its
+   disposable export; it must never be able to traverse to the original archive.
+7. Do not change the persistent restore secrets for each incident. After the operation, remove only
+   the disposable export from `restore-export` and the local prepared copy. Preserve the dedicated
+   restore keys and their protected backups.
 
 ### Phase C — prove the recovery point in isolation
 
@@ -209,7 +235,7 @@ target Blob container before repopulating it.
 2. Run `az deployment group what-if` and require only creations in the drill resource group.
 3. Deploy first with `restoredApplicationEnabled=false` and
    `storageAllowPublicUpload=true`.
-4. Upload only the one-time encrypted bundle through Entra authentication to the generated
+4. Upload only the prepared encrypted restore export through Entra authentication to the generated
    `restore-source` container.
 5. Redeploy or update the drill Storage account so that public upload is closed and only the
    Container Apps subnet is allowed.
@@ -235,50 +261,46 @@ The lower-level command sequence and security properties are also documented in
 
 ### Phase D — restore the live target under change control
 
-The incident change must create an ephemeral manual Container Apps job in the production Container
-Apps Environment with all of these properties:
-
-- exact `wkf-operations@sha256:...` image from the authenticated manifest;
-- `production-operations` coordination and `prod` approval;
-- the existing `wkf-prod-operations` and `wkf-prod-registry` identities only;
-- a temporary private restore-source container accessible only from the production Container Apps
-  subnet;
-- the one-time `age` identity and one-time manifest trust files as ephemeral secrets;
-- `POSTGRES_MIGRATOR_URL` for `wkf_migrator`, never the runtime account;
-- the production media-container URL;
-- `RESTORE` as the explicit destructive confirmation;
-- no public ingress and no scheduled trigger.
-
-After the reviewer accepts its `what-if`, execute the recovery in this order:
-
-1. Confirm all production application revisions are inactive and have zero replicas.
-2. Confirm the restore job targets the production database and media container, while its source
-   container is temporary and separate.
-3. Start one job execution. The engine validates the complete backup before deleting target blobs,
-   uses `pg_restore --exit-on-error`, restores every blob, and clears `users_sessions` and
-   `payload_locked_documents`.
-4. If the job fails after destructive work starts, keep production inactive. Do not retry blindly;
-   preserve logs and determine whether the database, Blob container, or both were changed.
-5. Start `wkf-prod-migrate` with the application version selected for the recovery.
-6. Run `scripts/run-production-database-operation.sh reconcile-grants` with the exact operations
-   image so `wkf_runtime` receives access to newly restored objects without receiving DDL rights.
-7. Compare the restored record counts, migrations, and blob count with the authenticated manifest
-   and isolated reference environment.
-8. Delete the ephemeral restore job, its deployment, restore-source container, one-time Azure
-   secrets, and temporary role assignments.
-9. Reactivate the selected production revision with
-   `scripts/ensure-containerapp-revision-active.sh`.
-10. Require `200` from both health routes. Verify Entra behavior on `/` and `/admin`, log in, inspect
-    representative content, download representative files, and perform an authorized read-only
-    admin check.
+1. Confirm that `prod-restore` has a required reviewer, does not allow administrator bypass, is
+   limited to `master`, and contains only the restore-specific credentials described in the Azure
+   infrastructure guide.
+2. Open **Actions → Restore production from an off-site backup → Run workflow** on `master`.
+3. Enter:
+   - the exact `production-YYYYMMDDTHHMMSSZ` export name;
+   - `RESTORE` as the destructive confirmation.
+4. The reviewer must verify that Phase C succeeded for this exact export, then review the selected
+   recovery point and approve the `prod-restore` environment deployment. The workflow does not use
+   a self-asserted `DRILL_VERIFIED` text field as evidence.
+5. Require the runner preflight to download and authenticate the small signed descriptor before it
+   pulls any operations image. The descriptor selects the exact immutable image automatically. The
+   workflow then downloads the disposable FTPS export, decrypts and validates every artifact,
+   confirms that `master` contains the backup source commit, and requires the descriptor and
+   encrypted manifest to name the same operations image.
+6. The workflow runs ARM `what-if` before stopping production. Its log must contain only the
+   ephemeral `wkf-prod-offsite-restore` Container Apps job; cancel the run immediately if it proposes
+   replacing PostgreSQL, Storage, the application, identities, or networking. This is an operational
+   observation after the environment approval, not a second interactive GitHub approval gate.
+7. The workflow deactivates every active production revision and requires zero replicas before it
+   creates and starts the restore job. The job downloads and validates the export again inside the
+   production environment before any destructive work. Database restore runs as `wkf_migrator` and
+   preserves the administrator-owned `pgaudit` extension instead of attempting to drop or recreate
+   it.
+8. Require `PRODUCTION_RESTORE_RESULT` with the expected backup name and blob count. If the restore
+   job, migration, grant reconciliation, or smoke checks fail, production deliberately remains
+   inactive. Preserve logs and diagnose the partially restored state; do not reactivate it or retry
+   blindly.
+9. After the restore engine succeeds, the workflow runs the current migration job, reconciles
+   runtime grants, activates the previously selected production revision, and requires both health
+   routes plus acceptable `/` and `/admin` responses.
+10. Log in, inspect representative content, download representative media and documents, and perform
+    an authorized read-only admin check. Compare record, migration, and blob counts with the
+    authenticated manifest and isolated drill.
 11. Monitor PostgreSQL connections, failed connections, CPU credits, Storage failures, application
     logs, and HTTP errors for at least one normal traffic cycle.
-12. Delete the isolated drill resource group and every local one-time key and decrypted artifact.
-    Preserve only the original encrypted MyDevil backup and incident evidence.
-
-Phase D is intentionally a reviewed change rather than a reusable copy-and-paste command until the
-live restore workflow is implemented and exercised. This prevents a documentation command from
-becoming an unreviewed production-wipe interface.
+12. Remove the exported directory from `restore-export`, delete the isolated drill resource group,
+    and remove every local prepared or decrypted artifact. Keep the persistent `prod-restore`
+    secrets and dedicated restore keys. Preserve the original encrypted backup in `archive` and the
+    incident evidence.
 
 ## 3. Exceptional recovery tasks
 
@@ -363,7 +385,7 @@ Use this controlled procedure:
 2. Run **Manage staging data** with `operation=backup` and a unique name such as
    `before-offsite-restore-YYYYMMDD`. This is the staging rollback point.
 3. Validate the off-site backup locally and in an isolated Azure restore as described above.
-4. Prepare a one-time restore bundle; never give staging the long-lived `age` identity.
+4. Prepare a dedicated restore export; never give staging the main backup `age` identity.
 5. Create a reviewed, ephemeral staging restore job based on
    `restore-offsite-backup.sh`. It must target the staging PostgreSQL database and staging `media`
    container, use the matching immutable operations image, receive the exact `RESTORE`
@@ -380,6 +402,51 @@ Use this controlled procedure:
 Because the staging restore job is not yet committed as reusable infrastructure, it must be treated
 as an incident change and reviewed before execution. Do not adapt the production drill template by
 pointing its parameters at staging; the template is designed to create and own isolated targets.
+
+### Import a production backup into the local environment
+
+Use production, rather than a normally suspended staging environment, as the routine source of
+realistic local content and media. The import is read-only with respect to MyDevil and production;
+it replaces only the local Compose PostgreSQL database and Azurite `media` container.
+
+1. Check out a commit that contains the backup's deployed source SHA, normally current `master`.
+2. Keep the long-lived `age` identity on the local encrypted disk and export only its path:
+
+   ```bash
+   export PRODUCTION_BACKUP_AGE_IDENTITY_FILE='/absolute/path/to/wkf-backup.agekey'
+   ```
+
+3. Ensure the main MyDevil SSH identity works. The command reads directly from the protected archive
+   and never uses the restricted upload or restore-export accounts.
+4. Run:
+
+   ```bash
+   pnpm production:pull production-YYYYMMDDTHHMMSSZ
+   ```
+
+5. Review the warning and enter `IMPORT`. For a non-interactive invocation, pass it explicitly as
+   the second argument.
+
+The command downloads the selected archive with `rsync`, rebuilds `wkf-operations:local` from the
+current checkout, validates the signature, decrypts and verifies every artifact inside an isolated
+container, and then reuses the guarded local checkpoint importer. Before replacement it creates a
+database-and-media rescue point under `tmp/production-pulls/local-before-*`. It stops a running app,
+refuses to proceed while other database clients are connected, restores PostgreSQL and Azurite,
+runs current migrations, clears sessions, document locks, reset tokens, and login locks, and starts
+the app only if it was running before. A failed destructive import attempts automatic rollback.
+
+Configuration overrides are intentionally local-only:
+
+- `PRODUCTION_BACKUP_SSH_SOURCE` — defaults to `forseti@s47.mydevil.net`;
+- `PRODUCTION_BACKUP_ARCHIVE_DIRECTORY` — defaults to the protected WKF archive;
+- `PRODUCTION_BACKUP_LOCAL_DIRECTORY` — uses an already downloaded backup instead of SSH;
+- `PRODUCTION_PULL_OPERATIONS_IMAGE` — defaults to `wkf-operations:local`;
+- `PRODUCTION_PULL_REBUILD_OPERATIONS_IMAGE=false` — reuses an existing image and fails if that
+  image does not exist;
+- `PRODUCTION_PULL_ALLOW_CODE_MISMATCH=true` — bypasses the source-SHA ancestry guard only after
+  explicit schema review.
+
+Never put the `age` identity in `.env`, GitHub, Azure, MyDevil, or a synchronized project directory.
 
 ### Compare a backup database with current production
 
@@ -506,7 +573,7 @@ locks, and recovery must first be proven from an off-site backup.
 2. Confirm that no workflow for the environment is running, queued, or waiting for approval. Wait
    for backup, restore, import, migration, and deploy operations to finish.
 3. Prevent automation from bringing the environment back:
-   - for staging, disable **Deploy staging on master** before merging or pushing to `master`;
+   - staging deployment is manual-only, so no workflow needs to be disabled;
    - for production, disable the scheduled **Back up production data off-site** workflow for a
      suspension longer than one day;
    - record both changes in the operations log.
@@ -514,7 +581,6 @@ locks, and recovery must first be proven from an off-site backup.
    With GitHub CLI:
 
    ```bash
-   gh workflow disable deploy-staging-on-master.yml    # staging only
    gh workflow disable backup-production-data.yml      # production only
    ```
 
@@ -630,14 +696,15 @@ required to stop its Container Apps replica cost.
 
 5. Log in through Entra when it is required and verify representative database-backed content and
    file downloads.
-6. Re-enable the automation disabled during suspension:
+6. Re-enable production automation disabled during suspension:
 
    ```bash
-   gh workflow enable deploy-staging-on-master.yml    # staging only
    gh workflow enable backup-production-data.yml      # production only
    ```
 
-7. Confirm that there is no stale queued run from before the suspension. Run a fresh manual backup
+7. For staging, run **Deploy staging** manually from `master` only when Azure qualification is
+   required. A merge to `master` no longer starts or wakes staging.
+8. Confirm that there is no stale queued run from before the suspension. Run a fresh manual backup
    after a long production suspension.
 
 ## 5. Require or relax Microsoft Entra sign-in

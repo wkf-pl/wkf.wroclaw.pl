@@ -13,6 +13,7 @@ done
 
 allowed_signers_file="${BACKUP_ALLOWED_SIGNERS_FILE:-/opt/wkf/wkf-backup-allowed-signers}"
 signing_public_key_file="${BACKUP_SIGNING_PUBLIC_KEY_FILE:-/opt/wkf/wkf-backup-manifest-signing.pub}"
+signing_identity="${BACKUP_SIGNING_IDENTITY:-wkf-production-backup}"
 if [[ ! -r "$allowed_signers_file" || ! -r "$signing_public_key_file" ]]; then
   echo 'The trusted manifest signer files are not readable.' >&2
   exit 1
@@ -35,6 +36,8 @@ fi
 
 completion_format_version=''
 completion_backup_name=''
+completion_descriptor_checksum=''
+completion_descriptor_signature_checksum=''
 completion_manifest_checksum=''
 completion_signature_checksum=''
 completion_timestamp=''
@@ -42,6 +45,8 @@ while IFS='=' read -r key value; do
   case "$key" in
     formatVersion) completion_format_version="$value" ;;
     backupName) completion_backup_name="$value" ;;
+    descriptorSha256) completion_descriptor_checksum="$value" ;;
+    descriptorSignatureSha256) completion_descriptor_signature_checksum="$value" ;;
     manifestSha256) completion_manifest_checksum="$value" ;;
     signatureSha256) completion_signature_checksum="$value" ;;
     completedAt) completion_timestamp="$value" ;;
@@ -51,8 +56,22 @@ while IFS='=' read -r key value; do
       ;;
   esac
 done <"$completion_marker"
-if [[ "$completion_format_version" != '1' || ! "$completion_backup_name" =~ ^production-[0-9]{8}T[0-9]{6}Z$ || ! "$completion_manifest_checksum" =~ ^[a-f0-9]{64}$ || ! "$completion_signature_checksum" =~ ^[a-f0-9]{64}$ || ! "$completion_timestamp" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]; then
+if [[ ! "$completion_format_version" =~ ^[12]$ || ! "$completion_backup_name" =~ ^production-[0-9]{8}T[0-9]{6}Z$ || ! "$completion_manifest_checksum" =~ ^[a-f0-9]{64}$ || ! "$completion_signature_checksum" =~ ^[a-f0-9]{64}$ || ! "$completion_timestamp" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]; then
   echo 'Backup completion marker has an invalid structure.' >&2
+  exit 1
+fi
+descriptor_operations_image=''
+if [[ "$completion_format_version" == '2' ]]; then
+  if [[ ! "$completion_descriptor_checksum" =~ ^[a-f0-9]{64}$ || ! "$completion_descriptor_signature_checksum" =~ ^[a-f0-9]{64}$ ]]; then
+    echo 'Restore completion marker is missing descriptor checksums.' >&2
+    exit 1
+  fi
+  descriptor_operations_image="$(
+    RESTORE_ALLOWED_SIGNERS_FILE="$allowed_signers_file" \
+      bash "$(dirname "$0")/validate-restore-descriptor.sh" "$backup_directory" "$completion_backup_name"
+  )"
+elif [[ -n "$completion_descriptor_checksum" || -n "$completion_descriptor_signature_checksum" ]]; then
+  echo 'Source backup completion marker unexpectedly contains restore descriptor fields.' >&2
   exit 1
 fi
 if [[ "$(sha256sum "$encrypted_manifest" | cut --delimiter ' ' --fields 1)" != "$completion_manifest_checksum" || "$(sha256sum "$manifest_signature" | cut --delimiter ' ' --fields 1)" != "$completion_signature_checksum" ]]; then
@@ -62,8 +81,8 @@ fi
 if ! ssh-keygen \
   -Y verify \
   -f "$allowed_signers_file" \
-  -I wkf-production-backup \
-  -n wkf-production-backup \
+  -I "$signing_identity" \
+  -n "$signing_identity" \
   -s "$manifest_signature" \
   <"$encrypted_manifest" >/dev/null; then
   echo 'Backup manifest signature verification failed.' >&2
@@ -102,6 +121,10 @@ if ! jq --exit-status '
 fi
 if [[ "$(jq --raw-output '.backupName' "$manifest_path")" != "$completion_backup_name" || "$(jq --raw-output '.signingKeyFingerprint' "$manifest_path")" != "$expected_signing_fingerprint" ]]; then
   echo 'Backup identity does not match the trusted completion marker or signing key.' >&2
+  exit 1
+fi
+if [[ -n "$descriptor_operations_image" && "$(jq --raw-output '.operationsImageReference' "$manifest_path")" != "$descriptor_operations_image" ]]; then
+  echo 'Restore descriptor and encrypted manifest name different operations images.' >&2
   exit 1
 fi
 

@@ -4,8 +4,9 @@
   artifacts; runs lint, type checking, unit tests, and integration tests; builds one standalone
   production runtime for four isolated Playwright shards; and validates the production container
   image with a shared BuildKit cache without pushing it.
-- `deploy-staging-on-master.yml` calls the reusable staging workflow after a push to `master`.
-- `deploy-staging.yml` compares the active revision's commit with the target commit. It requests
+- `deploy-staging.yml` is manually dispatched from `master` when staging qualification is required.
+  A merge to `master` does not start or wake the normally suspended staging environment. The
+  workflow compares the active revision's commit with the target commit. It requests
   full provisioning for changes under `infra/azure`, maintenance and migrations for changes under
   `migrations`, and a new image for application changes. A manual dispatch can override the
   provisioning and migration decisions.
@@ -22,6 +23,12 @@
   `.complete` marker is uploaded last, and the MyDevil archiver moves only marked directories outside
   the upload account's reach. It shares the `production-operations` lock with deploys and imports.
   `prod-backup` must not require a reviewer because scheduled runs cannot be approved reliably.
+- `restore-production-offsite.yml` is a manual, destructive production restore serialized by
+  `production-operations`. It requires the approval-protected `prod-restore` environment, a
+  disposable re-encrypted export exposed through a dedicated restricted FTPS root, a successful
+  isolated drill verified procedurally by the reviewer, and the exact `RESTORE` confirmation. A
+  signed descriptor chooses the immutable operations image automatically. Any restore, migration,
+  grant, or smoke-test failure leaves production inactive.
 
 Azure workflows authenticate through OIDC federation. The roles, variables, secrets, deployment
 behavior, and recovery procedures are documented in the [Azure infrastructure guide](../../infra/azure/README.md).

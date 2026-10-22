@@ -7,6 +7,7 @@
   "scripts": {
     "build": "cross-env NODE_ENV=production NEXT_DIST_DIR=.next-host NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build --webpack",
     "build:container": "cross-env NODE_ENV=production NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build --webpack",
+    "backup:prepare-restore": "tsx scripts/prepare-production-restore.ts",
     "dev": "bash scripts/run-development-server.sh",
     "dev:container": "cross-env NEXT_DIST_DIR=.next-container bash scripts/run-development-server.sh",
     "format": "prettier --write .",
@@ -19,6 +20,7 @@
     "package:e2e-runtime": "bash scripts/package-e2e-runtime.sh",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "postinstall": "node scripts/patch-payload-ui-client.mjs",
+    "production:pull": "bash scripts/pull-production-data.sh",
     "seed": "cross-env NODE_OPTIONS=\"--no-deprecation --require dotenv/config\" tsx ./scripts/seed.ts",
     "staging:pull": "bash scripts/pull-staging-data.sh",
     "prepare:integration": "tsx ./scripts/prepare-test-environment.ts",

@@ -127,6 +127,7 @@ printf '%s\n' '[{"id":1,"name":"20261019_test","batch":1,"createdAt":"2026-10-19
     `#!/bin/sh
 set -eu
 upload_file=''
+output_file=''
 remote_url=''
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -135,6 +136,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --upload-file)
       upload_file="$2"
+      shift 2
+      ;;
+    --output)
+      output_file="$2"
       shift 2
       ;;
     ftp://*)
@@ -146,15 +151,22 @@ while [ "$#" -gt 0 ]; do
 done
 remote_path="\${remote_url#ftp://}"
 remote_path="\${remote_path#*/}"
-if [ -z "$upload_file" ] || [ -z "$remote_url" ]; then
+if [ -z "$remote_url" ]; then
   exit 4
 fi
 if [ -n "\${MOCK_FTPS_FAIL_PATTERN:-}" ] && printf '%s' "$remote_path" | grep --quiet "$MOCK_FTPS_FAIL_PATTERN"; then
   exit 12
 fi
-target="$MOCK_FTPS_DIRECTORY/$remote_path"
-mkdir -p "$(dirname "$target")"
-cp "$upload_file" "$target"
+remote_file="$MOCK_FTPS_DIRECTORY/$remote_path"
+if [ -n "$upload_file" ]; then
+  mkdir -p "$(dirname "$remote_file")"
+  cp "$upload_file" "$remote_file"
+elif [ -n "$output_file" ]; then
+  mkdir -p "$(dirname "$output_file")"
+  cp "$remote_file" "$output_file"
+else
+  exit 5
+fi
 `,
   )
   writeExecutable(
@@ -363,7 +375,7 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
     )
   })
 
-  it('re-encrypts a validated backup for a one-time restore identity', async () => {
+  it('re-encrypts a validated backup with dedicated restore keys and a signed descriptor', async () => {
     const fixture = setup()
     const backupResult = await run(
       'bash',
@@ -373,6 +385,13 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
     expect(backupResult.exitCode, `${backupResult.stderr}\n${backupResult.stdout}`).toBe(0)
     const backupDirectory = join(fixture.remoteRoot, backupName)
     const restoreBundleRoot = join(fixture.directory, 'restore-bundle')
+    const restoreRecipient = join(fixture.directory, 'restore.agepub')
+    const restoreAllowedSigners = join(fixture.directory, 'restore-allowed-signers')
+    writeFileSync(restoreRecipient, 'age1restoretest\n')
+    writeFileSync(
+      restoreAllowedSigners,
+      `wkf-production-restore ${readFileSync(fixture.environment.BACKUP_SIGNING_PUBLIC_KEY_FILE!, 'utf8').trim()}\n`,
+    )
 
     const preparationResult = await run(
       'bash',
@@ -380,6 +399,8 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
         'scripts/operations/prepare-offsite-restore-bundle.sh',
         backupDirectory,
         join(fixture.directory, 'identity.txt'),
+        restoreRecipient,
+        fixture.environment.BACKUP_SIGNING_PRIVATE_KEY_FILE!,
         restoreBundleRoot,
       ],
       fixture.environment,
@@ -388,20 +409,160 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
     expect(preparationResult.exitCode, preparationResult.stderr).toBe(0)
     const reEncryptedBackup = join(restoreBundleRoot, backupName)
     expect(existsSync(join(reEncryptedBackup, '.complete'))).toBe(true)
-    expect(existsSync(join(restoreBundleRoot, 'secrets', 'age-identity.txt'))).toBe(true)
-    expect(existsSync(join(restoreBundleRoot, 'secrets', 'manifest-signing-key'))).toBe(false)
+    expect(existsSync(join(reEncryptedBackup, 'restore-descriptor.json'))).toBe(true)
+    expect(existsSync(join(restoreBundleRoot, 'secrets'))).toBe(false)
+    expect(
+      JSON.parse(readFileSync(join(reEncryptedBackup, 'manifest.json.age'), 'utf8'))
+        .operationsImageReference,
+    ).toBe(fixture.environment.OPERATIONS_IMAGE_REFERENCE)
+    expect(
+      JSON.parse(readFileSync(join(reEncryptedBackup, 'restore-descriptor.json'), 'utf8'))
+        .operationsImageReference,
+    ).toBe(fixture.environment.OPERATIONS_IMAGE_REFERENCE)
 
     const validationResult = await run(
       'bash',
       ['scripts/operations/validate-offsite-backup.sh', reEncryptedBackup],
       {
         ...fixture.environment,
-        AGE_IDENTITY_FILE: join(restoreBundleRoot, 'secrets', 'age-identity.txt'),
-        BACKUP_ALLOWED_SIGNERS_FILE: join(restoreBundleRoot, 'secrets', 'allowed-signers'),
-        BACKUP_SIGNING_PUBLIC_KEY_FILE: join(restoreBundleRoot, 'secrets', 'manifest-signing.pub'),
+        AGE_IDENTITY_FILE: join(fixture.directory, 'identity.txt'),
+        BACKUP_ALLOWED_SIGNERS_FILE: restoreAllowedSigners,
+        BACKUP_SIGNING_IDENTITY: 'wkf-production-restore',
       },
     )
     expect(validationResult.exitCode, validationResult.stderr).toBe(0)
+
+    const descriptorPath = join(reEncryptedBackup, 'restore-descriptor.json')
+    const changedDescriptor = JSON.parse(readFileSync(descriptorPath, 'utf8')) as {
+      operationsImageReference: string
+    }
+    changedDescriptor.operationsImageReference = `wkf.azurecr.io/wkf-operations@sha256:${'d'.repeat(64)}`
+    writeFileSync(descriptorPath, JSON.stringify(changedDescriptor))
+    const completionMarkerPath = join(reEncryptedBackup, '.complete')
+    writeFileSync(
+      completionMarkerPath,
+      readFileSync(completionMarkerPath, 'utf8').replace(
+        /^descriptorSha256=.*$/m,
+        `descriptorSha256=${sha256(readFileSync(descriptorPath, 'utf8'))}`,
+      ),
+    )
+    const descriptorValidationResult = await run(
+      'bash',
+      ['scripts/operations/validate-restore-descriptor.sh', reEncryptedBackup, backupName],
+      {
+        ...fixture.environment,
+        RESTORE_ALLOWED_SIGNERS_FILE: restoreAllowedSigners,
+      },
+    )
+    expect(descriptorValidationResult.exitCode).not.toBe(0)
+    expect(descriptorValidationResult.stderr).toContain(
+      'Restore descriptor signature verification failed',
+    )
+  })
+
+  it('downloads only authenticated restore-export artifacts over FTPS', async () => {
+    const fixture = setup()
+    const backupResult = await run(
+      'bash',
+      ['scripts/operations/backup-offsite.sh'],
+      fixture.environment,
+    )
+    expect(backupResult.exitCode, `${backupResult.stderr}\n${backupResult.stdout}`).toBe(0)
+    const restoreRecipient = join(fixture.directory, 'restore.agepub')
+    const restoreAllowedSigners = join(fixture.directory, 'restore-allowed-signers')
+    const restoreExportRoot = join(fixture.directory, 'remote', 'restore-export')
+    writeFileSync(restoreRecipient, 'age1restoretest\n')
+    writeFileSync(
+      restoreAllowedSigners,
+      `wkf-production-restore ${readFileSync(fixture.environment.BACKUP_SIGNING_PUBLIC_KEY_FILE!, 'utf8').trim()}\n`,
+    )
+    const preparationResult = await run(
+      'bash',
+      [
+        'scripts/operations/prepare-offsite-restore-bundle.sh',
+        join(fixture.remoteRoot, backupName),
+        join(fixture.directory, 'identity.txt'),
+        restoreRecipient,
+        fixture.environment.BACKUP_SIGNING_PRIVATE_KEY_FILE!,
+        restoreExportRoot,
+      ],
+      fixture.environment,
+    )
+    expect(preparationResult.exitCode, preparationResult.stderr).toBe(0)
+    const descriptorDownloadResult = await run(
+      'bash',
+      [
+        'scripts/operations/download-restore-descriptor-ftps.sh',
+        backupName,
+        join(fixture.directory, 'descriptor-download'),
+      ],
+      {
+        ...fixture.environment,
+        FTPS_REMOTE_ROOT: 'restore-export',
+        RESTORE_ALLOWED_SIGNERS_FILE: restoreAllowedSigners,
+      },
+    )
+    expect(descriptorDownloadResult.exitCode, descriptorDownloadResult.stderr).toBe(0)
+    expect(descriptorDownloadResult.stdout.trim()).toBe(
+      fixture.environment.OPERATIONS_IMAGE_REFERENCE,
+    )
+    const downloadParent = join(fixture.directory, 'download')
+    mkdirSync(downloadParent)
+
+    const downloadResult = await run(
+      'bash',
+      ['scripts/operations/download-offsite-backup-ftps.sh', backupName, downloadParent],
+      {
+        ...fixture.environment,
+        AGE_IDENTITY_FILE: join(fixture.directory, 'identity.txt'),
+        BACKUP_ALLOWED_SIGNERS_FILE: restoreAllowedSigners,
+        BACKUP_SIGNING_IDENTITY: 'wkf-production-restore',
+        FTPS_REMOTE_ROOT: 'restore-export',
+      },
+    )
+
+    expect(downloadResult.exitCode, downloadResult.stderr).toBe(0)
+    const downloadedBackup = join(downloadParent, backupName)
+    expect(existsSync(join(downloadedBackup, '.complete'))).toBe(true)
+    expect(existsSync(join(downloadedBackup, 'restore-descriptor.json'))).toBe(true)
+    expect(existsSync(join(downloadedBackup, 'database.dump.age'))).toBe(true)
+    expect(readdirSync(join(downloadedBackup, 'blobs'))).toHaveLength(2)
+    expect(downloadResult.stdout).toContain(
+      `Downloaded and validated restore export: ${backupName}`,
+    )
+  })
+
+  it('extracts a validated backup without using blob names as source paths', async () => {
+    const fixture = setup()
+    const backupResult = await run(
+      'bash',
+      ['scripts/operations/backup-offsite.sh'],
+      fixture.environment,
+    )
+    expect(backupResult.exitCode, `${backupResult.stderr}\n${backupResult.stdout}`).toBe(0)
+    const backupDirectory = join(fixture.remoteRoot, backupName)
+    const extractionDirectory = join(fixture.directory, 'extracted')
+
+    const extractionResult = await run(
+      'bash',
+      ['scripts/operations/extract-offsite-backup.sh', backupDirectory, extractionDirectory],
+      {
+        ...fixture.environment,
+        AGE_IDENTITY_FILE: join(fixture.directory, 'identity.txt'),
+      },
+    )
+
+    expect(extractionResult.exitCode, extractionResult.stderr).toBe(0)
+    const mediaManifest = JSON.parse(
+      readFileSync(join(extractionDirectory, 'media-manifest.json'), 'utf8'),
+    ) as Array<{ name: string; sourceFile: string }>
+    expect(mediaManifest.map((entry) => entry.name)).toEqual(['first.txt', 'second.txt'])
+    expect(mediaManifest.every((entry) => /^[a-f0-9]{64}$/.test(entry.sourceFile))).toBe(true)
+    expect(
+      mediaManifest.every((entry) =>
+        existsSync(join(extractionDirectory, 'media', entry.sourceFile)),
+      ),
+    ).toBe(true)
   })
 
   it('does not publish the completion marker after an incomplete upload', async () => {

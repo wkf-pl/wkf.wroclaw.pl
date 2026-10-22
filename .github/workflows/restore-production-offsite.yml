@@ -1,0 +1,350 @@
+name: Restore production from an off-site backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_name:
+        description: Prepared restore export name (production-YYYYMMDDTHHMMSSZ)
+        required: true
+        type: string
+      confirmation:
+        description: Enter RESTORE to allow destructive replacement of production data
+        required: true
+        type: string
+
+concurrency:
+  group: production-operations
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    environment: prod-restore
+    env:
+      FTPS_HOST: ${{ vars.OFFSITE_RESTORE_FTPS_HOST }}
+      FTPS_PASSWORD: ${{ secrets.OFFSITE_RESTORE_FTPS_PASSWORD }}
+      FTPS_PORT: ${{ vars.OFFSITE_RESTORE_FTPS_PORT }}
+      FTPS_REMOTE_ROOT: ${{ vars.OFFSITE_RESTORE_FTPS_REMOTE_ROOT }}
+      FTPS_USER: ${{ vars.OFFSITE_RESTORE_FTPS_USER }}
+      POSTGRES_MIGRATOR_PASSWORD: ${{ secrets.POSTGRES_MIGRATOR_PASSWORD }}
+      RESTORE_AGE_IDENTITY: ${{ secrets.OFFSITE_RESTORE_AGE_IDENTITY }}
+      RESTORE_ALLOWED_SIGNERS: ${{ secrets.OFFSITE_RESTORE_ALLOWED_SIGNERS }}
+      RESTORE_MANIFEST_SIGNING_PUBLIC_KEY: ${{ secrets.OFFSITE_RESTORE_MANIFEST_SIGNING_PUBLIC_KEY }}
+    steps:
+      - name: Check out master
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: master
+
+      - name: Validate destructive-operation inputs and configuration
+        env:
+          BACKUP_NAME: ${{ inputs.backup_name }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [[ "$GITHUB_REF" != 'refs/heads/master' ]]; then
+            echo 'Production restores may only be dispatched from master.' >&2
+            exit 1
+          fi
+          if [[ "$CONFIRMATION" != 'RESTORE' ]]; then
+            echo 'Production restore requires the exact confirmation value RESTORE.' >&2
+            exit 1
+          fi
+          if [[ ! "$BACKUP_NAME" =~ ^production-[0-9]{8}T[0-9]{6}Z$ ]]; then
+            echo 'backup_name must use the production-YYYYMMDDTHHMMSSZ format.' >&2
+            exit 1
+          fi
+          for variable_name in FTPS_HOST FTPS_PASSWORD FTPS_PORT FTPS_REMOTE_ROOT FTPS_USER POSTGRES_MIGRATOR_PASSWORD RESTORE_AGE_IDENTITY RESTORE_ALLOWED_SIGNERS RESTORE_MANIFEST_SIGNING_PUBLIC_KEY; do
+            if [[ -z "${!variable_name:-}" ]]; then
+              echo "$variable_name is not configured in the prod-restore environment." >&2
+              exit 1
+            fi
+          done
+          if [[ ! "$FTPS_PORT" =~ ^[0-9]+$ ]] || ((FTPS_PORT < 1 || FTPS_PORT > 65535)); then
+            echo 'OFFSITE_RESTORE_FTPS_PORT must be an integer from 1 to 65535.' >&2
+            exit 1
+          fi
+
+      - name: Resolve the signed immutable operations image
+        id: restore-export
+        env:
+          BACKUP_NAME: ${{ inputs.backup_name }}
+        run: |
+          work_directory="$RUNNER_TEMP/wkf-production-restore-$GITHUB_RUN_ID"
+          mkdir --parents "$work_directory/descriptor" "$work_directory/trust"
+          chmod 0700 "$work_directory" "$work_directory/descriptor" "$work_directory/trust"
+          printf '%s\n' "$RESTORE_ALLOWED_SIGNERS" >"$work_directory/trust/allowed-signers"
+          chmod 0600 "$work_directory/trust/allowed-signers"
+          operations_image="$(
+            RESTORE_ALLOWED_SIGNERS_FILE="$work_directory/trust/allowed-signers" \
+              bash scripts/operations/download-restore-descriptor-ftps.sh \
+                "$BACKUP_NAME" "$work_directory/descriptor/$BACKUP_NAME"
+          )"
+          if [[ ! "$operations_image" =~ @sha256:[a-f0-9]{64}$ ]]; then
+            echo 'The signed restore descriptor did not resolve an immutable operations image.' >&2
+            exit 1
+          fi
+          echo "operations_image=$operations_image" >>"$GITHUB_OUTPUT"
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+
+      - name: Install Container Apps CLI extension
+        run: az extension add --name containerapp --upgrade
+
+      - name: Resolve immutable operation and production resources
+        id: resources
+        env:
+          OPERATIONS_IMAGE: ${{ steps.restore-export.outputs.operations_image }}
+        run: |
+          resource_group='rg-wkf-prod'
+          application_name='wkf-prod'
+          registry_name="$(az acr list --resource-group rg-wkf-shared --query '[0].name' --output tsv)"
+          registry_server="$(az acr show --name "$registry_name" --query loginServer --output tsv)"
+          if [[ "$OPERATIONS_IMAGE" != "${registry_server}/wkf-operations@sha256:"* ]]; then
+            echo 'The signed restore descriptor names an image outside the shared WKF operations repository.' >&2
+            exit 1
+          fi
+          operations_image_digest="${OPERATIONS_IMAGE##*@}"
+          az acr repository show --name "$registry_name" --image "wkf-operations@${operations_image_digest}" --output none
+          production_storage_name="$(az storage account list --resource-group "$resource_group" --query '[0].name' --output tsv)"
+          postgres_fqdn="$(az postgres flexible-server list --resource-group "$resource_group" --query '[0].fullyQualifiedDomainName' --output tsv)"
+          target_revision="$(az containerapp revision list --resource-group "$resource_group" --name "$application_name" --query 'sort_by([?properties.active], &properties.createdTime)[-1].name' --output tsv)"
+          source_sha="$(az containerapp revision show --resource-group "$resource_group" --name "$application_name" --revision "$target_revision" --query \"properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value\" --output tsv)"
+          operations_identity_id="$(az identity show --resource-group "$resource_group" --name wkf-prod-operations --query id --output tsv)"
+          operations_identity_client_id="$(az identity show --resource-group "$resource_group" --name wkf-prod-operations --query clientId --output tsv)"
+          registry_identity_id="$(az identity show --resource-group "$resource_group" --name wkf-prod-registry --query id --output tsv)"
+          environment_id="$(az containerapp env show --resource-group "$resource_group" --name wkf-prod --query id --output tsv)"
+          application_fqdn="$(az containerapp show --resource-group "$resource_group" --name "$application_name" --query properties.configuration.ingress.fqdn --output tsv)"
+
+          for value in "$registry_name" "$production_storage_name" "$postgres_fqdn" "$target_revision" "$source_sha" "$operations_identity_id" "$operations_identity_client_id" "$registry_identity_id" "$environment_id" "$application_fqdn"; do
+            if [[ -z "$value" ]]; then
+              echo 'Could not resolve every production restore resource.' >&2
+              exit 1
+            fi
+          done
+
+          {
+            echo "application_fqdn=$application_fqdn"
+            echo "environment_id=$environment_id"
+            echo "operations_identity_client_id=$operations_identity_client_id"
+            echo "operations_identity_id=$operations_identity_id"
+            echo "operations_image=$OPERATIONS_IMAGE"
+            echo "postgres_fqdn=$postgres_fqdn"
+            echo "production_media_url=https://${production_storage_name}.blob.core.windows.net/media"
+            echo "registry_identity_id=$registry_identity_id"
+            echo "registry_name=$registry_name"
+            echo "registry_server=$registry_server"
+            echo "source_sha=$source_sha"
+            echo "target_revision=$target_revision"
+          } >>"$GITHUB_OUTPUT"
+
+      - name: Authenticate and validate the restore export
+        env:
+          BACKUP_NAME: ${{ inputs.backup_name }}
+          OPERATIONS_IMAGE: ${{ steps.resources.outputs.operations_image }}
+        run: |
+          work_directory="$RUNNER_TEMP/wkf-production-restore-$GITHUB_RUN_ID"
+          mkdir --parents "$work_directory/download"
+          chmod 0700 "$work_directory/download"
+          printf '%s\n' "$RESTORE_AGE_IDENTITY" >"$work_directory/trust/age-identity.txt"
+          printf '%s\n' "$RESTORE_MANIFEST_SIGNING_PUBLIC_KEY" >"$work_directory/trust/manifest-signing.pub"
+          chmod 0600 "$work_directory/trust/"*
+
+          az acr login --name "${{ steps.resources.outputs.registry_name }}"
+          docker pull "$OPERATIONS_IMAGE"
+          docker run --rm --read-only --user 0:0 \
+            --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=1g \
+            --env AGE_IDENTITY_FILE=/run/trust/age-identity.txt \
+            --env BACKUP_ALLOWED_SIGNERS_FILE=/run/trust/allowed-signers \
+            --env BACKUP_SIGNING_IDENTITY=wkf-production-restore \
+            --env BACKUP_SIGNING_PUBLIC_KEY_FILE=/run/trust/manifest-signing.pub \
+            --env FTPS_DOWNLOAD_OUTPUT_UID="$(id -u)" \
+            --env FTPS_DOWNLOAD_OUTPUT_GID="$(id -g)" \
+            --env FTPS_HOST \
+            --env FTPS_PASSWORD \
+            --env FTPS_PORT \
+            --env FTPS_REMOTE_ROOT \
+            --env FTPS_USER \
+            --volume "$work_directory/download:/output" \
+            --volume "$work_directory/trust:/run/trust:ro" \
+            "$OPERATIONS_IMAGE" \
+            /opt/wkf/download-offsite-backup-ftps.sh "$BACKUP_NAME" /output
+
+          docker run --rm --network none --read-only --user 0:0 \
+            --cap-drop ALL \
+            --cap-add DAC_READ_SEARCH \
+            --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=256m \
+            --volume "$work_directory/download/$BACKUP_NAME:/backup:ro" \
+            --volume "$work_directory/trust:/run/trust:ro" \
+            --volume "$work_directory:/output" \
+            "$OPERATIONS_IMAGE" \
+            -c 'age --decrypt --identity /run/trust/age-identity.txt --output /output/manifest.json /backup/manifest.json.age'
+
+          manifest_operations_image="$(jq --raw-output '.operationsImageReference' "$work_directory/manifest.json")"
+          manifest_source_sha="$(jq --raw-output '.deployedSourceSha' "$work_directory/manifest.json")"
+          if [[ "$manifest_operations_image" != "$OPERATIONS_IMAGE" ]]; then
+            echo 'The encrypted manifest does not match the operations image selected by the signed descriptor.' >&2
+            exit 1
+          fi
+          if [[ ! "$manifest_source_sha" =~ ^[a-f0-9]{40}$ ]] || ! git cat-file -e "${manifest_source_sha}^{commit}" 2>/dev/null || ! git merge-base --is-ancestor "$manifest_source_sha" HEAD; then
+            echo 'The current master does not contain the backup source commit.' >&2
+            exit 1
+          fi
+          echo "Validated restore export $BACKUP_NAME from source $manifest_source_sha."
+
+      - name: Review ephemeral restore deployment
+        env:
+          BACKUP_NAME: ${{ inputs.backup_name }}
+        run: |
+          encoded_password="$(printf '%s' "$POSTGRES_MIGRATOR_PASSWORD" | jq --slurp --raw-input --raw-output @uri)"
+          migrator_url="postgresql://wkf_migrator:${encoded_password}@${{ steps.resources.outputs.postgres_fqdn }}:5432/wkf?sslmode=require"
+          az deployment group what-if \
+            --name wkf-prod-offsite-restore \
+            --resource-group rg-wkf-prod \
+            --template-file infra/azure/offsite-restore-job.bicep \
+            --parameters ageIdentity="$RESTORE_AGE_IDENTITY" allowedSigners="$RESTORE_ALLOWED_SIGNERS" backupName="$BACKUP_NAME" containerAppEnvironmentId="${{ steps.resources.outputs.environment_id }}" ftpsHost="$FTPS_HOST" ftpsPassword="$FTPS_PASSWORD" ftpsPort="$FTPS_PORT" ftpsRemoteRoot="$FTPS_REMOTE_ROOT" ftpsUser="$FTPS_USER" imageReference="${{ steps.resources.outputs.operations_image }}" manifestSigningPublicKey="$RESTORE_MANIFEST_SIGNING_PUBLIC_KEY" migratorDatabaseUrl="$migrator_url" operationsIdentityClientId="${{ steps.resources.outputs.operations_identity_client_id }}" operationsIdentityId="${{ steps.resources.outputs.operations_identity_id }}" productionMediaContainerUrl="${{ steps.resources.outputs.production_media_url }}" registryIdentityId="${{ steps.resources.outputs.registry_identity_id }}" registryServer="${{ steps.resources.outputs.registry_server }}"
+
+      - name: Stop production and restore the validated export
+        env:
+          BACKUP_NAME: ${{ inputs.backup_name }}
+        run: |
+          resource_group='rg-wkf-prod'
+          application_name='wkf-prod'
+          job_name='wkf-prod-offsite-restore'
+          deployment_name='wkf-prod-offsite-restore'
+          restore_succeeded=false
+
+          cleanup() {
+            local operation_status=$?
+            trap - EXIT INT TERM
+            az containerapp job delete --resource-group "$resource_group" --name "$job_name" --yes --output none >/dev/null 2>&1 || true
+            az deployment group delete --resource-group "$resource_group" --name "$deployment_name" >/dev/null 2>&1 || true
+            if [[ "$restore_succeeded" != 'true' ]]; then
+              echo 'Production remains inactive because the restore did not complete successfully.' >&2
+            fi
+            exit "$operation_status"
+          }
+          trap cleanup EXIT INT TERM
+
+          while IFS= read -r active_revision; do
+            [[ -n "$active_revision" ]] || continue
+            az containerapp revision deactivate --resource-group "$resource_group" --revision "$active_revision" --output none
+          done < <(az containerapp revision list --resource-group "$resource_group" --name "$application_name" --query '[?properties.active].name' --output tsv)
+
+          replica_deadline=$((SECONDS + 120))
+          while ((SECONDS < replica_deadline)); do
+            replica_count="$(az containerapp replica list --resource-group "$resource_group" --name "$application_name" --query 'length(@)' --output tsv 2>/dev/null || true)"
+            [[ "$replica_count" == '0' ]] && break
+            sleep 5
+          done
+          if [[ "$replica_count" != '0' ]]; then
+            echo 'Production did not become quiescent before the restore deadline.' >&2
+            exit 1
+          fi
+
+          encoded_password="$(printf '%s' "$POSTGRES_MIGRATOR_PASSWORD" | jq --slurp --raw-input --raw-output @uri)"
+          migrator_url="postgresql://wkf_migrator:${encoded_password}@${{ steps.resources.outputs.postgres_fqdn }}:5432/wkf?sslmode=require"
+          az deployment group create \
+            --name "$deployment_name" \
+            --resource-group "$resource_group" \
+            --template-file infra/azure/offsite-restore-job.bicep \
+            --parameters ageIdentity="$RESTORE_AGE_IDENTITY" allowedSigners="$RESTORE_ALLOWED_SIGNERS" backupName="$BACKUP_NAME" containerAppEnvironmentId="${{ steps.resources.outputs.environment_id }}" ftpsHost="$FTPS_HOST" ftpsPassword="$FTPS_PASSWORD" ftpsPort="$FTPS_PORT" ftpsRemoteRoot="$FTPS_REMOTE_ROOT" ftpsUser="$FTPS_USER" imageReference="${{ steps.resources.outputs.operations_image }}" manifestSigningPublicKey="$RESTORE_MANIFEST_SIGNING_PUBLIC_KEY" migratorDatabaseUrl="$migrator_url" operationsIdentityClientId="${{ steps.resources.outputs.operations_identity_client_id }}" operationsIdentityId="${{ steps.resources.outputs.operations_identity_id }}" productionMediaContainerUrl="${{ steps.resources.outputs.production_media_url }}" registryIdentityId="${{ steps.resources.outputs.registry_identity_id }}" registryServer="${{ steps.resources.outputs.registry_server }}" \
+            --output none
+
+          execution_name="$(az containerapp job start --resource-group "$resource_group" --name "$job_name" --query name --output tsv)"
+          deadline=$((SECONDS + 7200))
+          status='Unknown'
+          while ((SECONDS < deadline)); do
+            status="$(az containerapp job execution show --resource-group "$resource_group" --name "$job_name" --job-execution-name "$execution_name" --query properties.status --output tsv)"
+            case "$status" in
+              Succeeded) break ;;
+              Failed | Stopped | Degraded)
+                echo "Production restore failed with status $status." >&2
+                exit 1
+                ;;
+            esac
+            sleep 10
+          done
+          if [[ "$status" != 'Succeeded' ]]; then
+            echo 'Production restore did not finish within two hours.' >&2
+            exit 1
+          fi
+          restore_succeeded=true
+          cleanup
+          trap - EXIT INT TERM
+
+      - name: Apply migrations and reconcile runtime grants
+        env:
+          OPERATIONS_IMAGE_REFERENCE: ${{ steps.resources.outputs.operations_image }}
+        run: |
+          resource_group='rg-wkf-prod'
+          migration_job='wkf-prod-migrate'
+          execution_name="$(az containerapp job start --resource-group "$resource_group" --name "$migration_job" --query name --output tsv)"
+          deadline=$((SECONDS + 1800))
+          status='Unknown'
+          while ((SECONDS < deadline)); do
+            status="$(az containerapp job execution show --resource-group "$resource_group" --name "$migration_job" --job-execution-name "$execution_name" --query properties.status --output tsv)"
+            case "$status" in
+              Succeeded) break ;;
+              Failed | Stopped | Degraded)
+                echo "Migration failed with status $status. Production remains stopped." >&2
+                exit 1
+                ;;
+            esac
+            sleep 10
+          done
+          if [[ "$status" != 'Succeeded' ]]; then
+            echo 'Migration timed out. Production remains stopped.' >&2
+            exit 1
+          fi
+          bash scripts/run-production-database-operation.sh reconcile-grants "$OPERATIONS_IMAGE_REFERENCE"
+
+      - name: Start production and run smoke checks
+        run: |
+          resource_group='rg-wkf-prod'
+          target_revision='${{ steps.resources.outputs.target_revision }}'
+          smoke_succeeded=false
+          stop_failed_production() {
+            if [[ "$smoke_succeeded" != 'true' ]]; then
+              az containerapp revision deactivate --resource-group "$resource_group" --revision "$target_revision" --output none >/dev/null 2>&1 || true
+            fi
+          }
+          trap stop_failed_production EXIT INT TERM
+
+          bash scripts/ensure-containerapp-revision-active.sh "$resource_group" wkf-prod "$target_revision"
+          deadline=$((SECONDS + 600))
+          while ((SECONDS < deadline)); do
+            health="$(curl --silent --output /dev/null --write-out '%{http_code}' 'https://${{ steps.resources.outputs.application_fqdn }}/api/health' || true)"
+            live="$(curl --silent --output /dev/null --write-out '%{http_code}' 'https://${{ steps.resources.outputs.application_fqdn }}/api/health/live' || true)"
+            root="$(curl --silent --output /dev/null --write-out '%{http_code}' 'https://${{ steps.resources.outputs.application_fqdn }}/' || true)"
+            admin="$(curl --silent --output /dev/null --write-out '%{http_code}' 'https://${{ steps.resources.outputs.application_fqdn }}/admin' || true)"
+            if [[ "$health" == '200' && "$live" == '200' && ( "$root" == '200' || "$root" == '401' ) && ( "$admin" == '200' || "$admin" == '401' ) ]]; then
+              smoke_succeeded=true
+              {
+                echo '## Production off-site restore'
+                echo
+                echo "Restored backup: \`${{ inputs.backup_name }}\`"
+                echo "Production checks: health=$health live=$live root=$root admin=$admin"
+              } >>"$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Production did not pass smoke checks after the restore.' >&2
+          exit 1
+
+      - name: Remove temporary restore files from the runner
+        if: ${{ always() }}
+        run: rm --recursive --force -- "$RUNNER_TEMP/wkf-production-restore-$GITHUB_RUN_ID"

@@ -46,22 +46,18 @@ describe('deployment workflows', () => {
     expect(classifier).toContain('git diff --name-only')
   })
 
-  it('keeps the CI application build single and the container build cache-aware', () => {
+  it('keeps the CI build single and staging deployment manual and cache-aware', () => {
     const continuousIntegrationWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
-    const stagingTriggerWorkflow = readFileSync(
-      '.github/workflows/deploy-staging-on-master.yml',
-      'utf8',
-    )
     const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
 
     expect(continuousIntegrationWorkflow.match(/run: pnpm build/g) ?? []).toHaveLength(1)
     expect(continuousIntegrationWorkflow).toContain('run: pnpm package:e2e-runtime')
     expect(continuousIntegrationWorkflow).not.toMatch(/^  push:/m)
     expect(continuousIntegrationWorkflow).toContain('cache-to: type=gha,mode=max,scope=wkf-online')
-    expect(stagingTriggerWorkflow).toMatch(/^  push:\n    branches:\n      - master$/m)
-    expect(stagingTriggerWorkflow).toContain('uses: ./.github/workflows/deploy-staging.yml')
-    expect(stagingTriggerWorkflow).not.toContain('needs:')
-    expect(stagingWorkflow).toContain('git ls-remote origin refs/heads/master')
+    expect(stagingWorkflow).toMatch(/^  workflow_dispatch:/m)
+    expect(stagingWorkflow).not.toMatch(/^  push:/m)
+    expect(stagingWorkflow).toContain('Require an explicit master deployment')
+    expect(stagingWorkflow).toContain("GITHUB_REF\" != 'refs/heads/master'")
     expect(stagingWorkflow).toContain('docker/build-push-action@v7')
     expect(stagingWorkflow).toContain('push: true')
     expect(stagingWorkflow).not.toContain('az acr build')
@@ -264,11 +260,12 @@ describe('deployment workflows', () => {
   it('never starts a Next development server during staging or production operations', () => {
     const deploymentFiles = [
       '.github/workflows/deploy-staging.yml',
-      '.github/workflows/deploy-staging-on-master.yml',
       '.github/workflows/deploy-production.yml',
       '.github/workflows/manage-staging-data.yml',
+      '.github/workflows/restore-production-offsite.yml',
       'scripts/deploy-azure.sh',
       'scripts/manage-staging-data.sh',
+      'scripts/pull-production-data.sh',
       'scripts/pull-staging-data.sh',
     ]
 
@@ -464,6 +461,7 @@ describe('deployment workflows', () => {
     const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
     const productionWorkflow = readFileSync('.github/workflows/deploy-production.yml', 'utf8')
     const importWorkflow = readFileSync('.github/workflows/import-production-data.yml', 'utf8')
+    const restoreWorkflow = readFileSync('.github/workflows/restore-production-offsite.yml', 'utf8')
 
     expect(stagingWorkflow).toContain('file: Dockerfile.operations')
     expect(stagingWorkflow).toContain('/wkf-operations:${{ env.SOURCE_SHA }}')
@@ -473,6 +471,56 @@ describe('deployment workflows', () => {
     expect(importWorkflow).toContain('environment: prod')
     expect(importWorkflow).toContain("CONFIRMATION\" != 'IMPORT'")
     expect(importWorkflow).toContain('stop_failed_preview')
+    expect(restoreWorkflow).toContain('group: production-operations')
+    expect(restoreWorkflow).toContain('environment: prod-restore')
+    expect(restoreWorkflow).toContain("CONFIRMATION\" != 'RESTORE'")
+    expect(restoreWorkflow).not.toContain('drill_confirmation')
+    expect(restoreWorkflow).not.toContain('inputs.operations_image_digest')
+    expect(restoreWorkflow).toContain('download-restore-descriptor-ftps.sh')
+    expect(restoreWorkflow).toContain('steps.restore-export.outputs.operations_image')
+  })
+
+  it('restores an authenticated disposable export without exposing the protected archive', () => {
+    const packageConfiguration = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      scripts: Record<string, string>
+    }
+    const restoreWorkflow = readFileSync('.github/workflows/restore-production-offsite.yml', 'utf8')
+    const restoreJob = readFileSync('infra/azure/offsite-restore-job.bicep', 'utf8')
+    const downloader = readFileSync('scripts/operations/download-offsite-backup-ftps.sh', 'utf8')
+    const productionPull = readFileSync('scripts/pull-production-data.sh', 'utf8')
+
+    expect(packageConfiguration.scripts['production:pull']).toBe(
+      'bash scripts/pull-production-data.sh',
+    )
+    expect(packageConfiguration.scripts['backup:prepare-restore']).toBe(
+      'tsx scripts/prepare-production-restore.ts',
+    )
+    expect(restoreWorkflow).toContain('OFFSITE_RESTORE_FTPS_PASSWORD')
+    expect(restoreWorkflow).toContain('OFFSITE_RESTORE_AGE_IDENTITY')
+    expect(restoreWorkflow).toContain('vars.OFFSITE_RESTORE_FTPS_PORT')
+    expect(restoreWorkflow).not.toContain('vars.OFFSITE_BACKUP_FTPS_PORT')
+    expect(restoreWorkflow).toContain('az deployment group what-if')
+    expect(restoreWorkflow).toContain('infra/azure/offsite-restore-job.bicep')
+    expect(restoreWorkflow).toContain('Production remains inactive')
+    expect(restoreWorkflow).toContain(
+      'sort_by([?properties.active], &properties.createdTime)[-1].name',
+    )
+    expect(restoreWorkflow).not.toContain('OFFSITE_BACKUP_FTPS_PASSWORD')
+    expect(restoreJob).toContain('/opt/wkf/download-offsite-backup-ftps.sh')
+    expect(restoreJob).toContain('/opt/wkf/restore-offsite-backup.sh')
+    expect(restoreJob).toContain("lifecycle: 'ephemeral-operation'")
+    expect(restoreJob).not.toContain('archive')
+    const restoreScript = readFileSync('scripts/operations/restore-offsite-backup.sh', 'utf8')
+    expect(restoreScript).toContain("--expression='/ EXTENSION - pgaudit$/d'")
+    expect(restoreScript).toContain('--use-list "$restore_list_path"')
+    expect(downloader).toContain("--proto '=ftp'")
+    expect(downloader).toContain('--ssl-reqd')
+    expect(downloader).toContain('validate-restore-descriptor.sh')
+    expect(downloader).toContain('validate-offsite-backup.sh')
+    expect(downloader).not.toContain('--upload-file')
+    expect(productionPull).toContain('PRODUCTION_BACKUP_AGE_IDENTITY_FILE')
+    expect(productionPull).toContain('STAGING_PULL_LOCAL_CHECKPOINT_ROOT')
+    expect(productionPull).toContain('PRODUCTION_PULL_ALLOW_CODE_MISMATCH')
   })
 
   it('supports safe retries after a stopped preview and transient ARM failures', () => {
