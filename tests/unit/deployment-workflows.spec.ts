@@ -601,7 +601,7 @@ describe('deployment workflows', () => {
     expect(restoreJob).toContain("lifecycle: 'ephemeral-operation'")
     expect(restoreJob).not.toContain('archive')
     const restoreScript = readFileSync('scripts/operations/restore-offsite-backup.sh', 'utf8')
-    expect(restoreScript).toContain("--expression='/ EXTENSION - pgaudit$/d'")
+    expect(restoreScript).toContain("--expression='/ EXTENSION - pgaudit[[:space:]]*$/d'")
     expect(restoreScript).toContain('--use-list "$restore_list_path"')
     expect(downloader).toContain("--proto '=ftp'")
     expect(downloader).toContain('--ssl-reqd')

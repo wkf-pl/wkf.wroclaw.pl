@@ -115,7 +115,43 @@ done
 printf 'valid-custom-dump-fixture' >"$output"
 `,
   )
-  writeExecutable(join(binaryDirectory, 'pg_restore'), '#!/bin/sh\nexit 0\n')
+  writeExecutable(
+    join(binaryDirectory, 'pg_restore'),
+    `#!/bin/sh
+set -eu
+case " $* " in
+  *" --list "*)
+    printf '%s\n' \
+      '8; 2615 2200 SCHEMA - public wkf_migrator' \
+      '2; 3079 24769 EXTENSION - pgaudit ' \
+      '13675; 0 0 COMMENT - EXTENSION pgaudit ' \
+      '1498; 1247 124196 TYPE public appearance wkf_migrator'
+    ;;
+  *)
+    restore_list=''
+    single_transaction=false
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --use-list) restore_list="$2"; shift 2 ;;
+        --single-transaction) single_transaction=true; shift ;;
+        *) shift ;;
+      esac
+    done
+    if [ -n "$restore_list" ]; then
+      if [ "$single_transaction" != 'true' ]; then
+        printf '%s\n' 'restore must be atomic' >&2
+        exit 14
+      fi
+      cp "$restore_list" "$MOCK_PG_RESTORE_LIST"
+      if grep --quiet 'pgaudit' "$restore_list"; then
+        printf '%s\n' 'restore list still contains administrator-owned pgaudit entries' >&2
+        exit 13
+      fi
+    fi
+    ;;
+esac
+`,
+  )
   writeExecutable(
     join(binaryDirectory, 'psql'),
     `#!/bin/sh
@@ -237,6 +273,7 @@ function setup(): {
       FTPS_USER: 'wkf-backup',
       MOCK_BLOB_DIRECTORY: blobDirectory,
       MOCK_FTPS_DIRECTORY: remoteDirectory,
+      MOCK_PG_RESTORE_LIST: join(directory, 'pg-restore.list'),
       MOCK_REMOVE_MARKER: join(directory, 'destructive-remove-started'),
       MOCK_RESTORE_DIRECTORY: restoreDirectory,
       OPERATIONS_IMAGE_REFERENCE: `wkf.azurecr.io/wkf-operations@sha256:${'c'.repeat(64)}`,
@@ -713,6 +750,7 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
 
     expect(restoreResult.exitCode, `${restoreResult.stderr}\n${restoreResult.stdout}`).toBe(0)
     expect(existsSync(fixture.environment.MOCK_REMOVE_MARKER!)).toBe(true)
+    expect(readFileSync(fixture.environment.MOCK_PG_RESTORE_LIST!, 'utf8')).not.toContain('pgaudit')
     expect(
       readFileSync(join(fixture.environment.MOCK_RESTORE_DIRECTORY!, 'first.txt'), 'utf8'),
     ).toBe('first blob')

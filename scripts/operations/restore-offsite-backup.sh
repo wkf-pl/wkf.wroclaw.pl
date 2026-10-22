@@ -40,10 +40,10 @@ fi
 # migrator owns application objects but must not drop or recreate extensions.
 pg_restore --list "$database_path" \
   | sed --regexp-extended \
-    --expression='/ EXTENSION - pgaudit$/d' \
-    --expression='/ COMMENT - EXTENSION pgaudit$/d' \
+    --expression='/ EXTENSION - pgaudit[[:space:]]*$/d' \
+    --expression='/ COMMENT - EXTENSION pgaudit[[:space:]]*$/d' \
   >"$restore_list_path"
-if grep --quiet --extended-regexp ' EXTENSION - pgaudit$| COMMENT - EXTENSION pgaudit$' "$restore_list_path"; then
+if grep --quiet --extended-regexp ' EXTENSION - pgaudit[[:space:]]*$| COMMENT - EXTENSION pgaudit[[:space:]]*$' "$restore_list_path"; then
   echo 'Could not exclude administrator-owned pgaudit entries from the restore list.' >&2
   exit 1
 fi
@@ -52,7 +52,7 @@ export AZCOPY_AUTO_LOGIN_TYPE=MSI
 export AZCOPY_MSI_CLIENT_ID="$AZURE_STORAGE_IDENTITY_CLIENT_ID"
 azcopy remove "${PRODUCTION_MEDIA_CONTAINER_URL%/}" --recursive=true --output-type=text
 
-pg_restore --exit-on-error --clean --if-exists --no-owner --no-privileges \
+pg_restore --exit-on-error --single-transaction --clean --if-exists --no-owner --no-privileges \
   --use-list "$restore_list_path" \
   --dbname "$POSTGRES_MIGRATOR_URL" "$database_path"
 psql "$POSTGRES_MIGRATOR_URL" --set ON_ERROR_STOP=1 <<'SQL'
