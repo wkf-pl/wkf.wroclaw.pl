@@ -118,7 +118,7 @@ jobs:
           production_storage_name="$(az storage account list --resource-group "$resource_group" --query '[0].name' --output tsv)"
           postgres_fqdn="$(az postgres flexible-server list --resource-group "$resource_group" --query '[0].fullyQualifiedDomainName' --output tsv)"
           target_revision="$(az containerapp revision list --resource-group "$resource_group" --name "$application_name" --query 'sort_by([?properties.active], &properties.createdTime)[-1].name' --output tsv)"
-          source_sha="$(az containerapp revision show --resource-group "$resource_group" --name "$application_name" --revision "$target_revision" --query \"properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value\" --output tsv)"
+          source_sha="$(az containerapp revision show --resource-group "$resource_group" --name "$application_name" --revision "$target_revision" --query "properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value" --output tsv)"
           operations_identity_id="$(az identity show --resource-group "$resource_group" --name wkf-prod-operations --query id --output tsv)"
           operations_identity_client_id="$(az identity show --resource-group "$resource_group" --name wkf-prod-operations --query clientId --output tsv)"
           registry_identity_id="$(az identity show --resource-group "$resource_group" --name wkf-prod-registry --query id --output tsv)"

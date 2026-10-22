@@ -523,6 +523,15 @@ describe('deployment workflows', () => {
     expect(productionPull).toContain('PRODUCTION_PULL_ALLOW_CODE_MISMATCH')
   })
 
+  it('keeps the production source SHA query in one shell argument', () => {
+    const restoreWorkflow = readFileSync('.github/workflows/restore-production-offsite.yml', 'utf8')
+
+    expect(restoreWorkflow).toContain(
+      `--query "properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value" --output tsv`,
+    )
+    expect(restoreWorkflow).not.toContain('--query \\"')
+  })
+
   it('supports safe retries after a stopped preview and transient ARM failures', () => {
     const importWorkflow = readFileSync('.github/workflows/import-production-data.yml', 'utf8')
     const databaseOperationScript = readFileSync(
