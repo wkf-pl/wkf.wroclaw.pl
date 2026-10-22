@@ -548,6 +548,17 @@ describe('deployment workflows', () => {
     const restoreJob = readFileSync('infra/azure/offsite-restore-job.bicep', 'utf8')
     const downloader = readFileSync('scripts/operations/download-offsite-backup-ftps.sh', 'utf8')
     const productionPull = readFileSync('scripts/pull-production-data.sh', 'utf8')
+    const restoreDownloadContainerStart = restoreWorkflow.indexOf(
+      'docker run --rm --read-only --user 0:0',
+    )
+    const restoreDownloadContainerEnd = restoreWorkflow.indexOf(
+      '/opt/wkf/download-offsite-backup-ftps.sh',
+      restoreDownloadContainerStart,
+    )
+    const restoreDownloadContainer = restoreWorkflow.slice(
+      restoreDownloadContainerStart,
+      restoreDownloadContainerEnd,
+    )
 
     expect(packageConfiguration.scripts['production:pull']).toBe(
       'bash scripts/pull-production-data.sh',
@@ -562,6 +573,9 @@ describe('deployment workflows', () => {
     expect(restoreWorkflow).toContain('az deployment group what-if')
     expect(restoreWorkflow).toContain('infra/azure/offsite-restore-job.bicep')
     expect(restoreWorkflow).toContain('Production remains inactive')
+    expect(restoreDownloadContainerStart).toBeGreaterThan(-1)
+    expect(restoreDownloadContainerEnd).toBeGreaterThan(restoreDownloadContainerStart)
+    expect(restoreDownloadContainer).toContain('--cap-add DAC_READ_SEARCH')
     expect(restoreWorkflow).toContain(
       'sort_by([?properties.active], &properties.createdTime)[-1].name',
     )
