@@ -1,4 +1,7 @@
-import { readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
@@ -89,13 +92,54 @@ describe('deployment workflows', () => {
       ?.split('\n  validate-container:')[0]
 
     expect(endToEndJob).toBeDefined()
-    expect(endToEndJob).toContain(
-      "'s|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g'",
-    )
-    expect(endToEndJob).toContain('/etc/apt/sources.list.d/ubuntu.sources')
+    expect(endToEndJob).toContain('sudo bash scripts/configure-ci-ubuntu-mirror.sh')
     expect(endToEndJob!.indexOf('Use global Ubuntu package mirror')).toBeLessThan(
       endToEndJob!.indexOf('playwright install --with-deps chromium'),
     )
+  })
+
+  it('promotes the global Ubuntu archive in the runner mirror list', () => {
+    const fixtureDirectory = mkdtempSync(join(tmpdir(), 'wkf-apt-mirror-'))
+    const ubuntuSourcesPath = join(fixtureDirectory, 'ubuntu.sources')
+    const mirrorListPath = join(fixtureDirectory, 'apt-mirrors.txt')
+
+    writeFileSync(
+      ubuntuSourcesPath,
+      [
+        'Types: deb',
+        'URIs: mirror+file:/etc/apt/apt-mirrors.txt',
+        'Suites: noble noble-updates noble-backports noble-security',
+        '',
+      ].join('\n'),
+    )
+    writeFileSync(
+      mirrorListPath,
+      [
+        'http://azure.archive.ubuntu.com/ubuntu/\tpriority:1',
+        'https://archive.ubuntu.com/ubuntu/\tpriority:2',
+        'https://security.ubuntu.com/ubuntu/\tpriority:3',
+        '',
+      ].join('\n'),
+    )
+
+    try {
+      execFileSync(
+        'bash',
+        ['scripts/configure-ci-ubuntu-mirror.sh', ubuntuSourcesPath, mirrorListPath],
+        { stdio: 'pipe' },
+      )
+
+      expect(readFileSync(mirrorListPath, 'utf8')).toBe(
+        [
+          'http://azure.archive.ubuntu.com/ubuntu/\tpriority:2',
+          'https://archive.ubuntu.com/ubuntu/\tpriority:1',
+          'https://security.ubuntu.com/ubuntu/\tpriority:3',
+          '',
+        ].join('\n'),
+      )
+    } finally {
+      rmSync(fixtureDirectory, { force: true, recursive: true })
+    }
   })
 
   it('preserves deployment safety boundaries', () => {

@@ -117,13 +117,7 @@ jobs:
           test -f tmp/wkf-next-runtime/server.js
 
       - name: Use global Ubuntu package mirror
-        run: |
-          sudo sed --in-place \
-            's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' \
-            /etc/apt/sources.list.d/ubuntu.sources
-          grep --fixed-strings --quiet \
-            'https://archive.ubuntu.com/ubuntu' \
-            /etc/apt/sources.list.d/ubuntu.sources
+        run: sudo bash scripts/configure-ci-ubuntu-mirror.sh
 
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
