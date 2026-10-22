@@ -559,6 +559,17 @@ describe('deployment workflows', () => {
       restoreDownloadContainerStart,
       restoreDownloadContainerEnd,
     )
+    const manifestDecryptContainerStart = restoreWorkflow.indexOf(
+      'docker run --rm --network none --read-only --user 0:0',
+    )
+    const manifestDecryptContainerEnd = restoreWorkflow.indexOf(
+      'manifest_operations_image=',
+      manifestDecryptContainerStart,
+    )
+    const manifestDecryptContainer = restoreWorkflow.slice(
+      manifestDecryptContainerStart,
+      manifestDecryptContainerEnd,
+    )
 
     expect(packageConfiguration.scripts['production:pull']).toBe(
       'bash scripts/pull-production-data.sh',
@@ -576,6 +587,11 @@ describe('deployment workflows', () => {
     expect(restoreDownloadContainerStart).toBeGreaterThan(-1)
     expect(restoreDownloadContainerEnd).toBeGreaterThan(restoreDownloadContainerStart)
     expect(restoreDownloadContainer).toContain('--cap-add DAC_READ_SEARCH')
+    expect(restoreDownloadContainer).toContain('--cap-add DAC_OVERRIDE')
+    expect(restoreDownloadContainer).toContain('--cap-add CHOWN')
+    expect(manifestDecryptContainerStart).toBeGreaterThan(-1)
+    expect(manifestDecryptContainerEnd).toBeGreaterThan(manifestDecryptContainerStart)
+    expect(manifestDecryptContainer).toContain('--cap-add DAC_OVERRIDE')
     expect(restoreWorkflow).toContain(
       'sort_by([?properties.active], &properties.createdTime)[-1].name',
     )
