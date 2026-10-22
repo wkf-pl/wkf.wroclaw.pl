@@ -164,6 +164,8 @@ jobs:
           docker run --rm --read-only --user 0:0 \
             --cap-drop ALL \
             --cap-add DAC_READ_SEARCH \
+            --cap-add DAC_OVERRIDE \
+            --cap-add CHOWN \
             --security-opt no-new-privileges \
             --tmpfs /tmp:rw,nosuid,nodev,noexec,size=1g \
             --env AGE_IDENTITY_FILE=/run/trust/age-identity.txt \
@@ -185,6 +187,7 @@ jobs:
           docker run --rm --network none --read-only --user 0:0 \
             --cap-drop ALL \
             --cap-add DAC_READ_SEARCH \
+            --cap-add DAC_OVERRIDE \
             --security-opt no-new-privileges \
             --tmpfs /tmp:rw,nosuid,nodev,noexec,size=256m \
             --volume "$work_directory/download/$BACKUP_NAME:/backup:ro" \
