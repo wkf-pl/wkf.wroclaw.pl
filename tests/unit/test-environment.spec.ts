@@ -96,6 +96,7 @@ describe('integration test environment', () => {
     expect(runtimePackagingScript).toContain('NEXT_DIST_DIR:-.next-host')
     expect(runtimePackagingScript).toContain('standalone')
     expect(runtimePackagingScript).toContain('runtime_distribution_directory')
+    expect(runtimePackagingScript).toContain('preview-props.json')
     expect(runtimePackagingScript).toContain('public')
     expect(prePushScript).toContain(
       'replaceReusableEndToEndRuntime(runtimeDirectory, reusableEndToEndRuntimeDirectory)',
