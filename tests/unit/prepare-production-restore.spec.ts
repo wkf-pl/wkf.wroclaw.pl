@@ -34,6 +34,7 @@ describe('production restore preparation configuration', () => {
         RESTORE_SIGNING_PRIVATE_KEY_FILE: '/keys/restore-signing',
       },
       operationsImage: 'wkf-operations:local',
+      operationsImageReference: `wkf.azurecr.io/wkf-operations@sha256:${'a'.repeat(64)}`,
       outputOwnerGid: 1000,
       outputOwnerUid: 1000,
     })
@@ -42,6 +43,9 @@ describe('production restore preparation configuration', () => {
     )
 
     expect(addedCapabilities).toEqual(['DAC_READ_SEARCH', 'DAC_OVERRIDE', 'CHOWN'])
+    expect(arguments_).toContain(
+      `RESTORE_OPERATIONS_IMAGE_REFERENCE=wkf.azurecr.io/wkf-operations@sha256:${'a'.repeat(64)}`,
+    )
   })
 
   it('uses CLI overrides before a selected config and the default .env.restore', () => {

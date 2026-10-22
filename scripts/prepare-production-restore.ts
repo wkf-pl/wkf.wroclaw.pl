@@ -29,6 +29,7 @@ type RestorePreparationDockerOptions = {
   backupDirectory: string
   configuration: RestoreConfiguration
   operationsImage: string
+  operationsImageReference?: string
   outputOwnerGid: number
   outputOwnerUid: number
 }
@@ -122,9 +123,14 @@ export function createRestorePreparationDockerArguments({
   backupDirectory,
   configuration,
   operationsImage,
+  operationsImageReference,
   outputOwnerGid,
   outputOwnerUid,
 }: RestorePreparationDockerOptions): string[] {
+  const operationsImageEnvironment = operationsImageReference
+    ? ['--env', `RESTORE_OPERATIONS_IMAGE_REFERENCE=${operationsImageReference}`]
+    : []
+
   return [
     'run',
     '--rm',
@@ -149,6 +155,7 @@ export function createRestorePreparationDockerArguments({
     `RESTORE_BUNDLE_OUTPUT_UID=${outputOwnerUid}`,
     '--env',
     `RESTORE_BUNDLE_OUTPUT_GID=${outputOwnerGid}`,
+    ...operationsImageEnvironment,
     '--volume',
     `${backupDirectory}:/source:ro`,
     '--volume',
@@ -177,6 +184,7 @@ function main(): void {
       'backup-age-identity-file': { type: 'string' },
       config: { type: 'string', short: 'c' },
       'output-root': { type: 'string' },
+      'operations-image-reference': { type: 'string' },
       'restore-age-recipient-file': { type: 'string' },
       'restore-signing-private-key-file': { type: 'string' },
     },
@@ -212,6 +220,16 @@ function main(): void {
   )
   mkdirSync(configuration.RESTORE_OUTPUT_ROOT, { recursive: true, mode: 0o700 })
 
+  const operationsImageReference = parsedArguments.values['operations-image-reference']
+  if (
+    operationsImageReference &&
+    !/^[a-zA-Z0-9.-]+(?::[0-9]+)?\/[a-zA-Z0-9._/-]+@sha256:[a-f0-9]{64}$/.test(
+      operationsImageReference,
+    )
+  ) {
+    throw new Error('--operations-image-reference must be an immutable image reference.')
+  }
+
   const operationsImage = 'wkf-operations:local'
   runCommand(
     'docker',
@@ -224,6 +242,7 @@ function main(): void {
       backupDirectory,
       configuration,
       operationsImage,
+      operationsImageReference,
       outputOwnerGid: process.getgid?.() ?? 0,
       outputOwnerUid: process.getuid?.() ?? 0,
     }),
