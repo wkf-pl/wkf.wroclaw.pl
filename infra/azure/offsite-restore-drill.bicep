@@ -288,6 +288,10 @@ resource restoreJob 'Microsoft.App/jobs@2024-03-01' = {
               value: backupName
             }
             {
+              name: 'BACKUP_SIGNING_IDENTITY'
+              value: 'wkf-production-restore'
+            }
+            {
               name: 'POSTGRES_MIGRATOR_URL'
               secretRef: 'database-url'
             }
