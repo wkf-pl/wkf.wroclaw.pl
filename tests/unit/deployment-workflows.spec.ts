@@ -593,6 +593,12 @@ describe('deployment workflows', () => {
     expect(manifestDecryptContainerEnd).toBeGreaterThan(manifestDecryptContainerStart)
     expect(manifestDecryptContainer).toContain('--cap-add DAC_OVERRIDE')
     expect(restoreWorkflow).toContain(
+      'revision list --all --resource-group "$resource_group" --name "$application_name"',
+    )
+    expect(restoreWorkflow).toContain(
+      "sort_by([?properties.provisioningState == 'Provisioned' && properties.healthState == 'Healthy'], &properties.createdTime)[-1].name",
+    )
+    expect(restoreWorkflow).not.toContain(
       'sort_by([?properties.active], &properties.createdTime)[-1].name',
     )
     expect(restoreWorkflow).not.toContain('OFFSITE_BACKUP_FTPS_PASSWORD')
