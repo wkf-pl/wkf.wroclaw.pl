@@ -81,11 +81,11 @@ same revision during cleanup.
 8. Require the post-backup checks to report:
 
    ```text
-   health=200 live=200 root=401 admin=401
+   health=200 live=200 root=200 admin=200
    ```
 
-   The `401` results are expected while production requires Entra sign-in. If Entra protection is
-   intentionally disabled, verify `/` and `/admin` manually instead.
+   The public routes must recover after the backup. Payload authentication continues to protect
+   administration actions and restricted APIs.
 
 ### MyDevil publication check
 
@@ -715,10 +715,10 @@ panel.
 
 The committed desired state is:
 
-| Environment | Bicep setting                     | Anonymous `/` and `/admin` |
-| ----------- | --------------------------------- | -------------------------- |
-| staging     | `enableEntraAuthentication=false` | allowed                    |
-| prod        | `enableEntraAuthentication=true`  | `401` except health routes |
+| Environment | Bicep settings                                               | Anonymous `/` and `/admin` |
+| ----------- | ------------------------------------------------------------ | -------------------------- |
+| staging     | `enableEntraAuthentication=false`                            | allowed                    |
+| prod        | `enableEntraAuthentication=true`, `requireEntraSignIn=false` | allowed                    |
 
 A later infrastructure deployment reconciles the runtime configuration back to this table.
 
@@ -736,9 +736,10 @@ az containerapp auth show \
   --output yaml
 ```
 
-### Temporarily allow anonymous access while keeping Microsoft sign-in available
+### Allow anonymous access while keeping Microsoft sign-in available
 
-Use this when the Microsoft provider is already configured, which is true for production:
+Use this to repair runtime drift when the Microsoft provider is already configured. This matches
+the committed production state:
 
 ```bash
 az containerapp auth update \
@@ -753,6 +754,11 @@ az containerapp auth update \
 Verify from a logged-out browser and with `curl`. Confirm that Payload still protects admin actions.
 
 ### Require Entra sign-in again
+
+The following runtime change is temporary while `requireEntraSignIn=false` remains committed. To
+persistently protect the entire production site, set that parameter to `true` in
+`infra/azure/environments/prod.bicepparam`, review the public-access impact, and deploy the
+infrastructure.
 
 ```bash
 az containerapp auth update \

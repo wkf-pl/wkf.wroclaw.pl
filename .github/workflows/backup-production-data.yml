@@ -242,7 +242,7 @@ jobs:
             live="$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${APPLICATION_FQDN}/api/health/live" || true)"
             root="$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${APPLICATION_FQDN}/" || true)"
             admin="$(curl --silent --output /dev/null --write-out '%{http_code}' "https://${APPLICATION_FQDN}/admin" || true)"
-            if [[ "$health" == '200' && "$live" == '200' && "$root" == '401' && "$admin" == '401' ]]; then
+            if [[ "$health" == '200' && "$live" == '200' && "$root" == '200' && "$admin" == '200' ]]; then
               {
                 echo '## Off-site production backup'
                 echo

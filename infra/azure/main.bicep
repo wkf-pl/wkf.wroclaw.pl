@@ -76,6 +76,7 @@ param smtpUser string
 param smtpPassword string
 
 param enableEntraAuthentication bool = false
+param requireEntraSignIn bool = false
 param entraTenantId string = ''
 param entraClientId string = ''
 param entraAllowedGroupId string = ''
@@ -95,6 +96,7 @@ module environment './modules/environment.bicep' = {
     customDomainName: customDomainName
     deployApplication: deployApplication
     enableEntraAuthentication: enableEntraAuthentication
+    requireEntraSignIn: requireEntraSignIn
     entraAllowedGroupId: entraAllowedGroupId
     entraClientId: entraClientId
     entraClientSecret: entraClientSecret

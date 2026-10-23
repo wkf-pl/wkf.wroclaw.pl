@@ -439,15 +439,9 @@ read_http_status() {
 
 health_deadline=$((SECONDS + health_timeout_seconds))
 health_check_attempt=0
-expected_root_status="401"
-expected_admin_status="401"
-expected_robots_status="401"
-
-if [[ "$target_environment" == "staging" ]]; then
-  expected_root_status="200"
-  expected_admin_status="200"
-  expected_robots_status="200"
-fi
+expected_root_status="200"
+expected_admin_status="200"
+expected_robots_status="200"
 
 while ((SECONDS < health_deadline)); do
   health_check_attempt=$((health_check_attempt + 1))

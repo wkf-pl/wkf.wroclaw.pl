@@ -7,6 +7,7 @@ param customDomainName string = ''
 @secure()
 param databaseUrl string
 param enableEntraAuthentication bool = false
+param requireEntraSignIn bool = false
 param entraAllowedGroupId string = ''
 param entraClientId string = ''
 
@@ -256,7 +257,7 @@ resource authentication 'Microsoft.App/containerApps/authConfigs@2024-03-01' = {
             '/api/health/live'
           ]
           redirectToProvider: 'azureactivedirectory'
-          unauthenticatedClientAction: 'Return401'
+          unauthenticatedClientAction: requireEntraSignIn ? 'Return401' : 'AllowAnonymous'
         }
         httpSettings: {
           requireHttps: true
