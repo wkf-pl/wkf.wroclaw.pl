@@ -9,6 +9,7 @@ param delegatedSubnetId string = ''
 param enableAudit bool = false
 param location string
 param logAnalyticsWorkspaceId string = ''
+param maxLocksPerTransaction int = 0
 param privateDnsZoneId string = ''
 param serverName string
 param skuName string
@@ -71,6 +72,18 @@ resource allowAzureServices 'Microsoft.DBforPostgreSQL/flexibleServers/firewallR
     endIpAddress: '0.0.0.0'
     startIpAddress: '0.0.0.0'
   }
+}
+
+resource maximumLocksPerTransaction 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = if (maxLocksPerTransaction > 0) {
+  parent: server
+  name: 'max_locks_per_transaction'
+  properties: {
+    source: 'user-override'
+    value: string(maxLocksPerTransaction)
+  }
+  dependsOn: [
+    database
+  ]
 }
 
 resource logConnections 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = if (enableAudit) {

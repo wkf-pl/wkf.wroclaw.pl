@@ -35,6 +35,7 @@ param postgresAdministratorPassword string
 
 param postgresBackupRetentionDays int
 param postgresDatabaseName string
+param postgresMaxLocksPerTransaction int
 
 @secure()
 param postgresMigratorPassword string
@@ -125,6 +126,7 @@ module postgres './postgres.bicep' = {
     enableAudit: isProduction
     location: location
     logAnalyticsWorkspaceId: monitoring.outputs.id
+    maxLocksPerTransaction: postgresMaxLocksPerTransaction
     privateDnsZoneId: isProduction ? network!.outputs.postgresPrivateDnsZoneId : ''
     serverName: postgresServerName
     skuName: postgresSkuName

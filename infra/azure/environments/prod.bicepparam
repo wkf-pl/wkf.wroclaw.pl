@@ -9,6 +9,7 @@ param postgresRuntimePassword = readEnvironmentVariable('POSTGRES_RUNTIME_PASSWO
 param postgresSkuName = 'Standard_B1ms'
 param postgresSkuTier = 'Burstable'
 param postgresBackupRetentionDays = 35
+param postgresMaxLocksPerTransaction = 256
 param minimumReplicas = 1
 param maximumReplicas = 1
 param monthlyBudgetAmount = 50
