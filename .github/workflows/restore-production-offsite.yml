@@ -268,6 +268,13 @@ jobs:
           deployment_name='wkf-prod-offsite-restore'
           restore_succeeded=false
 
+          show_restore_logs() {
+            echo '::group::Restore job logs'
+            az containerapp job logs show --resource-group "$resource_group" --name "$job_name" --execution "$execution_name" --container restore --tail 300 --format text \
+              || echo 'Could not retrieve restore job logs before cleanup.' >&2
+            echo '::endgroup::'
+          }
+
           cleanup() {
             local operation_status=$?
             trap - EXIT INT TERM
@@ -314,6 +321,7 @@ jobs:
               Succeeded) break ;;
               Failed | Stopped | Degraded)
                 echo "Production restore failed with status $status." >&2
+                show_restore_logs
                 exit 1
                 ;;
             esac
@@ -321,6 +329,7 @@ jobs:
           done
           if [[ "$status" != 'Succeeded' ]]; then
             echo 'Production restore did not finish within two hours.' >&2
+            show_restore_logs
             exit 1
           fi
           restore_succeeded=true

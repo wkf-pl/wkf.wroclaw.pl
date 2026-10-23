@@ -106,15 +106,23 @@ resource restoreJob 'Microsoft.App/jobs@2024-03-01' = {
               export AGE_IDENTITY_FILE="$temporary_directory/trust/age-identity.txt"
               export BACKUP_ALLOWED_SIGNERS_FILE="$temporary_directory/trust/allowed-signers"
               export BACKUP_SIGNING_PUBLIC_KEY_FILE="$temporary_directory/trust/manifest-signing.pub"
+              export AZCOPY_AUTO_LOGIN_TYPE=MSI
+              export AZCOPY_MSI_CLIENT_ID="$AZURE_STORAGE_IDENTITY_CLIENT_ID"
               bash /opt/wkf/download-offsite-backup-ftps.sh "$BACKUP_NAME" "$temporary_directory/download"
               backup_directory="$temporary_directory/download/$BACKUP_NAME"
               age --decrypt --identity "$AGE_IDENTITY_FILE" --output "$temporary_directory/manifest.json" "$backup_directory/manifest.json.age"
               expected_blob_count="$(jq --raw-output '.blobCount' "$temporary_directory/manifest.json")"
               bash /opt/wkf/restore-offsite-backup.sh "$backup_directory" RESTORE
-              restored_blob_count="$(azcopy list "$PRODUCTION_MEDIA_CONTAINER_URL" --machine-readable --output-type=json | jq --slurp '[.[] | select(.MessageType == "ListObject")] | length')"
-              session_count="$(psql "$POSTGRES_MIGRATOR_URL" --no-align --tuples-only --set ON_ERROR_STOP=1 --command 'SELECT count(*) FROM users_sessions;')"
+              if ! restored_blob_count="$(azcopy list "$PRODUCTION_MEDIA_CONTAINER_URL" --machine-readable --output-type=json | jq --slurp '[.[] | select(.MessageType == "ListObject")] | length')"; then
+                echo 'Could not count restored production blobs with Managed Identity.' >&2
+                exit 1
+              fi
+              if ! session_count="$(psql "$POSTGRES_MIGRATOR_URL" --no-align --tuples-only --set ON_ERROR_STOP=1 --command 'SELECT count(*) FROM users_sessions;')"; then
+                echo 'Could not verify that restored production sessions were cleared.' >&2
+                exit 1
+              fi
               if [[ "$restored_blob_count" != "$expected_blob_count" || "$session_count" != '0' ]]; then
-                echo 'Production restore verification failed.' >&2
+                echo "Production restore verification failed: blobs=$restored_blob_count expected_blobs=$expected_blob_count sessions=$session_count expected_sessions=0" >&2
                 exit 1
               fi
               echo "PRODUCTION_RESTORE_RESULT backup=$BACKUP_NAME blobs=$restored_blob_count sessions=$session_count"
