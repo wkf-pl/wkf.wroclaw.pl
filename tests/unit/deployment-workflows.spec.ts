@@ -604,8 +604,17 @@ describe('deployment workflows', () => {
     expect(restoreWorkflow).not.toContain('OFFSITE_BACKUP_FTPS_PASSWORD')
     expect(restoreJob).toContain('/opt/wkf/download-offsite-backup-ftps.sh')
     expect(restoreJob).toContain('/opt/wkf/restore-offsite-backup.sh')
+    expect(restoreJob).toContain('export AZCOPY_AUTO_LOGIN_TYPE=MSI')
+    expect(restoreJob).toContain('export AZCOPY_MSI_CLIENT_ID="$AZURE_STORAGE_IDENTITY_CLIENT_ID"')
+    expect(restoreJob).toContain('Could not count restored production blobs with Managed Identity.')
+    expect(restoreJob).toContain(
+      'Production restore verification failed: blobs=$restored_blob_count expected_blobs=$expected_blob_count sessions=$session_count expected_sessions=0',
+    )
     expect(restoreJob).toContain("lifecycle: 'ephemeral-operation'")
     expect(restoreJob).not.toContain('archive')
+    expect(restoreWorkflow).toContain(
+      'az containerapp job logs show --resource-group "$resource_group" --name "$job_name" --execution "$execution_name" --container restore --tail 300 --format text',
+    )
     const restoreScript = readFileSync('scripts/operations/restore-offsite-backup.sh', 'utf8')
     expect(restoreScript).toContain("--expression='/ EXTENSION - pgaudit[[:space:]]*$/d'")
     expect(restoreScript).toContain('--use-list "$restore_list_path"')
