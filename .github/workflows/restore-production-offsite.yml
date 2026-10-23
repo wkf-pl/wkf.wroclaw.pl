@@ -117,15 +117,13 @@ jobs:
           az acr repository show --name "$registry_name" --image "wkf-operations@${operations_image_digest}" --output none
           production_storage_name="$(az storage account list --resource-group "$resource_group" --query '[0].name' --output tsv)"
           postgres_fqdn="$(az postgres flexible-server list --resource-group "$resource_group" --query '[0].fullyQualifiedDomainName' --output tsv)"
-          target_revision="$(az containerapp revision list --all --resource-group "$resource_group" --name "$application_name" --query "sort_by([?properties.provisioningState == 'Provisioned' && properties.healthState == 'Healthy'], &properties.createdTime)[-1].name" --output tsv)"
-          source_sha="$(az containerapp revision show --resource-group "$resource_group" --name "$application_name" --revision "$target_revision" --query "properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value" --output tsv)"
           operations_identity_id="$(az identity show --resource-group "$resource_group" --name wkf-prod-operations --query id --output tsv)"
           operations_identity_client_id="$(az identity show --resource-group "$resource_group" --name wkf-prod-operations --query clientId --output tsv)"
           registry_identity_id="$(az identity show --resource-group "$resource_group" --name wkf-prod-registry --query id --output tsv)"
           environment_id="$(az containerapp env show --resource-group "$resource_group" --name wkf-prod --query id --output tsv)"
           application_fqdn="$(az containerapp show --resource-group "$resource_group" --name "$application_name" --query properties.configuration.ingress.fqdn --output tsv)"
 
-          for value in "$registry_name" "$production_storage_name" "$postgres_fqdn" "$target_revision" "$source_sha" "$operations_identity_id" "$operations_identity_client_id" "$registry_identity_id" "$environment_id" "$application_fqdn"; do
+          for value in "$registry_name" "$production_storage_name" "$postgres_fqdn" "$operations_identity_id" "$operations_identity_client_id" "$registry_identity_id" "$environment_id" "$application_fqdn"; do
             if [[ -z "$value" ]]; then
               echo 'Could not resolve every production restore resource.' >&2
               exit 1
@@ -143,11 +141,10 @@ jobs:
             echo "registry_identity_id=$registry_identity_id"
             echo "registry_name=$registry_name"
             echo "registry_server=$registry_server"
-            echo "source_sha=$source_sha"
-            echo "target_revision=$target_revision"
           } >>"$GITHUB_OUTPUT"
 
       - name: Authenticate and validate the restore export
+        id: validated-backup
         env:
           BACKUP_NAME: ${{ inputs.backup_name }}
           OPERATIONS_IMAGE: ${{ steps.resources.outputs.operations_image }}
@@ -197,6 +194,7 @@ jobs:
             -c 'age --decrypt --identity /run/trust/age-identity.txt --output /output/manifest.json /backup/manifest.json.age'
 
           manifest_operations_image="$(jq --raw-output '.operationsImageReference' "$work_directory/manifest.json")"
+          manifest_image_reference="$(jq --raw-output '.imageReference' "$work_directory/manifest.json")"
           manifest_source_sha="$(jq --raw-output '.deployedSourceSha' "$work_directory/manifest.json")"
           if [[ "$manifest_operations_image" != "$OPERATIONS_IMAGE" ]]; then
             echo 'The encrypted manifest does not match the operations image selected by the signed descriptor.' >&2
@@ -206,7 +204,47 @@ jobs:
             echo 'The current master does not contain the backup source commit.' >&2
             exit 1
           fi
+          {
+            echo "image_reference=$manifest_image_reference"
+            echo "source_sha=$manifest_source_sha"
+          } >>"$GITHUB_OUTPUT"
           echo "Validated restore export $BACKUP_NAME from source $manifest_source_sha."
+
+      - name: Resolve the exact production revision for the signed backup
+        id: target-revision
+        env:
+          MANIFEST_IMAGE_REFERENCE: ${{ steps.validated-backup.outputs.image_reference }}
+          MANIFEST_SOURCE_SHA: ${{ steps.validated-backup.outputs.source_sha }}
+        run: |
+          resource_group='rg-wkf-prod'
+          application_name='wkf-prod'
+          registry_server='${{ steps.resources.outputs.registry_server }}'
+          if [[ "$MANIFEST_IMAGE_REFERENCE" != "${registry_server}/wkf-online@sha256:"* ]]; then
+            echo 'The signed backup names an image outside the shared WKF application repository.' >&2
+            exit 1
+          fi
+          application_image_digest="${MANIFEST_IMAGE_REFERENCE##*@}"
+          az acr repository show \
+            --name '${{ steps.resources.outputs.registry_name }}' \
+            --image "wkf-online@${application_image_digest}" \
+            --output none
+
+          target_revision=''
+          while IFS= read -r revision_name; do
+            [[ -n "$revision_name" ]] || continue
+            revision_image="$(az containerapp revision show --resource-group "$resource_group" --name "$application_name" --revision "$revision_name" --query 'properties.template.containers[0].image' --output tsv)"
+            revision_source_sha="$(az containerapp revision show --resource-group "$resource_group" --name "$application_name" --revision "$revision_name" --query "properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value" --output tsv)"
+            if [[ "$revision_image" == "$MANIFEST_IMAGE_REFERENCE" ]] && [[ "$revision_source_sha" == "$MANIFEST_SOURCE_SHA" ]]; then
+              target_revision="$revision_name"
+            fi
+          done < <(az containerapp revision list --all --resource-group "$resource_group" --name "$application_name" --query "sort_by([?properties.provisioningState == 'Provisioned' && properties.healthState == 'Healthy'], &properties.createdTime)[].name" --output tsv)
+
+          if [[ -z "$target_revision" ]]; then
+            echo 'No healthy, provisioned production revision exactly matches the signed backup application identity.' >&2
+            exit 1
+          fi
+          echo "target_revision=$target_revision" >>"$GITHUB_OUTPUT"
+          echo "Selected exact backup revision: $target_revision"
 
       - name: Review ephemeral restore deployment
         env:
@@ -289,36 +327,16 @@ jobs:
           cleanup
           trap - EXIT INT TERM
 
-      - name: Apply migrations and reconcile runtime grants
+      - name: Reconcile runtime grants without changing the restored schema
         env:
           OPERATIONS_IMAGE_REFERENCE: ${{ steps.resources.outputs.operations_image }}
         run: |
-          resource_group='rg-wkf-prod'
-          migration_job='wkf-prod-migrate'
-          execution_name="$(az containerapp job start --resource-group "$resource_group" --name "$migration_job" --query name --output tsv)"
-          deadline=$((SECONDS + 1800))
-          status='Unknown'
-          while ((SECONDS < deadline)); do
-            status="$(az containerapp job execution show --resource-group "$resource_group" --name "$migration_job" --job-execution-name "$execution_name" --query properties.status --output tsv)"
-            case "$status" in
-              Succeeded) break ;;
-              Failed | Stopped | Degraded)
-                echo "Migration failed with status $status. Production remains stopped." >&2
-                exit 1
-                ;;
-            esac
-            sleep 10
-          done
-          if [[ "$status" != 'Succeeded' ]]; then
-            echo 'Migration timed out. Production remains stopped.' >&2
-            exit 1
-          fi
           bash scripts/run-production-database-operation.sh reconcile-grants "$OPERATIONS_IMAGE_REFERENCE"
 
       - name: Start production and run smoke checks
         run: |
           resource_group='rg-wkf-prod'
-          target_revision='${{ steps.resources.outputs.target_revision }}'
+          target_revision='${{ steps.target-revision.outputs.target_revision }}'
           smoke_succeeded=false
           stop_failed_production() {
             if [[ "$smoke_succeeded" != 'true' ]]; then

@@ -596,7 +596,7 @@ describe('deployment workflows', () => {
       'revision list --all --resource-group "$resource_group" --name "$application_name"',
     )
     expect(restoreWorkflow).toContain(
-      "sort_by([?properties.provisioningState == 'Provisioned' && properties.healthState == 'Healthy'], &properties.createdTime)[-1].name",
+      "sort_by([?properties.provisioningState == 'Provisioned' && properties.healthState == 'Healthy'], &properties.createdTime)[].name",
     )
     expect(restoreWorkflow).not.toContain(
       'sort_by([?properties.active], &properties.createdTime)[-1].name',
@@ -626,6 +626,32 @@ describe('deployment workflows', () => {
       `--query "properties.template.containers[0].env[?name=='DEPLOYED_SOURCE_SHA'] | [0].value" --output tsv`,
     )
     expect(restoreWorkflow).not.toContain('--query \\"')
+  })
+
+  it('restores only to a revision matching the signed backup application identity', () => {
+    const restoreWorkflow = readFileSync('.github/workflows/restore-production-offsite.yml', 'utf8')
+    const manifestValidation = restoreWorkflow.indexOf('id: validated-backup')
+    const revisionResolution = restoreWorkflow.indexOf(
+      'name: Resolve the exact production revision for the signed backup',
+    )
+
+    expect(manifestValidation).toBeGreaterThan(-1)
+    expect(revisionResolution).toBeGreaterThan(manifestValidation)
+    expect(restoreWorkflow).toContain(
+      'MANIFEST_IMAGE_REFERENCE: ${{ steps.validated-backup.outputs.image_reference }}',
+    )
+    expect(restoreWorkflow).toContain(
+      'MANIFEST_SOURCE_SHA: ${{ steps.validated-backup.outputs.source_sha }}',
+    )
+    expect(restoreWorkflow).toContain('[[ "$revision_image" == "$MANIFEST_IMAGE_REFERENCE" ]]')
+    expect(restoreWorkflow).toContain('[[ "$revision_source_sha" == "$MANIFEST_SOURCE_SHA" ]]')
+    expect(restoreWorkflow).toContain(
+      'No healthy, provisioned production revision exactly matches the signed backup application identity.',
+    )
+    expect(restoreWorkflow).not.toContain("migration_job='wkf-prod-migrate'")
+    expect(restoreWorkflow).toContain(
+      'bash scripts/run-production-database-operation.sh reconcile-grants',
+    )
   })
 
   it('supports safe retries after a stopped preview and transient ARM failures', () => {
