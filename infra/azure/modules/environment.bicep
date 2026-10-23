@@ -2,6 +2,8 @@ param budgetStartDate string
 param cpuAlertThresholdNanocores int
 param customDomainCertificateId string
 param customDomainName string
+param redirectDomainCertificateId string
+param redirectDomainName string
 param deployApplication bool
 param enableEntraAuthentication bool
 param requireEntraSignIn bool
@@ -28,6 +30,7 @@ param minimumReplicas int
 
 @secure()
 param payloadSecret string
+param publicLaunchEnabled bool
 
 param postgresAdministratorLogin string
 
@@ -178,6 +181,8 @@ module application './application.bicep' = if (deployApplication) {
     containerName: storage.outputs.containerName
     customDomainCertificateId: customDomainCertificateId
     customDomainName: customDomainName
+    redirectDomainCertificateId: redirectDomainCertificateId
+    redirectDomainName: redirectDomainName
     databaseUrl: runtimeDatabaseUrl
     enableEntraAuthentication: enableEntraAuthentication
     requireEntraSignIn: requireEntraSignIn
@@ -190,6 +195,7 @@ module application './application.bicep' = if (deployApplication) {
     maximumReplicas: maximumReplicas
     minimumReplicas: minimumReplicas
     payloadSecret: payloadSecret
+    publicLaunchEnabled: publicLaunchEnabled
     registryIdentityId: registryIdentity.id
     registryServer: registry.properties.loginServer
     serverUrl: serverUrl

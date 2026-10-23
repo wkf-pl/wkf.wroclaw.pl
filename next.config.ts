@@ -14,6 +14,19 @@ const nextConfig: NextConfig = {
   },
   poweredByHeader: false,
   output: 'standalone',
+  redirects: () => [
+    {
+      destination: 'https://wkf.wroclaw.pl/:path*',
+      has: [
+        {
+          type: 'host',
+          value: 'www.wkf.wroclaw.pl',
+        },
+      ],
+      permanent: true,
+      source: '/:path*',
+    },
+  ],
   typescript: {
     tsconfigPath: process.env.NEXT_TSCONFIG_PATH || 'tsconfig.json',
   },

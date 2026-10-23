@@ -1,6 +1,7 @@
 using '../main.bicep'
 
 param environmentName = 'staging'
+param publicLaunchEnabled = false
 param imageReference = readEnvironmentVariable('IMAGE_REFERENCE')
 param payloadSecret = readEnvironmentVariable('PAYLOAD_SECRET')
 param postgresAdministratorPassword = readEnvironmentVariable('POSTGRES_ADMIN_PASSWORD')

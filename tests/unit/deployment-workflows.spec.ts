@@ -238,6 +238,52 @@ describe('deployment workflows', () => {
     )
   })
 
+  it('publishes production while keeping staging pre-launch', () => {
+    const mainTemplate = readFileSync('infra/azure/main.bicep', 'utf8')
+    const environmentTemplate = readFileSync('infra/azure/modules/environment.bicep', 'utf8')
+    const applicationTemplate = readFileSync('infra/azure/modules/application.bicep', 'utf8')
+    const stagingParameters = readFileSync('infra/azure/environments/staging.bicepparam', 'utf8')
+    const productionParameters = readFileSync('infra/azure/environments/prod.bicepparam', 'utf8')
+    const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
+
+    expect(mainTemplate).toContain('param publicLaunchEnabled bool = false')
+    expect(environmentTemplate).toContain('param publicLaunchEnabled bool')
+    expect(environmentTemplate).toContain('publicLaunchEnabled: publicLaunchEnabled')
+    expect(applicationTemplate).toContain('param publicLaunchEnabled bool = false')
+    expect(applicationTemplate).toContain("value: publicLaunchEnabled ? 'true' : 'false'")
+    expect(stagingParameters).toContain('param publicLaunchEnabled = false')
+    expect(productionParameters).toContain('param publicLaunchEnabled = true')
+    expect(deploymentScript).toContain("target_environment\" == 'prod'")
+    expect(deploymentScript).toContain("expected_robots_directive='Allow: /'")
+    expect(deploymentScript).toContain("expected_robots_directive='Disallow: /'")
+  })
+
+  it('persists the canonical host and redirect host bindings', () => {
+    const mainTemplate = readFileSync('infra/azure/main.bicep', 'utf8')
+    const environmentTemplate = readFileSync('infra/azure/modules/environment.bicep', 'utf8')
+    const applicationTemplate = readFileSync('infra/azure/modules/application.bicep', 'utf8')
+    const productionParameters = readFileSync('infra/azure/environments/prod.bicepparam', 'utf8')
+    const productionWorkflow = readFileSync('.github/workflows/deploy-production.yml', 'utf8')
+    const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
+
+    expect(mainTemplate).toContain("param redirectDomainName string = ''")
+    expect(mainTemplate).toContain("param redirectDomainCertificateId string = ''")
+    expect(environmentTemplate).toContain('redirectDomainName: redirectDomainName')
+    expect(environmentTemplate).toContain(
+      'redirectDomainCertificateId: redirectDomainCertificateId',
+    )
+    expect(applicationTemplate).toContain('var customDomains = concat(')
+    expect(applicationTemplate).toContain('customDomains: customDomains')
+    expect(applicationTemplate).toContain('allowInsecure: false')
+    expect(productionParameters).toContain("param redirectDomainName = 'www.wkf.wroclaw.pl'")
+    expect(productionWorkflow).toContain(
+      'REDIRECT_DOMAIN_CERTIFICATE_ID: ${{ vars.REDIRECT_DOMAIN_CERTIFICATE_ID }}',
+    )
+    expect(deploymentScript).toContain(
+      'redirectDomainCertificateId="${REDIRECT_DOMAIN_CERTIFICATE_ID:-}"',
+    )
+  })
+
   it('serializes staging deployments and protected data operations', () => {
     const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
     const stagingDataWorkflow = readFileSync('.github/workflows/manage-staging-data.yml', 'utf8')
@@ -359,10 +405,15 @@ describe('deployment workflows', () => {
     expect(deploymentScript).toContain('expected_root_status="200"')
     expect(deploymentScript).toContain('expected_admin_status="200"')
     expect(deploymentScript).toContain('expected_robots_status="200"')
+    expect(deploymentScript).toContain("expected_robots_directive='Allow: /'")
+    expect(deploymentScript).toContain("expected_robots_directive='Disallow: /'")
     expect(deploymentScript).not.toContain('expected_root_status="401"')
     expect(deploymentScript).toContain('"$root_status" == "$expected_root_status"')
     expect(deploymentScript).toContain('"$admin_status" == "$expected_admin_status"')
     expect(deploymentScript).toContain('"$robots_status" != "$expected_robots_status"')
+    expect(deploymentScript).toContain(
+      'grep --fixed-strings --line-regexp "$expected_robots_directive"',
+    )
   })
 
   it('keeps each environment within its availability and resource limits', () => {
@@ -419,7 +470,7 @@ describe('deployment workflows', () => {
       "unauthenticatedClientAction: requireEntraSignIn ? 'Return401' : 'AllowAnonymous'",
     )
     expect(applicationTemplate).toContain("name: 'PUBLIC_LAUNCH_ENABLED'")
-    expect(applicationTemplate).toContain("value: 'false'")
+    expect(applicationTemplate).toContain("value: publicLaunchEnabled ? 'true' : 'false'")
   })
 
   it('uses deterministic names for resources targeted by production locks', () => {

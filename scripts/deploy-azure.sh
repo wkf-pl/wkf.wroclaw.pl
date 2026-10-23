@@ -311,7 +311,7 @@ if [[ "$provision_infrastructure" == "true" ]]; then
     --resource-group "$resource_group_name" \
     --template-file infra/azure/main.bicep \
     --parameters "$parameter_file" \
-    --parameters customDomainCertificateId="${CUSTOM_DOMAIN_CERTIFICATE_ID:-}" deployApplication="$deploy_application" location="$azure_location" resourcePrefix="$resource_prefix" sourceSha="$infrastructure_source_sha" \
+    --parameters customDomainCertificateId="${CUSTOM_DOMAIN_CERTIFICATE_ID:-}" redirectDomainCertificateId="${REDIRECT_DOMAIN_CERTIFICATE_ID:-}" deployApplication="$deploy_application" location="$azure_location" resourcePrefix="$resource_prefix" sourceSha="$infrastructure_source_sha" \
     --output none
 
   if [[ "$target_environment" == 'prod' ]]; then
@@ -413,7 +413,7 @@ if [[ "$application_exists" == "false" ]]; then
     --resource-group "$resource_group_name" \
     --template-file infra/azure/main.bicep \
     --parameters "$parameter_file" \
-    --parameters customDomainCertificateId="${CUSTOM_DOMAIN_CERTIFICATE_ID:-}" deployApplication=true location="$azure_location" resourcePrefix="$resource_prefix" sourceSha="$source_sha" \
+    --parameters customDomainCertificateId="${CUSTOM_DOMAIN_CERTIFICATE_ID:-}" redirectDomainCertificateId="${REDIRECT_DOMAIN_CERTIFICATE_ID:-}" deployApplication=true location="$azure_location" resourcePrefix="$resource_prefix" sourceSha="$source_sha" \
     --output none
 else
   az containerapp update \
@@ -442,6 +442,11 @@ health_check_attempt=0
 expected_root_status="200"
 expected_admin_status="200"
 expected_robots_status="200"
+if [[ "$target_environment" == 'prod' ]]; then
+  expected_robots_directive='Allow: /'
+else
+  expected_robots_directive='Disallow: /'
+fi
 
 while ((SECONDS < health_deadline)); do
   health_check_attempt=$((health_check_attempt + 1))
@@ -473,9 +478,9 @@ while ((SECONDS < health_deadline)); do
       health_check_succeeded=false
     elif [[ "$expected_robots_status" == "200" ]]; then
       robots_content="$(curl --connect-timeout 3 --max-time 8 --silent "https://${application_fqdn}/robots.txt" || true)"
-      echo "Deployment check ${health_check_attempt}: /robots.txt content expected to include Disallow: /"
+      echo "Deployment check ${health_check_attempt}: /robots.txt content expected to include ${expected_robots_directive}"
 
-      if ! grep --fixed-strings --line-regexp 'Disallow: /' <<<"$robots_content" >/dev/null; then
+      if ! grep --fixed-strings --line-regexp "$expected_robots_directive" <<<"$robots_content" >/dev/null; then
         health_check_succeeded=false
       fi
     fi
