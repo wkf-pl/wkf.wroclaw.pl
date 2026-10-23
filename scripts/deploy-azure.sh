@@ -319,14 +319,21 @@ if [[ "$provision_infrastructure" == "true" ]]; then
       --resource-group "$resource_group_name" \
       --query '[0].name' \
       --output tsv)"
-    postgres_restart_pending="$(az postgres flexible-server parameter show \
-      --resource-group "$resource_group_name" \
-      --server-name "$postgres_server_name" \
-      --name shared_preload_libraries \
-      --query isConfigPendingRestart \
-      --output tsv)"
+    postgres_restart_pending=false
+    for postgres_parameter_name in shared_preload_libraries max_locks_per_transaction; do
+      parameter_restart_pending="$(az postgres flexible-server parameter show \
+        --resource-group "$resource_group_name" \
+        --server-name "$postgres_server_name" \
+        --name "$postgres_parameter_name" \
+        --query isConfigPendingRestart \
+        --output tsv)"
+      if [[ "$parameter_restart_pending" == 'true' ]]; then
+        echo "Production PostgreSQL parameter requires restart: $postgres_parameter_name"
+        postgres_restart_pending=true
+      fi
+    done
     if [[ "$postgres_restart_pending" == 'true' ]]; then
-      echo 'Restarting production PostgreSQL to activate audit preload libraries.'
+      echo 'Restarting production PostgreSQL to activate pending static parameters.'
       az postgres flexible-server restart \
         --resource-group "$resource_group_name" \
         --name "$postgres_server_name" \

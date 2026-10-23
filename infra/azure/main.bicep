@@ -40,6 +40,7 @@ param postgresSkuName string
 param postgresSkuTier string
 param postgresStorageSizeGB int = 32
 param postgresBackupRetentionDays int = 7
+param postgresMaxLocksPerTransaction int = 0
 
 @minValue(0)
 param minimumReplicas int = 0
@@ -110,6 +111,7 @@ module environment './modules/environment.bicep' = {
     postgresBackupRetentionDays: postgresBackupRetentionDays
     postgresDatabaseName: postgresDatabaseName
     postgresMigratorPassword: postgresMigratorPassword
+    postgresMaxLocksPerTransaction: postgresMaxLocksPerTransaction
     postgresRuntimePassword: postgresRuntimePassword
     postgresSkuName: postgresSkuName
     postgresSkuTier: postgresSkuTier

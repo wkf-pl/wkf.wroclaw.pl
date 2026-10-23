@@ -398,6 +398,7 @@ describe('deployment workflows', () => {
 
     expect(productionParameters).toContain("param postgresSkuName = 'Standard_B1ms'")
     expect(productionParameters).toContain('param postgresBackupRetentionDays = 35')
+    expect(productionParameters).toContain('param postgresMaxLocksPerTransaction = 256')
     expect(productionParameters).toContain('param monthlyBudgetAmount = 50')
     expect(productionParameters).not.toContain("param customDomainName = 'wkf.wroclaw.pl'")
     expect(networkTemplate).toContain("'10.20.0.0/24'")
@@ -406,6 +407,8 @@ describe('deployment workflows', () => {
     expect(postgresTemplate).toContain("publicNetworkAccess: 'Disabled'")
     expect(postgresTemplate).toContain("value: 'pg_stat_statements,pgaudit'")
     expect(postgresTemplate).toContain("value: 'ROLE,DDL'")
+    expect(postgresTemplate).toContain("name: 'max_locks_per_transaction'")
+    expect(postgresTemplate).toContain('value: string(maxLocksPerTransaction)')
     expect(postgresTemplate).toContain("category: 'PostgreSQLLogs'")
     expect(postgresTemplate).not.toContain("categoryGroup: 'audit'")
     expect(storageTemplate).toContain("skuName string = 'Standard_LRS'")
@@ -450,6 +453,9 @@ describe('deployment workflows', () => {
     )
     expect(deploymentScript).toContain('--provision-only')
     expect(deploymentScript).toContain('isConfigPendingRestart')
+    expect(deploymentScript).toContain(
+      'for postgres_parameter_name in shared_preload_libraries max_locks_per_transaction',
+    )
     expect(deploymentScript).toContain('reconcile-grants')
     expect(bootstrapScript).toContain('REVOKE CREATE ON SCHEMA public FROM PUBLIC')
     expect(bootstrapScript).toContain('CREATE ROLE wkf_migrator')
