@@ -4,6 +4,7 @@ param customDomainCertificateId string
 param customDomainName string
 param deployApplication bool
 param enableEntraAuthentication bool
+param requireEntraSignIn bool
 param entraAllowedGroupId string
 param entraClientId string
 
@@ -179,6 +180,7 @@ module application './application.bicep' = if (deployApplication) {
     customDomainName: customDomainName
     databaseUrl: runtimeDatabaseUrl
     enableEntraAuthentication: enableEntraAuthentication
+    requireEntraSignIn: requireEntraSignIn
     entraAllowedGroupId: entraAllowedGroupId
     entraClientId: entraClientId
     entraClientSecret: entraClientSecret

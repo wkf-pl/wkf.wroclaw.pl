@@ -149,8 +149,9 @@ role read-only.
 SMTP is initially disabled on staging. This does not block the website or admin panel, but email
 features remain unavailable until an SMTP server is configured.
 
-Production uses Microsoft Entra Easy Auth to require membership in an approved group before a
-request reaches the site or Payload login. Its configuration requires these variables:
+Production keeps Microsoft Entra Easy Auth enabled as an optional sign-in provider while allowing
+anonymous requests to reach the public site and Payload login. Its configuration requires these
+variables:
 
 - `ENTRA_TENANT_ID`
 - `ENTRA_CLIENT_ID`
@@ -158,13 +159,14 @@ request reaches the site or Payload login. Its configuration requires these vari
 
 It also requires the `ENTRA_CLIENT_SECRET` secret.
 
-The production app registration must emit group identifiers in the token. Health routes remain
-anonymous; `/` and `/admin` return `401` to unauthenticated requests. Payload authentication remains
-a separate second layer for the administration panel. Staging has Easy Auth disabled in its
-committed parameters and allows anonymous access, but still serves a `robots.txt` that blocks the
-entire site from indexing.
+The production app registration must emit group identifiers in the token. `/`, `/admin`, and the
+health routes remain anonymous, while Payload authentication protects administration actions and
+restricted APIs. Staging has Easy Auth disabled in its committed parameters and also allows
+anonymous access. Both environments still serve a `robots.txt` that blocks the entire site from
+indexing.
 
-Add this redirect URI to the Entra app registration for every protected application address:
+Add this redirect URI to the Entra app registration for every application address that offers
+Microsoft sign-in:
 
 ```text
 https://<application-address>/.auth/login/aad/callback

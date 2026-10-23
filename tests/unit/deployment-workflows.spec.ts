@@ -218,7 +218,7 @@ describe('deployment workflows', () => {
     )
   })
 
-  it('keeps staging public while protecting the production dry launch with Entra', () => {
+  it('keeps production public while retaining optional Entra sign-in', () => {
     const stagingWorkflow = readFileSync('.github/workflows/deploy-staging.yml', 'utf8')
     const stagingParameters = readFileSync('infra/azure/environments/staging.bicepparam', 'utf8')
     const productionParameters = readFileSync('infra/azure/environments/prod.bicepparam', 'utf8')
@@ -228,11 +228,14 @@ describe('deployment workflows', () => {
     expect(stagingParameters).not.toContain('STAGING_ENTRA_')
     expect(stagingWorkflow).not.toContain('STAGING_ENTRA_')
     expect(productionParameters).toContain('param enableEntraAuthentication = true')
+    expect(productionParameters).toContain('param requireEntraSignIn = false')
     expect(applicationTemplate).toContain(
       "resource authentication 'Microsoft.App/containerApps/authConfigs@2024-03-01' = {",
     )
     expect(applicationTemplate).toContain('properties: enableEntraAuthentication')
-    expect(applicationTemplate).toContain("unauthenticatedClientAction: 'AllowAnonymous'")
+    expect(applicationTemplate).toContain(
+      "unauthenticatedClientAction: requireEntraSignIn ? 'Return401' : 'AllowAnonymous'",
+    )
   })
 
   it('serializes staging deployments and protected data operations', () => {
@@ -350,15 +353,13 @@ describe('deployment workflows', () => {
     }
   })
 
-  it('uses environment-specific expectations for public deployment routes', () => {
+  it('requires public routes after every deployment', () => {
     const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
 
-    expect(deploymentScript).toContain('expected_root_status="401"')
-    expect(deploymentScript).toContain('expected_admin_status="401"')
-    expect(deploymentScript).toContain('expected_robots_status="401"')
-    expect(deploymentScript).toMatch(
-      /if \[\[ "\$target_environment" == "staging" \]\]; then[\s\S]*expected_root_status="200"[\s\S]*expected_admin_status="200"[\s\S]*expected_robots_status="200"/,
-    )
+    expect(deploymentScript).toContain('expected_root_status="200"')
+    expect(deploymentScript).toContain('expected_admin_status="200"')
+    expect(deploymentScript).toContain('expected_robots_status="200"')
+    expect(deploymentScript).not.toContain('expected_root_status="401"')
     expect(deploymentScript).toContain('"$root_status" == "$expected_root_status"')
     expect(deploymentScript).toContain('"$admin_status" == "$expected_admin_status"')
     expect(deploymentScript).toContain('"$robots_status" != "$expected_robots_status"')
@@ -400,7 +401,7 @@ describe('deployment workflows', () => {
     expect(productionParameters).toContain('param postgresBackupRetentionDays = 35')
     expect(productionParameters).toContain('param postgresMaxLocksPerTransaction = 256')
     expect(productionParameters).toContain('param monthlyBudgetAmount = 50')
-    expect(productionParameters).not.toContain("param customDomainName = 'wkf.wroclaw.pl'")
+    expect(productionParameters).toContain("param customDomainName = 'wkf.wroclaw.pl'")
     expect(networkTemplate).toContain("'10.20.0.0/24'")
     expect(networkTemplate).toContain("addressPrefix: '10.20.0.0/27'")
     expect(networkTemplate).toContain("addressPrefix: '10.20.0.32/28'")
@@ -414,7 +415,9 @@ describe('deployment workflows', () => {
     expect(storageTemplate).toContain("skuName string = 'Standard_LRS'")
     expect(storageTemplate).toContain('allowSharedKeyAccess: allowSharedKeyAccess')
     expect(storageTemplate).toContain('daysAfterCreationGreaterThan: 90')
-    expect(applicationTemplate).toContain("unauthenticatedClientAction: 'Return401'")
+    expect(applicationTemplate).toContain(
+      "unauthenticatedClientAction: requireEntraSignIn ? 'Return401' : 'AllowAnonymous'",
+    )
     expect(applicationTemplate).toContain("name: 'PUBLIC_LAUNCH_ENABLED'")
     expect(applicationTemplate).toContain("value: 'false'")
   })
@@ -776,6 +779,7 @@ describe('deployment workflows', () => {
     expect(backupWorkflow).toContain('az containerapp revision deactivate')
     expect(backupWorkflow).toContain('reactivate_application')
     expect(backupWorkflow).toContain("always() && steps.resources.outcome == 'success'")
+    expect(backupWorkflow).toContain(`"$root" == '200' && "$admin" == '200'`)
     expect(backupWorkflow).toContain('infra/azure/offsite-backup-job.bicep')
     expect(backupWorkflow).toContain('az deployment group delete')
     expect(backupWorkflow).toContain("cron: '30 2 * * *'")

@@ -1,6 +1,7 @@
 using '../main.bicep'
 
 param environmentName = 'prod'
+param customDomainName = 'wkf.wroclaw.pl'
 param imageReference = readEnvironmentVariable('IMAGE_REFERENCE')
 param payloadSecret = readEnvironmentVariable('PAYLOAD_SECRET')
 param postgresAdministratorPassword = readEnvironmentVariable('POSTGRES_ADMIN_PASSWORD')
@@ -20,6 +21,7 @@ param smtpUser = readEnvironmentVariable('SMTP_USER')
 param smtpPassword = readEnvironmentVariable('SMTP_PASSWORD')
 
 param enableEntraAuthentication = true
+param requireEntraSignIn = false
 param entraTenantId = readEnvironmentVariable('ENTRA_TENANT_ID')
 param entraClientId = readEnvironmentVariable('ENTRA_CLIENT_ID')
 param entraClientSecret = readEnvironmentVariable('ENTRA_CLIENT_SECRET')
