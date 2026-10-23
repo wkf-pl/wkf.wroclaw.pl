@@ -63,6 +63,11 @@ param cpuAlertThresholdNanocores int = 400000000
 
 param customDomainName string = ''
 param customDomainCertificateId string = ''
+param redirectDomainName string = ''
+param redirectDomainCertificateId string = ''
+
+@description('Publishes the site to search engines and enables the public launch state.')
+param publicLaunchEnabled bool = false
 
 param smtpFromAddress string = 'no-reply@wkf.wroclaw.pl'
 param smtpFromName string = 'WKF Online'
@@ -94,6 +99,8 @@ module environment './modules/environment.bicep' = {
     cpuAlertThresholdNanocores: cpuAlertThresholdNanocores
     customDomainCertificateId: customDomainCertificateId
     customDomainName: customDomainName
+    redirectDomainCertificateId: redirectDomainCertificateId
+    redirectDomainName: redirectDomainName
     deployApplication: deployApplication
     enableEntraAuthentication: enableEntraAuthentication
     requireEntraSignIn: requireEntraSignIn
@@ -108,6 +115,7 @@ module environment './modules/environment.bicep' = {
     monthlyBudgetAmount: monthlyBudgetAmount
     minimumReplicas: minimumReplicas
     payloadSecret: payloadSecret
+    publicLaunchEnabled: publicLaunchEnabled
     postgresAdministratorLogin: postgresAdministratorLogin
     postgresAdministratorPassword: postgresAdministratorPassword
     postgresBackupRetentionDays: postgresBackupRetentionDays

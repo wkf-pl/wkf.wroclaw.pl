@@ -2,6 +2,8 @@ using '../main.bicep'
 
 param environmentName = 'prod'
 param customDomainName = 'wkf.wroclaw.pl'
+param redirectDomainName = 'www.wkf.wroclaw.pl'
+param publicLaunchEnabled = true
 param imageReference = readEnvironmentVariable('IMAGE_REFERENCE')
 param payloadSecret = readEnvironmentVariable('PAYLOAD_SECRET')
 param postgresAdministratorPassword = readEnvironmentVariable('POSTGRES_ADMIN_PASSWORD')

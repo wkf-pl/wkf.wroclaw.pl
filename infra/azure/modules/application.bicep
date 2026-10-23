@@ -4,6 +4,8 @@ param containerAppEnvironmentId string
 param containerName string
 param customDomainCertificateId string = ''
 param customDomainName string = ''
+param redirectDomainCertificateId string = ''
+param redirectDomainName string = ''
 @secure()
 param databaseUrl string
 param enableEntraAuthentication bool = false
@@ -28,6 +30,7 @@ param minimumReplicas int
 
 @secure()
 param payloadSecret string
+param publicLaunchEnabled bool = false
 
 param registryIdentityId string
 param registryServer string
@@ -117,7 +120,7 @@ var applicationEnvironmentVariables = concat([
   }
   {
     name: 'PUBLIC_LAUNCH_ENABLED'
-    value: 'false'
+    value: publicLaunchEnabled ? 'true' : 'false'
   }
   {
     name: 'SERVER_URL'
@@ -163,6 +166,20 @@ var applicationEnvironmentVariables = concat([
   }
 ] : [])
 
+var customDomains = concat(customDomainName != '' && customDomainCertificateId != '' ? [
+  {
+    bindingType: 'SniEnabled'
+    certificateId: customDomainCertificateId
+    name: customDomainName
+  }
+] : [], redirectDomainName != '' && redirectDomainCertificateId != '' ? [
+  {
+    bindingType: 'SniEnabled'
+    certificateId: redirectDomainCertificateId
+    name: redirectDomainName
+  }
+] : [])
+
 resource application 'Microsoft.App/containerApps@2024-03-01' = {
   name: applicationName
   location: location
@@ -184,13 +201,7 @@ resource application 'Microsoft.App/containerApps@2024-03-01' = {
         external: true
         targetPort: 3000
         transport: 'auto'
-        customDomains: customDomainName != '' && customDomainCertificateId != '' ? [
-          {
-            bindingType: 'SniEnabled'
-            certificateId: customDomainCertificateId
-            name: customDomainName
-          }
-        ] : []
+        customDomains: customDomains
       }
       registries: [
         {

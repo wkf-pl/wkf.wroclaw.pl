@@ -225,6 +225,9 @@ describe('integration test environment', () => {
     expect(nextConfiguration).toContain(
       "tsconfigPath: process.env.NEXT_TSCONFIG_PATH || 'tsconfig.json'",
     )
+    expect(nextConfiguration).toContain("value: 'www.wkf.wroclaw.pl'")
+    expect(nextConfiguration).toContain("destination: 'https://wkf.wroclaw.pl/:path*'")
+    expect(nextConfiguration).toContain('permanent: true')
     expect(packageConfiguration).toContain(
       '"build": "cross-env NODE_ENV=production NEXT_DIST_DIR=.next-host',
     )
