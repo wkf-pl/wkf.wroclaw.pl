@@ -329,6 +329,12 @@ describe('deployment workflows', () => {
     expect(stagingPullScript).toContain('local-before-$rescue_timestamp-$checkpoint_name')
     expect(stagingPullScript).toContain('Attempting automatic rollback')
     expect(stagingPullScript).toContain('Local media count mismatch')
+    expect(stagingPullScript).toContain(' EXTENSION - pgaudit[[:space:]]*$')
+    expect(stagingPullScript).toContain(' COMMENT - EXTENSION pgaudit[[:space:]]*$')
+    expect(stagingPullScript).toContain('--use-list "$restore_list_path"')
+    expect(stagingPullScript).toContain(
+      '"$route" == "/api/media?limit=1" && "$route_status" == "403"',
+    )
     expect(stagingPullScript).toContain('run --rm --no-deps app pnpm migrate')
     expect(stagingPullScript).toContain('TRUNCATE TABLE users_sessions, payload_locked_documents')
     expect(stagingPullScript.indexOf('>"$local_rescue_directory/database.dump"')).toBeLessThan(
@@ -686,6 +692,27 @@ describe('deployment workflows', () => {
     expect(productionPull).toContain('PRODUCTION_BACKUP_AGE_IDENTITY_FILE')
     expect(productionPull).toContain('STAGING_PULL_LOCAL_CHECKPOINT_ROOT')
     expect(productionPull).toContain('PRODUCTION_PULL_ALLOW_CODE_MISMATCH')
+    const productionExtractContainerStart = productionPull.indexOf(
+      'docker run --rm --network none --read-only --user 0:0',
+    )
+    const productionExtractContainerEnd = productionPull.indexOf(
+      '/opt/wkf/extract-offsite-backup.sh',
+      productionExtractContainerStart,
+    )
+    const productionExtractContainer = productionPull.slice(
+      productionExtractContainerStart,
+      productionExtractContainerEnd,
+    )
+    expect(productionExtractContainerStart).toBeGreaterThan(-1)
+    expect(productionExtractContainerEnd).toBeGreaterThan(productionExtractContainerStart)
+    expect(productionExtractContainer).toContain('--cap-add DAC_READ_SEARCH')
+    expect(productionExtractContainer).toContain('--cap-add DAC_OVERRIDE')
+    expect(productionExtractContainer).toContain('--cap-add CHOWN')
+    expect(productionPull).toContain('local_checkpoint_name="${backup_name,,}"')
+    expect(productionPull).toContain('--arg checkpointName "$local_checkpoint_name"')
+    expect(productionPull).toContain(
+      'bash scripts/pull-staging-data.sh "$local_checkpoint_name" IMPORT',
+    )
   })
 
   it('keeps the production source SHA query in one shell argument', () => {
