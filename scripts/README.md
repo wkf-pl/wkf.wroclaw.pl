@@ -11,29 +11,32 @@ called by another script, a container, or CI, but remain useful for focused diag
 
 ### Development, validation, and operations
 
-| Command                                        | Purpose                                                                                                                                                                                                    |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm dev`                                     | Starts the host development server through `run-development-server.sh`; requires `WKF_ALLOW_NEXT_DEV=1`.                                                                                                   |
-| `pnpm preview:temporary -- <port>`             | Starts a foreground-only development preview on a port from 3100 to 3199 and removes its runtime on exit.                                                                                                  |
-| `pnpm build`                                   | Creates the production Next.js build in `.next-host`. The directory remains available after the command.                                                                                                   |
-| `pnpm start`                                   | Starts the production build from `.next-host`; it does not build first.                                                                                                                                    |
-| `pnpm format`                                  | Formats the repository with Prettier.                                                                                                                                                                      |
-| `pnpm format:check`                            | Checks formatting without changing files.                                                                                                                                                                  |
-| `pnpm lint`                                    | Runs ESLint for the repository.                                                                                                                                                                            |
-| `pnpm typecheck`                               | Runs TypeScript without emitting files.                                                                                                                                                                    |
-| `pnpm test`                                    | Runs unit tests and then integration tests. It does not run browser tests.                                                                                                                                 |
-| `pnpm test:unit`                               | Runs the unit test suite.                                                                                                                                                                                  |
-| `pnpm test:integration`                        | Recreates the isolated `wkf_test` database from migrations and runs integration tests with one worker.                                                                                                     |
-| `pnpm test:e2e`                                | Runs Playwright against `PLAYWRIGHT_BASE_URL`, or the development server at port 3000 by default. It does not recreate or seed the test database.                                                          |
-| `pnpm test:e2e:ci`                             | Recreates and seeds `wkf_test`, then runs Chromium against a previously prepared production runtime. It does not run `pnpm build`. See [diagnosing E2E failures](#diagnosing-e2e-failures-after-pre-push). |
-| `pnpm pre-push`                                | Runs formatting check, lint, typecheck, unit tests, integration tests, a production build, and production-mode E2E tests.                                                                                  |
-| `pnpm generate:types`                          | Regenerates Payload TypeScript types.                                                                                                                                                                      |
-| `pnpm generate:importmap`                      | Regenerates the Payload admin import map.                                                                                                                                                                  |
-| `pnpm migrate:create`                          | Creates a Payload migration from the current schema difference. Review and commit both generated migration artifacts and the index registration.                                                           |
-| `pnpm migrate`                                 | Applies pending Payload migrations to the configured database.                                                                                                                                             |
-| `pnpm seed`                                    | Adds idempotent demonstration content to the configured database.                                                                                                                                          |
-| `pnpm staging:pull <checkpoint-name> [IMPORT]` | Imports a named staging checkpoint into the local Docker Compose database and Azurite.                                                                                                                     |
-| `pnpm verify:compose`                          | Smoke-tests the running local Compose application, storage, administrator bootstrap, and email delivery.                                                                                                   |
+| Command                                          | Purpose                                                                                                                                                                                                    |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm backup:prepare-restore <backup-directory>` | Re-encrypts and signs a validated production backup for the approval-gated production restore workflow.                                                                                                    |
+| `pnpm build`                                     | Creates the production Next.js build in `.next-host`. The directory remains available after the command.                                                                                                   |
+| `pnpm dev`                                       | Starts the host development server through `run-development-server.sh`; requires `WKF_ALLOW_NEXT_DEV=1`.                                                                                                   |
+| `pnpm entra:sign-in [on\|off]`                   | Shows or temporarily changes whether the production Container App requires Microsoft Entra sign-in.                                                                                                        |
+| `pnpm format`                                    | Formats the repository with Prettier.                                                                                                                                                                      |
+| `pnpm format:check`                              | Checks formatting without changing files.                                                                                                                                                                  |
+| `pnpm generate:importmap`                        | Regenerates the Payload admin import map.                                                                                                                                                                  |
+| `pnpm generate:types`                            | Regenerates Payload TypeScript types.                                                                                                                                                                      |
+| `pnpm lint`                                      | Runs ESLint for the repository.                                                                                                                                                                            |
+| `pnpm migrate`                                   | Applies pending Payload migrations to the configured database.                                                                                                                                             |
+| `pnpm migrate:create`                            | Creates a Payload migration from the current schema difference. Review and commit both generated migration artifacts and the index registration.                                                           |
+| `pnpm pre-push`                                  | Runs formatting check, lint, typecheck, unit tests, integration tests, a production build, and production-mode E2E tests.                                                                                  |
+| `pnpm preview:temporary -- <port>`               | Starts a foreground-only development preview on a port from 3100 to 3199 and removes its runtime on exit.                                                                                                  |
+| `pnpm production:pull <backup-name> [IMPORT]`    | Imports a validated production off-site backup into the local Docker Compose database and Azurite.                                                                                                         |
+| `pnpm seed`                                      | Adds idempotent demonstration content to the configured database.                                                                                                                                          |
+| `pnpm staging:pull <checkpoint-name> [IMPORT]`   | Imports a named staging checkpoint into the local Docker Compose database and Azurite.                                                                                                                     |
+| `pnpm start`                                     | Starts the production build from `.next-host`; it does not build first.                                                                                                                                    |
+| `pnpm test`                                      | Runs unit tests and then integration tests. It does not run browser tests.                                                                                                                                 |
+| `pnpm test:e2e`                                  | Runs Playwright against `PLAYWRIGHT_BASE_URL`, or the development server at port 3000 by default. It does not recreate or seed the test database.                                                          |
+| `pnpm test:e2e:ci`                               | Recreates and seeds `wkf_test`, then runs Chromium against a previously prepared production runtime. It does not run `pnpm build`. See [diagnosing E2E failures](#diagnosing-e2e-failures-after-pre-push). |
+| `pnpm test:integration`                          | Recreates the isolated `wkf_test` database from migrations and runs integration tests with one worker.                                                                                                     |
+| `pnpm test:unit`                                 | Runs the unit test suite.                                                                                                                                                                                  |
+| `pnpm typecheck`                                 | Runs TypeScript without emitting files.                                                                                                                                                                    |
+| `pnpm verify:compose`                            | Smoke-tests the running local Compose application, storage, administrator bootstrap, and email delivery.                                                                                                   |
 
 ### Supporting commands
 
@@ -41,11 +44,11 @@ called by another script, a container, or CI, but remain useful for focused diag
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm build:container`     | Builds Next.js inside the production container without the host-specific `.next-host` directory.                                                               |
 | `pnpm dev:container`       | Starts the development server with the container-specific `.next-container` distribution directory.                                                            |
-| `pnpm prepare:integration` | Starts test dependencies, recreates `wkf_test`, applies all committed migrations, and verifies migration history. Called by integration and CI-like E2E tests. |
-| `pnpm prepare:e2e`         | Runs integration preparation and then seeds browser-test content. Called by `test:e2e:ci`.                                                                     |
 | `pnpm package:e2e-runtime` | Packages `.next-host/standalone`, `.next-host/static`, and `public/` as `tmp/wkf-next-runtime.tar.gz`. It does not build or extract the archive.               |
 | `pnpm payload`             | Runs the Payload CLI with the repository configuration.                                                                                                        |
 | `pnpm postinstall`         | Applies the version-guarded Payload UI patch after dependency installation; package managers call it automatically.                                            |
+| `pnpm prepare:e2e`         | Runs integration preparation and then seeds browser-test content. Called by `test:e2e:ci`.                                                                     |
+| `pnpm prepare:integration` | Starts test dependencies, recreates `wkf_test`, applies all committed migrations, and verifies migration history. Called by integration and CI-like E2E tests. |
 
 ### Diagnosing E2E failures after `pre-push`
 
@@ -117,6 +120,27 @@ reactivate old code when the database rollback fails.
 The workflows set `SOURCE_SHA`, `AZURE_LOCATION`, `AZURE_RESOURCE_PREFIX`, and the optional
 `CUSTOM_DOMAIN_CERTIFICATE_ID`. `DEPLOYMENT_HEALTH_TIMEOUT_SECONDS` changes the default 600-second
 verification deadline.
+
+### `manage-entra-sign-in.sh`
+
+Inspects or temporarily changes whether the production Container App requires Microsoft Entra
+authentication. Run it through the package command with an Azure CLI session that can manage
+`wkf-prod` in `rg-wkf-prod`:
+
+```bash
+pnpm entra:sign-in
+pnpm entra:sign-in on
+pnpm entra:sign-in off
+```
+
+With no state argument, the command shows the current authentication state. `on` rejects
+unauthenticated requests with HTTP 401 while keeping `/api/health` and `/api/health/live` available
+to platform probes. `off` keeps Container App authentication enabled but allows anonymous access.
+Both changes print the resulting state.
+
+This command changes only the current Azure runtime configuration. It does not edit Bicep or
+`infra/azure/environments/prod.bicepparam`; a later infrastructure deployment restores the
+declarative setting, which currently allows anonymous access.
 
 ### `manage-staging-data.sh`
 

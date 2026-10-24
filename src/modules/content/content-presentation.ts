@@ -285,6 +285,21 @@ export function createContentPresentationFields({
   ]
 }
 
+export function createLayoutBlockNameField(): Field {
+  return {
+    type: 'row',
+    fields: [
+      {
+        name: 'name',
+        type: 'text',
+        admin: { width: '100%' },
+        label: 'Nazwa',
+        maxLength: 160,
+      },
+    ],
+  }
+}
+
 export function isContentSurfaceName(value: unknown): value is ContentSurfaceName {
   return typeof value === 'string' && contentSurfaceNames.includes(value as ContentSurfaceName)
 }

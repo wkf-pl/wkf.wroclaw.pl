@@ -14,6 +14,7 @@ const fixtureSlug = `e2e-column-layout-admin-${fixtureRunID}`
 const defaultFixtureSlug = `e2e-column-layout-default-${fixtureRunID}`
 const addedFixtureSlug = `e2e-column-layout-added-${fixtureRunID}`
 const clipboardFixtureSlug = `e2e-column-layout-clipboard-${fixtureRunID}`
+const presentationFixtureSlug = `e2e-layout-presentation-${fixtureRunID}`
 
 let payload: Payload
 let author: User
@@ -21,6 +22,7 @@ let fixturePage: PageDocument
 let defaultFixturePage: PageDocument
 let addedFixturePage: PageDocument
 let clipboardFixturePage: PageDocument
+let presentationFixturePage: PageDocument
 
 function richTextBlock(text: string) {
   return {
@@ -164,6 +166,44 @@ test.beforeAll(async () => {
       ],
       slug: clipboardFixtureSlug,
       title: 'E2E column layout clipboard',
+    },
+    draft: true,
+    overrideAccess: true,
+  })
+  presentationFixturePage = await payload.create({
+    collection: 'pages',
+    data: {
+      _status: 'draft',
+      author: author.id,
+      layout: [
+        {
+          blockType: 'columnLayout',
+          columnSeparators: 'none',
+          columns: [
+            { blocks: [], surface: 'transparent', width: 6 },
+            { blocks: [], surface: 'transparent', width: 6 },
+          ],
+          name: 'Dwie kolumny',
+          surface: 'transparent',
+          verticalAlignment: 'start',
+        },
+        {
+          blockType: 'sectionGroup',
+          name: 'Powiązane sekcje',
+          sections: [{ blocks: [richTextBlock('Named section content')] }],
+          surface: 'transparent',
+        },
+        {
+          blockType: 'tabs',
+          name: 'Terminy',
+          tabs: [
+            { blocks: [richTextBlock('Upcoming content')], label: 'Najbliższe' },
+            { blocks: [richTextBlock('Calendar content')], label: 'Kalendarz' },
+          ],
+        },
+      ],
+      slug: presentationFixtureSlug,
+      title: 'E2E layout presentation controls',
     },
     draft: true,
     overrideAccess: true,
@@ -356,6 +396,69 @@ test('opens a 6+6 layout, keeps content visible while invalid and excludes neste
   await expect(page).toHaveURL(new RegExp(`/admin/collections/pages/${defaultFixturePage.id}`))
 })
 
+test('shows layout names and keeps tabbed presentation controls compact', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto(`/admin/collections/pages/${presentationFixturePage.id}`)
+
+  const layoutField = page.locator('#field-layout')
+  await layoutField
+    .locator(':scope > .blocks-field__header')
+    .getByRole('button', { name: 'Pokaż wszystkie' })
+    .click()
+
+  const rows = topLevelBlockRows(layoutField)
+  await expect(rows).toHaveCount(3)
+  await expect(rows.nth(0).locator('.wkf-content-block-label')).toHaveText(
+    'Układ kolumnowy: Dwie kolumny — przezroczysta · bez ramki — 6c + 6c',
+  )
+  await expect(rows.nth(1).locator('.wkf-content-block-label')).toHaveText(
+    'Grupa sekcji: Powiązane sekcje — przezroczysta · bez ramki — 1 sekcja',
+  )
+  await expect(rows.nth(2).locator('.wkf-content-block-label')).toHaveText(
+    'Zakładki: Terminy — 2 zakładki',
+  )
+
+  const tabbedField = rows.nth(2).locator('.wkf-layout-tabs[data-layout-kind="tabs"]')
+  await expect(tabbedField.getByRole('tab')).toHaveText(['Prezentacja', 'Najbliższe', 'Kalendarz'])
+  await expect(tabbedField.getByRole('tab', { name: 'Rama' })).toHaveCount(0)
+  await expect(tabbedField.getByLabel('Nazwa')).toHaveValue('Terminy')
+
+  const geometry = await tabbedField.evaluate((element) => {
+    const firstNamedTab = element.querySelector<HTMLElement>(
+      '.wkf-layout-tabs__sortable-tab:nth-child(1) .wkf-layout-tabs__tab',
+    )
+    const secondNamedTab = element.querySelector<HTMLElement>(
+      '.wkf-layout-tabs__sortable-tab:nth-child(2) .wkf-layout-tabs__tab',
+    )
+    const menuFields = Array.from(
+      element.querySelectorAll<HTMLElement>('.wkf-tabbed-content-menu-field'),
+    )
+    const menuHeadings = menuFields.map((field) =>
+      field.querySelector<HTMLElement>('.array-field__title'),
+    )
+    if (!firstNamedTab || !secondNamedTab || menuFields.length !== 3) return null
+    if (menuHeadings.some((heading) => !heading)) return null
+
+    const firstNamedTabRectangle = firstNamedTab.getBoundingClientRect()
+    const secondNamedTabRectangle = secondNamedTab.getBoundingClientRect()
+    const firstMenuRectangle = menuFields[0]!.getBoundingClientRect()
+    const secondMenuRectangle = menuFields[1]!.getBoundingClientRect()
+
+    return {
+      menuGap: secondMenuRectangle.top - firstMenuRectangle.bottom,
+      menuHeadingSizes: menuHeadings.map((heading) =>
+        Number.parseFloat(getComputedStyle(heading!).fontSize),
+      ),
+      namedTabGap: secondNamedTabRectangle.left - firstNamedTabRectangle.right,
+    }
+  })
+
+  expect(geometry).not.toBeNull()
+  expect(geometry?.menuGap).toBeGreaterThanOrEqual(16)
+  expect(geometry?.menuHeadingSizes.every((fontSize) => fontSize <= 16)).toBe(true)
+  expect(geometry?.namedTabGap).toBeLessThan(80)
+})
+
 test('moves whole columns, confirms destructive deletion and reloads the persisted result', async ({
   page,
 }) => {
@@ -457,7 +560,7 @@ test('saves a page after adding a default column layout in the admin', async ({ 
   const blockDrawer = page.locator('.drawer--is-open')
   await blockDrawer.getByRole('button', { name: /Układ kolumnowy$/ }).click()
 
-  await expect(layoutField.locator('.blocks-field__row')).toHaveCount(2)
+  await expect(topLevelBlockRows(layoutField)).toHaveCount(2)
 
   const saveResponsePromise = page.waitForResponse(
     (response) =>
@@ -497,7 +600,7 @@ test('appends an allowed copied block to section blocks and rejects a forbidden 
   await expect(showAllButton).toHaveCount(1)
   await showAllButton.click()
 
-  const topLevelRows = layoutField.locator('.blocks-field__row')
+  const topLevelRows = topLevelBlockRows(layoutField)
   await expect(topLevelRows).toHaveCount(2)
   await layoutField
     .locator('#layout-row-0 > div > div > .collapsible__actions-wrap .array-actions__button')
@@ -523,7 +626,7 @@ test('appends an allowed copied block to section blocks and rejects a forbidden 
     .locator('#layout-row-0 > div > div > .collapsible__actions-wrap .array-actions__button')
     .click()
   await page.getByRole('button', { exact: true, name: 'Usuń' }).click()
-  await expect(layoutField.locator('.blocks-field__row')).toHaveCount(1)
+  await expect(topLevelRows).toHaveCount(1)
   await expect(page.getByText(/Grupa sekcji: .* — 2 sekcje/)).toBeVisible()
   await layoutField.getByRole('tab', { exact: true, name: 'Sekcja 1' }).click()
   const movedSectionBlocks = page.locator('#field-layout__0__sections__0__blocks')
@@ -563,7 +666,7 @@ test('cuts a block row only after it is pasted successfully', async ({ page }) =
     .getByRole('button', { name: 'Pokaż wszystkie' })
   await showAllButton.click()
 
-  const topLevelRows = layoutField.locator('.blocks-field__row')
+  const topLevelRows = topLevelBlockRows(layoutField)
   await expect(topLevelRows).toHaveCount(2)
   await layoutField
     .locator('#layout-row-0 > div > div > .collapsible__actions-wrap .array-actions__button')
@@ -582,11 +685,13 @@ test('cuts a block row only after it is pasted successfully', async ({ page }) =
 
   await expect(topLevelRows).toHaveCount(1)
   await expect(topLevelRows.first()).toContainText('Grupa sekcji')
-  await topLevelRows
+  const movedSectionTabs = topLevelRows
     .first()
     .locator('.wkf-layout-tabs[data-layout-kind="sections"]')
-    .getByRole('tab', { name: 'Sekcja 1' })
-    .click()
+  await expect(movedSectionTabs.getByRole('tab', { name: 'Sekcja 1' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
   const movedSectionBlocks = page.locator('#field-layout__0__sections__0__blocks')
   await expect(movedSectionBlocks.locator('.blocks-field__row')).toHaveCount(2)
   await expect(movedSectionBlocks.locator('.blocks-field__row').nth(1)).toContainText(
@@ -629,11 +734,17 @@ async function openColumnLayoutField(
 
   await expect(showAllButton).toHaveCount(1)
   await showAllButton.click()
-  const layoutBlock = layoutField.locator('.blocks-field__row').first()
+  const layoutBlock = topLevelBlockRows(layoutField).first()
   const field = layoutBlock.locator('.wkf-layout-tabs[data-layout-kind="columns"]')
 
   await expect(field).toBeVisible()
   return field
+}
+
+function topLevelBlockRows(
+  blocksField: import('@playwright/test').Locator,
+): import('@playwright/test').Locator {
+  return blocksField.locator(':scope > .blocks-field__rows > div > .blocks-field__row')
 }
 
 async function dragToColumn(
@@ -669,7 +780,13 @@ async function cleanup(): Promise<void> {
     overrideAccess: true,
     where: {
       slug: {
-        in: [fixtureSlug, defaultFixtureSlug, addedFixtureSlug, clipboardFixtureSlug],
+        in: [
+          fixtureSlug,
+          defaultFixtureSlug,
+          addedFixtureSlug,
+          clipboardFixtureSlug,
+          presentationFixtureSlug,
+        ],
       },
     },
   })

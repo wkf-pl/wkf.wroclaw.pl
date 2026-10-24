@@ -106,6 +106,20 @@ describe('tabbed content block', () => {
       },
       type: 'group',
     })
+    expect(TabbedContentBlock.labels).toEqual({ plural: 'Zakładki', singular: 'Zakładki' })
+    expect(container?.fields[0]).toMatchObject({
+      fields: [
+        {
+          admin: { width: '100%' },
+          label: 'Nazwa',
+          name: 'name',
+          type: 'text',
+        },
+      ],
+      type: 'row',
+    })
+    const nameField = findNamedField(container?.fields ?? [], 'name')
+    expect(nameField && 'required' in nameField ? nameField.required : undefined).not.toBe(true)
   })
 
   it('is available at the top level and exposes nested blocks to content processing', () => {
