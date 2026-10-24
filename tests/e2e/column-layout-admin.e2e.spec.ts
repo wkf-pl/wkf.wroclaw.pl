@@ -406,7 +406,7 @@ test('shows layout names and keeps tabbed presentation controls compact', async 
     .getByRole('button', { name: 'Pokaż wszystkie' })
     .click()
 
-  const rows = layoutField.locator('.blocks-field__row')
+  const rows = topLevelBlockRows(layoutField)
   await expect(rows).toHaveCount(3)
   await expect(rows.nth(0).locator('.wkf-content-block-label')).toHaveText(
     'Układ kolumnowy: Dwie kolumny — przezroczysta · bez ramki — 6c + 6c',
@@ -560,7 +560,7 @@ test('saves a page after adding a default column layout in the admin', async ({ 
   const blockDrawer = page.locator('.drawer--is-open')
   await blockDrawer.getByRole('button', { name: /Układ kolumnowy$/ }).click()
 
-  await expect(layoutField.locator('.blocks-field__row')).toHaveCount(2)
+  await expect(topLevelBlockRows(layoutField)).toHaveCount(2)
 
   const saveResponsePromise = page.waitForResponse(
     (response) =>
@@ -600,7 +600,7 @@ test('appends an allowed copied block to section blocks and rejects a forbidden 
   await expect(showAllButton).toHaveCount(1)
   await showAllButton.click()
 
-  const topLevelRows = layoutField.locator('.blocks-field__row')
+  const topLevelRows = topLevelBlockRows(layoutField)
   await expect(topLevelRows).toHaveCount(2)
   await layoutField
     .locator('#layout-row-0 > div > div > .collapsible__actions-wrap .array-actions__button')
@@ -626,7 +626,7 @@ test('appends an allowed copied block to section blocks and rejects a forbidden 
     .locator('#layout-row-0 > div > div > .collapsible__actions-wrap .array-actions__button')
     .click()
   await page.getByRole('button', { exact: true, name: 'Usuń' }).click()
-  await expect(layoutField.locator('.blocks-field__row')).toHaveCount(1)
+  await expect(topLevelRows).toHaveCount(1)
   await expect(page.getByText(/Grupa sekcji: .* — 2 sekcje/)).toBeVisible()
   await layoutField.getByRole('tab', { exact: true, name: 'Sekcja 1' }).click()
   const movedSectionBlocks = page.locator('#field-layout__0__sections__0__blocks')
@@ -666,7 +666,7 @@ test('cuts a block row only after it is pasted successfully', async ({ page }) =
     .getByRole('button', { name: 'Pokaż wszystkie' })
   await showAllButton.click()
 
-  const topLevelRows = layoutField.locator('.blocks-field__row')
+  const topLevelRows = topLevelBlockRows(layoutField)
   await expect(topLevelRows).toHaveCount(2)
   await layoutField
     .locator('#layout-row-0 > div > div > .collapsible__actions-wrap .array-actions__button')
@@ -734,11 +734,17 @@ async function openColumnLayoutField(
 
   await expect(showAllButton).toHaveCount(1)
   await showAllButton.click()
-  const layoutBlock = layoutField.locator('.blocks-field__row').first()
+  const layoutBlock = topLevelBlockRows(layoutField).first()
   const field = layoutBlock.locator('.wkf-layout-tabs[data-layout-kind="columns"]')
 
   await expect(field).toBeVisible()
   return field
+}
+
+function topLevelBlockRows(
+  blocksField: import('@playwright/test').Locator,
+): import('@playwright/test').Locator {
+  return blocksField.locator(':scope > .blocks-field__rows > div > .blocks-field__row')
 }
 
 async function dragToColumn(
