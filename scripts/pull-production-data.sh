@@ -108,6 +108,8 @@ mkdir --parents -- "$extracted_directory"
 docker run --rm --network none --read-only --user 0:0 \
   --cap-drop ALL \
   --cap-add DAC_READ_SEARCH \
+  --cap-add DAC_OVERRIDE \
+  --cap-add CHOWN \
   --security-opt no-new-privileges \
   --tmpfs /tmp:rw,nosuid,nodev,noexec,size=1g \
   --env AGE_IDENTITY_FILE=/run/age/identity.txt \
@@ -127,8 +129,9 @@ if [[ "$(jq --raw-output '.backupName' "$manifest_path")" != "$backup_name" ]]; 
   fail 'The authenticated manifest belongs to another production backup.'
 fi
 
+local_checkpoint_name="${backup_name,,}"
 checkpoint_root="$temporary_directory/local-checkpoint"
-checkpoint_directory="$checkpoint_root/$backup_name"
+checkpoint_directory="$checkpoint_root/$local_checkpoint_name"
 checkpoint_media_directory="$checkpoint_directory/media"
 mkdir --parents -- "$checkpoint_media_directory"
 cp -- "$database_dump_path" "$checkpoint_directory/database.dump"
@@ -138,7 +141,7 @@ printf '%s  database.dump\n' "$(sha256sum "$database_dump_path" | cut --delimite
 expected_blob_count="$(jq --raw-output '.blobCount' "$manifest_path")"
 deployed_source_sha="$(jq --raw-output '.deployedSourceSha' "$manifest_path")"
 jq --null-input \
-  --arg checkpointName "$backup_name" \
+  --arg checkpointName "$local_checkpoint_name" \
   --arg deployedSourceSha "$deployed_source_sha" \
   --argjson mediaBlobCount "$expected_blob_count" \
   '{checkpointName: $checkpointName, deployedSourceSha: $deployedSourceSha, mediaBlobCount: $mediaBlobCount}' \
@@ -158,7 +161,7 @@ while IFS= read -r entry <&3; do
   mkdir --parents -- "$(dirname "$destination_path")"
   cp -- "$source_path" "$destination_path"
   jq --compact-output --null-input \
-    --arg name "$backup_name/media/$blob_name" \
+    --arg name "$local_checkpoint_name/media/$blob_name" \
     '{name: $name, properties: {contentSettings: {}}}' \
     >>"$staging_media_entries"
 done 3< <(jq --compact-output '.[]' "$media_manifest_path")
@@ -167,6 +170,6 @@ jq --slurp '.' "$staging_media_entries" >"$checkpoint_root/staging-media-blobs.j
 STAGING_PULL_LOCAL_CHECKPOINT_ROOT="$checkpoint_root" \
 STAGING_PULL_SOURCE_LABEL='production' \
 STAGING_PULL_ALLOW_CODE_MISMATCH="${PRODUCTION_PULL_ALLOW_CODE_MISMATCH:-false}" \
-  bash scripts/pull-staging-data.sh "$backup_name" IMPORT
+  bash scripts/pull-staging-data.sh "$local_checkpoint_name" IMPORT
 
 echo "Imported production off-site backup into the local environment: $backup_name"

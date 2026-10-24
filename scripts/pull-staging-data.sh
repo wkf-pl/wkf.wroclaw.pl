@@ -60,16 +60,34 @@ restore_database_from_dump() {
   local database_dump_path="$1"
 
   docker compose exec -T postgres sh -c \
-    'dropdb --username "$POSTGRES_USER" --maintenance-db postgres --force --if-exists "$POSTGRES_DB"' \
-    || return 1
-  docker compose exec -T postgres sh -c \
-    'createdb --username "$POSTGRES_USER" --maintenance-db postgres --owner "$POSTGRES_USER" "$POSTGRES_DB"' \
-    || return 1
-  docker compose exec -T postgres sh -c \
-    'psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --set ON_ERROR_STOP=1 --command "GRANT ALL ON SCHEMA public TO \"$POSTGRES_USER\""' \
-    || return 1
-  docker compose exec -T postgres sh -c \
-    'pg_restore --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --exit-on-error --no-owner --no-privileges' \
+    '
+      set -eu
+      temporary_restore_directory="$(mktemp -d)"
+      database_archive_path="$temporary_restore_directory/database.dump"
+      restore_list_path="$temporary_restore_directory/restore.list"
+      cleanup_restore_files() {
+        rm -rf -- "$temporary_restore_directory"
+      }
+      trap cleanup_restore_files EXIT
+
+      cat >"$database_archive_path"
+      pg_restore --list "$database_archive_path" \
+        | sed -E \
+          -e "/ EXTENSION - pgaudit[[:space:]]*$/d" \
+          -e "/ COMMENT - EXTENSION pgaudit[[:space:]]*$/d" \
+        >"$restore_list_path"
+      if grep -Eq " EXTENSION - pgaudit[[:space:]]*$| COMMENT - EXTENSION pgaudit[[:space:]]*$" "$restore_list_path"; then
+        echo "Could not exclude production-only pgaudit entries from the local restore list." >&2
+        exit 1
+      fi
+
+      dropdb --username "$POSTGRES_USER" --maintenance-db postgres --force --if-exists "$POSTGRES_DB"
+      createdb --username "$POSTGRES_USER" --maintenance-db postgres --owner "$POSTGRES_USER" "$POSTGRES_DB"
+      psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --set ON_ERROR_STOP=1 \
+        --command "GRANT ALL ON SCHEMA public TO \"$POSTGRES_USER\""
+      pg_restore --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --exit-on-error \
+        --no-owner --no-privileges --use-list "$restore_list_path" "$database_archive_path"
+    ' \
     <"$database_dump_path" \
     || return 1
 }
@@ -224,6 +242,7 @@ wait_for_local_application() {
   local liveness_status
   local route
   local route_status
+  local routes_succeeded
   local routes=('/' '/admin' '/api/media?limit=1')
 
   while ((SECONDS < deadline)); do
@@ -231,14 +250,20 @@ wait_for_local_application() {
     liveness_status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$application_url/api/health/live" || true)"
 
     if [[ "$health_status" == "200" && "$liveness_status" == "200" ]]; then
+      routes_succeeded=true
       for route in "${routes[@]}"; do
         route_status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$application_url$route" || true)"
-        if [[ "$route_status" != "200" ]]; then
-          break
+        if [[ "$route_status" == "200" ]]; then
+          continue
         fi
+        if [[ "$route" == "/api/media?limit=1" && "$route_status" == "403" ]]; then
+          continue
+        fi
+        routes_succeeded=false
+        break
       done
 
-      if [[ "$route_status" == "200" ]]; then
+      if [[ "$routes_succeeded" == "true" ]]; then
         return 0
       fi
     fi
