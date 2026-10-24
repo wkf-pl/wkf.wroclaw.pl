@@ -28,6 +28,7 @@ import { useId, useRef, useState, type KeyboardEvent } from 'react'
 
 const presentationTabID = 'presentation'
 const totalColumnWidth = 12
+const activeLayoutRowIDs = new Set<string>()
 
 type ArrayClientField = Extract<ClientField, { type: 'array' }>
 type LayoutKind = 'columns' | 'sections' | 'tabs'
@@ -78,8 +79,8 @@ const layoutDefinitions: Record<LayoutKind, LayoutDefinition> = {
     kind: 'tabs',
     maximumRows: 8,
     minimumRows: 2,
-    rootTabLabel: 'Rama',
-    tabListLabel: 'Ustawienia treści w zakładkach',
+    rootTabLabel: 'Prezentacja',
+    tabListLabel: 'Ustawienia zakładek',
   },
 }
 
@@ -217,16 +218,18 @@ function TabbedLayoutField({
     path: arrayPaths.path,
     validate: validation,
   })
+  const typedRows = rows as LayoutRow[]
+  const rowIDs = typedRows.map((row) => row.id)
   const { addFieldRow, getDataByPath, moveFieldRow, removeFieldRow } = useForm()
   const { openModal } = useModal()
-  const [activeTabID, setActiveTabID] = useState(presentationTabID)
+  const [activeTabID, setActiveTabID] = useState(
+    () => rowIDs.find((rowID) => activeLayoutRowIDs.has(rowID)) ?? presentationTabID,
+  )
   const [activateRowAtIndex, setActivateRowAtIndex] = useState<number | null>(null)
   const [rowPendingRemoval, setRowPendingRemoval] = useState<number | null>(null)
   const tabButtons = useRef<Record<string, HTMLButtonElement | null>>({})
   const componentID = useId().replaceAll(':', '')
   const effectiveReadOnly = Boolean(readOnly || disabled)
-  const typedRows = rows as LayoutRow[]
-  const rowIDs = typedRows.map((row) => row.id)
   const columnWidths = useFormFields(([fields]) =>
     definition.kind === 'columns'
       ? typedRows.map((_, rowIndex) => {
@@ -265,6 +268,8 @@ function TabbedLayoutField({
   function selectTab(tabID: string, focus = false): void {
     setActivateRowAtIndex(null)
     setActiveTabID(tabID)
+    rowIDs.forEach((rowID) => activeLayoutRowIDs.delete(rowID))
+    if (tabID !== presentationTabID) activeLayoutRowIDs.add(tabID)
     if (focus) {
       requestAnimationFrame(() => tabButtons.current[tabID]?.focus())
     }
@@ -339,6 +344,7 @@ function TabbedLayoutField({
 
     setActivateRowAtIndex(null)
     setActiveTabID(nextActiveTabID)
+    activeLayoutRowIDs.delete(removedRowID ?? '')
     removeFieldRow({ path: arrayPaths.path, rowIndex })
     requestAnimationFrame(() => tabButtons.current[nextActiveTabID]?.focus())
   }

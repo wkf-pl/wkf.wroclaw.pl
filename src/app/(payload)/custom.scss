@@ -718,6 +718,28 @@
   }
 }
 
+.wkf-layout-tabs[data-layout-kind='tabs'] {
+  .wkf-layout-tabs__sortable-tab {
+    > .wkf-layout-tabs__tab {
+      padding-inline: calc(var(--base) / 6);
+    }
+
+    > :is(.wkf-layout-tabs__drag-handle, .wkf-layout-tabs__remove-tab) {
+      width: 36px;
+    }
+  }
+
+  .wkf-tabbed-content-menu-field {
+    margin-top: var(--base);
+
+    > .array-field__header .array-field__title {
+      font-size: calc(var(--base) * 0.8);
+      line-height: var(--base);
+      letter-spacing: -0.375px;
+    }
+  }
+}
+
 @media (width <= 48rem) {
   .wkf-layout-tabs__toolbar {
     align-items: flex-start;

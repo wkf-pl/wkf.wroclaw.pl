@@ -1650,6 +1650,7 @@ export interface MemberProfileImage {
  * via the `definition` "ColumnLayoutBlock".
  */
 export interface ColumnLayoutBlock {
+  name?: string | null;
   frame?: ('none' | 'outline') | null;
   surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
   /**
@@ -1695,6 +1696,7 @@ export interface ColumnLayoutBlock {
  * via the `definition` "SectionGroupBlock".
  */
 export interface SectionGroupBlock {
+  name?: string | null;
   frame?: ('none' | 'outline') | null;
   surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
   /**
@@ -1741,6 +1743,7 @@ export interface SectionGroupBlock {
  * via the `definition` "TabbedContentBlock".
  */
 export interface TabbedContentBlock {
+  name?: string | null;
   headerLeftItems?:
     | {
         /**
@@ -2696,6 +2699,7 @@ export interface MemberProfilesBlockSelect<T extends boolean = true> {
  * via the `definition` "ColumnLayoutBlock_select".
  */
 export interface ColumnLayoutBlockSelect<T extends boolean = true> {
+  name?: T;
   frame?: T;
   surface?: T;
   surfaceImage?: T;
@@ -2736,6 +2740,7 @@ export interface ColumnLayoutBlockSelect<T extends boolean = true> {
  * via the `definition` "SectionGroupBlock_select".
  */
 export interface SectionGroupBlockSelect<T extends boolean = true> {
+  name?: T;
   frame?: T;
   surface?: T;
   surfaceImage?: T;
@@ -2776,6 +2781,7 @@ export interface SectionGroupBlockSelect<T extends boolean = true> {
  * via the `definition` "TabbedContentBlock_select".
  */
 export interface TabbedContentBlockSelect<T extends boolean = true> {
+  name?: T;
   headerLeftItems?:
     | T
     | {

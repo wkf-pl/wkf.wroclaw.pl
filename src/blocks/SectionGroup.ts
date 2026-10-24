@@ -1,6 +1,9 @@
 import type { Block } from 'payload'
 
-import { createContentPresentationFields } from '@/modules/content/content-presentation'
+import {
+  createContentPresentationFields,
+  createLayoutBlockNameField,
+} from '@/modules/content/content-presentation'
 
 import { ColumnLayoutBlock } from './ColumnLayout'
 import { TabbedContentBlock } from './TabbedContent'
@@ -30,6 +33,7 @@ export const SectionGroupBlock: Block = {
       },
       type: 'group',
       fields: [
+        createLayoutBlockNameField(),
         ...createContentPresentationFields(),
         {
           name: 'emptyChildBehavior',

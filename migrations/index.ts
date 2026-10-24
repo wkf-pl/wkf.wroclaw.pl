@@ -51,6 +51,7 @@ import * as migration_20261015_175630_section_group_empty_child_behavior from '.
 import * as migration_20261015_204147_documents_listing_schema from './20261015_204147_documents_listing_schema'
 import * as migration_20261015_204148_documents_listing_consolidation from './20261015_204148_documents_listing_consolidation'
 import * as migration_20261016_001005_significant_date_listing_age from './20261016_001005_significant_date_listing_age'
+import * as migration_20261024_164409_block_editor_layout_names from './20261024_164409_block_editor_layout_names'
 
 export const migrations = [
   {
@@ -317,5 +318,10 @@ export const migrations = [
     up: migration_20261016_001005_significant_date_listing_age.up,
     down: migration_20261016_001005_significant_date_listing_age.down,
     name: '20261016_001005_significant_date_listing_age',
+  },
+  {
+    up: migration_20261024_164409_block_editor_layout_names.up,
+    down: migration_20261024_164409_block_editor_layout_names.down,
+    name: '20261024_164409_block_editor_layout_names',
   },
 ]
