@@ -76,13 +76,14 @@
 .contentPresentation :is(.richText, .contentHeading, .presentedLink) a,
 .contentPresentation .richText a,
 .contentPresentation .presentedLink--link {
-  color: var(--surface-accent);
+  /*color: var(--surface-accent);*/
+  color: var(--surface-accent, var(--gold-light));
 }
 
 .contentPresentation--block,
 .contentPresentation--layout,
 .contentPresentation--sectionGroup {
-  width: min(70rem, 100%);
+  width: 100%;
   margin-inline: auto;
 }
 
@@ -133,7 +134,7 @@
 
 .sectionGroupSection > .contentPresentationContent {
   display: grid;
-  padding: clamp(1.5rem, 4vw, 3rem);
+  padding: 1.5rem 0;
 }
 
 .sectionGroupSections
@@ -145,7 +146,7 @@
 
 .sectionGroupSection > .contentPresentationContent > .contentPresentationBody {
   display: grid;
-  gap: clamp(1.5rem, 3vw, 2.5rem);
+  gap: 1.5rem;
 }
 
 .columnLayout {
@@ -169,7 +170,7 @@
 
 .columnLayoutColumnContent {
   display: grid;
-  gap: clamp(1.5rem, 3vw, 2.5rem);
+  /*gap: clamp(1.5rem, 3vw, 2.5rem);*/
   min-width: 0;
 }
 

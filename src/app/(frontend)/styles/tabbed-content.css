@@ -1,5 +1,5 @@
 .tabbedContent {
-  width: min(70rem, 100%);
+  /*width: min(70rem, 100%);*/
   min-width: 0;
   margin-inline: auto;
   overflow: hidden;
