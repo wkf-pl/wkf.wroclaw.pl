@@ -10,6 +10,7 @@
     "backup:prepare-restore": "tsx scripts/prepare-production-restore.ts",
     "dev": "bash scripts/run-development-server.sh",
     "dev:container": "cross-env NEXT_DIST_DIR=.next-container bash scripts/run-development-server.sh",
+    "entra:sign-in": "bash scripts/manage-entra-sign-in.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
