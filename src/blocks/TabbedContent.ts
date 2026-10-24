@@ -6,6 +6,7 @@ import {
   type FieldHook,
 } from 'payload'
 
+import { createLayoutBlockNameField } from '@/modules/content/content-presentation'
 import { createSiteMenuLinkFields, validatePresentedLinkItems } from '@/modules/navigation/fields'
 
 import { ColumnLayoutBlock } from './ColumnLayout'
@@ -35,13 +36,14 @@ function createMenuField(name: MenuFieldName, label: string): ArrayField {
   return {
     name,
     type: 'array',
+    fields: createSiteMenuLinkFields({ compactDatabaseNames: true }),
     admin: {
+      className: 'wkf-tabbed-content-menu-field',
       components: {
         RowLabel: '/components/admin/DynamicRowLabel#NavigationItemRowLabel',
       },
       initCollapsed: true,
     },
-    fields: createSiteMenuLinkFields({ compactDatabaseNames: true }),
     label,
     labels: {
       plural: 'Pozycje menu',
@@ -75,6 +77,7 @@ export const TabbedContentBlock: Block = {
       },
       type: 'group',
       fields: [
+        createLayoutBlockNameField(),
         createMenuField('headerLeftItems', 'Menu po lewej stronie nagłówka'),
         createMenuField('headerRightItems', 'Menu po prawej stronie nagłówka'),
         createMenuField('footerItems', 'Menu w stopce'),
@@ -145,7 +148,7 @@ export const TabbedContentBlock: Block = {
   ],
   interfaceName: 'TabbedContentBlock',
   labels: {
-    plural: 'Treści w zakładkach',
-    singular: 'Treść w zakładkach',
+    plural: 'Zakładki',
+    singular: 'Zakładki',
   },
 }

@@ -1,6 +1,9 @@
 import { APIError, type ArrayFieldValidation, type Block, type FieldHook } from 'payload'
 
-import { createContentPresentationFields } from '@/modules/content/content-presentation'
+import {
+  createContentPresentationFields,
+  createLayoutBlockNameField,
+} from '@/modules/content/content-presentation'
 
 import { contentLeafBlocks } from './contentLeafBlocks'
 
@@ -90,6 +93,7 @@ export const ColumnLayoutBlock: Block = {
       },
       type: 'group',
       fields: [
+        createLayoutBlockNameField(),
         ...createContentPresentationFields(),
         {
           type: 'row',

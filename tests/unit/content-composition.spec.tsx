@@ -203,15 +203,30 @@ describe('content composition', () => {
     const columnRootRows = columnContainer.fields
       .filter((field) => field.type === 'row')
       .map((row) => getFieldNames([row]))
+    const sectionRootRows = sectionContainer.fields
+      .filter((field) => field.type === 'row')
+      .map((row) => getFieldNames([row]))
+    expect(columnRootRows[0]).toEqual(['name'])
     expect(columnRootRows).toContainEqual(['frame', 'surface'])
     expect(columnRootRows).toContainEqual(['verticalAlignment', 'columnSeparators'])
+    expect(sectionRootRows[0]).toEqual(['name'])
+    expect(sectionRootRows).toContainEqual(['frame', 'surface'])
+    for (const container of [columnContainer, sectionContainer]) {
+      const nameField = findNamedField([container.fields[0]!], 'name')
+      expect(nameField).toMatchObject({
+        admin: { width: '100%' },
+        label: 'Nazwa',
+        type: 'text',
+      })
+      expect(nameField && 'required' in nameField ? nameField.required : undefined).not.toBe(true)
+    }
 
     const columnsField = findNamedField(ColumnLayoutBlock.fields, 'columns')
     const sectionsField = findNamedField(SectionGroupBlock.fields, 'sections')
     if (!columnsField || columnsField.type !== 'array') throw new Error('Missing columns field')
     if (!sectionsField || sectionsField.type !== 'array') throw new Error('Missing sections field')
     expect(firstRowNames(columnsField.fields)).toEqual(['width', 'frame', 'surface'])
-    expect(firstRowNames(sectionContainer.fields)).toEqual(['frame', 'surface'])
+    expect(firstRowNames(sectionContainer.fields)).toEqual(['name'])
     expect(firstRowNames(sectionsField.fields)).toEqual(['frame', 'surface'])
   })
 

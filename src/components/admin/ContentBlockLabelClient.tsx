@@ -40,6 +40,7 @@ type PresentedBlockData = {
 type CountedBlockData = {
   frame?: unknown
   items?: unknown
+  name?: unknown
   sections?: unknown
   surface?: unknown
   tabs?: unknown
@@ -48,6 +49,7 @@ type CountedBlockData = {
 type ColumnLayoutBlockData = {
   columns?: Array<{ width?: unknown }>
   frame?: unknown
+  name?: unknown
   surface?: unknown
 }
 
@@ -61,6 +63,11 @@ const surfaceLabels: Record<string, string> = {
 
 function getText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
+}
+
+function useLayoutBlockName(data: { name?: unknown }, path: string): string {
+  const liveName = useFormFields(([fields]) => fields[`${path}.name`]?.value)
+  return getText(liveName) || getText(data.name)
 }
 
 function getPresentationDescription(data: { frame?: unknown; surface?: unknown }): string {
@@ -235,28 +242,32 @@ export function CardBlockLabelClient() {
 }
 
 export function SectionGroupBlockLabelClient() {
-  const { data } = useRowLabel<CountedBlockData>()
+  const { data, path } = useRowLabel<CountedBlockData>()
+  const name = useLayoutBlockName(data, path)
   const count = Array.isArray(data.sections) ? data.sections.length : 0
   const noun = count === 1 ? 'sekcja' : count >= 2 && count <= 4 ? 'sekcje' : 'sekcji'
   const countLabel = count ? `${count} ${noun}` : ''
   return (
     <BlockLabel
       prefix="Grupa sekcji"
-      value={[getPresentationDescription(data), countLabel].filter(Boolean).join(' — ')}
+      value={[name, getPresentationDescription(data), countLabel].filter(Boolean).join(' — ')}
     />
   )
 }
 
 export function TabbedContentBlockLabelClient() {
-  const { data } = useRowLabel<CountedBlockData>()
+  const { data, path } = useRowLabel<CountedBlockData>()
+  const name = useLayoutBlockName(data, path)
   const count = Array.isArray(data.tabs) ? data.tabs.length : 0
   const noun = count === 1 ? 'zakładka' : count >= 2 && count <= 4 ? 'zakładki' : 'zakładek'
+  const countLabel = count ? `${count} ${noun}` : ''
 
-  return <BlockLabel prefix="Treść w zakładkach" value={count ? `${count} ${noun}` : ''} />
+  return <BlockLabel prefix="Zakładki" value={[name, countLabel].filter(Boolean).join(' — ')} />
 }
 
 export function ColumnLayoutBlockLabelClient() {
   const { data, path } = useRowLabel<ColumnLayoutBlockData>()
+  const name = useLayoutBlockName(data, path)
   const liveWidthEntries = useFormFields(([fields]) =>
     Object.entries(fields)
       .flatMap(([fieldPath, field]) => {
@@ -275,7 +286,7 @@ export function ColumnLayoutBlockLabelClient() {
     : []
   const widths = liveWidthEntries.length ? liveWidthEntries.map(([, width]) => width) : rowWidths
   const widthsLabel = widths.length ? widths.map((width) => `${width}c`).join(' + ') : ''
-  const value = [getPresentationDescription(data), widthsLabel].filter(Boolean).join(' — ')
+  const value = [name, getPresentationDescription(data), widthsLabel].filter(Boolean).join(' — ')
 
   return <BlockLabel prefix="Układ kolumnowy" value={value} />
 }
