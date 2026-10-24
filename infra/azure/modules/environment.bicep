@@ -140,6 +140,16 @@ module postgres './postgres.bicep' = {
   }
 }
 
+module postgresStartAlert './postgres-start-alert.bicep' = if (environmentName == 'staging') {
+  name: 'postgres-start-alert'
+  params: {
+    postgresServerId: postgres.outputs.id
+    postgresServerName: postgres.outputs.name
+    resourcePrefix: resourcePrefix
+    tags: tags
+  }
+}
+
 resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
   name: registryName
   scope: resourceGroup(registryResourceGroupName)
