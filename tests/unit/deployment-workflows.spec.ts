@@ -877,7 +877,7 @@ describe('deployment workflows', () => {
     expect(backupWorkflow).toContain(`"$root" == '200' && "$admin" == '200'`)
     expect(backupWorkflow).toContain('infra/azure/offsite-backup-job.bicep')
     expect(backupWorkflow).toContain('az deployment group delete')
-    expect(backupWorkflow).toContain("cron: '30 2 * * *'")
+    expect(backupWorkflow).toContain("cron: '49 0 * * *'")
     expect(backupWorkflow).toContain('OFFSITE_BACKUP_FTPS_PASSWORD')
     expect(backupWorkflow).toContain('OFFSITE_BACKUP_SIGNING_PRIVATE_KEY')
     expect(backupWorkflow).not.toContain('OFFSITE_BACKUP_SFTP_')
