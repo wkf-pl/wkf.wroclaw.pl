@@ -2,7 +2,7 @@ name: Back up production data off-site
 
 on:
   schedule:
-    - cron: '30 2 * * *'
+    - cron: '49 0 * * *'
   workflow_dispatch:
     inputs:
       operations_image_digest:
