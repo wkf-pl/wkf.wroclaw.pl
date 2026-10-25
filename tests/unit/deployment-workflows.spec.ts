@@ -798,6 +798,7 @@ describe('deployment workflows', () => {
 
   it('keeps off-site backup publication encrypted and atomic', () => {
     const backupScript = readFileSync('scripts/operations/backup-offsite.sh', 'utf8')
+    const archiverScript = readFileSync('scripts/operations/archive-offsite-backups.sh', 'utf8')
     const validatorScript = readFileSync('scripts/operations/validate-offsite-backup.sh', 'utf8')
     const restoreScript = readFileSync('scripts/operations/restore-offsite-backup.sh', 'utf8')
 
@@ -813,7 +814,10 @@ describe('deployment workflows', () => {
     )
     expect(backupScript).toContain('deployedSourceSha')
     expect(backupScript).toContain('migrationState')
-    expect(backupScript).toContain('formatVersion: 2')
+    expect(backupScript).toContain('formatVersion: 3')
+    expect(backupScript).toContain('uniqueBlobCount')
+    expect(backupScript).toContain('storage-manifest.json')
+    expect(backupScript).toContain('wkf-production-backup-storage')
     expect(backupScript).toContain('signingKeyFingerprint')
     expect(backupScript).toContain('FROM payload_migrations')
     expect(backupScript).toContain('done 3<"$blob_names_path"')
@@ -821,7 +825,11 @@ describe('deployment workflows', () => {
     expect(validatorScript).toContain('-Y verify')
     expect(validatorScript).toContain('completion marker checksums do not match')
     expect(validatorScript).toContain('Validated blob count does not match')
-    expect(validatorScript).toContain('.formatVersion == 2')
+    expect(validatorScript).toContain('.formatVersion == 3')
+    expect(archiverScript).toContain('objects/sha256')
+    expect(archiverScript).toContain('replica-1.age')
+    expect(archiverScript).toContain('replica-2.age')
+    expect(archiverScript).toContain('ln "$object_directory/replica-1.age"')
     expect(restoreScript).toContain("confirmation\" != 'RESTORE'")
     expect(restoreScript).toContain('pg_restore --exit-on-error')
     expect(restoreScript).toContain('TRUNCATE TABLE users_sessions, payload_locked_documents')

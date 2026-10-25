@@ -8,6 +8,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   utimesSync,
   writeFileSync,
 } from 'node:fs'
@@ -250,7 +251,11 @@ function setup(): {
   writeFileSync(join(directory, 'identity.txt'), 'AGE-SECRET-KEY-TEST')
   writeFileSync(
     join(directory, 'allowed-signers'),
-    `wkf-production-backup ${readFileSync(`${signingKeyPath}.pub`, 'utf8').trim()}\n`,
+    [
+      `wkf-production-backup ${readFileSync(`${signingKeyPath}.pub`, 'utf8').trim()}`,
+      `wkf-production-backup-storage ${readFileSync(`${signingKeyPath}.pub`, 'utf8').trim()}`,
+      '',
+    ].join('\n'),
   )
   prepareMockCommands(directory)
 
@@ -381,10 +386,11 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
       backupName,
       blobCount: 2,
       deployedSourceSha: sourceSHA,
-      formatVersion: 2,
+      formatVersion: 3,
       imageReference,
       operationsImageReference: `wkf.azurecr.io/wkf-operations@sha256:${'c'.repeat(64)}`,
       signingKeyFingerprint: expect.stringMatching(/^SHA256:/),
+      uniqueBlobCount: 2,
     })
     expect(manifest.migrationState).toEqual([
       expect.objectContaining({ batch: 1, name: '20261019_test' }),
@@ -396,6 +402,16 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
     ])
     expect(manifest.blobs[0]).toMatchObject({ sha256: sha256('first blob'), size: 10 })
     expect(readdirSync(join(backupDirectory, 'blobs'))).toHaveLength(2)
+    const storageManifest = JSON.parse(
+      readFileSync(join(backupDirectory, 'storage-manifest.json'), 'utf8'),
+    )
+    expect(storageManifest).toMatchObject({
+      backupName,
+      formatVersion: 1,
+      objectCount: 2,
+    })
+    expect(storageManifest.objects).toHaveLength(2)
+    expect(existsSync(join(backupDirectory, 'storage-manifest.json.sig'))).toBe(true)
 
     const validationResult = await run(
       'bash',
@@ -410,6 +426,36 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
     expect(validationResult.stdout).toContain(
       `Backup validation succeeded: ${backupName} (2 blobs)`,
     )
+  })
+
+  it('uploads one encrypted object for content shared by multiple blob names', async () => {
+    const fixture = setup()
+    writeFileSync(join(fixture.environment.MOCK_BLOB_DIRECTORY!, 'second.txt'), 'first blob')
+
+    const backupResult = await run(
+      'bash',
+      ['scripts/operations/backup-offsite.sh'],
+      fixture.environment,
+    )
+
+    expect(backupResult.exitCode, `${backupResult.stderr}\n${backupResult.stdout}`).toBe(0)
+    const backupDirectory = join(fixture.remoteRoot, backupName)
+    const manifest = JSON.parse(readFileSync(join(backupDirectory, 'manifest.json.age'), 'utf8'))
+    expect(manifest).toMatchObject({ blobCount: 2, uniqueBlobCount: 1 })
+    expect(
+      new Set(manifest.blobs.map((entry: { archiveFile: string }) => entry.archiveFile)),
+    ).toEqual(new Set([`blobs/${sha256('first blob')}.age`]))
+    expect(readdirSync(join(backupDirectory, 'blobs'))).toHaveLength(1)
+
+    const validationResult = await run(
+      'bash',
+      ['scripts/operations/validate-offsite-backup.sh', backupDirectory],
+      {
+        ...fixture.environment,
+        AGE_IDENTITY_FILE: join(fixture.directory, 'identity.txt'),
+      },
+    )
+    expect(validationResult.exitCode, validationResult.stderr).toBe(0)
   })
 
   it('re-encrypts a validated backup with dedicated restore keys and a signed descriptor', async () => {
@@ -671,7 +717,9 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
     )
 
     expect(validationResult.exitCode).not.toBe(0)
-    expect(validationResult.stderr).toContain('Blob validation failed: first.txt')
+    expect(validationResult.stderr).toContain(
+      'Storage manifest validation failed for uploaded object',
+    )
   })
 
   it('rejects an encrypted manifest that was replaced without the signing key', async () => {
@@ -707,6 +755,43 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
 
     expect(validationResult.exitCode).not.toBe(0)
     expect(validationResult.stderr).toContain('signature verification failed')
+  })
+
+  it('rejects a storage inventory that was replaced without the signing key', async () => {
+    const fixture = setup()
+    const backupResult = await run(
+      'bash',
+      ['scripts/operations/backup-offsite.sh'],
+      fixture.environment,
+    )
+    expect(backupResult.exitCode, `${backupResult.stderr}\n${backupResult.stdout}`).toBe(0)
+    const backupDirectory = join(fixture.remoteRoot, backupName)
+    const storageManifestPath = join(backupDirectory, 'storage-manifest.json')
+    const storageManifest = JSON.parse(readFileSync(storageManifestPath, 'utf8'))
+    storageManifest.objects[0].ciphertextSize += 1
+    writeFileSync(storageManifestPath, JSON.stringify(storageManifest))
+    const completionMarkerPath = join(backupDirectory, '.complete')
+    writeFileSync(
+      completionMarkerPath,
+      readFileSync(completionMarkerPath, 'utf8').replace(
+        /^storageManifestSha256=.*$/m,
+        `storageManifestSha256=${sha256(readFileSync(storageManifestPath, 'utf8'))}`,
+      ),
+    )
+
+    const validationResult = await run(
+      'bash',
+      ['scripts/operations/validate-offsite-backup.sh', backupDirectory],
+      {
+        ...fixture.environment,
+        AGE_IDENTITY_FILE: join(fixture.directory, 'identity.txt'),
+      },
+    )
+
+    expect(validationResult.exitCode).not.toBe(0)
+    expect(validationResult.stderr).toContain(
+      'Backup storage manifest signature verification failed',
+    )
   })
 
   it('requires explicit confirmation before destructive restore work', async () => {
@@ -765,22 +850,19 @@ printf '%s\n' "$@" >"$MOCK_DOCKER_ARGUMENTS"
 })
 
 describe('MyDevil backup archiver', () => {
-  it('archives complete backups and quarantines only stale incomplete transfers', async () => {
+  it('archives signed backups as hard-linked snapshots with two physical object replicas', async () => {
     const fixture = setup()
-    const incomingDirectory = join(fixture.directory, 'incoming')
-    const archiveDirectory = join(fixture.directory, 'archive')
+    const incomingDirectory = join(fixture.directory, 'remote', 'incoming')
+    const repositoryDirectory = join(fixture.directory, 'repository-v3')
     const quarantineDirectory = join(fixture.directory, 'quarantine')
     mkdirSync(incomingDirectory)
-    mkdirSync(archiveDirectory)
     mkdirSync(quarantineDirectory)
 
-    const completeName = 'production-20261020T023000Z'
-    const completeDirectory = join(incomingDirectory, completeName)
-    mkdirSync(completeDirectory)
-    writeFileSync(
-      join(completeDirectory, '.complete'),
-      `formatVersion=1\nbackupName=${completeName}\n`,
-    )
+    const backupResult = await run('bash', ['scripts/operations/backup-offsite.sh'], {
+      ...fixture.environment,
+      FTPS_REMOTE_ROOT: 'incoming',
+    })
+    expect(backupResult.exitCode, `${backupResult.stderr}\n${backupResult.stdout}`).toBe(0)
 
     const recentIncompleteName = 'production-20261020T024500Z'
     mkdirSync(join(incomingDirectory, recentIncompleteName))
@@ -792,48 +874,181 @@ describe('MyDevil backup archiver', () => {
 
     const archiverResult = await run('sh', ['scripts/operations/archive-offsite-backups.sh'], {
       ...fixture.environment,
-      WKF_BACKUP_ARCHIVE_DIRECTORY: archiveDirectory,
+      WKF_BACKUP_ALLOWED_SIGNERS_FILE: fixture.environment.BACKUP_ALLOWED_SIGNERS_FILE,
       WKF_BACKUP_ARCHIVER_LOCK_FILE: join(fixture.directory, 'archiver.lock'),
       WKF_BACKUP_INCOMING_DIRECTORY: incomingDirectory,
+      WKF_BACKUP_JQ_COMMAND: 'jq',
       WKF_BACKUP_LOCK_COMMAND: join(fixture.directory, 'bin', 'lockf'),
       WKF_BACKUP_QUARANTINE_DIRECTORY: quarantineDirectory,
+      WKF_BACKUP_REPOSITORY_DIRECTORY: repositoryDirectory,
+      WKF_BACKUP_SHA256_COMMAND: 'sha256sum',
+      WKF_BACKUP_SSH_KEYGEN_COMMAND: 'ssh-keygen',
     })
 
     expect(archiverResult.exitCode, archiverResult.stderr).toBe(0)
-    expect(existsSync(join(archiveDirectory, completeName))).toBe(true)
+    const snapshotDirectory = join(repositoryDirectory, 'snapshots', backupName)
+    expect(existsSync(snapshotDirectory)).toBe(true)
+    expect(existsSync(join(incomingDirectory, backupName))).toBe(false)
+    const snapshotValidation = await run(
+      'bash',
+      ['scripts/operations/validate-offsite-backup.sh', snapshotDirectory],
+      {
+        ...fixture.environment,
+        AGE_IDENTITY_FILE: join(fixture.directory, 'identity.txt'),
+      },
+    )
+    expect(snapshotValidation.exitCode, snapshotValidation.stderr).toBe(0)
+    const storageManifest = JSON.parse(
+      readFileSync(join(snapshotDirectory, 'storage-manifest.json'), 'utf8'),
+    ) as { objects: Array<{ archiveFile: string; plaintextSha256: string }> }
+    for (const object of storageManifest.objects) {
+      const objectDirectory = join(
+        repositoryDirectory,
+        'objects',
+        'sha256',
+        object.plaintextSha256.slice(0, 2),
+        object.plaintextSha256,
+      )
+      const replicaOne = join(objectDirectory, 'replica-1.age')
+      const replicaTwo = join(objectDirectory, 'replica-2.age')
+      const snapshotObject = join(snapshotDirectory, object.archiveFile)
+      expect(existsSync(replicaOne)).toBe(true)
+      expect(existsSync(replicaTwo)).toBe(true)
+      expect(statSync(replicaOne).ino).not.toBe(statSync(replicaTwo).ino)
+      expect(statSync(snapshotObject).ino).toBe(statSync(replicaOne).ino)
+    }
     expect(existsSync(join(incomingDirectory, recentIncompleteName))).toBe(true)
     expect(
       readdirSync(quarantineDirectory).some((name) => name.startsWith(staleIncompleteName)),
     ).toBe(true)
+
+    const secondBackupName = 'production-20261019T200100Z'
+    const secondBackupResult = await run('bash', ['scripts/operations/backup-offsite.sh'], {
+      ...fixture.environment,
+      BACKUP_NAME: secondBackupName,
+      FTPS_REMOTE_ROOT: 'incoming',
+    })
+    expect(
+      secondBackupResult.exitCode,
+      `${secondBackupResult.stderr}\n${secondBackupResult.stdout}`,
+    ).toBe(0)
+    const secondArchiverResult = await run(
+      'sh',
+      ['scripts/operations/archive-offsite-backups.sh'],
+      {
+        ...fixture.environment,
+        WKF_BACKUP_ALLOWED_SIGNERS_FILE: fixture.environment.BACKUP_ALLOWED_SIGNERS_FILE,
+        WKF_BACKUP_ARCHIVER_LOCK_FILE: join(fixture.directory, 'archiver.lock'),
+        WKF_BACKUP_INCOMING_DIRECTORY: incomingDirectory,
+        WKF_BACKUP_JQ_COMMAND: 'jq',
+        WKF_BACKUP_LOCK_COMMAND: join(fixture.directory, 'bin', 'lockf'),
+        WKF_BACKUP_QUARANTINE_DIRECTORY: quarantineDirectory,
+        WKF_BACKUP_REPOSITORY_DIRECTORY: repositoryDirectory,
+        WKF_BACKUP_SHA256_COMMAND: 'sha256sum',
+        WKF_BACKUP_SSH_KEYGEN_COMMAND: 'ssh-keygen',
+      },
+    )
+    expect(secondArchiverResult.exitCode, secondArchiverResult.stderr).toBe(0)
+    const secondSnapshotDirectory = join(repositoryDirectory, 'snapshots', secondBackupName)
+    expect(existsSync(secondSnapshotDirectory)).toBe(true)
+    for (const object of storageManifest.objects) {
+      const replicaOne = join(
+        repositoryDirectory,
+        'objects',
+        'sha256',
+        object.plaintextSha256.slice(0, 2),
+        object.plaintextSha256,
+        'replica-1.age',
+      )
+      expect(statSync(join(secondSnapshotDirectory, object.archiveFile)).ino).toBe(
+        statSync(replicaOne).ino,
+      )
+    }
+
+    const repositoryCheck = await run(
+      'sh',
+      ['scripts/operations/check-offsite-backup-repository.sh'],
+      {
+        ...fixture.environment,
+        WKF_BACKUP_JQ_COMMAND: 'jq',
+        WKF_BACKUP_REPOSITORY_DIRECTORY: repositoryDirectory,
+        WKF_BACKUP_SHA256_COMMAND: 'sha256sum',
+      },
+    )
+    expect(repositoryCheck.exitCode, repositoryCheck.stderr).toBe(0)
+    expect(repositoryCheck.stdout).toContain('2 snapshots, 2 unique objects')
+
+    const damagedObject = storageManifest.objects[0]
+    const damagedObjectDirectory = join(
+      repositoryDirectory,
+      'objects',
+      'sha256',
+      damagedObject.plaintextSha256.slice(0, 2),
+      damagedObject.plaintextSha256,
+    )
+    writeFileSync(join(damagedObjectDirectory, 'replica-2.age'), 'corrupted replica')
+    const failedCheck = await run('sh', ['scripts/operations/check-offsite-backup-repository.sh'], {
+      ...fixture.environment,
+      WKF_BACKUP_JQ_COMMAND: 'jq',
+      WKF_BACKUP_REPOSITORY_DIRECTORY: repositoryDirectory,
+      WKF_BACKUP_SHA256_COMMAND: 'sha256sum',
+    })
+    expect(failedCheck.exitCode).not.toBe(0)
+    expect(failedCheck.stderr).toContain('Replica 2 is missing or corrupt')
+    const repairResult = await run(
+      'sh',
+      ['scripts/operations/check-offsite-backup-repository.sh', '--repair'],
+      {
+        ...fixture.environment,
+        WKF_BACKUP_JQ_COMMAND: 'jq',
+        WKF_BACKUP_REPOSITORY_DIRECTORY: repositoryDirectory,
+        WKF_BACKUP_SHA256_COMMAND: 'sha256sum',
+      },
+    )
+    expect(repairResult.exitCode, repairResult.stderr).toBe(0)
+    expect(repairResult.stdout).toContain('Repaired replica 2')
+    expect(statSync(join(damagedObjectDirectory, 'replica-1.age')).ino).not.toBe(
+      statSync(join(damagedObjectDirectory, 'replica-2.age')).ino,
+    )
   })
 
   it('leaves a completed directory in incoming when its marker names another backup', async () => {
     const fixture = setup()
-    const incomingDirectory = join(fixture.directory, 'incoming')
-    const archiveDirectory = join(fixture.directory, 'archive')
+    const incomingDirectory = join(fixture.directory, 'remote', 'incoming')
+    const repositoryDirectory = join(fixture.directory, 'repository-v3')
     const quarantineDirectory = join(fixture.directory, 'quarantine')
     mkdirSync(incomingDirectory)
-    mkdirSync(archiveDirectory)
     mkdirSync(quarantineDirectory)
+    const backupResult = await run('bash', ['scripts/operations/backup-offsite.sh'], {
+      ...fixture.environment,
+      FTPS_REMOTE_ROOT: 'incoming',
+    })
+    expect(backupResult.exitCode, `${backupResult.stderr}\n${backupResult.stdout}`).toBe(0)
     const directory = join(incomingDirectory, backupName)
-    mkdirSync(directory)
     writeFileSync(
       join(directory, '.complete'),
-      'formatVersion=1\nbackupName=production-20261019T210000Z\n',
+      readFileSync(join(directory, '.complete'), 'utf8').replace(
+        `backupName=${backupName}`,
+        'backupName=production-20261019T210000Z',
+      ),
     )
 
     const archiverResult = await run('sh', ['scripts/operations/archive-offsite-backups.sh'], {
       ...fixture.environment,
-      WKF_BACKUP_ARCHIVE_DIRECTORY: archiveDirectory,
+      WKF_BACKUP_ALLOWED_SIGNERS_FILE: fixture.environment.BACKUP_ALLOWED_SIGNERS_FILE,
       WKF_BACKUP_ARCHIVER_LOCK_FILE: join(fixture.directory, 'archiver.lock'),
       WKF_BACKUP_INCOMING_DIRECTORY: incomingDirectory,
+      WKF_BACKUP_JQ_COMMAND: 'jq',
       WKF_BACKUP_LOCK_COMMAND: join(fixture.directory, 'bin', 'lockf'),
       WKF_BACKUP_QUARANTINE_DIRECTORY: quarantineDirectory,
+      WKF_BACKUP_REPOSITORY_DIRECTORY: repositoryDirectory,
+      WKF_BACKUP_SHA256_COMMAND: 'sha256sum',
+      WKF_BACKUP_SSH_KEYGEN_COMMAND: 'ssh-keygen',
     })
 
-    expect(archiverResult.exitCode).toBe(0)
-    expect(archiverResult.stderr).toContain('Completion marker does not match')
+    expect(archiverResult.exitCode).not.toBe(0)
+    expect(archiverResult.stderr).toContain('invalid structure or backup name')
     expect(existsSync(directory)).toBe(true)
-    expect(readdirSync(archiveDirectory)).toHaveLength(0)
+    expect(existsSync(join(repositoryDirectory, 'snapshots', backupName))).toBe(false)
   })
 })
