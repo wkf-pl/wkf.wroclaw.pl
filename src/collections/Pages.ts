@@ -23,6 +23,7 @@ import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
 import { combineAccessWithConstraint } from '@/modules/membership/permission-resolution'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
+import { validatePageAliasCollision } from '@/modules/url-aliases/url-aliases'
 
 const createPages = createRolePermissionAccess({ operation: 'create', resource: 'pages' })
 const deletePagesByRole = createRolePermissionAccess({ operation: 'delete', resource: 'pages' })
@@ -146,7 +147,12 @@ export const Pages: CollectionConfig = {
     afterChange: [syncContentListingAfterChange],
     afterDelete: [removeContentListingAfterDelete],
     beforeChange: [populateHierarchyFullTitle, populateListingExcerptOnPublish, setPublishedAt],
-    beforeValidate: [validateMediaBlocks, validatePageStructure, validateHierarchy],
+    beforeValidate: [
+      validatePageAliasCollision,
+      validateMediaBlocks,
+      validatePageStructure,
+      validateHierarchy,
+    ],
   },
   labels: {
     plural: 'Strony',

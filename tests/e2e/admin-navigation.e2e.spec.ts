@@ -22,6 +22,7 @@ test('groups editor navigation with the intended labels and order', async ({ pag
     'Kategorie',
     'Tagi',
     'Media',
+    'Aliasy adresów',
   ])
   await expect(
     navigation.getByRole('button', { name: 'Klubowe' }).locator('..').locator('a'),

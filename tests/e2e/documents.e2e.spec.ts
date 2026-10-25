@@ -2,21 +2,40 @@ import { expect, test } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
+import type { Document, UrlAlias } from '@/payload-types'
 import { getStorageContainerClient } from '@/storage/get-storage-container-client'
 
 import {
   createPublishedDocumentFixture,
   deletePublishedDocumentFixture,
 } from '../helpers/documentFixture'
+import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
 const fixtureName = 'e2e-document-register'
+const aliasSlug = 'e2e-document-alias'
 let payload: Payload
+let documentFixture: Document
+let aliasFixture: UrlAlias
 let createdDocumentsPageID: number | undefined
 
 test.beforeAll(async () => {
   payload = await getPayload({ config })
-  const document = await createPublishedDocumentFixture(payload, fixtureName)
+  documentFixture = await createPublishedDocumentFixture(payload, fixtureName)
+  await payload.delete({
+    collection: 'url-aliases',
+    overrideAccess: true,
+    where: { slug: { equals: aliasSlug } },
+  })
+  aliasFixture = await payload.create({
+    collection: 'url-aliases',
+    data: {
+      documentDestination: 'primaryFile',
+      slug: aliasSlug,
+      target: { relationTo: 'documents', value: documentFixture.id },
+    },
+    overrideAccess: true,
+  })
   const existingPages = await payload.find({
     collection: 'pages',
     depth: 0,
@@ -49,7 +68,7 @@ test.beforeAll(async () => {
         layout: [
           {
             blockType: 'listing',
-            items: [{ item: { relationTo: 'documents', value: document.id } }],
+            items: [{ item: { relationTo: 'documents', value: documentFixture.id } }],
             pageSize: 12,
             pagination: false,
             parentFilter: 'none',
@@ -69,6 +88,11 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   if (payload) {
+    await payload.delete({
+      collection: 'url-aliases',
+      overrideAccess: true,
+      where: { slug: { equals: aliasSlug } },
+    })
     if (createdDocumentsPageID !== undefined) {
       await payload.delete({
         collection: 'pages',
@@ -78,6 +102,43 @@ test.afterAll(async () => {
     }
     await deletePublishedDocumentFixture(payload, fixtureName)
   }
+})
+
+test('shows separate URL alias type and target controls in one row', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto(`/admin/collections/url-aliases/${aliasFixture.id}`)
+
+  const targetRow = page.locator('.wkf-url-alias-target')
+  const typeField = targetRow.locator('.field-type.select')
+  const targetField = targetRow.locator('.field-type.relationship')
+  const documentDestinationField = page.locator('#field-documentDestination')
+  await expect(typeField).toContainText('Typ')
+  await expect(targetField).toContainText('Cel')
+  await expect(documentDestinationField).toContainText('Cel dokumentu')
+  await expect(typeField).toContainText('Dokument')
+  await expect(targetField).toContainText(`Dokument E2E ${fixtureName}`)
+
+  const typeBox = await typeField.boundingBox()
+  const targetBox = await targetField.boundingBox()
+  const documentDestinationBox = await documentDestinationField.boundingBox()
+  expect(typeBox).not.toBeNull()
+  expect(targetBox).not.toBeNull()
+  expect(documentDestinationBox).not.toBeNull()
+  expect(Math.abs((typeBox?.y ?? 0) - (targetBox?.y ?? 0))).toBeLessThan(5)
+  expect(Math.abs((typeBox?.y ?? 0) - (documentDestinationBox?.y ?? 0))).toBeLessThan(5)
+  expect(Math.abs((typeBox?.width ?? 0) - (targetBox?.width ?? 0))).toBeLessThan(5)
+  expect(Math.abs((typeBox?.width ?? 0) - (documentDestinationBox?.width ?? 0))).toBeLessThan(5)
+
+  await typeField.locator('.rs__control').click()
+  await page.locator('.rs__menu').getByText('Wpis', { exact: true }).click()
+  await expect(targetField).not.toContainText(`Dokument E2E ${fixtureName}`)
+  await expect(documentDestinationField).toHaveCount(0)
+
+  const targetRowBox = await targetRow.boundingBox()
+  const updatedTargetBox = await targetField.boundingBox()
+  expect(targetRowBox).not.toBeNull()
+  expect(updatedTargetBox).not.toBeNull()
+  expect((targetRowBox?.width ?? 0) / (updatedTargetBox?.width ?? 1)).toBeCloseTo(2, 1)
 })
 
 test('renders the public documents register without account actions', async ({ page }) => {
@@ -178,6 +239,66 @@ test('renders the public documents register without account actions', async ({ p
   expect(downloadResponse.ok()).toBe(true)
   expect(downloadResponse.headers()['content-type']).toBe('application/pdf')
   expect(downloadResponse.headers()['content-disposition']).toContain('attachment;')
+
+  const aliasResponse = await page.request.get(`/${aliasSlug}`, { maxRedirects: 0 })
+  expect(aliasResponse.status()).toBe(308)
+  expect(new URL(aliasResponse.headers().location, page.url()).pathname).toBe(filePath)
+
+  const aliasFileResponse = await page.request.get(`/${aliasSlug}`)
+  expect(aliasFileResponse.ok()).toBe(true)
+  expect(aliasFileResponse.headers()['content-type']).toBe('application/pdf')
+  expect(aliasFileResponse.headers()['content-disposition']).toContain('inline;')
+
+  const aliasDownloadRedirect = await page.request.get(`/${aliasSlug}?download=1`, {
+    maxRedirects: 0,
+  })
+  expect(aliasDownloadRedirect.status()).toBe(308)
+  const aliasDownloadLocation = new URL(aliasDownloadRedirect.headers().location, page.url())
+  expect(aliasDownloadLocation.pathname).toBe(filePath)
+  expect(aliasDownloadLocation.search).toBe('?download=1')
+
+  const aliasDownloadResponse = await page.request.get(`/${aliasSlug}?download=1`)
+  expect(aliasDownloadResponse.ok()).toBe(true)
+  expect(aliasDownloadResponse.headers()['content-type']).toBe('application/pdf')
+  expect(aliasDownloadResponse.headers()['content-disposition']).toContain('attachment;')
+
+  const aliasRangeResponse = await page.request.get(`/${aliasSlug}`, {
+    headers: { Range: 'bytes=0-9' },
+  })
+  expect(aliasRangeResponse.status()).toBe(206)
+  expect(aliasRangeResponse.headers()['content-range']).toMatch(/^bytes 0-9\/\d+$/)
+  expect((await aliasRangeResponse.body()).byteLength).toBe(10)
+
+  const updatedSlug = `${fixtureName}-updated`
+  const authenticationResponse = await page.request.post('/api/users/login', {
+    data: { email: editorTestUser.email, password: editorTestUser.password },
+  })
+  const authentication = (await authenticationResponse.json()) as { token?: string }
+  if (!authentication.token) throw new Error('Document update login did not return a token.')
+  const authenticationHeaders = { Authorization: `JWT ${authentication.token}` }
+  const updateDocumentResponse = await page.request.patch(`/api/documents/${documentFixture.id}`, {
+    data: { slug: updatedSlug },
+    headers: authenticationHeaders,
+  })
+  if (!updateDocumentResponse.ok()) {
+    throw new Error(
+      `Document update failed with ${updateDocumentResponse.status()}: ${await updateDocumentResponse.text()}`,
+    )
+  }
+  const updatedAliasResponse = await page.request.get(`/${aliasSlug}`, { maxRedirects: 0 })
+  expect(updatedAliasResponse.status()).toBe(308)
+  expect(new URL(updatedAliasResponse.headers().location, page.url()).pathname).toMatch(
+    new RegExp(`^/dokumenty/${updatedSlug}/plik/\\d+$`),
+  )
+  const restoreDocumentResponse = await page.request.patch(`/api/documents/${documentFixture.id}`, {
+    data: { slug: fixtureName },
+    headers: authenticationHeaders,
+  })
+  if (!restoreDocumentResponse.ok()) {
+    throw new Error(
+      `Document restore failed with ${restoreDocumentResponse.status()}: ${await restoreDocumentResponse.text()}`,
+    )
+  }
 
   const blobClient = getStorageContainerClient().getBlobClient(`documents/${fixtureName}.pdf`)
   expect(await blobClient.exists()).toBe(true)

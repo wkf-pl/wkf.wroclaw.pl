@@ -54,6 +54,7 @@ import * as migration_20261016_001005_significant_date_listing_age from './20261
 import * as migration_20261024_164409_block_editor_layout_names from './20261024_164409_block_editor_layout_names'
 import * as migration_20261024_224441_icon_library_batch_2 from './20261024_224441_icon_library_batch_2'
 import * as migration_20261025_110924_icon_library_batch_3 from './20261025_110924_icon_library_batch_3'
+import * as migration_20261025_163139 from './20261025_163139'
 
 export const migrations = [
   {
@@ -335,5 +336,10 @@ export const migrations = [
     up: migration_20261025_110924_icon_library_batch_3.up,
     down: migration_20261025_110924_icon_library_batch_3.down,
     name: '20261025_110924_icon_library_batch_3',
+  },
+  {
+    up: migration_20261025_163139.up,
+    down: migration_20261025_163139.down,
+    name: '20261025_163139',
   },
 ]

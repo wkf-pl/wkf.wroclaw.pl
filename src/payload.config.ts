@@ -27,6 +27,7 @@ import {
   Roles,
   Tags,
   Users,
+  UrlAliases,
 } from './collections'
 import { createEmailAdapter } from './email/create-email-adapter'
 import { Footer, HomepageHero, HomepageSections, Navigation, SiteSettings } from './globals'
@@ -127,6 +128,7 @@ export default buildConfig({
     MemberProfiles,
     DocumentFiles,
     Documents,
+    UrlAliases,
     Partners,
     ClubSections,
     Users,
