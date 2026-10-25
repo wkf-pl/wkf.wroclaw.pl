@@ -1,0 +1,4 @@
+interface:
+  display_name: 'WKF Raster Icons'
+  short_description: 'Prepare and integrate WKF raster icon batches'
+  default_prompt: 'Use $wkf-raster-icons to prepare and integrate this batch of WKF icon references.'

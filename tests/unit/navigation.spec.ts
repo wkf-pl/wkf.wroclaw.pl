@@ -267,7 +267,7 @@ describe('navigation links', () => {
   })
 
   it('lists all named icons alphabetically by their admin labels', () => {
-    expect(iconNameOptions).toHaveLength(63)
+    expect(iconNameOptions).toHaveLength(89)
     expect(iconNameOptions.map(({ label }) => label)).toEqual(
       [...iconNameOptions.map(({ label }) => label)].sort((first, second) =>
         first.localeCompare(second, 'pl'),
