@@ -80,6 +80,7 @@ export interface Config {
     'member-profiles': MemberProfile;
     'document-files': DocumentFile;
     documents: Document;
+    'url-aliases': UrlAlias;
     partners: Partner;
     'club-sections': ClubSection;
     users: User;
@@ -119,6 +120,7 @@ export interface Config {
     'member-profiles': MemberProfilesSelect<false> | MemberProfilesSelect<true>;
     'document-files': DocumentFilesSelect<false> | DocumentFilesSelect<true>;
     documents: DocumentsSelect<false> | DocumentsSelect<true>;
+    'url-aliases': UrlAliasesSelect<false> | UrlAliasesSelect<true>;
     partners: PartnersSelect<false> | PartnersSelect<true>;
     'club-sections': ClubSectionsSelect<false> | ClubSectionsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -1044,6 +1046,7 @@ export interface Role {
           | 'event-types'
           | 'partners'
           | 'documents'
+          | 'url-aliases'
           | 'club-sections'
           | 'categories'
           | 'tags'
@@ -2313,6 +2316,53 @@ export interface Partner {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "url-aliases".
+ */
+export interface UrlAlias {
+  id: number;
+  /**
+   * Jednosegmentowy adres bez domeny, na przykład statut dla /statut.
+   */
+  slug: string;
+  target:
+    | {
+        relationTo: 'pages';
+        value: number | Page;
+      }
+    | {
+        relationTo: 'posts';
+        value: number | Post;
+      }
+    | {
+        relationTo: 'events';
+        value: number | Event;
+      }
+    | {
+        relationTo: 'event-cycles';
+        value: number | EventCycle;
+      }
+    | {
+        relationTo: 'partners';
+        value: number | Partner;
+      }
+    | {
+        relationTo: 'categories';
+        value: number | Category;
+      }
+    | {
+        relationTo: 'tags';
+        value: number | Tag;
+      }
+    | {
+        relationTo: 'documents';
+        value: number | Document;
+      };
+  documentDestination?: ('page' | 'primaryFile') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "club-sections".
  */
 export interface ClubSection {
@@ -2522,6 +2572,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'documents';
         value: number | Document;
+      } | null)
+    | ({
+        relationTo: 'url-aliases';
+        value: number | UrlAlias;
       } | null)
     | ({
         relationTo: 'partners';
@@ -3553,6 +3607,17 @@ export interface DocumentsSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "url-aliases_select".
+ */
+export interface UrlAliasesSelect<T extends boolean = true> {
+  slug?: T;
+  target?: T;
+  documentDestination?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

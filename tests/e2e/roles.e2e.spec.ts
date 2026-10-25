@@ -15,6 +15,7 @@ test('shows administration resources but no CMS to an administrator', async ({ p
   await expect(page.locator(collectionNavigationLink('posts'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('pages'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('documents'))).toHaveCount(0)
+  await expect(page.locator(collectionNavigationLink('url-aliases'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('club-sections'))).toHaveCount(0)
   await expect(page.locator(globalNavigationLink('site-settings'))).toHaveCount(0)
 })
@@ -62,6 +63,7 @@ test('configures unique permission resources with Polish labels', async ({ page 
   await secondResourceField.getByRole('combobox').click()
   await expect(page.locator('.rs__menu').getByText('Media', { exact: true })).toHaveCount(0)
   await expect(page.locator('.rs__menu').getByText('Dokumenty', { exact: true })).toBeVisible()
+  await expect(page.locator('.rs__menu').getByText('Aliasy adresów', { exact: true })).toBeVisible()
   await expect(page.locator('.rs__menu').getByText(/^Dokumenty:/)).toHaveCount(0)
   await expect(
     page.locator('.rs__menu').getByText('Pliki dokumentów', { exact: true }),
@@ -76,6 +78,7 @@ test('shows CMS resources but no administration collections to an editor', async
   await expect(page.locator(collectionNavigationLink('media'))).toBeVisible()
   await expect(page.locator(collectionNavigationLink('club-sections'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('documents'))).toBeVisible()
+  await expect(page.locator(collectionNavigationLink('url-aliases'))).toBeVisible()
   await expect(page.locator(globalNavigationLink('navigation'))).toBeVisible()
   await expect(page.locator(globalNavigationLink('site-settings'))).toBeVisible()
   await expect(page.locator(globalNavigationLink('homepage-hero'))).toBeVisible()
@@ -144,6 +147,7 @@ test('shows a readable collection without its create action', async ({ page }) =
   await expect(page.locator(collectionNavigationLink('pages'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('club-sections'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('documents'))).toHaveCount(0)
+  await expect(page.locator(collectionNavigationLink('url-aliases'))).toHaveCount(0)
 
   await page.goto('/admin/account')
   await expect(page.locator('#field-displayName')).toBeVisible()

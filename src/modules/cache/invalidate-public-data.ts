@@ -109,6 +109,10 @@ const sitemapInvalidators = createCollectionCacheInvalidators([publicCacheTags.s
 export const invalidateSitemapAfterChange = sitemapInvalidators.afterChange
 export const invalidateSitemapAfterDelete = sitemapInvalidators.afterDelete
 
+const urlAliasInvalidators = createCollectionCacheInvalidators([publicCacheTags.urlAliases])
+export const invalidateUrlAliasesAfterChange = urlAliasInvalidators.afterChange
+export const invalidateUrlAliasesAfterDelete = urlAliasInvalidators.afterDelete
+
 const allPublicDataInvalidators = createCollectionCacheInvalidators(Object.values(publicCacheTags))
 export const invalidateAllPublicDataAfterChange = allPublicDataInvalidators.afterChange
 export const invalidateAllPublicDataAfterDelete = allPublicDataInvalidators.afterDelete

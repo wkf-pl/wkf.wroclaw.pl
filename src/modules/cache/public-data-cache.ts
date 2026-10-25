@@ -15,6 +15,7 @@ export const publicCacheTags = {
   posts: 'public:posts',
   siteSettings: 'public:site-settings',
   sitemap: 'public:sitemap',
+  urlAliases: 'public:url-aliases',
 } as const
 
 export const skipPublicCacheInvalidationContextKey = 'skipPublicCacheInvalidation'

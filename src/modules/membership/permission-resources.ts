@@ -79,6 +79,11 @@ export const permissionResources = {
     ownershipField: 'author',
     publishedField: '_status',
   },
+  'url-aliases': {
+    collection: 'url-aliases',
+    kind: 'collection',
+    label: 'Aliasy adresów',
+  },
   'club-sections': {
     collection: 'club-sections',
     kind: 'collection',
