@@ -115,14 +115,19 @@ upload_ftps_file() {
 }
 
 manifest_entries="$temporary_directory/blob-entries.jsonl"
+storage_object_entries="$temporary_directory/storage-object-entries.jsonl"
 manifest_path="$temporary_directory/manifest.json"
+storage_manifest_path="$temporary_directory/storage-manifest.json"
 blob_names_path="$temporary_directory/blob-names.txt"
 database_path="$temporary_directory/database.dump"
 blob_path="$temporary_directory/blob"
 encrypted_path="$temporary_directory/artifact.age"
 completion_marker_path="$temporary_directory/.complete"
+uploaded_objects_directory="$temporary_directory/uploaded-objects"
 
 : >"$manifest_entries"
+: >"$storage_object_entries"
+mkdir --parents -- "$uploaded_objects_directory"
 
 migration_state="$({
   psql \
@@ -150,6 +155,8 @@ pg_restore --list "$database_path" >/dev/null
 database_checksum="$(sha256sum "$database_path" | cut --delimiter ' ' --fields 1)"
 database_size="$(wc --bytes <"$database_path")"
 age --recipient "$AGE_RECIPIENT" --output "$encrypted_path" "$database_path"
+database_ciphertext_checksum="$(sha256sum "$encrypted_path" | cut --delimiter ' ' --fields 1)"
+database_ciphertext_size="$(wc --bytes <"$encrypted_path")"
 upload_ftps_file "$encrypted_path" "$remote_backup_directory/database.dump.age"
 rm --force -- "$database_path" "$encrypted_path"
 
@@ -165,15 +172,29 @@ urlencode() {
 }
 
 blob_count=0
+unique_blob_count=0
 while IFS= read -r blob_name <&3; do
   [[ -n "$blob_name" ]] || continue
-  archive_name="$(printf '%s' "$blob_name" | sha256sum | cut --delimiter ' ' --fields 1).age"
   rm --force -- "$blob_path" "$encrypted_path"
   azcopy copy "${PRODUCTION_MEDIA_CONTAINER_URL%/}/$(urlencode "$blob_name")" "$blob_path" --overwrite=true --output-type=text </dev/null
   clear_checksum="$(sha256sum "$blob_path" | cut --delimiter ' ' --fields 1)"
   clear_size="$(wc --bytes <"$blob_path")"
-  age --recipient "$AGE_RECIPIENT" --output "$encrypted_path" "$blob_path"
-  upload_ftps_file "$encrypted_path" "$remote_backup_directory/blobs/$archive_name"
+  archive_name="$clear_checksum.age"
+  if [[ ! -e "$uploaded_objects_directory/$clear_checksum" ]]; then
+    age --recipient "$AGE_RECIPIENT" --output "$encrypted_path" "$blob_path"
+    ciphertext_checksum="$(sha256sum "$encrypted_path" | cut --delimiter ' ' --fields 1)"
+    ciphertext_size="$(wc --bytes <"$encrypted_path")"
+    upload_ftps_file "$encrypted_path" "$remote_backup_directory/blobs/$archive_name"
+    jq --compact-output --null-input \
+      --arg archiveFile "blobs/$archive_name" \
+      --arg plaintextSha256 "$clear_checksum" \
+      --argjson plaintextSize "$clear_size" \
+      --arg ciphertextSha256 "$ciphertext_checksum" \
+      --argjson ciphertextSize "$ciphertext_size" \
+      '{archiveFile: $archiveFile, plaintextSha256: $plaintextSha256, plaintextSize: $plaintextSize, ciphertextSha256: $ciphertextSha256, ciphertextSize: $ciphertextSize}' >>"$storage_object_entries"
+    : >"$uploaded_objects_directory/$clear_checksum"
+    unique_blob_count=$((unique_blob_count + 1))
+  fi
   jq --compact-output --null-input \
     --arg archiveFile "blobs/$archive_name" \
     --arg name "$blob_name" \
@@ -194,8 +215,9 @@ jq --null-input \
   --arg signingKeyFingerprint "$signing_key_fingerprint" \
   --argjson migrationState "$migration_state" \
   --argjson blobCount "$blob_count" \
+  --argjson uniqueBlobCount "$unique_blob_count" \
   --slurpfile blobs "$manifest_entries" \
-  '{formatVersion: 2, backupName: $backupName, createdAt: $createdAt, database: {archiveFile: "database.dump.age", sha256: $databaseSha256, size: $databaseSize}, deployedSourceSha: $deployedSourceSha, imageReference: $imageReference, operationsImageReference: $operationsImageReference, signingKeyFingerprint: $signingKeyFingerprint, migrationState: $migrationState, blobCount: $blobCount, blobs: $blobs}' \
+  '{formatVersion: 3, backupName: $backupName, createdAt: $createdAt, database: {archiveFile: "database.dump.age", sha256: $databaseSha256, size: $databaseSize}, deployedSourceSha: $deployedSourceSha, imageReference: $imageReference, operationsImageReference: $operationsImageReference, signingKeyFingerprint: $signingKeyFingerprint, migrationState: $migrationState, blobCount: $blobCount, uniqueBlobCount: $uniqueBlobCount, blobs: $blobs}' \
   >"$manifest_path"
 
 rm --force -- "$encrypted_path"
@@ -206,16 +228,39 @@ upload_ftps_file "$encrypted_path" "$remote_backup_directory/manifest.json.age"
 upload_ftps_file "$encrypted_path.sig" "$remote_backup_directory/manifest.json.age.sig"
 
 manifest_checksum="$(sha256sum "$encrypted_path" | cut --delimiter ' ' --fields 1)"
+manifest_size="$(wc --bytes <"$encrypted_path")"
 signature_checksum="$(sha256sum "$encrypted_path.sig" | cut --delimiter ' ' --fields 1)"
+signature_size="$(wc --bytes <"$encrypted_path.sig")"
+
+jq --null-input \
+  --arg backupName "$backup_name" \
+  --arg databaseCiphertextSha256 "$database_ciphertext_checksum" \
+  --argjson databaseCiphertextSize "$database_ciphertext_size" \
+  --arg manifestCiphertextSha256 "$manifest_checksum" \
+  --argjson manifestCiphertextSize "$manifest_size" \
+  --arg manifestSignatureSha256 "$signature_checksum" \
+  --argjson manifestSignatureSize "$signature_size" \
+  --argjson objectCount "$unique_blob_count" \
+  --slurpfile objects "$storage_object_entries" \
+  '{formatVersion: 1, backupName: $backupName, database: {archiveFile: "database.dump.age", ciphertextSha256: $databaseCiphertextSha256, ciphertextSize: $databaseCiphertextSize}, manifest: {archiveFile: "manifest.json.age", ciphertextSha256: $manifestCiphertextSha256, ciphertextSize: $manifestCiphertextSize}, manifestSignature: {archiveFile: "manifest.json.age.sig", ciphertextSha256: $manifestSignatureSha256, ciphertextSize: $manifestSignatureSize}, objectCount: $objectCount, objects: $objects}' \
+  >"$storage_manifest_path"
+ssh-keygen -Y sign -q -f "$signing_private_key_file" -n wkf-production-backup-storage "$storage_manifest_path"
+upload_ftps_file "$storage_manifest_path" "$remote_backup_directory/storage-manifest.json"
+upload_ftps_file "$storage_manifest_path.sig" "$remote_backup_directory/storage-manifest.json.sig"
+
+storage_manifest_checksum="$(sha256sum "$storage_manifest_path" | cut --delimiter ' ' --fields 1)"
+storage_manifest_signature_checksum="$(sha256sum "$storage_manifest_path.sig" | cut --delimiter ' ' --fields 1)"
 {
-  echo 'formatVersion=1'
+  echo 'formatVersion=3'
   echo "backupName=$backup_name"
   echo "manifestSha256=$manifest_checksum"
   echo "signatureSha256=$signature_checksum"
+  echo "storageManifestSha256=$storage_manifest_checksum"
+  echo "storageManifestSignatureSha256=$storage_manifest_signature_checksum"
   echo "completedAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 } >"$completion_marker_path"
 
 # The marker is deliberately uploaded last. MyDevil must never archive a directory without it.
 upload_ftps_file "$completion_marker_path" "$remote_backup_directory/.complete"
 
-echo "Published complete encrypted off-site backup: $backup_name ($blob_count blobs)."
+echo "Published complete encrypted off-site backup: $backup_name ($blob_count blobs, $unique_blob_count unique objects)."

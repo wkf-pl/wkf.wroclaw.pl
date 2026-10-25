@@ -22,7 +22,7 @@ staging data** workflow.
 2. Never restore an off-site backup directly over production before it has passed local validation
    and an isolated Azure restore.
 3. Treat `.complete` as necessary but not sufficient. A backup must also pass manifest-signature,
-   checksum, PostgreSQL archive, and blob-count validation.
+   storage-manifest, checksum, PostgreSQL archive, and blob-count validation.
 4. Stop the target application before replacing its database or Blob container.
 5. Do not run a deploy, import, backup, or restore concurrently. Production workflows serialize on
    `production-operations`; staging workflows serialize on `staging-operations`. Manual Azure work
@@ -52,11 +52,11 @@ same revision during cleanup.
    running or waiting for approval.
 3. Confirm that the latest successful staging deployment summary contains an immutable
    `wkf-operations` digest if the manual run will override the default image resolution.
-4. Confirm that the MyDevil quota and protected archive are not near their limits:
+4. Confirm that the MyDevil quota and protected repository are not near their limits:
 
    ```bash
    ssh forseti@s47.mydevil.net \
-     'du -sh /usr/home/forseti/remote-backups/wkf/archive /usr/home/forseti/remote-backups/wkf/incoming'
+     'du -sh /usr/home/forseti/remote-backups/wkf/repository-v3 /usr/home/forseti/remote-backups/wkf/incoming'
    ```
 
 ### GitHub procedure
@@ -89,15 +89,18 @@ same revision during cleanup.
 
 ### MyDevil publication check
 
-The restricted FTPS account can see only `incoming`. A MyDevil cron runs every 15 minutes and moves
-a complete directory into the protected archive. After one cron interval, run:
+The restricted FTPS account can see only `incoming`. A MyDevil cron runs every 15 minutes, verifies
+a complete transfer, and publishes a snapshot in the protected repository. After one cron interval,
+run:
 
 ```bash
 export BACKUP_NAME='production-YYYYMMDDTHHMMSSZ'
 ssh forseti@s47.mydevil.net \
-  "test -f /usr/home/forseti/remote-backups/wkf/archive/${BACKUP_NAME}/.complete"
+  "test -f /usr/home/forseti/remote-backups/wkf/repository-v3/snapshots/${BACKUP_NAME}/.complete"
 ssh forseti@s47.mydevil.net \
-  "du -sh /usr/home/forseti/remote-backups/wkf/archive/${BACKUP_NAME}"
+  "du -sh /usr/home/forseti/remote-backups/wkf/repository-v3/snapshots/${BACKUP_NAME}"
+ssh forseti@s47.mydevil.net \
+  '/usr/home/forseti/bin/wkf-check-offsite-backup-repository.sh'
 ```
 
 If the directory remains in `incoming`, inspect:
@@ -107,8 +110,12 @@ ssh forseti@s47.mydevil.net \
   'tail -n 100 /usr/home/forseti/remote-backups/wkf/archive-cron.log'
 ```
 
-Do not move an incomplete directory into `archive` manually. Diagnose the missing or invalid
-`.complete` marker first.
+Do not publish an incomplete directory in `repository-v3/snapshots` manually. Diagnose the missing
+or invalid `.complete` marker first.
+
+Format v3 stores media in a two-replica content-addressed object pool and exposes it in snapshots
+through hard links. See [Off-site backup storage format v3](OffsiteBackupStorageDecision.md) before
+changing retention, repairing the repository, or deleting legacy backups.
 
 ### Failure recovery
 
@@ -153,12 +160,12 @@ workflow is the only supported live-production restore entry point. It uses the 
 [`restore-offsite-backup.sh`](../scripts/operations/restore-offsite-backup.sh) engine from an
 ephemeral Container Apps job inside the production private network.
 
-The workflow never receives access to the protected MyDevil `archive`. Before an incident restore,
-an operator validates the selected archive recovery point locally, re-encrypts it with a dedicated
+The workflow never receives access to the protected MyDevil repository. Before an incident restore,
+an operator validates the selected snapshot locally, re-encrypts it with a dedicated
 restore-only `age` recipient, signs it with a dedicated restore-only Ed25519 key, and publishes only
 that disposable copy under `restore-export`. A separate restricted FTPS account can see only
 `restore-export`. Compromise of its GitHub credential cannot read, change, or delete the original
-archive.
+repository.
 
 Do not run the low-level restore script from a workstation and do not point the normal backup-upload
 account at `restore-export`. The production PostgreSQL endpoint and Storage account are private, and
@@ -222,8 +229,8 @@ the restore replaces both the complete database and Blob container.
    ```
 
 6. Confirm through the dedicated restore FTPS account that the exported directory is readable and
-   that `archive`, `incoming`, and `quarantine` are not visible. The account may modify its
-   disposable export; it must never be able to traverse to the original archive.
+   that `repository-v3`, `incoming`, and `quarantine` are not visible. The account may modify its
+   disposable export; it must never be able to traverse to the original repository.
 7. Do not change the persistent restore secrets for each incident. After the operation, remove only
    the disposable export from `restore-export` and the local prepared copy. Preserve the dedicated
    restore keys and their protected backups.
@@ -299,15 +306,15 @@ The lower-level command sequence and security properties are also documented in
     logs, and HTTP errors for at least one normal traffic cycle.
 12. Remove the exported directory from `restore-export`, delete the isolated drill resource group,
     and remove every local prepared or decrypted artifact. Keep the persistent `prod-restore`
-    secrets and dedicated restore keys. Preserve the original encrypted backup in `archive` and the
-    incident evidence.
+    secrets and dedicated restore keys. Preserve the original encrypted snapshot in
+    `repository-v3/snapshots` and the incident evidence.
 
 ## 3. Exceptional recovery tasks
 
 ### Download, validate, and decrypt a MyDevil backup
 
-The restricted FTPS writer cannot read `archive`. Download an archived recovery point locally with
-the main MyDevil SSH identity; never put that identity in GitHub.
+The restricted FTPS writer cannot read `repository-v3`. Download a snapshot locally with the main
+MyDevil SSH identity; never put that identity in GitHub.
 
 1. Create a private local working directory and select the recovery point:
 
@@ -324,7 +331,7 @@ the main MyDevil SSH identity; never put that identity in GitHub.
 
    ```bash
    rsync --archive --protect-args \
-     "forseti@s47.mydevil.net:/usr/home/forseti/remote-backups/wkf/archive/${BACKUP_NAME}/" \
+     "forseti@s47.mydevil.net:/usr/home/forseti/remote-backups/wkf/repository-v3/snapshots/${BACKUP_NAME}/" \
      "$BACKUP_DIRECTORY/"
    test -f "$BACKUP_DIRECTORY/.complete"
    ```
@@ -416,8 +423,8 @@ it replaces only the local Compose PostgreSQL database and Azurite `media` conta
    export PRODUCTION_BACKUP_AGE_IDENTITY_FILE='/absolute/path/to/wkf-backup.agekey'
    ```
 
-3. Ensure the main MyDevil SSH identity works. The command reads directly from the protected archive
-   and never uses the restricted upload or restore-export accounts.
+3. Ensure the main MyDevil SSH identity works. The command reads directly from the protected
+   repository and never uses the restricted upload or restore-export accounts.
 4. Run:
 
    ```bash
@@ -427,7 +434,7 @@ it replaces only the local Compose PostgreSQL database and Azurite `media` conta
 5. Review the warning and enter `IMPORT`. For a non-interactive invocation, pass it explicitly as
    the second argument.
 
-The command downloads the selected archive with `rsync`, rebuilds `wkf-operations:local` from the
+The command downloads the selected snapshot with `rsync`, rebuilds `wkf-operations:local` from the
 current checkout, validates the signature, decrypts and verifies every artifact inside an isolated
 container, and then reuses the guarded local checkpoint importer. Before replacement it creates a
 database-and-media rescue point under `tmp/production-pulls/local-before-*`. It stops a running app,
@@ -438,7 +445,7 @@ the app only if it was running before. A failed destructive import attempts auto
 Configuration overrides are intentionally local-only:
 
 - `PRODUCTION_BACKUP_SSH_SOURCE` — defaults to `forseti@s47.mydevil.net`;
-- `PRODUCTION_BACKUP_ARCHIVE_DIRECTORY` — defaults to the protected WKF archive;
+- `PRODUCTION_BACKUP_ARCHIVE_DIRECTORY` — defaults to protected `repository-v3/snapshots`;
 - `PRODUCTION_BACKUP_LOCAL_DIRECTORY` — uses an already downloaded backup instead of SSH;
 - `PRODUCTION_PULL_OPERATIONS_IMAGE` — defaults to `wkf-operations:local`;
 - `PRODUCTION_PULL_REBUILD_OPERATIONS_IMAGE=false` — reuses an existing image and fails if that
@@ -453,7 +460,7 @@ Never put the `age` identity in `.env`, GitHub, Azure, MyDevil, or a synchronize
 Never compare by connecting a desktop directly to private production PostgreSQL. Capture a fresh
 off-site backup of current production, validate both backups, and compare two local restores.
 
-1. Run a manual off-site backup and wait until it reaches the protected MyDevil archive.
+1. Run a manual off-site backup and wait until it reaches the protected MyDevil repository.
 2. Download and validate the historic and current recovery points.
 3. Decrypt each `database.dump` as described above into a private temporary directory.
 4. Start one disposable PostgreSQL 17 container:

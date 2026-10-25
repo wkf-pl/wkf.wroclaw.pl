@@ -164,7 +164,7 @@ fi
 download_ftps_file 'database.dump.age' "$output_directory/database.dump.age"
 while IFS= read -r archive_file; do
   download_ftps_file "$archive_file" "$output_directory/$archive_file"
-done < <(jq --raw-output '.blobs[].archiveFile' "$manifest_path")
+done < <(jq --raw-output '.blobs[].archiveFile' "$manifest_path" | LC_ALL=C sort --unique)
 
 BACKUP_SIGNING_IDENTITY='wkf-production-restore' \
   bash "$(dirname "$0")/validate-offsite-backup.sh" "$output_directory"

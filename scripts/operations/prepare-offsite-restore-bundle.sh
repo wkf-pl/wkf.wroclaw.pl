@@ -109,7 +109,7 @@ reencrypt_artifact "$database_archive" "$database_archive"
 
 while IFS= read -r archive_file; do
   reencrypt_artifact "$archive_file" "$archive_file"
-done < <(jq --raw-output '.blobs[].archiveFile' "$source_manifest")
+done < <(jq --raw-output '.blobs[].archiveFile' "$source_manifest" | LC_ALL=C sort --unique)
 
 restore_manifest="$temporary_directory/restore-manifest.json"
 jq --arg signingKeyFingerprint "$restore_signing_fingerprint" \

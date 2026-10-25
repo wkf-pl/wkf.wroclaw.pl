@@ -2,11 +2,11 @@ name: Back up production data off-site
 
 on:
   schedule:
-    - cron: '30 2 * * *'
+    - cron: '49 0 * * *'
   workflow_dispatch:
     inputs:
       operations_image_digest:
-        description: Optional immutable operations image digest reported by staging
+        description: Optional immutable operations image digest from the latest successful staging deployment
         required: false
         type: string
 
@@ -16,6 +16,7 @@ concurrency:
 
 permissions:
   contents: read
+  deployments: read
   id-token: write
 
 jobs:
@@ -33,11 +34,6 @@ jobs:
       FTPS_USER: ${{ vars.OFFSITE_BACKUP_FTPS_USER }}
       POSTGRES_BACKUP_PASSWORD: ${{ secrets.POSTGRES_BACKUP_PASSWORD }}
     steps:
-      - name: Check out master
-        uses: actions/checkout@v6
-        with:
-          ref: master
-
       - name: Validate backup configuration
         env:
           OPERATIONS_IMAGE_DIGEST: ${{ inputs.operations_image_digest }}
@@ -65,6 +61,51 @@ jobs:
             exit 1
           fi
 
+      - name: Resolve latest successful staging deployment
+        id: qualified-staging
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          deployments="$(gh api "repos/${GITHUB_REPOSITORY}/deployments?environment=staging&per_page=100")"
+          qualified_deployment_id=''
+          qualified_source_sha=''
+
+          while IFS= read -r deployment; do
+            deployment_id="$(jq --raw-output '.id' <<<"$deployment")"
+            latest_state="$(gh api "repos/${GITHUB_REPOSITORY}/deployments/${deployment_id}/statuses?per_page=1" --jq '.[0].state // ""')"
+            if [[ "$latest_state" == 'success' ]]; then
+              qualified_deployment_id="$deployment_id"
+              qualified_source_sha="$(jq --raw-output '.sha' <<<"$deployment")"
+              break
+            fi
+          done < <(jq --compact-output 'sort_by(.id) | reverse | .[] | select(.ref == "master")' <<<"$deployments")
+
+          if [[ ! "$qualified_source_sha" =~ ^[a-f0-9]{40}$ ]]; then
+            echo 'Could not resolve the latest successful staging deployment from master.' >&2
+            exit 1
+          fi
+
+          {
+            echo "deployment_id=$qualified_deployment_id"
+            echo "source_sha=$qualified_source_sha"
+          } >>"$GITHUB_OUTPUT"
+
+      - name: Check out staging-qualified source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.qualified-staging.outputs.source_sha }}
+
+      - name: Validate staging-qualified source
+        env:
+          QUALIFIED_SOURCE_SHA: ${{ steps.qualified-staging.outputs.source_sha }}
+        run: |
+          git fetch --no-tags origin master
+          if ! git merge-base --is-ancestor "$QUALIFIED_SOURCE_SHA" origin/master; then
+            echo 'The latest successful staging deployment is not an ancestor of current master.' >&2
+            exit 1
+          fi
+
       - name: Log in to Azure
         uses: azure/login@v2
         with:
@@ -79,17 +120,24 @@ jobs:
         id: resources
         env:
           OPERATIONS_IMAGE_DIGEST: ${{ inputs.operations_image_digest }}
+          QUALIFIED_SOURCE_SHA: ${{ steps.qualified-staging.outputs.source_sha }}
         run: |
           resource_group='rg-wkf-prod'
           application_name='wkf-prod'
           registry_name="$(az acr list --resource-group rg-wkf-shared --query '[0].name' --output tsv)"
-          if [[ -z "$OPERATIONS_IMAGE_DIGEST" ]]; then
-            OPERATIONS_IMAGE_DIGEST="$(az acr repository show --name "$registry_name" --image "wkf-operations:${GITHUB_SHA}" --query digest --output tsv)"
-          fi
-          if [[ ! "$OPERATIONS_IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
-            echo 'Could not resolve an immutable operations image for the workflow source SHA.' >&2
+          if ! qualified_operations_image_digest="$(az acr repository show --name "$registry_name" --image "wkf-operations:${QUALIFIED_SOURCE_SHA}" --query digest --output tsv)"; then
+            echo "The staging-qualified operations image tag does not exist: wkf-operations:${QUALIFIED_SOURCE_SHA}" >&2
             exit 1
           fi
+          if [[ ! "$qualified_operations_image_digest" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo 'The staging-qualified operations image did not resolve to an immutable digest.' >&2
+            exit 1
+          fi
+          if [[ -n "$OPERATIONS_IMAGE_DIGEST" && "$OPERATIONS_IMAGE_DIGEST" != "$qualified_operations_image_digest" ]]; then
+            echo 'operations_image_digest does not match the latest successful staging deployment.' >&2
+            exit 1
+          fi
+          OPERATIONS_IMAGE_DIGEST="$qualified_operations_image_digest"
           az acr repository show --name "$registry_name" --image "wkf-operations@${OPERATIONS_IMAGE_DIGEST}" --output none
           registry_server="$(az acr show --name "$registry_name" --query loginServer --output tsv)"
           active_revision="$(az containerapp revision list --resource-group "$resource_group" --name "$application_name" --query 'sort_by([?properties.active], &properties.createdTime)[-1].name' --output tsv)"
@@ -128,6 +176,7 @@ jobs:
             echo "operations_identity_client_id=$operations_identity_client_id"
             echo "operations_identity_id=$operations_identity_id"
             echo "operations_image=${registry_server}/wkf-operations@${OPERATIONS_IMAGE_DIGEST}"
+            echo "operations_source_sha=$QUALIFIED_SOURCE_SHA"
             echo "postgres_fqdn=$postgres_fqdn"
             echo "production_media_url=https://${production_storage_name}.blob.core.windows.net/media"
             echo "registry_identity_id=$registry_identity_id"
@@ -231,6 +280,7 @@ jobs:
           ACTIVE_REVISION: ${{ steps.resources.outputs.active_revision }}
           APPLICATION_FQDN: ${{ steps.resources.outputs.application_fqdn }}
           BACKUP_NAME: ${{ steps.resources.outputs.backup_name }}
+          OPERATIONS_SOURCE_SHA: ${{ steps.resources.outputs.operations_source_sha }}
         run: |
           resource_group='rg-wkf-prod'
           application_name='wkf-prod'
@@ -247,6 +297,7 @@ jobs:
                 echo '## Off-site production backup'
                 echo
                 echo "Published: \`$BACKUP_NAME\`"
+                echo "Staging-qualified operations source: \`$OPERATIONS_SOURCE_SHA\`"
                 echo "Production checks: health=$health live=$live root=$root admin=$admin"
               } >>"$GITHUB_STEP_SUMMARY"
               exit 0

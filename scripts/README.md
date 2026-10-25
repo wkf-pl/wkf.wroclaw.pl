@@ -199,7 +199,7 @@ pnpm production:pull production-YYYYMMDDTHHMMSSZ [IMPORT]
 ```
 
 By default the script downloads the selected recovery point over the operator's main MyDevil SSH
-identity from the protected archive. `PRODUCTION_BACKUP_LOCAL_DIRECTORY` selects an already
+identity from protected `repository-v3/snapshots`. `PRODUCTION_BACKUP_LOCAL_DIRECTORY` selects an already
 downloaded copy instead. The long-lived `age` identity remains a read-only local mount and is never
 copied into the project, a container image, GitHub, Azure, or MyDevil.
 
@@ -246,11 +246,12 @@ write rows, create schema objects, manage roles, or install extensions. Run the 
 `bootstrap` phase once after introducing this secret so the role exists before the first backup.
 
 `backup-offsite.sh` creates `production-YYYYMMDDTHHMMSSZ` below the remote root. It streams one blob
-at a time through local ephemeral storage, encrypts the database, every blob, and the manifest with
-`age`, and uploads them over explicit FTPS with passive mode and certificate validation. The job
-uploads `.complete` last; a directory without this marker is an incomplete transfer and is never a
-recovery point. FTPS credentials are stored in a mode-0600 temporary curl configuration rather than
-passed on the command line.
+at a time through local ephemeral storage, addresses media by plaintext SHA-256, and uploads only one
+encrypted object for identical content within a run. It encrypts the database, media objects, and
+logical manifest with `age`, then uploads them over explicit FTPS with passive mode and certificate
+validation. The job uploads `.complete` last; a directory without this marker is an incomplete
+transfer and is never a recovery point. FTPS credentials are stored in a mode-0600 temporary curl
+configuration rather than passed on the command line.
 
 The job signs the encrypted manifest with a dedicated Ed25519 signing key under the
 `wkf-production-backup` namespace. The matching public key and `allowed_signers` entry are embedded
@@ -260,10 +261,14 @@ manager and the GitHub environment secret; keep the `age` private identity separ
 The signature prevents a compromised backup destination from replacing the manifest and artifacts
 with a newly encrypted forgery.
 
-The manifest format records the source SHA, exact application and operations image digests, Payload
-migration rows, database size and SHA-256, and every blob name, size, SHA-256, and encrypted archive
-path. To verify a downloaded backup locally, build or pull the matching operations image and use
-the local validation wrapper:
+The encrypted format-v3 manifest records the source SHA, exact application and operations image
+digests, Payload migration rows, database size and SHA-256, and every blob name, size, SHA-256, and
+content-addressed archive path. A second public manifest exposes only the physical transfer
+inventory and is signed under `wkf-production-backup-storage`; it lets MyDevil authenticate a
+complete upload without the decryption identity. See the
+[storage format decision](../docs/OffsiteBackupStorageDecision.md) for the trust boundary and
+on-disk layout. To verify a downloaded backup locally, build or pull the matching operations image
+and use the local validation wrapper:
 
 ```bash
 docker build --file Dockerfile.operations --tag wkf-operations:local .
@@ -321,9 +326,9 @@ image digest or fallback. Upload the resulting directory but publish `.complete`
 
 `download-restore-descriptor-ftps.sh` first fetches only `.complete`, the public descriptor, and its
 signature. `download-offsite-backup-ftps.sh` then fetches the signed encrypted manifest, decrypts
-only that manifest to discover the finite artifact list, downloads exactly those files, and runs
+only that manifest to discover the finite artifact list, downloads each unique object once, and runs
 the full validator. Neither script recurses through the FTPS account or accesses the protected
-archive.
+repository.
 
 `infra/azure/offsite-restore-job.bicep` creates the ephemeral live-production restore job. The job
 downloads and validates the disposable export again inside the production environment before
@@ -366,7 +371,8 @@ account:
 
 ```text
 /usr/home/forseti/remote-backups/wkf/incoming
-/usr/home/forseti/remote-backups/wkf/archive
+/usr/home/forseti/remote-backups/wkf/repository-v3/snapshots
+/usr/home/forseti/remote-backups/wkf/repository-v3/objects/sha256
 /usr/home/forseti/remote-backups/wkf/quarantine
 /usr/home/forseti/remote-backups/wkf/restore-export
 ```
@@ -377,14 +383,21 @@ Run the archiver every 15 minutes from the main account's crontab:
 */15 * * * * /usr/home/forseti/bin/wkf-archive-offsite-backups.sh >> /usr/home/forseti/remote-backups/wkf/archive-cron.log 2>&1
 ```
 
-The script serializes itself with `/usr/bin/lockf`, moves only directories whose `.complete` marker
-matches the directory name, and moves incomplete transfers older than 24 hours to `quarantine`.
-It never deletes an archived backup. Retention remains deliberately disabled until the first full
-backup has measured the actual database and media footprint against the 10 GB quota. The current
-format stores a logically complete encrypted copy of every media blob in every backup; it does not
-yet deduplicate unchanged blobs. The restore-export preparation helper and isolated restore drill are
-implemented; see the [production operations runbook](../docs/Operations.md) for the end-to-end
-operator procedures and the boundary before a destructive live-production restore.
+The script serializes itself with `/usr/bin/lockf`, accepts only authenticated format-v3 transfers,
+stores two physical copies of each unique encrypted media object, and creates atomic snapshot
+directories whose media files are hard links into the object pool. It moves incomplete transfers
+older than 24 hours to `quarantine`. Run the repository checker without mutation first:
+
+```bash
+/usr/home/forseti/bin/wkf-check-offsite-backup-repository.sh
+```
+
+Use `--repair` only after reviewing a reported single-replica or snapshot-link failure. The checker
+never repairs an object when both replicas are invalid. Snapshot retention and object garbage
+collection are separate operations: removing a snapshot must not remove a shared object. The
+restore-export preparation helper and isolated restore drill are implemented; see the
+[production operations runbook](../docs/Operations.md) for the end-to-end operator procedures and
+the boundary before a destructive live-production restore.
 
 ## Builds, tests, and verification
 

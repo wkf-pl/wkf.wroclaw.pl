@@ -12,7 +12,7 @@ age_identity_input="${PRODUCTION_BACKUP_AGE_IDENTITY_FILE:-}"
 operations_image="${PRODUCTION_PULL_OPERATIONS_IMAGE:-wkf-operations:local}"
 local_backup_directory_input="${PRODUCTION_BACKUP_LOCAL_DIRECTORY:-}"
 ssh_source="${PRODUCTION_BACKUP_SSH_SOURCE:-forseti@s47.mydevil.net}"
-archive_directory="${PRODUCTION_BACKUP_ARCHIVE_DIRECTORY:-/usr/home/forseti/remote-backups/wkf/archive}"
+archive_directory="${PRODUCTION_BACKUP_ARCHIVE_DIRECTORY:-/usr/home/forseti/remote-backups/wkf/repository-v3/snapshots}"
 temporary_directory=""
 
 fail() {
