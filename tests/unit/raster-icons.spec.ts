@@ -21,6 +21,55 @@ const expectedDimensions = {
 
 type RasterIconName = Parameters<typeof getRasterIconURL>[0]
 
+async function readAlphaChannel(iconName: RasterIconName, size: (typeof rasterIconSizes)[number]) {
+  const iconPath = resolve(process.cwd(), 'public', getRasterIconURL(iconName, size).slice(1))
+  const { data, info } = await sharp(iconPath)
+    .ensureAlpha()
+    .extractChannel('alpha')
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  return { data, height: info.height, width: info.width }
+}
+
+function fillEnclosedTransparentPixels(alpha: Buffer, width: number, height: number): Buffer {
+  const filledAlpha = Buffer.from(alpha)
+  const outside = new Uint8Array(width * height)
+  const queue: number[] = []
+
+  const enqueueOutsidePixel = (x: number, y: number): void => {
+    const index = y * width + x
+    if (outside[index] === 1 || alpha[index] >= 128) return
+    outside[index] = 1
+    queue.push(index)
+  }
+
+  for (let x = 0; x < width; x += 1) {
+    enqueueOutsidePixel(x, 0)
+    enqueueOutsidePixel(x, height - 1)
+  }
+  for (let y = 1; y < height - 1; y += 1) {
+    enqueueOutsidePixel(0, y)
+    enqueueOutsidePixel(width - 1, y)
+  }
+
+  for (let queueIndex = 0; queueIndex < queue.length; queueIndex += 1) {
+    const index = queue[queueIndex]
+    const x = index % width
+    const y = Math.floor(index / width)
+    if (x > 0) enqueueOutsidePixel(x - 1, y)
+    if (x + 1 < width) enqueueOutsidePixel(x + 1, y)
+    if (y > 0) enqueueOutsidePixel(x, y - 1)
+    if (y + 1 < height) enqueueOutsidePixel(x, y + 1)
+  }
+
+  for (let index = 0; index < filledAlpha.length; index += 1) {
+    if (outside[index] === 0) filledAlpha[index] = 255
+  }
+
+  return filledAlpha
+}
+
 async function readVisibleBounds(iconName: RasterIconName, size: (typeof rasterIconSizes)[number]) {
   const iconPath = resolve(process.cwd(), 'public', getRasterIconURL(iconName, size).slice(1))
   const { data, info } = await sharp(iconPath)
@@ -68,12 +117,42 @@ function listFilesRecursively(directory: string): string[] {
 }
 
 describe('raster icon library', () => {
-  it('exposes exactly 63 selectable, uniquely named and labelled icons', () => {
+  it('exposes exactly 89 selectable, uniquely named and labelled icons', () => {
     const selectableDefinitions = rasterIconDefinitions.filter(({ selectable }) => selectable)
 
-    expect(selectableRasterIconNames).toHaveLength(63)
-    expect(new Set(selectableRasterIconNames)).toHaveLength(63)
-    expect(new Set(selectableDefinitions.map(({ label }) => label))).toHaveLength(63)
+    expect(selectableRasterIconNames).toHaveLength(89)
+    expect(new Set(selectableRasterIconNames)).toHaveLength(89)
+    expect(new Set(selectableDefinitions.map(({ label }) => label))).toHaveLength(89)
+    expect(selectableRasterIconNames).toEqual(
+      expect.arrayContaining([
+        'board-game',
+        'bottle-mana',
+        'camera',
+        'crystal-ball',
+        'cthulhu',
+        'eye',
+        'filled-star',
+        'flame',
+        'guitar',
+        'hat',
+        'music',
+        'pirate-map',
+        'playing-cards',
+        'potion',
+        'pumpkin-halloween',
+        'quill',
+        'scroll',
+        'seal',
+        'seance',
+        'shuttle',
+        'skull',
+        'soundtrack',
+        'superhero',
+        'ticket',
+        'vendetta',
+        'water-drop',
+      ]),
+    )
     expect(selectableRasterIconNames).not.toContain('zoom-in')
     expect(rasterIconDefinitions.filter(({ selectable }) => !selectable)).toHaveLength(6)
   })
@@ -131,6 +210,19 @@ describe('raster icon library', () => {
       const leftArrow = await sharp(leftArrowPath).ensureAlpha().raw().toBuffer()
 
       expect(leftArrow, size).toEqual(mirroredRightArrow)
+    }
+  })
+
+  it('keeps the filled star as an exact filled version of the outlined star', async () => {
+    for (const size of rasterIconSizes) {
+      const star = await readAlphaChannel('star', size)
+      const filledStar = await readAlphaChannel('filled-star', size)
+
+      expect(filledStar.width, size).toBe(star.width)
+      expect(filledStar.height, size).toBe(star.height)
+      expect(filledStar.data, size).toEqual(
+        fillEnclosedTransparentPixels(star.data, star.width, star.height),
+      )
     }
   })
 

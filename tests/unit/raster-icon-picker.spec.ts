@@ -18,7 +18,7 @@ describe('RasterIconPickerField', () => {
   })
 
   it('keeps all picker options selectable and assigned to an editorial category', () => {
-    expect(rasterIconPickerOptions).toHaveLength(63)
+    expect(rasterIconPickerOptions).toHaveLength(89)
     expect(rasterIconPickerOptions.every(({ category, value }) => category && value)).toBe(true)
   })
 
@@ -34,7 +34,19 @@ describe('RasterIconPickerField', () => {
 
     expect(rasterIconPickerOptions.find(({ name }) => name === 'arrow')?.category).toBe('fantasy')
     expect(rasterIconPickerOptions.find(({ name }) => name === 'arrows')?.category).toBe('fantasy')
+    expect(rasterIconPickerOptions.find(({ name }) => name === 'board-game')?.category).toBe(
+      'games',
+    )
+    expect(rasterIconPickerOptions.find(({ name }) => name === 'guitar')?.category).toBe('content')
+    expect(rasterIconPickerOptions.find(({ name }) => name === 'soundtrack')?.category).toBe(
+      'content',
+    )
     expect(rasterIconPickerOptions.find(({ name }) => name === 'larp')?.category).toBe('games')
+    expect(rasterIconPickerOptions.find(({ name }) => name === 'skull')?.category).toBe('fantasy')
+    expect(rasterIconPickerOptions.find(({ name }) => name === 'bottle-mana')?.category).toBe(
+      'fantasy',
+    )
+    expect(rasterIconPickerOptions.find(({ name }) => name === 'ticket')?.category).toBe('action')
     expect(rasterIconPickerOptions.map(({ name }) => name)).not.toContain('larp-mask')
   })
 })

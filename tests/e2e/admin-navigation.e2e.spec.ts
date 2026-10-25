@@ -149,7 +149,7 @@ test('presents raster icon choices as a grouped grid', async ({ page }) => {
       'Kontakt',
     ])
     await expect(iconGroups.first().locator(':scope > div:last-child')).toHaveCSS('display', 'grid')
-    await expect(page.locator('.raster-icon-picker [role="option"]')).toHaveCount(63)
+    await expect(page.locator('.raster-icon-picker [role="option"]')).toHaveCount(89)
     await page.keyboard.press('Escape')
 
     const clearIconButton = iconField.locator('.clear-indicator')
