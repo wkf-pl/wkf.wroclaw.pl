@@ -1,6 +1,8 @@
 import type { GlobalConfig } from 'payload'
 
 import { invalidateNavigationAfterChange } from '@/modules/cache/invalidate-public-data'
+import { createGlobalDraftPreviewURL } from '@/modules/content/draft-preview'
+import { preventAnonymousDraftRead } from '@/modules/content/global-drafts'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import {
   createPresentedLinkFields,
@@ -17,15 +19,26 @@ const updateFooter = createRolePermissionAccess({
   operation: 'update',
   resource: 'navigation',
 })
+const readFooterVersions = createRolePermissionAccess({
+  operation: 'read',
+  resource: 'navigation',
+})
 
 export const Footer: GlobalConfig = {
   slug: 'footer',
   access: {
-    read: readFooter,
+    read: preventAnonymousDraftRead(readFooter),
+    readVersions: readFooterVersions,
     update: updateFooter,
   },
   admin: {
+    components: {
+      elements: {
+        PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
+      },
+    },
     group: 'Strona główna',
+    preview: () => createGlobalDraftPreviewURL('footer'),
   },
   fields: [
     {
@@ -139,4 +152,5 @@ export const Footer: GlobalConfig = {
   ],
   hooks: { afterChange: [invalidateNavigationAfterChange] },
   label: 'Stopka',
+  versions: { drafts: true, max: 50 },
 }

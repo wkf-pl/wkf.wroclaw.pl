@@ -1,6 +1,8 @@
 import type { GlobalConfig } from 'payload'
 
 import { invalidateNavigationAfterChange } from '@/modules/cache/invalidate-public-data'
+import { createGlobalDraftPreviewURL } from '@/modules/content/draft-preview'
+import { preventAnonymousDraftRead } from '@/modules/content/global-drafts'
 import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import { createSiteMenuLinkFields, validatePresentedLinkItems } from '@/modules/navigation/fields'
@@ -14,15 +16,26 @@ const updateNavigation = createRolePermissionAccess({
   operation: 'update',
   resource: 'navigation',
 })
+const readNavigationVersions = createRolePermissionAccess({
+  operation: 'read',
+  resource: 'navigation',
+})
 
 export const Navigation: GlobalConfig = {
   slug: 'navigation',
   access: {
-    read: readNavigation,
+    read: preventAnonymousDraftRead(readNavigation),
+    readVersions: readNavigationVersions,
     update: updateNavigation,
   },
   admin: {
+    components: {
+      elements: {
+        PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
+      },
+    },
     group: 'Strona główna',
+    preview: () => createGlobalDraftPreviewURL('navigation'),
   },
   fields: [
     {
@@ -51,4 +64,5 @@ export const Navigation: GlobalConfig = {
   ],
   hooks: { afterChange: [invalidateNavigationAfterChange] },
   label: 'Nagłówek',
+  versions: { drafts: true, max: 50 },
 }

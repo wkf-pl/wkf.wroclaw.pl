@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { publishedPublicAccess } from '@/modules/content/public-access'
 import {
+  clientUserHasUnrestrictedResourcePermission,
   clientUserHasResourcePermission,
   resolveRolePermission,
   type RoleRecord,
@@ -65,8 +66,10 @@ describe('role permissions', () => {
       {
         canCreate: true,
         deleteAllowed: true,
+        permanentDeleteAllowed: true,
         readAllowed: true,
         resource: 'documents',
+        restoreAllowed: true,
         updateAllowed: true,
       },
     ])
@@ -75,6 +78,25 @@ describe('role permissions', () => {
     expect(resolveRolePermission([role], 'documents', 'read', 10)).toBe(true)
     expect(resolveRolePermission([role], 'documents', 'update', 10)).toBe(true)
     expect(resolveRolePermission([role], 'documents', 'delete', 10)).toBe(true)
+    expect(resolveRolePermission([role], 'documents', 'restore', 10)).toBe(true)
+    expect(resolveRolePermission([role], 'documents', 'permanentDelete', 10)).toBe(true)
+  })
+
+  it('keeps restore and permanent deletion independent from update and delete', () => {
+    const role = createRole([
+      {
+        deleteAllowed: true,
+        permanentDeleteAllowed: false,
+        resource: 'posts',
+        restoreAllowed: true,
+        updateAllowed: false,
+      },
+    ])
+
+    expect(resolveRolePermission([role], 'posts', 'update', 10)).toBe(false)
+    expect(resolveRolePermission([role], 'posts', 'delete', 10)).toBe(true)
+    expect(resolveRolePermission([role], 'posts', 'restore', 10)).toBe(true)
+    expect(resolveRolePermission([role], 'posts', 'permanentDelete', 10)).toBe(false)
   })
 
   it('rejects duplicate resources in one role', () => {
@@ -120,5 +142,34 @@ describe('role permissions', () => {
 
     expect(clientUserHasResourcePermission(user, 'posts', 'read')).toBe(true)
     expect(clientUserHasResourcePermission(user, 'users', 'read')).toBe(false)
+  })
+
+  it('distinguishes scoped access from unrestricted admin navigation access', () => {
+    const ownProfilesRole = createRole([
+      { readAllowed: true, readOwn: true, resource: 'member-profiles' },
+    ])
+    const allProfilesRole = createRole([{ readAllowed: true, resource: 'member-profiles' }])
+
+    expect(
+      clientUserHasResourcePermission(
+        { id: 10, roles: [ownProfilesRole] },
+        'member-profiles',
+        'read',
+      ),
+    ).toBe(true)
+    expect(
+      clientUserHasUnrestrictedResourcePermission(
+        { id: 10, roles: [ownProfilesRole] },
+        'member-profiles',
+        'read',
+      ),
+    ).toBe(false)
+    expect(
+      clientUserHasUnrestrictedResourcePermission(
+        { id: 10, roles: [allProfilesRole] },
+        'member-profiles',
+        'read',
+      ),
+    ).toBe(true)
   })
 })

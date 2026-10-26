@@ -103,6 +103,7 @@ export const ColumnLayoutBlock: Block = {
               type: 'select',
               admin: { isClearable: false, width: '50%' },
               defaultValue: 'start',
+              enumName: 'column_layout_vertical_alignment',
               label: 'Wyrównanie w pionie',
               options: [
                 { label: 'Do początku', value: 'start' },
@@ -116,6 +117,7 @@ export const ColumnLayoutBlock: Block = {
               type: 'select',
               admin: { isClearable: false, width: '50%' },
               defaultValue: 'none',
+              enumName: 'column_layout_separators',
               label: 'Separatory kolumn',
               options: [
                 { label: 'Bez separatorów', value: 'none' },

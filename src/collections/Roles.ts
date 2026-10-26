@@ -7,6 +7,7 @@ import {
   resourceSupportsCreateAndDelete,
   resourceSupportsOwnership,
   resourceSupportsPublishedStatus,
+  resourceSupportsTrash,
 } from '@/modules/membership/permission-resources'
 import { clientUserHasRole } from '@/modules/membership/permission-resolution'
 import { isAdministrator } from '@/modules/membership/role-access'
@@ -210,6 +211,29 @@ export const Roles: CollectionConfig = {
           },
           fields: createPermissionScopeFields('delete').fields,
         },
+        {
+          type: 'row',
+          admin: {
+            condition: (_data: unknown, siblingData: Record<string, unknown>) =>
+              Boolean(siblingData.readAllowed) && resourceSupportsTrash(siblingData.resource),
+          },
+          fields: [
+            {
+              name: 'restoreAllowed',
+              type: 'checkbox',
+              admin: createBooleanSwitchAdmin({ width: '50%' }),
+              defaultValue: false,
+              label: 'Przywracanie z kosza',
+            },
+            {
+              name: 'permanentDeleteAllowed',
+              type: 'checkbox',
+              admin: createBooleanSwitchAdmin({ width: '50%' }),
+              defaultValue: false,
+              label: 'Trwałe usuwanie',
+            },
+          ],
+        },
       ],
       label: 'Uprawnienia',
       validate: validateRolePermissions,
@@ -232,6 +256,8 @@ export const Roles: CollectionConfig = {
             permission.deleteAllowed = false
             permission.deleteOwn = false
             permission.deletePublished = false
+            permission.restoreAllowed = false
+            permission.permanentDeleteAllowed = false
           }
 
           if (!resourceSupportsOwnership(permission.resource)) {
@@ -251,6 +277,11 @@ export const Roles: CollectionConfig = {
             permission.deleteAllowed = false
             permission.deleteOwn = false
             permission.deletePublished = false
+          }
+
+          if (!resourceSupportsTrash(permission.resource)) {
+            permission.restoreAllowed = false
+            permission.permanentDeleteAllowed = false
           }
         }
 

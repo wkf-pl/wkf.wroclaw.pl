@@ -337,6 +337,7 @@ export interface Page {
   publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -778,6 +779,7 @@ export interface EventCycle {
   publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -963,6 +965,7 @@ export interface Document {
   publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -1062,6 +1065,8 @@ export interface Role {
         deleteAllowed?: boolean | null;
         deleteOwn?: boolean | null;
         deletePublished?: boolean | null;
+        restoreAllowed?: boolean | null;
+        permanentDeleteAllowed?: boolean | null;
         id?: string | null;
       }[]
     | null;
@@ -1161,6 +1166,7 @@ export interface Post {
   publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -1291,6 +1297,7 @@ export interface Event {
   publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -1710,6 +1717,7 @@ export interface MemberProfile {
   moderationReason?: string | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -2312,6 +2320,7 @@ export interface Partner {
   publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -2499,6 +2508,7 @@ export interface ClubSection {
   publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -2706,6 +2716,7 @@ export interface PagesSelect<T extends boolean = true> {
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -3176,6 +3187,7 @@ export interface PostsSelect<T extends boolean = true> {
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -3279,6 +3291,7 @@ export interface EventsSelect<T extends boolean = true> {
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -3406,6 +3419,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -3562,6 +3576,7 @@ export interface MemberProfilesSelect<T extends boolean = true> {
   moderationReason?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -3606,6 +3621,7 @@ export interface DocumentsSelect<T extends boolean = true> {
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -3657,6 +3673,7 @@ export interface PartnersSelect<T extends boolean = true> {
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -3692,6 +3709,7 @@ export interface ClubSectionsSelect<T extends boolean = true> {
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -3742,6 +3760,8 @@ export interface RolesSelect<T extends boolean = true> {
         deleteAllowed?: T;
         deleteOwn?: T;
         deletePublished?: T;
+        restoreAllowed?: T;
+        permanentDeleteAllowed?: T;
         id?: T;
       };
   updatedAt?: T;
@@ -3796,6 +3816,7 @@ export interface SiteSetting {
   siteName: string;
   siteDescription?: string | null;
   contactEmail?: string | null;
+  _status?: ('draft' | 'published') | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -3936,6 +3957,7 @@ export interface Navigation {
         id?: string | null;
       }[]
     | null;
+  _status?: ('draft' | 'published') | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -4094,6 +4116,7 @@ export interface HomepageHero {
         id?: string | null;
       }[]
     | null;
+  _status?: ('draft' | 'published') | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -4118,6 +4141,7 @@ export interface HomepageSection {
     | SectionGroupBlock
     | TabbedContentBlock
   )[];
+  _status?: ('draft' | 'published') | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -4413,6 +4437,7 @@ export interface Footer {
         id?: string | null;
       }[]
     | null;
+  _status?: ('draft' | 'published') | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -4424,6 +4449,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   siteName?: T;
   siteDescription?: T;
   contactEmail?: T;
+  _status?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -4456,6 +4482,7 @@ export interface NavigationSelect<T extends boolean = true> {
         openInNewTab?: T;
         id?: T;
       };
+  _status?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -4488,6 +4515,7 @@ export interface HomepageHeroSelect<T extends boolean = true> {
         openInNewTab?: T;
         id?: T;
       };
+  _status?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -4514,6 +4542,7 @@ export interface HomepageSectionsSelect<T extends boolean = true> {
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;
       };
+  _status?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -4575,6 +4604,7 @@ export interface FooterSelect<T extends boolean = true> {
             };
         id?: T;
       };
+  _status?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

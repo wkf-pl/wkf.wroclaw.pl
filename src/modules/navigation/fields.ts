@@ -287,9 +287,11 @@ export function createLinkFields({
 }
 
 export function createIconFields({
+  enumName,
   required = false,
   requiredWhenLabelEmpty = false,
 }: {
+  enumName?: string
   required?: boolean
   requiredWhenLabelEmpty?: boolean
 } = {}): Field[] {
@@ -301,7 +303,7 @@ export function createIconFields({
     { siblingData },
   ) => (!iconIsRequired(siblingData) || value ? true : 'Wybierz ikonę.')
 
-  return [createRasterIconField<NavigationSiblingData>({ validate: validateIconName })]
+  return [createRasterIconField<NavigationSiblingData>({ enumName, validate: validateIconName })]
 }
 
 export const presentedLinkAppearanceOptions = [
@@ -321,10 +323,12 @@ const validatePresentedLinkLabel: Validate<unknown, unknown, NavigationSiblingDa
 export function createPresentedLinkFields({
   compactDatabaseNames = false,
   defaultAppearance = 'link',
+  iconEnumName,
   includeSiteContactEmail = false,
 }: {
   compactDatabaseNames?: boolean
   defaultAppearance?: 'link' | 'primaryButton' | 'secondaryButton'
+  iconEnumName?: string
   includeSiteContactEmail?: boolean
 } = {}): Field[] {
   const databaseName = (name: string): string | undefined =>
@@ -357,7 +361,7 @@ export function createPresentedLinkFields({
         },
       ],
     },
-    ...createIconFields({ requiredWhenLabelEmpty: true }),
+    ...createIconFields({ enumName: iconEnumName, requiredWhenLabelEmpty: true }),
     ...createLinkFields({
       compactDatabaseNames,
       includeLabel: false,
@@ -368,11 +372,14 @@ export function createPresentedLinkFields({
 
 export function createSiteMenuLinkFields({
   compactDatabaseNames = false,
+  iconEnumName,
 }: {
   compactDatabaseNames?: boolean
+  iconEnumName?: string
 } = {}): Field[] {
   return createPresentedLinkFields({
     compactDatabaseNames,
+    iconEnumName,
     includeSiteContactEmail: true,
   })
 }

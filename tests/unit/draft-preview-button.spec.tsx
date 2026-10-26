@@ -10,6 +10,15 @@ const dispatchFieldsMock = vi.hoisted(() => vi.fn())
 const setIsValidMock = vi.hoisted(() => vi.fn())
 const setSubmittedMock = vi.hoisted(() => vi.fn())
 const toastErrorMock = vi.hoisted(() => vi.fn())
+const documentInfoMock = vi.hoisted(() => ({
+  collectionSlug: 'pages' as string | undefined,
+  docPermissions: {},
+  getDocPreferences: vi.fn().mockResolvedValue({ fields: {} }),
+  globalSlug: undefined as string | undefined,
+  id: 123 as number | undefined,
+  setUnpublishedVersionCount: vi.fn(),
+  uploadStatus: undefined,
+}))
 
 vi.mock('@payloadcms/ui', () => ({
   Button: ({
@@ -30,14 +39,7 @@ vi.mock('@payloadcms/ui', () => ({
   ),
   toast: { error: toastErrorMock },
   useConfig: () => ({ config: { routes: { api: '/api' } } }),
-  useDocumentInfo: () => ({
-    collectionSlug: 'pages',
-    docPermissions: {},
-    getDocPreferences: vi.fn().mockResolvedValue({ fields: {} }),
-    id: 123,
-    setUnpublishedVersionCount: vi.fn(),
-    uploadStatus: undefined,
-  }),
+  useDocumentInfo: () => documentInfoMock,
   useForm: () => ({
     dispatchFields: dispatchFieldsMock,
     getFields: () => ({ title: { valid: true, value: 'Strona testowa' } }),
@@ -86,6 +88,9 @@ describe('DraftPreviewButton', () => {
     submitMock.mockReset()
     submitMock.mockResolvedValue({ res: { ok: true } })
     toastErrorMock.mockReset()
+    documentInfoMock.collectionSlug = 'pages'
+    documentInfoMock.globalSlug = undefined
+    documentInfoMock.id = 123
     vi.spyOn(window, 'open').mockReturnValue(previewWindow as unknown as Window)
   })
 
@@ -153,5 +158,35 @@ describe('DraftPreviewButton', () => {
     expect(previewWindow.close).toHaveBeenCalledOnce()
     expect(previewWindow.location.href).toBe('about:blank')
     expect(toastErrorMock).toHaveBeenCalledWith('Popraw nieprawidłowe pola.')
+  })
+
+  it('saves a global draft before opening its homepage preview', async () => {
+    documentInfoMock.collectionSlug = undefined
+    documentInfoMock.globalSlug = 'homepage-hero'
+    documentInfoMock.id = undefined
+
+    await act(async () => root.render(<DraftPreviewButton />))
+
+    const button = container.querySelector<HTMLButtonElement>('#preview-button')
+    if (!button) throw new Error('Missing preview button')
+
+    await act(async () => button.click())
+
+    expect(getFormStateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        globalSlug: 'homepage-hero',
+        operation: 'update',
+        schemaPath: 'homepage-hero',
+        skipValidation: false,
+      }),
+    )
+    expect(submitMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: '/api/globals/homepage-hero?locale=pl&depth=0&fallback-locale=null&draft=true',
+        method: 'POST',
+        overrides: { _status: 'draft' },
+      }),
+    )
+    expect(previewWindow.location.href).toBe('/preview?global=homepage-hero')
   })
 })

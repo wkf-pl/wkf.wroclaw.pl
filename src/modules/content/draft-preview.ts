@@ -1,12 +1,25 @@
 export const draftPreviewCollections = ['pages', 'posts'] as const
+export const draftPreviewGlobals = [
+  'footer',
+  'homepage-hero',
+  'homepage-sections',
+  'navigation',
+  'site-settings',
+] as const
 
 export type DraftPreviewCollection = (typeof draftPreviewCollections)[number]
+export type DraftPreviewGlobal = (typeof draftPreviewGlobals)[number]
 
-export type DraftPreviewTarget = {
-  collection: DraftPreviewCollection
-  path: string
-  slug: string
-}
+export type DraftPreviewTarget =
+  | {
+      collection: DraftPreviewCollection
+      path: string
+      slug: string
+    }
+  | {
+      global: DraftPreviewGlobal
+      path: '/'
+    }
 
 type PreviewDocument = {
   id?: unknown
@@ -27,19 +40,28 @@ export function createDraftPreviewURL(
   return `/preview?${parameters.toString()}`
 }
 
+export function createGlobalDraftPreviewURL(global: DraftPreviewGlobal): string {
+  return `/preview?${new URLSearchParams({ global }).toString()}`
+}
+
 export function parseDraftPreviewTarget(parameters: URLSearchParams): DraftPreviewTarget | null {
   const collection = parameters.get('collection')
+  const global = parameters.get('global')
   const slug = parameters.get('slug')
 
-  if (!isDraftPreviewCollection(collection) || !isValidSlug(slug)) {
-    return null
+  if (collection || slug) {
+    if (global || !isDraftPreviewCollection(collection) || !isValidSlug(slug)) {
+      return null
+    }
+
+    return {
+      collection,
+      path: collection === 'posts' ? `/blog/${slug}` : `/${slug}`,
+      slug,
+    }
   }
 
-  return {
-    collection,
-    path: collection === 'posts' ? `/blog/${slug}` : `/${slug}`,
-    slug,
-  }
+  return isDraftPreviewGlobal(global) ? { global, path: '/' } : null
 }
 
 export function getSafePreviewExitPath(value: null | string): string {
@@ -55,6 +77,12 @@ function isDocumentID(value: unknown): value is number | string {
 
 function isDraftPreviewCollection(value: null | string): value is DraftPreviewCollection {
   return draftPreviewCollections.some((collection) => collection === value)
+}
+
+export function isDraftPreviewGlobal(
+  value: null | string | undefined,
+): value is DraftPreviewGlobal {
+  return draftPreviewGlobals.some((global) => global === value)
 }
 
 function isValidSlug(value: unknown): value is string {

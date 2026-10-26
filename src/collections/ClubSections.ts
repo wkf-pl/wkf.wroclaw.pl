@@ -7,6 +7,12 @@ import {
 import { populateSlugFromName } from '@/modules/content/slug'
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { publishedPublicAccess } from '@/modules/content/public-access'
+import {
+  createTrashDeleteAccess,
+  createTrashReadAccess,
+  createTrashUpdateAccess,
+  markTrashMutation,
+} from '@/modules/content/trash-access'
 import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import { createPresentedLinkFields, validatePresentedLinkItems } from '@/modules/navigation/fields'
@@ -15,22 +21,37 @@ const createClubSections = createRolePermissionAccess({
   operation: 'create',
   resource: 'club-sections',
 })
-const deleteClubSections = createRolePermissionAccess({
-  operation: 'delete',
-  resource: 'club-sections',
-})
-const readClubSections = createRolePermissionAccess({
-  operation: 'read',
-  publicAccess: publishedPublicAccess,
-  resource: 'club-sections',
-})
-const updateClubSections = createRolePermissionAccess({
-  operation: 'update',
-  resource: 'club-sections',
-})
+const deleteClubSections = createTrashDeleteAccess(
+  createRolePermissionAccess({
+    operation: 'delete',
+    resource: 'club-sections',
+  }),
+  createRolePermissionAccess({
+    operation: 'permanentDelete',
+    resource: 'club-sections',
+  }),
+)
+const readClubSections = createTrashReadAccess(
+  createRolePermissionAccess({
+    operation: 'read',
+    publicAccess: publishedPublicAccess,
+    resource: 'club-sections',
+  }),
+)
+const updateClubSections = createTrashUpdateAccess(
+  createRolePermissionAccess({
+    operation: 'update',
+    resource: 'club-sections',
+  }),
+  createRolePermissionAccess({
+    operation: 'restore',
+    resource: 'club-sections',
+  }),
+)
 
 export const ClubSections: CollectionConfig = {
   slug: 'club-sections',
+  trash: true,
   access: {
     create: createClubSections,
     delete: deleteClubSections,
@@ -132,6 +153,7 @@ export const ClubSections: CollectionConfig = {
     afterChange: [invalidateHomepageAfterChange],
     afterDelete: [invalidateHomepageAfterDelete],
     beforeChange: [setPublishedAt],
+    beforeOperation: [markTrashMutation],
   },
   labels: {
     plural: 'Sekcje',

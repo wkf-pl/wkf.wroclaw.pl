@@ -18,28 +18,72 @@ import {
   prepareMemberProfile,
   reconcileMemberProfileImages,
 } from '@/modules/members/member-profile-lifecycle'
-import { combineAccessResults, getUserIdentity } from '@/modules/membership/permission-resolution'
+import {
+  combineAccessResults,
+  clientUserHasUnrestrictedResourcePermission,
+  getUserIdentity,
+} from '@/modules/membership/permission-resolution'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
+import {
+  createTrashDeleteAccess,
+  createTrashReadAccess,
+  createTrashUpdateAccess,
+  markTrashMutation,
+} from '@/modules/content/trash-access'
 
 const publicProfileConstraint: Where = { _status: { equals: 'published' } }
 
-const readProfiles: Access = ({ req }) =>
-  combineAccessResults(publicProfileConstraint, {
-    owner: {
-      equals: getUserIdentity(req.user) ?? -1,
+const readProfilesByRole = createRolePermissionAccess({
+  operation: 'read',
+  resource: 'member-profiles',
+})
+const updateProfilesByRole = createRolePermissionAccess({
+  operation: 'update',
+  resource: 'member-profiles',
+})
+const deleteProfilesByRole = createRolePermissionAccess({
+  operation: 'delete',
+  resource: 'member-profiles',
+})
+const permanentlyDeleteProfilesByRole = createRolePermissionAccess({
+  operation: 'permanentDelete',
+  resource: 'member-profiles',
+})
+const restoreProfilesByRole = createRolePermissionAccess({
+  operation: 'restore',
+  resource: 'member-profiles',
+})
+
+const readProfiles = createTrashReadAccess(async (arguments_) =>
+  combineAccessResults(
+    publicProfileConstraint,
+    {
+      owner: {
+        equals: getUserIdentity(arguments_.req.user) ?? -1,
+      },
     },
-  })
+    await readProfilesByRole(arguments_),
+  ),
+)
 
 const createProfiles: Access = ({ req }) => isMember(req)
-const updateProfiles: Access = async ({ req }) => {
-  if (!(await isMember(req))) {
-    return false
+const updateProfiles = createTrashUpdateAccess(async (arguments_) => {
+  const userID = getUserIdentity(arguments_.req.user)
+  const memberAccess =
+    userID !== undefined && (await isMember(arguments_.req)) ? { owner: { equals: userID } } : false
+
+  return combineAccessResults(memberAccess, await updateProfilesByRole(arguments_))
+}, restoreProfilesByRole)
+const deleteProfiles = createTrashDeleteAccess(
+  deleteProfilesByRole,
+  permanentlyDeleteProfilesByRole,
+)
+const readProfileVersions: Access = async (arguments_) => {
+  if ((await readProfilesByRole(arguments_)) === true) {
+    return true
   }
 
-  const userID = getUserIdentity(req.user)
-  return userID === undefined ? false : { owner: { equals: userID } }
-}
-const readProfileVersions: Access = ({ req }) => {
-  const userID = getUserIdentity(req.user)
+  const userID = getUserIdentity(arguments_.req.user)
   return userID === undefined ? false : { 'version.owner': { equals: userID } }
 }
 
@@ -48,15 +92,18 @@ const readOwnedProfileField: FieldAccess = ({ doc, req, siblingData }) =>
 
 export const MemberProfiles: CollectionConfig = {
   slug: 'member-profiles',
+  trash: true,
   access: {
     create: createProfiles,
-    delete: () => false,
+    delete: deleteProfiles,
     read: readProfiles,
     readVersions: readProfileVersions,
     update: updateProfiles,
   },
   admin: {
-    hidden: true,
+    group: 'Klubowe',
+    hidden: ({ user }) =>
+      !clientUserHasUnrestrictedResourcePermission(user, 'member-profiles', 'read'),
     useAsTitle: 'publicName',
   },
   fields: [
@@ -297,6 +344,7 @@ export const MemberProfiles: CollectionConfig = {
   hooks: {
     afterChange: [reconcileMemberProfileImages, invalidateMemberProfilesAfterChange],
     afterDelete: [deleteMemberProfileImage, invalidateMemberProfilesAfterDelete],
+    beforeOperation: [markTrashMutation],
     beforeValidate: [prepareMemberProfile],
   },
   labels: {

@@ -15,7 +15,11 @@ import {
 import { formatAdminURL } from 'payload/shared'
 import { useCallback, useRef, useState } from 'react'
 
-import { createDraftPreviewURL } from '@/modules/content/draft-preview'
+import {
+  createDraftPreviewURL,
+  createGlobalDraftPreviewURL,
+  isDraftPreviewGlobal,
+} from '@/modules/content/draft-preview'
 
 export function DraftPreviewButton() {
   const {
@@ -27,6 +31,7 @@ export function DraftPreviewButton() {
     collectionSlug,
     docPermissions,
     getDocPreferences,
+    globalSlug,
     id,
     setUnpublishedVersionCount,
     uploadStatus,
@@ -42,10 +47,13 @@ export function DraftPreviewButton() {
   const previewURL =
     collectionSlug === 'pages' || collectionSlug === 'posts'
       ? createDraftPreviewURL(collectionSlug, { id, slug })
-      : null
+      : isDraftPreviewGlobal(globalSlug)
+        ? createGlobalDraftPreviewURL(globalSlug)
+        : null
+  const entitySlug = collectionSlug ?? globalSlug
 
   const saveDraftAndOpenPreview = useCallback(async () => {
-    if (!collectionSlug || !id || !previewURL || isSaving) {
+    if (!entitySlug || (collectionSlug && !id) || !previewURL || isSaving) {
       return
     }
 
@@ -64,11 +72,12 @@ export function DraftPreviewButton() {
         docPermissions,
         docPreferences: await getDocPreferences(),
         formState: currentFormState,
+        globalSlug,
         id,
         locale,
         operation: 'update',
         renderAllFields: false,
-        schemaPath: collectionSlug,
+        schemaPath: entitySlug,
         skipValidation: false,
       })
 
@@ -92,13 +101,17 @@ export function DraftPreviewButton() {
         return
       }
 
+      const actionPath: `/${string}` = collectionSlug
+        ? `/${collectionSlug}/${id}`
+        : `/globals/${globalSlug}`
+      const actionPathWithQuery: `/${string}` = `${actionPath}?locale=${locale}&depth=0&fallback-locale=null&draft=true`
       const action = formatAdminURL({
         apiRoute: api,
-        path: `/${collectionSlug}/${id}?locale=${locale}&depth=0&fallback-locale=null&draft=true`,
+        path: actionPathWithQuery,
       })
       const result = await submit({
         action,
-        method: 'PATCH',
+        method: collectionSlug ? 'PATCH' : 'POST',
         overrides: { _status: 'draft' },
       })
 
@@ -122,9 +135,11 @@ export function DraftPreviewButton() {
     collectionSlug,
     dispatchFields,
     docPermissions,
+    entitySlug,
     getDocPreferences,
     getFields,
     getFormState,
+    globalSlug,
     id,
     isSaving,
     locale,
