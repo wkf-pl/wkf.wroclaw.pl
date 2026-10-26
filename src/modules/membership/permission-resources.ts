@@ -5,6 +5,7 @@ type PermissionResourceDefinition = {
   label: string
   ownershipField?: string
   publishedField?: string
+  trash?: boolean
 }
 
 export const permissionResources = {
@@ -25,6 +26,7 @@ export const permissionResources = {
     kind: 'collection',
     label: 'Wizytówki klubowiczów',
     ownershipField: 'owner',
+    trash: true,
   },
   'member-profile-images': {
     collection: 'member-profile-images',
@@ -38,6 +40,7 @@ export const permissionResources = {
     label: 'Strony',
     ownershipField: 'author',
     publishedField: '_status',
+    trash: true,
   },
   posts: {
     collection: 'posts',
@@ -45,6 +48,7 @@ export const permissionResources = {
     label: 'Wpisy',
     ownershipField: 'author',
     publishedField: '_status',
+    trash: true,
   },
   events: {
     collection: 'events',
@@ -52,6 +56,7 @@ export const permissionResources = {
     label: 'Wydarzenia',
     ownershipField: 'author',
     publishedField: '_status',
+    trash: true,
   },
   'event-cycles': {
     collection: 'event-cycles',
@@ -59,6 +64,7 @@ export const permissionResources = {
     label: 'Cykle wydarzeń',
     ownershipField: 'author',
     publishedField: '_status',
+    trash: true,
   },
   'event-types': {
     collection: 'event-types',
@@ -71,6 +77,7 @@ export const permissionResources = {
     label: 'Partnerzy',
     ownershipField: 'author',
     publishedField: '_status',
+    trash: true,
   },
   documents: {
     collection: 'documents',
@@ -78,6 +85,7 @@ export const permissionResources = {
     label: 'Dokumenty',
     ownershipField: 'author',
     publishedField: '_status',
+    trash: true,
   },
   'url-aliases': {
     collection: 'url-aliases',
@@ -89,6 +97,7 @@ export const permissionResources = {
     kind: 'collection',
     label: 'Sekcje klubowe',
     publishedField: '_status',
+    trash: true,
   },
   categories: {
     collection: 'categories',
@@ -113,7 +122,8 @@ export const permissionResources = {
 } as const satisfies Record<string, PermissionResourceDefinition>
 
 export type PermissionResource = keyof typeof permissionResources
-export type PermissionOperation = 'create' | 'read' | 'update' | 'delete'
+export type PermissionOperation =
+  'create' | 'read' | 'update' | 'delete' | 'restore' | 'permanentDelete'
 export const permissionResourceOptions = Object.entries(permissionResources).map(
   ([value, resource]) => ({ label: resource.label, value }),
 )
@@ -132,6 +142,14 @@ export function resourceSupportsPublishedStatus(resource: unknown): boolean {
 
 export function resourceSupportsCreateAndDelete(resource: unknown): boolean {
   return isPermissionResource(resource) && permissionResources[resource].kind === 'collection'
+}
+
+export function resourceSupportsTrash(resource: unknown): boolean {
+  return (
+    isPermissionResource(resource) &&
+    'trash' in permissionResources[resource] &&
+    permissionResources[resource].trash === true
+  )
 }
 
 export function getCollectionPermissionResources(collection: string): PermissionResource[] {

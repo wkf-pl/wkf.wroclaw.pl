@@ -28,16 +28,30 @@ import {
 } from '@/modules/events/event-cycle-schedule'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
+import {
+  createTrashDeleteAccess,
+  createTrashReadAccess,
+  createTrashUpdateAccess,
+  markTrashMutation,
+} from '@/modules/content/trash-access'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 const createCycles = createRolePermissionAccess({ operation: 'create', resource: 'event-cycles' })
-const deleteCycles = createRolePermissionAccess({ operation: 'delete', resource: 'event-cycles' })
-const readCycles = createRolePermissionAccess({
-  operation: 'read',
-  publicAccess: publishedPublicAccess,
-  resource: 'event-cycles',
-})
-const updateCycles = createRolePermissionAccess({ operation: 'update', resource: 'event-cycles' })
+const deleteCycles = createTrashDeleteAccess(
+  createRolePermissionAccess({ operation: 'delete', resource: 'event-cycles' }),
+  createRolePermissionAccess({ operation: 'permanentDelete', resource: 'event-cycles' }),
+)
+const readCycles = createTrashReadAccess(
+  createRolePermissionAccess({
+    operation: 'read',
+    publicAccess: publishedPublicAccess,
+    resource: 'event-cycles',
+  }),
+)
+const updateCycles = createTrashUpdateAccess(
+  createRolePermissionAccess({ operation: 'update', resource: 'event-cycles' }),
+  createRolePermissionAccess({ operation: 'restore', resource: 'event-cycles' }),
+)
 
 const editorialFields = createEditorialFields({ includeContent: false, includeTaxonomy: true })
 
@@ -58,6 +72,7 @@ const eventCycleSlugField: Field = {
 
 export const EventCycles: CollectionConfig = {
   slug: 'event-cycles',
+  trash: true,
   access: { create: createCycles, delete: deleteCycles, read: readCycles, update: updateCycles },
   admin: {
     components: {
@@ -273,6 +288,7 @@ export const EventCycles: CollectionConfig = {
       },
       setPublishedAt,
     ],
+    beforeOperation: [markTrashMutation],
     beforeValidate: [copyEventCycleContentToDefaults, validateMediaBlocks],
   },
   labels: { plural: 'Cykle wydarzeń', singular: 'Cykl wydarzeń' },

@@ -10,21 +10,36 @@ import { createContentLayoutField } from '@/modules/content/layout-field'
 import { populateSlugFromName } from '@/modules/content/slug'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
+import {
+  createTrashDeleteAccess,
+  createTrashReadAccess,
+  createTrashUpdateAccess,
+  markTrashMutation,
+} from '@/modules/content/trash-access'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 const createPartners = createRolePermissionAccess({ operation: 'create', resource: 'partners' })
-const deletePartners = createRolePermissionAccess({ operation: 'delete', resource: 'partners' })
-const readPartners = createRolePermissionAccess({
-  operation: 'read',
-  publicAccess: publishedPublicAccess,
-  resource: 'partners',
-})
-const updatePartners = createRolePermissionAccess({ operation: 'update', resource: 'partners' })
+const deletePartners = createTrashDeleteAccess(
+  createRolePermissionAccess({ operation: 'delete', resource: 'partners' }),
+  createRolePermissionAccess({ operation: 'permanentDelete', resource: 'partners' }),
+)
+const readPartners = createTrashReadAccess(
+  createRolePermissionAccess({
+    operation: 'read',
+    publicAccess: publishedPublicAccess,
+    resource: 'partners',
+  }),
+)
+const updatePartners = createTrashUpdateAccess(
+  createRolePermissionAccess({ operation: 'update', resource: 'partners' }),
+  createRolePermissionAccess({ operation: 'restore', resource: 'partners' }),
+)
 
 const editorialFields = createEditorialFields({ includeContent: false })
 
 export const Partners: CollectionConfig = {
   slug: 'partners',
+  trash: true,
   access: {
     create: createPartners,
     delete: deletePartners,
@@ -100,6 +115,7 @@ export const Partners: CollectionConfig = {
     afterChange: [invalidatePartnersAfterChange],
     afterDelete: [invalidatePartnersAfterDelete],
     beforeChange: [setPublishedAt],
+    beforeOperation: [markTrashMutation],
     beforeValidate: [validateMediaBlocks],
   },
   labels: { plural: 'Partnerzy', singular: 'Partnera' },

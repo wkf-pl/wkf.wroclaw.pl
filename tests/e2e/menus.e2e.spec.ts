@@ -264,7 +264,7 @@ test('searches, selects with the keyboard and persists a named icon in a card bl
       response.request().method() === 'POST' &&
       response.url().includes('/api/globals/homepage-sections'),
   )
-  await page.getByRole('button', { name: 'Zapisz' }).click()
+  await page.getByRole('button', { name: 'Opublikuj zmiany' }).click()
   expect((await saveResponse).ok()).toBe(true)
 
   const payload = await getPayload({ config })

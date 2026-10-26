@@ -43,6 +43,29 @@ describe('homepage globals', () => {
     ])
   })
 
+  it('keeps drafts and the latest 50 versions with authenticated history access', () => {
+    const previewButton = '/components/admin/DraftPreviewButton#DraftPreviewButton'
+
+    for (const global of homepageGlobals) {
+      expect(global.versions).toEqual({ drafts: true, max: 50 })
+      expect(global.access?.readVersions).toBeTypeOf('function')
+      expect(global.admin?.components?.elements?.PreviewButton).toBe(previewButton)
+      expect(global.admin?.preview).toBeTypeOf('function')
+    }
+  })
+
+  it('does not expose saved global drafts to anonymous API requests', async () => {
+    for (const global of homepageGlobals) {
+      const readAccess = global.access?.read
+      expect(readAccess).toBeTypeOf('function')
+
+      await expect(
+        readAccess?.({ req: { query: { draft: true }, user: null } } as never),
+      ).resolves.toBe(false)
+      await expect(readAccess?.({ req: { query: {}, user: null } } as never)).resolves.toBe(true)
+    }
+  })
+
   it('keeps only general and SEO fields in Podstawowe', () => {
     expect(namedFields(SiteSettings.fields)).toEqual([
       'siteName',

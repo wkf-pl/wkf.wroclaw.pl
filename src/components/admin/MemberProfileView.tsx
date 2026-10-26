@@ -36,6 +36,7 @@ async function findOwnedProfile({
     overrideAccess: true,
     pagination: false,
     req,
+    trash: true,
     where: { owner: { equals: ownerID } },
   })
 
@@ -101,6 +102,9 @@ export async function MemberProfileView({
 
   const userName = user.displayName?.trim() || user.email
   const profile = (await ensureOwnedProfile({ ownerID, payload, req, userName })) as MemberProfile
+  if (profile.deletedAt) {
+    redirect('/admin/account')
+  }
   const docPermissions: SanitizedCollectionPermission = permissions.collections?.[
     'member-profiles'
   ] ?? {

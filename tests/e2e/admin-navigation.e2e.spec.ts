@@ -44,10 +44,13 @@ test('groups administrator navigation under Administracja', async ({ page }) => 
   await expect(
     navigation.getByRole('button', { name: 'Administracja' }).locator('..'),
   ).toContainText('UżytkownicyRole')
+  await expect(navigation.getByRole('button', { name: 'Klubowe' }).locator('..')).toContainText(
+    'Wizytówki klubowiczów',
+  )
 
   const groupLabels = await navigation.locator('.nav-group__label').allTextContents()
 
-  expect(groupLabels).toEqual(['Administracja', 'Użytkownik'])
+  expect(groupLabels).toEqual(['Klubowe', 'Administracja', 'Użytkownik'])
 })
 
 test('shows the selected logo and compact header item controls', async ({ page }) => {

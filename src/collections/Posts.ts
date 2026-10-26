@@ -9,17 +9,31 @@ import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
 import { createDraftPreviewURL } from '@/modules/content/draft-preview'
 import { publishedPublicAccess } from '@/modules/content/public-access'
+import {
+  createTrashDeleteAccess,
+  createTrashReadAccess,
+  createTrashUpdateAccess,
+  markTrashMutation,
+} from '@/modules/content/trash-access'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 
 const createPosts = createRolePermissionAccess({ operation: 'create', resource: 'posts' })
-const deletePosts = createRolePermissionAccess({ operation: 'delete', resource: 'posts' })
-const readPosts = createRolePermissionAccess({
-  operation: 'read',
-  publicAccess: publishedPublicAccess,
-  resource: 'posts',
-})
-const updatePosts = createRolePermissionAccess({ operation: 'update', resource: 'posts' })
+const deletePosts = createTrashDeleteAccess(
+  createRolePermissionAccess({ operation: 'delete', resource: 'posts' }),
+  createRolePermissionAccess({ operation: 'permanentDelete', resource: 'posts' }),
+)
+const readPosts = createTrashReadAccess(
+  createRolePermissionAccess({
+    operation: 'read',
+    publicAccess: publishedPublicAccess,
+    resource: 'posts',
+  }),
+)
+const updatePosts = createTrashUpdateAccess(
+  createRolePermissionAccess({ operation: 'update', resource: 'posts' }),
+  createRolePermissionAccess({ operation: 'restore', resource: 'posts' }),
+)
 
 const editorialFields = createEditorialFields({
   includeContent: false,
@@ -29,6 +43,7 @@ const editorialFields = createEditorialFields({
 
 export const Posts: CollectionConfig = {
   slug: 'posts',
+  trash: true,
   access: {
     create: createPosts,
     delete: deletePosts,
@@ -98,6 +113,7 @@ export const Posts: CollectionConfig = {
     afterChange: [syncContentListingAfterChange],
     afterDelete: [removeContentListingAfterDelete],
     beforeChange: [setPublishedAt],
+    beforeOperation: [markTrashMutation],
     beforeValidate: [validateMediaBlocks],
   },
   labels: {

@@ -29,19 +29,29 @@ export async function GET(request: Request): Promise<Response> {
     return new Response('Draft preview is not available.', { status: 403 })
   }
 
-  const result = await payload.find({
-    collection: target.collection,
-    depth: 0,
-    draft: true,
-    limit: 1,
-    overrideAccess: false,
-    pagination: false,
-    user: authenticatedUser,
-    where: { slug: { equals: target.slug } },
-  })
+  if ('collection' in target) {
+    const result = await payload.find({
+      collection: target.collection,
+      depth: 0,
+      draft: true,
+      limit: 1,
+      overrideAccess: false,
+      pagination: false,
+      user: authenticatedUser,
+      where: { slug: { equals: target.slug } },
+    })
 
-  if (!result.docs[0]) {
-    return new Response('Preview document was not found.', { status: 404 })
+    if (!result.docs[0]) {
+      return new Response('Preview document was not found.', { status: 404 })
+    }
+  } else {
+    await payload.findGlobal({
+      slug: target.global,
+      depth: 0,
+      draft: true,
+      overrideAccess: false,
+      user: authenticatedUser,
+    })
   }
 
   const preview = await draftMode()

@@ -13,6 +13,12 @@ import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
 import { populateListingExcerptOnPublish } from '@/modules/content/listing-excerpt'
 import {
+  createTrashDeleteAccess,
+  createTrashReadAccess,
+  createTrashUpdateAccess,
+  markTrashMutation,
+} from '@/modules/content/trash-access'
+import {
   createHierarchyDisplayFields,
   populateHierarchyFullTitle,
   validateHierarchy,
@@ -27,12 +33,21 @@ import { validatePageAliasCollision } from '@/modules/url-aliases/url-aliases'
 
 const createPages = createRolePermissionAccess({ operation: 'create', resource: 'pages' })
 const deletePagesByRole = createRolePermissionAccess({ operation: 'delete', resource: 'pages' })
-const readPages = createRolePermissionAccess({
-  operation: 'read',
-  publicAccess: publishedPublicAccess,
+const permanentlyDeletePagesByRole = createRolePermissionAccess({
+  operation: 'permanentDelete',
   resource: 'pages',
 })
-const updatePages = createRolePermissionAccess({ operation: 'update', resource: 'pages' })
+const readPages = createTrashReadAccess(
+  createRolePermissionAccess({
+    operation: 'read',
+    publicAccess: publishedPublicAccess,
+    resource: 'pages',
+  }),
+)
+const updatePages = createTrashUpdateAccess(
+  createRolePermissionAccess({ operation: 'update', resource: 'pages' }),
+  createRolePermissionAccess({ operation: 'restore', resource: 'pages' }),
+)
 
 function combineWithNonSystemPageConstraint(result: AccessResult): AccessResult {
   const nonSystemPage: Where = {
@@ -42,8 +57,11 @@ function combineWithNonSystemPageConstraint(result: AccessResult): AccessResult 
   return combineAccessWithConstraint(result, nonSystemPage)
 }
 
-const deletePages: Access = async (arguments_) =>
-  combineWithNonSystemPageConstraint(await deletePagesByRole(arguments_))
+const deletePages: Access = createTrashDeleteAccess(
+  async (arguments_) => combineWithNonSystemPageConstraint(await deletePagesByRole(arguments_)),
+  async (arguments_) =>
+    combineWithNonSystemPageConstraint(await permanentlyDeletePagesByRole(arguments_)),
+)
 
 const editorialFields = createEditorialFields({
   includeContent: false,
@@ -63,6 +81,7 @@ const pageParentField: Field = {
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
+  trash: true,
   access: {
     create: createPages,
     delete: deletePages,
@@ -147,6 +166,7 @@ export const Pages: CollectionConfig = {
     afterChange: [syncContentListingAfterChange],
     afterDelete: [removeContentListingAfterDelete],
     beforeChange: [populateHierarchyFullTitle, populateListingExcerptOnPublish, setPublishedAt],
+    beforeOperation: [markTrashMutation],
     beforeValidate: [
       validatePageAliasCollision,
       validateMediaBlocks,

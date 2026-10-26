@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import { Pages } from '@/collections/Pages'
 import { Posts } from '@/collections/Posts'
-import { getSafePreviewExitPath, parseDraftPreviewTarget } from '@/modules/content/draft-preview'
+import {
+  createGlobalDraftPreviewURL,
+  getSafePreviewExitPath,
+  parseDraftPreviewTarget,
+} from '@/modules/content/draft-preview'
 
 async function generatePreviewURL(
   collection: typeof Pages | typeof Posts,
@@ -58,6 +62,18 @@ describe('draft preview', () => {
     ).toBeNull()
     expect(
       parseDraftPreviewTarget(new URLSearchParams('collection=pages&slug=../admin')),
+    ).toBeNull()
+  })
+
+  it('derives homepage preview paths only from supported globals', () => {
+    expect(createGlobalDraftPreviewURL('navigation')).toBe('/preview?global=navigation')
+    expect(parseDraftPreviewTarget(new URLSearchParams('global=homepage-hero'))).toEqual({
+      global: 'homepage-hero',
+      path: '/',
+    })
+    expect(parseDraftPreviewTarget(new URLSearchParams('global=users'))).toBeNull()
+    expect(
+      parseDraftPreviewTarget(new URLSearchParams('global=navigation&collection=pages&slug=o-nas')),
     ).toBeNull()
   })
 

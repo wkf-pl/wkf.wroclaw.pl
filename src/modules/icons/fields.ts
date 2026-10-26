@@ -11,6 +11,7 @@ export const iconNameOptions: { label: string; value: SelectableRasterIconName }
 type CreateRasterIconFieldOptions<SiblingData> = {
   adminWidth?: string
   databaseName?: string
+  enumName?: string
   label?: string
   name?: string
   validate?: Validate<unknown, unknown, SiblingData>
@@ -19,6 +20,7 @@ type CreateRasterIconFieldOptions<SiblingData> = {
 export function createRasterIconField<SiblingData = Record<string, unknown>>({
   adminWidth,
   databaseName,
+  enumName,
   label = 'Ikona',
   name = 'iconName',
   validate,
@@ -33,6 +35,7 @@ export function createRasterIconField<SiblingData = Record<string, unknown>>({
       ...(adminWidth ? { width: adminWidth } : {}),
     },
     ...(databaseName ? { dbName: databaseName } : {}),
+    ...(enumName ? { enumName } : {}),
     label,
     options: [...iconNameOptions],
     ...(validate ? { validate } : {}),

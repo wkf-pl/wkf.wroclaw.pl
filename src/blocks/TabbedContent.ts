@@ -36,7 +36,10 @@ function createMenuField(name: MenuFieldName, label: string): ArrayField {
   return {
     name,
     type: 'array',
-    fields: createSiteMenuLinkFields({ compactDatabaseNames: true }),
+    fields: createSiteMenuLinkFields({
+      compactDatabaseNames: true,
+      ...(name === 'footerItems' ? {} : { iconEnumName: 'tab_header_icon_name' }),
+    }),
     admin: {
       className: 'wkf-tabbed-content-menu-field',
       components: {

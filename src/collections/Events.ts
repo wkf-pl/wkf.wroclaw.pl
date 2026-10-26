@@ -23,21 +23,36 @@ import { applyEventCycleDefaults, updateEventCalendarMetadata } from '@/modules/
 import { createNextEventEndpoint } from '@/modules/events/create-next-event'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
+import {
+  createTrashDeleteAccess,
+  createTrashReadAccess,
+  createTrashUpdateAccess,
+  markTrashMutation,
+} from '@/modules/content/trash-access'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 const createEvents = createRolePermissionAccess({ operation: 'create', resource: 'events' })
-const deleteEvents = createRolePermissionAccess({ operation: 'delete', resource: 'events' })
-const readEvents = createRolePermissionAccess({
-  operation: 'read',
-  publicAccess: publishedPublicAccess,
-  resource: 'events',
-})
-const updateEvents = createRolePermissionAccess({ operation: 'update', resource: 'events' })
+const deleteEvents = createTrashDeleteAccess(
+  createRolePermissionAccess({ operation: 'delete', resource: 'events' }),
+  createRolePermissionAccess({ operation: 'permanentDelete', resource: 'events' }),
+)
+const readEvents = createTrashReadAccess(
+  createRolePermissionAccess({
+    operation: 'read',
+    publicAccess: publishedPublicAccess,
+    resource: 'events',
+  }),
+)
+const updateEvents = createTrashUpdateAccess(
+  createRolePermissionAccess({ operation: 'update', resource: 'events' }),
+  createRolePermissionAccess({ operation: 'restore', resource: 'events' }),
+)
 
 const editorialFields = createEditorialFields({ includeContent: false, includeTaxonomy: true })
 
 export const Events: CollectionConfig = {
   slug: 'events',
+  trash: true,
   access: { create: createEvents, delete: deleteEvents, read: readEvents, update: updateEvents },
   admin: {
     components: {
@@ -153,6 +168,7 @@ export const Events: CollectionConfig = {
     afterChange: [syncContentListingAfterChange],
     afterDelete: [removeContentListingAfterDelete],
     beforeChange: [updateEventCalendarMetadata, setPublishedAt],
+    beforeOperation: [markTrashMutation],
     beforeValidate: [applyEventCycleDefaults, validateMediaBlocks],
   },
   labels: { plural: 'Wydarzenia', singular: 'Wydarzenie' },

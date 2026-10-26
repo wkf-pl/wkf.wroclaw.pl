@@ -4,10 +4,10 @@ import type { ReactNode } from 'react'
 
 import { PrivacyConsentProvider } from '@/components/privacy/PrivacyConsent'
 import {
-  getPublicFooter,
-  getPublicNavigation,
-  getPublicSiteSettings,
-} from '@/modules/content/public-content'
+  findFooterForRequest,
+  findNavigationForRequest,
+  findSiteSettingsForRequest,
+} from '@/modules/content/preview-content'
 
 import { SiteFooter } from './_components/SiteFooter'
 import { SiteHeader } from './_components/SiteHeader'
@@ -31,7 +31,7 @@ const icons: Metadata['icons'] = {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const siteSettings = await getPublicSiteSettings()
+  const { document: siteSettings } = await findSiteSettingsForRequest()
 
   return {
     description: siteSettings.siteDescription || undefined,
@@ -48,11 +48,14 @@ type FrontendLayoutProperties = {
 }
 
 export default async function FrontendLayout({ children }: FrontendLayoutProperties) {
-  const [footer, navigation, siteSettings] = await Promise.all([
-    getPublicFooter(),
-    getPublicNavigation(),
-    getPublicSiteSettings(),
+  const [footerResult, navigationResult, siteSettingsResult] = await Promise.all([
+    findFooterForRequest(),
+    findNavigationForRequest(),
+    findSiteSettingsForRequest(),
   ])
+  const footer = footerResult.document
+  const navigation = navigationResult.document
+  const siteSettings = siteSettingsResult.document
 
   return (
     <html lang="pl">

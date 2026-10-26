@@ -6,6 +6,12 @@ import {
   syncContentListingAfterChange,
 } from '@/modules/content/content-listing-index'
 import { createTaxonomyFields } from '@/modules/content/taxonomy-fields'
+import {
+  createTrashDeleteAccess,
+  createTrashReadAccess,
+  createTrashUpdateAccess,
+  markTrashMutation,
+} from '@/modules/content/trash-access'
 import { populateSlug } from '@/modules/content/slug'
 import { documentTypeOptions } from '@/modules/documents/document-types'
 import { readDocuments } from '@/modules/documents/document-access'
@@ -22,23 +28,37 @@ const createDocuments = createRolePermissionAccess({
   operation: 'create',
   resource: 'documents',
 })
-const deleteDocuments = createRolePermissionAccess({
-  operation: 'delete',
-  resource: 'documents',
-})
-const updateDocuments = createRolePermissionAccess({
-  operation: 'update',
-  resource: 'documents',
-})
+const deleteDocuments = createTrashDeleteAccess(
+  createRolePermissionAccess({
+    operation: 'delete',
+    resource: 'documents',
+  }),
+  createRolePermissionAccess({
+    operation: 'permanentDelete',
+    resource: 'documents',
+  }),
+)
+const updateDocuments = createTrashUpdateAccess(
+  createRolePermissionAccess({
+    operation: 'update',
+    resource: 'documents',
+  }),
+  createRolePermissionAccess({
+    operation: 'restore',
+    resource: 'documents',
+  }),
+)
+const readTrashDocuments = createTrashReadAccess(readDocuments)
 
 const taxonomyFields = createTaxonomyFields()
 
 export const Documents: CollectionConfig = {
   slug: 'documents',
+  trash: true,
   access: {
     create: createDocuments,
     delete: deleteDocuments,
-    read: readDocuments,
+    read: readTrashDocuments,
     update: updateDocuments,
   },
   admin: {
@@ -178,6 +198,7 @@ export const Documents: CollectionConfig = {
     afterDelete: [removeContentListingAfterDelete],
     beforeChange: [setPublishedAt],
     beforeDelete: [deleteDocumentFiles],
+    beforeOperation: [markTrashMutation],
     beforeValidate: [validateDocumentFiles],
   },
   indexes: [{ fields: ['documentType', 'documentNumber'], unique: true }],

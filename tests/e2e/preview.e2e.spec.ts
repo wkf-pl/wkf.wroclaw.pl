@@ -8,11 +8,23 @@ import { editorTestUser } from '../helpers/seedUser'
 
 const draftSlug = 'e2e-draft-preview'
 const invalidDraftSlug = 'e2e-invalid-draft-preview'
+const globalDraftPreviewSlugs = [
+  'site-settings',
+  'navigation',
+  'homepage-hero',
+  'homepage-sections',
+  'footer',
+] as const
 const navigationTimeout = 20_000
 let invalidDraftPageID: number | string
 let draftPageID: number | string
 let draftPostID: number | string
 let payload: Payload
+let publishedSiteSettings: {
+  contactEmail?: null | string
+  siteDescription?: null | string
+  siteName: string
+}
 
 test.beforeAll(async () => {
   payload = await getPayload({ config })
@@ -39,6 +51,18 @@ test.beforeAll(async () => {
 
   if (!editor) {
     throw new Error('Missing the E2E editor user required by the preview test.')
+  }
+
+  const siteSettings = await payload.findGlobal({
+    slug: 'site-settings',
+    depth: 0,
+    draft: false,
+    overrideAccess: true,
+  })
+  publishedSiteSettings = {
+    contactEmail: siteSettings.contactEmail,
+    siteDescription: siteSettings.siteDescription,
+    siteName: siteSettings.siteName,
   }
 
   const draftPage = await payload.create({
@@ -118,14 +142,34 @@ test.afterAll(async () => {
       overrideAccess: true,
       where: { slug: { equals: draftSlug } },
     })
+    await payload.updateGlobal({
+      slug: 'site-settings',
+      data: publishedSiteSettings,
+      draft: false,
+      overrideAccess: true,
+    })
   }
 })
 
 test('rejects anonymous draft preview access', async ({ request }) => {
   const response = await request.get(`/preview?collection=pages&slug=${draftSlug}`)
+  const globalResponse = await request.get('/preview?global=site-settings')
+  const globalDraftAPIResponse = await request.get('/api/globals/site-settings?draft=true')
 
   expect(response.status()).toBe(403)
   expect(response.headers()['set-cookie']).toBeUndefined()
+  expect(globalResponse.status()).toBe(403)
+  expect(globalResponse.headers()['set-cookie']).toBeUndefined()
+  expect(globalDraftAPIResponse.status()).toBe(403)
+})
+
+test('shows the preview button for every versioned global', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+
+  for (const globalSlug of globalDraftPreviewSlugs) {
+    await page.goto(`/admin/globals/${globalSlug}`)
+    await expect(page.locator('#preview-button')).toBeVisible()
+  }
 })
 
 test('saves a draft before opening it from the admin preview button and can leave preview mode', async ({
@@ -179,6 +223,49 @@ test('saves a draft before opening it from the admin preview button and can leav
   await expect(
     postPreviewPage.getByRole('heading', {
       name: 'Szkic wpisu widoczny wyłącznie w podglądzie',
+    }),
+  ).toBeVisible()
+})
+
+test('previews a saved global draft without exposing it after leaving preview mode', async ({
+  page,
+}) => {
+  const draftSiteName = 'WKF — globalny szkic E2E'
+
+  await login({ page, user: editorTestUser })
+  await page.goto('/admin/globals/site-settings')
+
+  const previewButton = page.locator('#preview-button')
+  await expect(page.getByRole('link', { name: /Wersje/ })).toBeVisible()
+  await expect(previewButton).toHaveText('Podgląd')
+  await page.getByRole('textbox', { name: 'Nazwa strony *' }).fill(draftSiteName)
+
+  const saveDraftResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/api/globals/site-settings') &&
+      response.url().includes('draft=true'),
+  )
+  const previewPagePromise = page.waitForEvent('popup')
+  await previewButton.click()
+  const previewPage = await previewPagePromise
+  const saveDraftResponse = await saveDraftResponsePromise
+
+  expect(saveDraftResponse.status()).toBe(200)
+  await expect(previewPage).toHaveURL(/\/$/, { timeout: navigationTimeout })
+  await expect(
+    previewPage.getByRole('link', { name: `${draftSiteName} — strona główna` }),
+  ).toBeVisible()
+  await expect(previewPage.getByRole('status')).toContainText('Wyświetlasz zapisany szkic.')
+
+  await previewPage.getByRole('link', { name: 'Wyłącz podgląd' }).click()
+  await expect(previewPage).toHaveURL(/\/$/, { timeout: navigationTimeout })
+  await expect(
+    previewPage.getByRole('link', { name: `${draftSiteName} — strona główna` }),
+  ).toHaveCount(0)
+  await expect(
+    previewPage.getByRole('link', {
+      name: `${publishedSiteSettings.siteName} — strona główna`,
     }),
   ).toBeVisible()
 })

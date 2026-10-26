@@ -1,6 +1,8 @@
 import type { GlobalConfig } from 'payload'
 
 import { invalidateNavigationAfterChange } from '@/modules/cache/invalidate-public-data'
+import { createGlobalDraftPreviewURL } from '@/modules/content/draft-preview'
+import { preventAnonymousDraftRead } from '@/modules/content/global-drafts'
 import { defaultHomepageHeroTitle, homepageTitleEditor } from '@/modules/content/homepage-rich-text'
 import { webRasterImageMimeTypes } from '@/modules/media/media-categories'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
@@ -15,15 +17,26 @@ const updateHomepageHero = createRolePermissionAccess({
   operation: 'update',
   resource: 'navigation',
 })
+const readHomepageHeroVersions = createRolePermissionAccess({
+  operation: 'read',
+  resource: 'navigation',
+})
 
 export const HomepageHero: GlobalConfig = {
   slug: 'homepage-hero',
   access: {
-    read: readHomepageHero,
+    read: preventAnonymousDraftRead(readHomepageHero),
+    readVersions: readHomepageHeroVersions,
     update: updateHomepageHero,
   },
   admin: {
+    components: {
+      elements: {
+        PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
+      },
+    },
     group: 'Strona główna',
+    preview: () => createGlobalDraftPreviewURL('homepage-hero'),
   },
   fields: [
     {
@@ -65,4 +78,5 @@ export const HomepageHero: GlobalConfig = {
   ],
   hooks: { afterChange: [invalidateNavigationAfterChange] },
   label: 'Hero',
+  versions: { drafts: true, max: 50 },
 }

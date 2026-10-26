@@ -26,6 +26,8 @@ export type RolePermission = {
   deleteAllowed?: boolean | null
   deleteOwn?: boolean | null
   deletePublished?: boolean | null
+  restoreAllowed?: boolean | null
+  permanentDeleteAllowed?: boolean | null
 }
 
 export type RoleRecord = {
@@ -67,6 +69,22 @@ export function clientUserHasResourcePermission(
   resource: PermissionResource,
   operation: PermissionOperation,
 ): boolean {
+  return resolveClientUserResourcePermission(user, resource, operation) !== false
+}
+
+export function clientUserHasUnrestrictedResourcePermission(
+  user: unknown,
+  resource: PermissionResource,
+  operation: PermissionOperation,
+): boolean {
+  return resolveClientUserResourcePermission(user, resource, operation) === true
+}
+
+function resolveClientUserResourcePermission(
+  user: unknown,
+  resource: PermissionResource,
+  operation: PermissionOperation,
+): AccessResult {
   const userId = getUserIdentity(user)
   if (userId === undefined) {
     return false
@@ -76,7 +94,7 @@ export function clientUserHasResourcePermission(
     (role): role is RoleRecord => typeof role === 'object' && 'permissions' in role,
   )
 
-  return resolveRolePermission(roles, resource, operation, userId) !== false
+  return resolveRolePermission(roles, resource, operation, userId)
 }
 
 export function clientUserHasCollectionPermission(
@@ -101,6 +119,10 @@ export function getPermissionGrant(
 ): PermissionGrant {
   if (operation === 'create') {
     return { allowed: permission.canCreate }
+  }
+
+  if (operation === 'restore' || operation === 'permanentDelete') {
+    return { allowed: permission[`${operation}Allowed`] }
   }
 
   return {
