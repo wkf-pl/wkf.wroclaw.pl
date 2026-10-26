@@ -134,14 +134,22 @@
 
 .sectionGroupSection > .contentPresentationContent {
   display: grid;
-  padding: 1.5rem 0;
 }
 
-.sectionGroupSections
-  > .sectionGroupSection.contentPresentation--transparent
-  + .sectionGroupSection.contentPresentation--transparent
+.sectionGroupSection.contentPresentation--decorated > .contentPresentationContent,
+.contentPresentation--sectionGroup.contentPresentation--decorated
+  .sectionGroupSection
   > .contentPresentationContent {
-  padding-top: 0;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.homePage .sectionGroupSection.contentPresentation--decorated > .contentPresentationContent,
+.homePage
+  .contentPresentation--sectionGroup.contentPresentation--decorated
+  .sectionGroupSection
+  > .contentPresentationContent {
+  margin: clamp(1.5rem, 4vw, 3rem) 0;
+  padding: 0;
 }
 
 .sectionGroupSection > .contentPresentationContent > .contentPresentationBody {
@@ -170,8 +178,11 @@
 
 .columnLayoutColumnContent {
   display: grid;
-  /*gap: clamp(1.5rem, 3vw, 2.5rem);*/
   min-width: 0;
+}
+
+.columnLayoutColumnContent > .contentHeading:not(:last-child) {
+  margin-bottom: 1rem;
 }
 
 .columnLayout--align-start .columnLayoutColumnContent {
