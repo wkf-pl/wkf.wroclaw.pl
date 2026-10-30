@@ -2,13 +2,8 @@ import type { Block } from 'payload'
 
 import { createContentPresentationFields } from '@/modules/content/content-presentation'
 
-import {
-  listingSources,
-  validateListingSources,
-  validateManualListingItems,
-  validateParentPage,
-} from './Listing'
-import { createListingTaxonomyRow, createMaxAgeDaysField } from './listing-fields'
+import { listingSources, validateListingSources, validateManualListingItems } from './Listing'
+import { createListingConditionsField } from './listing-condition-fields'
 
 const filtersCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.selectionMode === 'filters'
@@ -31,16 +26,39 @@ export const CarouselBlock: Block = {
   fields: [
     ...createContentPresentationFields(),
     {
-      name: 'selectionMode',
-      type: 'select',
-      admin: { isClearable: false },
-      defaultValue: 'filters',
-      label: 'Tryb wyboru',
-      options: [
-        { label: 'Ręczny', value: 'manual' },
-        { label: 'Filtry', value: 'filters' },
+      type: 'row',
+      fields: [
+        {
+          name: 'selectionMode',
+          type: 'select',
+          admin: { isClearable: false, width: '33.333%' },
+          defaultValue: 'filters',
+          label: 'Tryb wyboru',
+          options: [
+            { label: 'Ręczny', value: 'manual' },
+            { label: 'Filtry', value: 'filters' },
+          ],
+          required: true,
+        },
+        {
+          name: 'sources',
+          type: 'select',
+          admin: { condition: filtersCondition, isClearable: false, width: '66.667%' },
+          hasMany: true,
+          label: 'Źródła',
+          options: listingSources.map((source) => {
+            const labels = {
+              documents: 'Dokumenty',
+              'event-cycles': 'Cykle wydarzeń',
+              events: 'Wydarzenia',
+              pages: 'Strony',
+              posts: 'Wpisy',
+            }
+            return { label: labels[source], value: source }
+          }),
+          validate: validateListingSources,
+        },
       ],
-      required: true,
     },
     {
       name: 'items',
@@ -71,80 +89,14 @@ export const CarouselBlock: Block = {
       },
       validate: validateManualListingItems,
     },
+    createListingConditionsField(),
     {
       type: 'row',
       fields: [
-        {
-          name: 'sources',
-          type: 'select',
-          admin: { condition: filtersCondition, isClearable: false, width: '50%' },
-          hasMany: true,
-          label: 'Źródła',
-          options: listingSources.map((source) => {
-            const labels = {
-              documents: 'Dokumenty',
-              'event-cycles': 'Cykle wydarzeń',
-              events: 'Wydarzenia',
-              pages: 'Strony',
-              posts: 'Wpisy',
-            }
-            return { label: labels[source], value: source }
-          }),
-          validate: validateListingSources,
-        },
-        {
-          name: 'parentPage',
-          type: 'relationship',
-          admin: {
-            condition: filtersCondition,
-            components: {
-              Field: '/components/admin/ListingParentPageField#ListingParentPageField',
-            },
-            width: '50%',
-          },
-          label: 'Strona nadrzędna',
-          relationTo: 'pages',
-          validate: validateParentPage,
-        },
-      ],
-    },
-    createListingTaxonomyRow({ conditional: true }),
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'eventTimeFilter',
-          type: 'select',
-          admin: { condition: filtersCondition, isClearable: false, width: '50%' },
-          defaultValue: 'all',
-          label: 'Terminy Wydarzeń',
-          options: [
-            { label: 'Wszystkie', value: 'all' },
-            { label: 'Trwające i nadchodzące', value: 'upcoming' },
-            { label: 'Minione', value: 'past' },
-          ],
-        },
-        {
-          name: 'eventCycle',
-          type: 'relationship',
-          admin: {
-            condition: filtersCondition,
-            placeholder: '<bieżący cykl lub brak>',
-            width: '50%',
-          },
-          label: 'Wskazany Cykl wydarzeń',
-          relationTo: 'event-cycles',
-        },
-      ],
-    },
-    {
-      type: 'row',
-      fields: [
-        createMaxAgeDaysField('33.333%'),
         {
           name: 'sort',
           type: 'select',
-          admin: { condition: filtersCondition, isClearable: false, width: '33.333%' },
+          admin: { condition: filtersCondition, isClearable: false, width: '50%' },
           defaultValue: 'newest',
           label: 'Sortowanie',
           options: [
@@ -158,7 +110,7 @@ export const CarouselBlock: Block = {
         {
           name: 'slideLimit',
           type: 'number',
-          admin: { width: '33.333%' },
+          admin: { width: '50%' },
           defaultValue: 5,
           label: 'Maksymalna liczba slajdów',
           max: 20,
@@ -166,18 +118,6 @@ export const CarouselBlock: Block = {
           required: true,
         },
       ],
-    },
-    {
-      name: 'parentFilter',
-      type: 'select',
-      admin: { hidden: true },
-      defaultValue: 'none',
-      options: [
-        { label: 'Bez filtra', value: 'none' },
-        { label: 'Bieżąca strona', value: 'current' },
-        { label: 'Wybrana strona', value: 'specific' },
-      ],
-      required: true,
     },
     {
       name: 'emptyMessage',

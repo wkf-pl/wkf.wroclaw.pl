@@ -65,8 +65,8 @@ describe('filter-capable block resolution', () => {
     const resolution = await resolveListingBlockSection({
       block: {
         blockType: 'listing',
+        conditions: [{ field: 'significantDate', numberValue: 30, operator: 'notOlderThan' }],
         emptyMessage: 'Brak treści.',
-        maxAgeDays: 30,
         pageSize: 10,
         pagination: false,
         selectionMode: 'filters',
@@ -83,7 +83,9 @@ describe('filter-capable block resolution', () => {
     expect(resolution.isEmpty).toBe(true)
     expect(renderToStaticMarkup(resolution.content)).toContain('Brak treści.')
     expect(listingMocks.findPublicContent).toHaveBeenCalledWith(
-      expect.objectContaining({ maxAgeDays: 30 }),
+      expect.objectContaining({
+        conditions: [{ field: 'significantDate', numberValue: 30, operator: 'notOlderThan' }],
+      }),
     )
   })
 
@@ -91,8 +93,8 @@ describe('filter-capable block resolution', () => {
     const resolution = await resolveCarouselBlockSection({
       block: {
         blockType: 'carousel',
+        conditions: [{ field: 'significantDate', numberValue: 14, operator: 'notOlderThan' }],
         emptyMessage: 'Brak slajdów.',
-        maxAgeDays: 14,
         selectionMode: 'filters',
         slideLimit: 5,
         sort: 'newest',
@@ -104,7 +106,9 @@ describe('filter-capable block resolution', () => {
     expect(resolution.isEmpty).toBe(true)
     expect(renderToStaticMarkup(resolution.content)).toContain('Brak slajdów.')
     expect(listingMocks.findPublicContent).toHaveBeenCalledWith(
-      expect.objectContaining({ maxAgeDays: 14 }),
+      expect.objectContaining({
+        conditions: [{ field: 'significantDate', numberValue: 14, operator: 'notOlderThan' }],
+      }),
     )
   })
 

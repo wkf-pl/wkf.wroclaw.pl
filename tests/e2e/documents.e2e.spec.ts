@@ -71,7 +71,6 @@ test.beforeAll(async () => {
             items: [{ item: { relationTo: 'documents', value: documentFixture.id } }],
             pageSize: 12,
             pagination: false,
-            parentFilter: 'none',
             selectionMode: 'manual',
             sort: 'newest',
             view: 'cards',

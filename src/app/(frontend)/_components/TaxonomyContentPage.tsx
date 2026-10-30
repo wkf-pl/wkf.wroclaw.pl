@@ -31,13 +31,24 @@ export async function TaxonomyContentPage({
   const childCategories = kind === 'category' ? await findChildCategories(taxonomy.id) : []
   const categoryBreadcrumbs = kind === 'category' ? createCategoryBreadcrumbs(taxonomy) : []
   const result = await findPublicContent({
-    categoryId: kind === 'category' ? taxonomy.id : undefined,
+    conditions: [
+      kind === 'category'
+        ? {
+            field: 'category',
+            operator: 'inSubtree',
+            relationshipValue: { relationTo: 'categories', value: taxonomy.id },
+          }
+        : {
+            field: 'tag',
+            operator: 'contains',
+            relationshipValue: { relationTo: 'tags', value: taxonomy.id },
+          },
+    ],
     page: requestedPage,
     pageSize: 12,
     pagination: true,
     sort: 'newest',
     sources: ['pages', 'posts', 'events', 'event-cycles'],
-    tagId: kind === 'tag' ? taxonomy.id : undefined,
   })
 
   if (requestedPage > result.totalPages) {

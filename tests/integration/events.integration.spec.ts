@@ -437,7 +437,7 @@ describe('events integration', () => {
     )
 
     const publicListing = await findPublicContent({
-      eventTimeFilter: 'upcoming',
+      conditions: [{ eventTimeValue: 'upcoming', field: 'eventTime', operator: 'equals' }],
       page: 1,
       pageSize: 10,
       pagination: true,
@@ -588,8 +588,14 @@ describe('events integration', () => {
     expect(event.layout[0]?.id).not.toBe(secondEvent.layout[0]?.id)
 
     const cycleListing = await findPublicContent({
-      eventCycleId: cycle.id,
-      eventTimeFilter: 'upcoming',
+      conditions: [
+        {
+          field: 'eventCycle',
+          operator: 'equals',
+          relationshipValue: { relationTo: 'event-cycles', value: cycle.id },
+        },
+        { eventTimeValue: 'upcoming', field: 'eventTime', operator: 'equals' },
+      ],
       page: 1,
       pageSize: 10,
       pagination: true,

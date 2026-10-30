@@ -91,10 +91,8 @@ test.beforeAll(async () => {
       layout: [
         {
           blockType: 'listing',
-          eventTimeFilter: 'all',
           pageSize: 12,
           pagination: true,
-          parentFilter: 'none',
           selectionMode: 'filters',
           sort: 'newest',
           sources: ['pages'],

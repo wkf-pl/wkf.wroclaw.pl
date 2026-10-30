@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { sql } from '@payloadcms/db-postgres'
 
 import { findPublicContent } from '@/modules/content/content-listing'
 import type { Post } from '@/payload-types'
@@ -22,13 +23,23 @@ afterAll(async () => {
 describe('content listing and pagination', () => {
   it('returns a page and a post in one globally sorted public stream', async () => {
     const result = await findPublicContent({
-      categoryId: fixture.category.id,
+      conditions: [
+        {
+          field: 'category',
+          operator: 'inSubtree',
+          relationshipValue: { relationTo: 'categories', value: fixture.category.id },
+        },
+        {
+          field: 'tag',
+          operator: 'contains',
+          relationshipValue: { relationTo: 'tags', value: fixture.tag.id },
+        },
+      ],
       page: 1,
       pageSize: 12,
       pagination: true,
       sort: 'newest',
       sources: ['pages', 'posts'],
-      tagId: fixture.tag.id,
     })
 
     expect(result.items.map(({ document, kind }) => [kind, document.title])).toEqual([
@@ -37,15 +48,194 @@ describe('content listing and pagination', () => {
     ])
 
     const childResult = await findPublicContent({
+      conditions: [
+        {
+          field: 'parentPage',
+          operator: 'equals',
+          relationshipValue: { relationTo: 'pages', value: fixture.page.id },
+        },
+      ],
       page: 1,
       pageSize: 12,
       pagination: true,
-      parentId: fixture.page.id,
       sort: 'titleAscending',
       sources: ['pages'],
     })
     expect(childResult.items.map((item) => item.document.id)).toEqual([fixture.childPage.id])
     expect(childResult.items[0]?.document).toHaveProperty('layout')
+
+    const mixedSourceResult = await findPublicContent({
+      conditions: [
+        {
+          field: 'parentPage',
+          operator: 'equals',
+          relationshipValue: { relationTo: 'pages', value: fixture.page.id },
+        },
+      ],
+      page: 1,
+      pageSize: 12,
+      pagination: false,
+      sort: 'titleAscending',
+      sources: ['pages', 'posts'],
+    })
+    expect(mixedSourceResult.items.map(({ document, kind }) => `${kind}:${document.id}`)).toEqual([
+      `pages:${fixture.childPage.id}`,
+      `posts:${fixture.post.id}`,
+    ])
+  })
+
+  it('distinguishes a category subtree from an exact category and combines repeated tags with AND', async () => {
+    const childCategorySlug = 'integration-listing-child-category'
+    const secondTagSlug = 'integration-listing-second-tag'
+    const doublyTaggedPostSlug = 'integration-listing-doubly-tagged-post'
+    await fixture.payload.delete({
+      collection: 'posts',
+      overrideAccess: true,
+      where: { slug: { equals: doublyTaggedPostSlug } },
+    })
+    await fixture.payload.delete({
+      collection: 'categories',
+      overrideAccess: true,
+      where: { slug: { equals: childCategorySlug } },
+    })
+    await fixture.payload.delete({
+      collection: 'tags',
+      overrideAccess: true,
+      where: { slug: { equals: secondTagSlug } },
+    })
+
+    const childCategory = await fixture.payload.create({
+      collection: 'categories',
+      data: {
+        name: 'Integration child category',
+        parent: fixture.category.id,
+        slug: childCategorySlug,
+      },
+      overrideAccess: true,
+    })
+    const secondTag = await fixture.payload.create({
+      collection: 'tags',
+      data: { name: 'Integration second tag', slug: secondTagSlug },
+      overrideAccess: true,
+    })
+    const doublyTaggedPost = await fixture.payload.create({
+      collection: 'posts',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        category: childCategory.id,
+        excerpt: 'Doubly tagged excerpt',
+        layout: [{ blockType: 'richText', content: createLexicalDocument('Tagged content') }],
+        publishedAt: '2026-08-20T12:00:00.000Z',
+        slug: doublyTaggedPostSlug,
+        tags: [fixture.tag.id, secondTag.id],
+        title: 'Integration doubly tagged post',
+      },
+      overrideAccess: true,
+    })
+
+    try {
+      const subtreeResult = await findPublicContent({
+        conditions: [
+          {
+            field: 'category',
+            operator: 'inSubtree',
+            relationshipValue: { relationTo: 'categories', value: fixture.category.id },
+          },
+        ],
+        page: 1,
+        pageSize: 20,
+        pagination: false,
+        sort: 'titleAscending',
+        sources: ['posts'],
+      })
+      const exactResult = await findPublicContent({
+        conditions: [
+          {
+            field: 'category',
+            operator: 'equals',
+            relationshipValue: { relationTo: 'categories', value: fixture.category.id },
+          },
+        ],
+        page: 1,
+        pageSize: 20,
+        pagination: false,
+        sort: 'titleAscending',
+        sources: ['posts'],
+      })
+      const repeatedTagsResult = await findPublicContent({
+        conditions: [
+          {
+            field: 'tag',
+            operator: 'contains',
+            relationshipValue: { relationTo: 'tags', value: fixture.tag.id },
+          },
+          {
+            field: 'tag',
+            operator: 'contains',
+            relationshipValue: { relationTo: 'tags', value: secondTag.id },
+          },
+        ],
+        page: 1,
+        pageSize: 20,
+        pagination: false,
+        sort: 'titleAscending',
+        sources: ['posts'],
+      })
+
+      expect(subtreeResult.items.map((item) => item.document.id)).toContain(doublyTaggedPost.id)
+      expect(exactResult.items.map((item) => item.document.id)).not.toContain(doublyTaggedPost.id)
+      expect(repeatedTagsResult.items.map((item) => item.document.id)).toEqual([
+        doublyTaggedPost.id,
+      ])
+    } finally {
+      await fixture.payload.delete({
+        collection: 'posts',
+        id: doublyTaggedPost.id,
+        overrideAccess: true,
+      })
+      await fixture.payload.delete({
+        collection: 'categories',
+        id: childCategory.id,
+        overrideAccess: true,
+      })
+      await fixture.payload.delete({
+        collection: 'tags',
+        id: secondTag.id,
+        overrideAccess: true,
+      })
+    }
+  })
+
+  it('matches normalized titles with contains and exact operators', async () => {
+    const containsResult = await findPublicContent({
+      conditions: [{ field: 'title', operator: 'contains', textValue: '  TAXONOMY  ' }],
+      page: 1,
+      pageSize: 20,
+      pagination: false,
+      sort: 'titleAscending',
+      sources: ['pages', 'posts'],
+    })
+    const exactResult = await findPublicContent({
+      conditions: [
+        {
+          field: 'title',
+          operator: 'equals',
+          textValue: fixture.page.title.toLocaleUpperCase('pl-PL'),
+        },
+      ],
+      page: 1,
+      pageSize: 20,
+      pagination: false,
+      sort: 'titleAscending',
+      sources: ['pages', 'posts'],
+    })
+
+    expect(containsResult.items.map((item) => item.document.id)).toEqual([
+      fixture.page.id,
+      fixture.post.id,
+    ])
+    expect(exactResult.items.map((item) => item.document.id)).toEqual([fixture.page.id])
   })
 
   it('sorts dated content by its significant date and undated content by title', async () => {
@@ -86,7 +276,7 @@ describe('content listing and pagination', () => {
     expect(result.totalPages).toBe(2)
   })
 
-  it('filters dated content by age while retaining content without a significant date', async () => {
+  it('filters dated content by age while passing through sources without that field', async () => {
     const recentPost = await fixture.payload.create({
       collection: 'posts',
       data: {
@@ -103,7 +293,7 @@ describe('content listing and pagination', () => {
 
     try {
       const result = await findPublicContent({
-        maxAgeDays: 30,
+        conditions: [{ field: 'significantDate', numberValue: 30, operator: 'notOlderThan' }],
         page: 1,
         pageSize: 20,
         pagination: false,
@@ -125,6 +315,89 @@ describe('content listing and pagination', () => {
     }
   })
 
+  it('applies before, after, and inclusive-between boundaries and rejects an empty supported date', async () => {
+    const slugs = {
+      after: 'integration-listing-date-after',
+      before: 'integration-listing-date-before',
+      empty: 'integration-listing-date-empty',
+    }
+    await fixture.payload.delete({
+      collection: 'posts',
+      overrideAccess: true,
+      where: { slug: { in: Object.values(slugs) } },
+    })
+
+    const createPost = (slug: string, title: string, publishedAt: string) =>
+      fixture.payload.create({
+        collection: 'posts',
+        data: {
+          _status: 'published',
+          author: fixture.author.id,
+          excerpt: `${title} excerpt`,
+          layout: [{ blockType: 'richText', content: createLexicalDocument(title) }],
+          publishedAt,
+          slug,
+          title,
+        },
+        overrideAccess: true,
+      })
+    const beforePost = await createPost(
+      slugs.before,
+      'Integration date before',
+      '2026-08-12T12:00:00Z',
+    )
+    const afterPost = await createPost(
+      slugs.after,
+      'Integration date after',
+      '2026-08-14T12:00:00Z',
+    )
+    const emptyDatePost = await createPost(
+      slugs.empty,
+      'Integration date empty',
+      '2026-08-13T12:00:00Z',
+    )
+    await fixture.payload.db.drizzle.execute(sql`
+      UPDATE "content_listing_items" SET "significant_date" = NULL
+      WHERE "source" = 'posts' AND "source_document_id" = ${emptyDatePost.id}
+    `)
+
+    const findWithDateCondition = (operator: 'after' | 'before' | 'between') =>
+      findPublicContent({
+        conditions: [
+          {
+            dateValue: '2026-08-13',
+            ...(operator === 'between' ? { endDateValue: '2026-08-13' } : {}),
+            field: 'significantDate',
+            operator,
+          },
+        ],
+        page: 1,
+        pageSize: 20,
+        pagination: false,
+        sort: 'titleAscending',
+        sources: ['posts'],
+      })
+
+    try {
+      const beforeResult = await findWithDateCondition('before')
+      const afterResult = await findWithDateCondition('after')
+      const betweenResult = await findWithDateCondition('between')
+
+      expect(beforeResult.items.map((item) => item.document.id)).toContain(beforePost.id)
+      expect(beforeResult.items.map((item) => item.document.id)).not.toContain(emptyDatePost.id)
+      expect(afterResult.items.map((item) => item.document.id)).toContain(afterPost.id)
+      expect(afterResult.items.map((item) => item.document.id)).not.toContain(emptyDatePost.id)
+      expect(betweenResult.items.map((item) => item.document.id)).toContain(fixture.post.id)
+      expect(betweenResult.items.map((item) => item.document.id)).not.toContain(beforePost.id)
+      expect(betweenResult.items.map((item) => item.document.id)).not.toContain(afterPost.id)
+      expect(betweenResult.items.map((item) => item.document.id)).not.toContain(emptyDatePost.id)
+    } finally {
+      for (const post of [beforePost, afterPost, emptyDatePost]) {
+        await fixture.payload.delete({ collection: 'posts', id: post.id, overrideAccess: true })
+      }
+    }
+  })
+
   it('stores ordered polymorphic relationships in a manual Listing block', async () => {
     const containerPage = await fixture.payload.create({
       collection: 'pages',
@@ -140,7 +413,6 @@ describe('content listing and pagination', () => {
             ],
             pageSize: 12,
             pagination: false,
-            parentFilter: 'none',
             selectionMode: 'manual',
             sort: 'newest',
             view: 'cards',
@@ -187,7 +459,6 @@ describe('content listing and pagination', () => {
               { item: { relationTo: 'posts', value: fixture.post.id } },
               { item: { relationTo: 'pages', value: fixture.page.id } },
             ],
-            parentFilter: 'none',
             selectionMode: 'manual',
             slideLimit: 1,
           },
@@ -272,13 +543,23 @@ describe('content listing and pagination', () => {
       }
 
       const result = await findPublicContent({
-        categoryId: fixture.category.id,
+        conditions: [
+          {
+            field: 'category',
+            operator: 'inSubtree',
+            relationshipValue: { relationTo: 'categories', value: fixture.category.id },
+          },
+          {
+            field: 'tag',
+            operator: 'contains',
+            relationshipValue: { relationTo: 'tags', value: fixture.tag.id },
+          },
+        ],
         page: 4,
         pageSize: 2,
         pagination: true,
         sort: 'newest',
         sources: ['posts', 'pages', 'posts'],
-        tagId: fixture.tag.id,
       })
 
       expect(result.items).toHaveLength(2)

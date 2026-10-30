@@ -7,6 +7,39 @@
  */
 
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ListingCondition".
+ */
+export type ListingCondition =
+  | {
+      field: 'title' | 'category' | 'tag' | 'parentPage' | 'eventCycle' | 'eventTime' | 'significantDate';
+      operator: 'contains' | 'equals' | 'inSubtree' | 'notOlderThan' | 'before' | 'after' | 'between';
+      relationshipValue?:
+        | ({
+            relationTo: 'categories';
+            value: number | Category;
+          } | null)
+        | ({
+            relationTo: 'tags';
+            value: number | Tag;
+          } | null)
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'event-cycles';
+            value: number | EventCycle;
+          } | null);
+      textValue?: string | null;
+      numberValue?: number | null;
+      eventTimeValue?: ('upcoming' | 'past') | null;
+      dateValue?: string | null;
+      endDateValue?: string | null;
+      id?: string | null;
+    }[]
+  | null;
+/**
  * Supported timezones in IANA format.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -186,6 +219,8 @@ export interface ContentListingItem {
   sourceDocumentId: number;
   sourceUpdatedAt: string;
   title: string;
+  normalizedTitle: string;
+  tagSearchIndex: string;
   url: string;
   excerpt?: string | null;
   hasSignificantDate?: boolean | null;
@@ -1416,6 +1451,7 @@ export interface ListingBlock {
   surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
   surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   selectionMode: 'manual' | 'filters';
+  sources?: ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents')[] | null;
   items?:
     | {
         item:
@@ -1442,20 +1478,10 @@ export interface ListingBlock {
         id?: string | null;
       }[]
     | null;
-  sources?: ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents')[] | null;
-  parentPage?: (number | null) | Page;
-  category?: (number | null) | Category;
-  tag?: (number | null) | Tag;
-  eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
-  eventCycle?: (number | null) | EventCycle;
-  /**
-   * 0 wyłącza filtr wieku; wyższa wartość określa maksymalny wiek w dniach.
-   */
-  maxAgeDays?: number | null;
+  conditions?: ListingCondition;
   sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
   pageSize: number;
   pagination?: boolean | null;
-  parentFilter: 'none' | 'current' | 'specific';
   emptyMessage?: string | null;
   id?: string | null;
   blockName?: string | null;
@@ -1475,6 +1501,7 @@ export interface CarouselBlock {
   surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
   surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   selectionMode: 'manual' | 'filters';
+  sources?: ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents')[] | null;
   items?:
     | {
         item:
@@ -1501,19 +1528,9 @@ export interface CarouselBlock {
         id?: string | null;
       }[]
     | null;
-  sources?: ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents')[] | null;
-  parentPage?: (number | null) | Page;
-  category?: (number | null) | Category;
-  tag?: (number | null) | Tag;
-  eventTimeFilter?: ('all' | 'upcoming' | 'past') | null;
-  eventCycle?: (number | null) | EventCycle;
-  /**
-   * 0 wyłącza filtr wieku; wyższa wartość określa maksymalny wiek w dniach.
-   */
-  maxAgeDays?: number | null;
+  conditions?: ListingCondition;
   sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
   slideLimit: number;
-  parentFilter: 'none' | 'current' | 'specific';
   emptyMessage?: string | null;
   id?: string | null;
   blockName?: string | null;
@@ -2654,6 +2671,8 @@ export interface ContentListingItemsSelect<T extends boolean = true> {
   sourceDocumentId?: T;
   sourceUpdatedAt?: T;
   title?: T;
+  normalizedTitle?: T;
+  tagSearchIndex?: T;
   url?: T;
   excerpt?: T;
   hasSignificantDate?: T;
@@ -2823,26 +2842,35 @@ export interface ListingBlockSelect<T extends boolean = true> {
   surfaceHorizontalPosition?: T;
   surfaceVerticalPosition?: T;
   selectionMode?: T;
+  sources?: T;
   items?:
     | T
     | {
         item?: T;
         id?: T;
       };
-  sources?: T;
-  parentPage?: T;
-  category?: T;
-  tag?: T;
-  eventTimeFilter?: T;
-  eventCycle?: T;
-  maxAgeDays?: T;
+  conditions?: T | ListingConditionSelect<T>;
   sort?: T;
   pageSize?: T;
   pagination?: T;
-  parentFilter?: T;
   emptyMessage?: T;
   id?: T;
   blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ListingCondition_select".
+ */
+export interface ListingConditionSelect<T extends boolean = true> {
+  field?: T;
+  operator?: T;
+  relationshipValue?: T;
+  textValue?: T;
+  numberValue?: T;
+  eventTimeValue?: T;
+  dateValue?: T;
+  endDateValue?: T;
+  id?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2855,22 +2883,16 @@ export interface CarouselBlockSelect<T extends boolean = true> {
   surfaceHorizontalPosition?: T;
   surfaceVerticalPosition?: T;
   selectionMode?: T;
+  sources?: T;
   items?:
     | T
     | {
         item?: T;
         id?: T;
       };
-  sources?: T;
-  parentPage?: T;
-  category?: T;
-  tag?: T;
-  eventTimeFilter?: T;
-  eventCycle?: T;
-  maxAgeDays?: T;
+  conditions?: T | ListingConditionSelect<T>;
   sort?: T;
   slideLimit?: T;
-  parentFilter?: T;
   emptyMessage?: T;
   id?: T;
   blockName?: T;

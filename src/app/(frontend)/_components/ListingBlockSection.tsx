@@ -9,13 +9,13 @@ import type {
   Partner,
   Post,
 } from '@/payload-types'
-import { getRelationshipId } from '@/lib/relationships'
 import { createPaginatedURL, resolveBlockPagination } from '@/modules/content/pagination'
 import {
   findPublicContent,
   type ManualContentReference,
   type TaxonomizableCollectionSlug,
 } from '@/modules/content/content-listing'
+import type { ListingConditionInput } from '@/modules/content/listing-conditions'
 
 import { ContentList } from './ContentList'
 import { ContentPagination } from './ContentPagination'
@@ -37,7 +37,6 @@ export async function ListingBlockSection(properties: ListingBlockSectionPropert
 export async function resolveListingBlockSection({
   block,
   blockPath,
-  document,
   pathname,
   searchParams,
 }: ListingBlockSectionProperties) {
@@ -48,23 +47,15 @@ export async function resolveListingBlockSection({
     parameterPrefix: 'listing',
     searchParams,
   })
-  const parentId = getListingParentId(block, document)
   const result = await findPublicContent({
-    categoryId: getRelationshipId(block.category),
-    eventCycleId:
-      getRelationshipId(block.eventCycle) ??
-      ('calendarFeedKey' in document ? document.id : undefined),
-    eventTimeFilter: block.eventTimeFilter ?? 'all',
+    conditions: (block.conditions ?? []) as ListingConditionInput[],
     manualItems: getManualItems(block),
-    maxAgeDays: block.maxAgeDays ?? 0,
     page: requestedPage,
     pageSize: block.pageSize,
     pagination: Boolean(block.pagination),
-    parentId,
     selectionMode: block.selectionMode,
     sort: block.sort ?? 'newest',
     sources: (block.sources ?? []) as TaxonomizableCollectionSlug[],
-    tagId: getRelationshipId(block.tag),
   })
 
   if (block.pagination && requestedPage > result.totalPages) {
@@ -92,12 +83,4 @@ export async function resolveListingBlockSection({
 
 function getManualItems(block: ListingBlock): ManualContentReference[] {
   return (block.items?.map(({ item }) => item) ?? []) as ManualContentReference[]
-}
-
-function getListingParentId(block: ListingBlock, document: ContentDocument): number | undefined {
-  if (block.parentFilter === 'current') {
-    return 'fullTitle' in document ? document.id : -1
-  }
-
-  return block.parentFilter === 'specific' ? getRelationshipId(block.parentPage) : undefined
 }

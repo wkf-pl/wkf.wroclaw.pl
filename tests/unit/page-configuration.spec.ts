@@ -14,12 +14,8 @@ import { MemberProfilesBlock } from '@/blocks/MemberProfiles'
 import { RichTextBlock } from '@/blocks/RichText'
 import { SectionGroupBlock } from '@/blocks/SectionGroup'
 import { TabbedContentBlock } from '@/blocks/TabbedContent'
-import {
-  ListingBlock,
-  validateListingSources,
-  validateManualListingItems,
-  validateParentPage,
-} from '@/blocks/Listing'
+import { ListingBlock, validateListingSources, validateManualListingItems } from '@/blocks/Listing'
+import { validateListingConditions } from '@/blocks/listing-condition-fields'
 import { Categories } from '@/collections/Categories'
 import { Documents } from '@/collections/Documents'
 import { EventCycles } from '@/collections/EventCycles'
@@ -273,9 +269,7 @@ describe('page configuration', () => {
     const rowFieldNames = rows.map((row) =>
       row.fields.map((field) => ('name' in field ? field.name : undefined)),
     )
-    const parentPageField = rows[0]?.fields.find(
-      (field) => 'name' in field && field.name === 'parentPage',
-    )
+    const conditionsField = findField(ListingBlock.fields, 'conditions')
 
     expect(ListingBlock.fields[0]).toMatchObject({
       fields: [
@@ -291,43 +285,30 @@ describe('page configuration', () => {
       type: 'row',
     })
     expect(rowFieldNames).toEqual([
-      ['sources', 'parentPage'],
-      ['category', 'tag'],
-      ['eventTimeFilter', 'eventCycle'],
-      ['maxAgeDays', 'sort', 'pageSize', 'pagination'],
+      ['selectionMode', 'sources'],
+      ['sort', 'pageSize', 'pagination'],
     ])
     expect(describeFieldOrder(listingFields)).toEqual([
-      'selectionMode',
+      ['selectionMode', 'sources'],
       'items',
-      ['sources', 'parentPage'],
-      ['category', 'tag'],
-      ['eventTimeFilter', 'eventCycle'],
-      ['maxAgeDays', 'sort', 'pageSize', 'pagination'],
-      'parentFilter',
+      'conditions',
+      ['sort', 'pageSize', 'pagination'],
       'emptyMessage',
     ])
-    expect(parentPageField).toMatchObject({
-      admin: { width: '50%' },
-      label: 'Strona nadrzędna',
-      type: 'relationship',
+    expect(conditionsField).toMatchObject({
+      admin: {
+        components: {
+          Field: '/components/admin/ListingConditionsField#ListingConditionsField',
+          RowLabel: '/components/admin/ListingConditionsField#ListingConditionRowLabel',
+        },
+      },
+      maxRows: 10,
+      type: 'array',
     })
     expect(rows.at(-1)).toMatchObject({
       fields: [
         {
-          admin: {
-            description: '0 wyłącza filtr wieku; wyższa wartość określa maksymalny wiek w dniach.',
-            step: 1,
-            width: '25%',
-          },
-          defaultValue: 0,
-          label: 'Zakres czasu',
-          max: 366,
-          min: 0,
-          name: 'maxAgeDays',
-          type: 'number',
-        },
-        {
-          admin: { width: '25%' },
+          admin: { width: '33.333%' },
           name: 'sort',
           options: [
             { label: 'Najnowsze', value: 'newest' },
@@ -336,8 +317,8 @@ describe('page configuration', () => {
             { label: 'Tytuł Z–A', value: 'titleDescending' },
           ],
         },
-        { admin: { width: '25%' }, name: 'pageSize' },
-        { admin: { width: '25%' }, name: 'pagination' },
+        { admin: { width: '33.333%' }, name: 'pageSize' },
+        { admin: { width: '33.333%' }, name: 'pagination' },
       ],
     })
   })
@@ -380,6 +361,7 @@ describe('page configuration', () => {
         : null
 
     expect(selectionModeField).toMatchObject({
+      admin: { width: '33.333%' },
       defaultValue: 'filters',
       label: 'Tryb wyboru',
       options: [
@@ -407,6 +389,7 @@ describe('page configuration', () => {
     expect(itemsField.admin?.condition?.({}, { selectionMode: 'manual' }, {} as never)).toBe(true)
     expect(itemsField.admin?.condition?.({}, { selectionMode: 'filters' }, {} as never)).toBe(false)
     expect(findField(ListingBlock.fields, 'sources')).toMatchObject({
+      admin: { width: '66.667%' },
       options: expect.arrayContaining([{ label: 'Dokumenty', value: 'documents' }]),
     })
     expect(findField(ListingBlock.fields, 'view')).toMatchObject({
@@ -425,8 +408,8 @@ describe('page configuration', () => {
     const selectionModeField = findField(CarouselBlock.fields, 'selectionMode')
     const itemsField = findField(CarouselBlock.fields, 'items')
     const sourcesField = findField(CarouselBlock.fields, 'sources')
+    const conditionsField = findField(CarouselBlock.fields, 'conditions')
     const slideLimitField = findField(CarouselBlock.fields, 'slideLimit')
-    const maxAgeDaysField = findField(CarouselBlock.fields, 'maxAgeDays')
     const sortField = findField(CarouselBlock.fields, 'sort')
     const paginationField = flattenFields(CarouselBlock.fields).find(
       (field) => 'name' in field && field.name === 'pagination',
@@ -447,6 +430,7 @@ describe('page configuration', () => {
       type: 'row',
     })
     expect(selectionModeField).toMatchObject({
+      admin: { width: '33.333%' },
       defaultValue: 'filters',
       label: 'Tryb wyboru',
       required: true,
@@ -459,13 +443,14 @@ describe('page configuration', () => {
       type: 'relationship',
     })
     expect(sourcesField).toMatchObject({
+      admin: { width: '66.667%' },
       hasMany: true,
       label: 'Źródła',
       options: expect.arrayContaining([{ label: 'Dokumenty', value: 'documents' }]),
       type: 'select',
     })
     expect(slideLimitField).toMatchObject({
-      admin: { width: '33.333%' },
+      admin: { width: '50%' },
       defaultValue: 5,
       label: 'Maksymalna liczba slajdów',
       max: 20,
@@ -473,20 +458,12 @@ describe('page configuration', () => {
       required: true,
       type: 'number',
     })
-    expect(maxAgeDaysField).toMatchObject({
-      admin: {
-        description: '0 wyłącza filtr wieku; wyższa wartość określa maksymalny wiek w dniach.',
-        step: 1,
-        width: '33.333%',
-      },
-      defaultValue: 0,
-      label: 'Zakres czasu',
-      max: 366,
-      min: 0,
-      type: 'number',
+    expect(conditionsField).toMatchObject({
+      maxRows: 10,
+      type: 'array',
     })
     expect(sortField).toMatchObject({
-      admin: { width: '33.333%' },
+      admin: { width: '50%' },
       options: [
         { label: 'Najnowsze', value: 'newest' },
         { label: 'Najstarsze', value: 'oldest' },
@@ -627,13 +604,12 @@ describe('page configuration', () => {
     }
   })
 
-  it('loads Listing parent-page choices from the current admin origin', () => {
-    const component = readFileSync('src/components/admin/ListingParentPageField.tsx', 'utf8')
+  it('configures Listing conditions from selected sources', () => {
+    const component = readFileSync('src/components/admin/ListingConditionsField.tsx', 'utf8')
 
-    expect(component).toContain("formatAdminURL({ apiRoute, path: '/pages' })")
-    expect(component).not.toMatch(/formatAdminURL\(\{[^}]*serverURL[^}]*\}\)/s)
-    expect(component).toContain('path: parentFilterPath')
-    expect(component).toContain("dispatchFields({ formState, type: 'UPDATE_MANY' })")
+    expect(component).toContain('useFormFields')
+    expect(component).toContain('listingConditionSupportedSources')
+    expect(component).toContain('Ten warunek nie dotyczy żadnego wybranego źródła')
   })
 
   it('hides plugin breadcrumbs and shows the readable hierarchy path in the sidebar', () => {
@@ -653,21 +629,44 @@ describe('page configuration', () => {
     }
   })
 
-  it('accepts a parent filter only for a pages-only listing', () => {
+  it('accepts a parent-page condition when at least one source supports it', () => {
     expect(
       validateListingSources(['pages'], {
-        siblingData: { parentFilter: 'current', sources: ['pages'] },
+        siblingData: { selectionMode: 'filters', sources: ['pages'] },
       } as never),
     ).toBe(true)
     expect(
       validateListingSources(['pages', 'posts'], {
-        siblingData: { parentFilter: 'current', sources: ['pages', 'posts'] },
+        siblingData: { selectionMode: 'filters', sources: ['pages', 'posts'] },
       } as never),
-    ).toBeTypeOf('string')
+    ).toBe(true)
     expect(
-      validateParentPage(null, {
-        siblingData: { parentFilter: 'specific', sources: ['pages'] },
-      } as never),
+      validateListingConditions(
+        [
+          {
+            field: 'parentPage',
+            operator: 'equals',
+            relationshipValue: { relationTo: 'pages', value: 1 },
+          },
+        ],
+        {
+          siblingData: { selectionMode: 'filters', sources: ['pages', 'posts'] },
+        } as never,
+      ),
+    ).toBe(true)
+    expect(
+      validateListingConditions(
+        [
+          {
+            field: 'parentPage',
+            operator: 'equals',
+            relationshipValue: { relationTo: 'pages', value: 1 },
+          },
+        ],
+        {
+          siblingData: { selectionMode: 'filters', sources: ['posts'] },
+        } as never,
+      ),
     ).toBeTypeOf('string')
   })
 

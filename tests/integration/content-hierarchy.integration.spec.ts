@@ -110,7 +110,13 @@ describe('content hierarchy', () => {
       ])
 
       const subtree = await findPublicContent({
-        categoryId: child.id,
+        conditions: [
+          {
+            field: 'category',
+            operator: 'inSubtree',
+            relationshipValue: { relationTo: 'categories', value: child.id },
+          },
+        ],
         page: 1,
         pageSize: 12,
         pagination: true,
@@ -118,13 +124,23 @@ describe('content hierarchy', () => {
         sources: ['posts'],
       })
       const taggedSubtree = await findPublicContent({
-        categoryId: child.id,
+        conditions: [
+          {
+            field: 'category',
+            operator: 'inSubtree',
+            relationshipValue: { relationTo: 'categories', value: child.id },
+          },
+          {
+            field: 'tag',
+            operator: 'contains',
+            relationshipValue: { relationTo: 'tags', value: fixture.tag.id },
+          },
+        ],
         page: 1,
         pageSize: 12,
         pagination: true,
         sort: 'titleAscending',
         sources: ['posts'],
-        tagId: fixture.tag.id,
       })
 
       expect(subtree.items.map((item) => item.document.id)).toEqual(

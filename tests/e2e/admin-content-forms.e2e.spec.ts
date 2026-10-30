@@ -6,6 +6,7 @@ import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
 const fixturePrefix = 'e2e-admin-content-forms'
+const categoryTitle = 'E2E Kategoria formularzy'
 const parentPageTitle = 'E2E Strona nadrzędna listingu'
 const listingPageTitle = 'E2E Strona z listingiem'
 const relatedPostTitle = 'E2E Powiązany wpis'
@@ -39,7 +40,7 @@ test.beforeAll(async () => {
 
   const category = await payload.create({
     collection: 'categories',
-    data: { name: 'E2E Kategoria formularzy', slug: `${fixturePrefix}-category` },
+    data: { name: categoryTitle, slug: `${fixturePrefix}-category` },
     overrideAccess: true,
   })
   const tag = await payload.create({
@@ -70,10 +71,8 @@ test.beforeAll(async () => {
       layout: [
         {
           blockType: 'listing',
-          eventTimeFilter: 'all',
           pageSize: 12,
           pagination: true,
-          parentFilter: 'none',
           selectionMode: 'filters',
           sort: 'newest',
           sources: ['pages'],
@@ -139,7 +138,9 @@ test('shows complete search labels and concise missing-value fallbacks', async (
   await expect(row).not.toContainText('<Bez')
 })
 
-test('lays out Listing presentation fields and persists a parent page', async ({ page }) => {
+test('lays out Listing presentation fields and persists labeled relationship conditions', async ({
+  page,
+}) => {
   await login({ page, user: editorTestUser })
   await page.goto(`/admin/collections/pages/${listingPageID}`)
 
@@ -156,15 +157,14 @@ test('lays out Listing presentation fields and persists a parent page', async ({
     [...presentationFieldBoxes.map(({ x }) => x)].sort((left, right) => left - right),
   )
 
-  const parentPageBox = await page
-    .locator('#field-layout')
-    .getByText('Strona nadrzędna', { exact: true })
-    .locator('xpath=ancestor::div[contains(@class, "field-type")][1]')
-    .boundingBox()
-  const tagBox = await page.locator('#field-layout__0__tag').boundingBox()
-  expect(parentPageBox).not.toBeNull()
-  expect(tagBox).not.toBeNull()
-  expect(Math.abs(parentPageBox!.width - tagBox!.width)).toBeLessThan(2)
+  const selectionFieldBox = await page.locator('#field-layout__0__selectionMode').boundingBox()
+  const sourcesFieldBox = await page.locator('#field-layout__0__sources').boundingBox()
+  if (!selectionFieldBox || !sourcesFieldBox) {
+    throw new Error('Missing visible Listing selection fields')
+  }
+  expect(Math.abs(selectionFieldBox.y - sourcesFieldBox.y)).toBeLessThan(2)
+  expect(sourcesFieldBox.x).toBeGreaterThan(selectionFieldBox.x)
+  expect(sourcesFieldBox.width / selectionFieldBox.width).toBeCloseTo(2, 1)
 
   const listingFooterFieldAnchors = [
     page.locator('#field-layout__0__sort'),
@@ -186,13 +186,78 @@ test('lays out Listing presentation fields and persists a parent page', async ({
     [...listingFooterFieldBoxes.map(({ x }) => x)].sort((left, right) => left - right),
   )
 
-  const parentPageField = page
-    .locator('#field-layout')
-    .getByText('Strona nadrzędna', { exact: true })
-    .locator('xpath=ancestor::div[contains(@class, "field-type")][1]')
-  await parentPageField.getByRole('combobox').click()
-  await page.getByText(parentPageTitle, { exact: true }).click()
-  await expect(parentPageField).toContainText(parentPageTitle)
+  const conditionsSection = page.locator('.wkf-listing-conditions').filter({
+    has: page.locator('#field-layout__0__conditions'),
+  })
+  const conditionsField = conditionsSection.locator('#field-layout__0__conditions')
+  await expect(conditionsSection).toContainText('0 warunków')
+  await conditionsField.getByRole('button', { name: /Dodaj Warunek/i }).click()
+  const conditionRow = conditionsField.locator('.array-field__row').first()
+  await expect(conditionRow).toBeVisible()
+  await expect(conditionsSection).toContainText('1 warunek')
+  const connector = conditionRow.getByText('JEŚLI', { exact: true })
+  if ((await conditionRow.getAttribute('class'))?.includes('collapsible--collapsed')) {
+    await conditionRow.getByRole('button', { name: 'Przełącz blok' }).click()
+  }
+  await expect(connector).toBeVisible()
+
+  await conditionRow.locator('.rs__control').first().click()
+  await page.locator('.rs__menu').getByText('Strona nadrzędna', { exact: true }).click()
+  await expect(conditionRow.getByText('to', { exact: true })).toBeVisible()
+
+  await page.keyboard.press('Escape')
+  const relationshipInput = conditionRow.getByRole('combobox').nth(2)
+  await relationshipInput.fill(parentPageTitle)
+  await expect(page.locator('.rs__menu').getByText('Strony', { exact: true })).not.toBeVisible()
+  await page.locator('.rs__menu').getByText(parentPageTitle, { exact: true }).click()
+  await expect(conditionRow).toContainText(parentPageTitle)
+  await expect(conditionRow).toContainText('Dotyczy wszystkich źródeł: Strony.')
+  const conditionLabel = conditionRow.locator('.wkf-listing-condition-row-label')
+  await expect(conditionLabel).toHaveText(`Warunek:Strona nadrzędna to „${parentPageTitle}”`)
+  await expect(conditionLabel).toHaveAttribute(
+    'title',
+    `Warunek: Strona nadrzędna to „${parentPageTitle}”`,
+  )
+
+  await conditionsField.getByRole('button', { name: /Dodaj Warunek/i }).click()
+  const categoryConditionRow = conditionsField.locator('.array-field__row').nth(1)
+  await expect(categoryConditionRow).toBeVisible()
+  await expect(conditionsSection).toContainText('2 warunki')
+  if ((await categoryConditionRow.getAttribute('class'))?.includes('collapsible--collapsed')) {
+    await categoryConditionRow.getByRole('button', { name: 'Przełącz blok' }).click()
+  }
+
+  await categoryConditionRow.locator('.rs__control').first().click()
+  await page.locator('.rs__menu').getByText('Kategoria', { exact: true }).click()
+  await expect(categoryConditionRow.getByText('to', { exact: true })).toBeVisible()
+
+  await page.keyboard.press('Escape')
+  const categoryRelationshipInput = categoryConditionRow.getByRole('combobox').nth(2)
+  await categoryRelationshipInput.fill(categoryTitle)
+  await page.locator('.rs__menu').getByText(categoryTitle, { exact: true }).click()
+  const categoryConditionLabel = categoryConditionRow.locator('.wkf-listing-condition-row-label')
+  await expect(categoryConditionLabel).toHaveText(`Warunek:Kategoria to „${categoryTitle}”`)
+  await expect(conditionsSection.locator('.wkf-listing-conditions__summary')).toContainText(
+    `kategoria to „${categoryTitle}”`,
+  )
+
+  const conditionHeaderBox = await conditionRow.locator('.array-field__row-header').boundingBox()
+  const firstConditionFieldLabelBox = await conditionRow
+    .locator('label')
+    .filter({ hasText: 'Pole' })
+    .first()
+    .boundingBox()
+  if (!conditionHeaderBox || !firstConditionFieldLabelBox) {
+    throw new Error('Missing condition row geometry')
+  }
+  expect(
+    firstConditionFieldLabelBox.y - (conditionHeaderBox.y + conditionHeaderBox.height),
+  ).toBeLessThan(20)
+
+  const conditionsBox = await conditionsSection.boundingBox()
+  const footerBox = await page.locator('#field-layout__0__sort').boundingBox()
+  if (!conditionsBox || !footerBox) throw new Error('Missing Listing filter section geometry')
+  expect(footerBox.y - (conditionsBox.y + conditionsBox.height)).toBeGreaterThan(20)
 
   const saveResponse = page.waitForResponse(
     (response) =>
@@ -210,8 +275,18 @@ test('lays out Listing presentation fields and persists a parent page', async ({
     overrideAccess: true,
   })
   const listing = savedPage.layout?.find((block) => block.blockType === 'listing')
-  expect(listing).toMatchObject({ parentFilter: 'specific' })
-  expect(String(listing?.parentPage)).toBe(String(parentPageID))
+  expect(listing?.conditions).toMatchObject([
+    {
+      field: 'parentPage',
+      operator: 'equals',
+      relationshipValue: { relationTo: 'pages', value: parentPageID },
+    },
+    {
+      field: 'category',
+      operator: 'inSubtree',
+      relationshipValue: { relationTo: 'categories', value: categoryID },
+    },
+  ])
 })
 
 test('selects a manual Listing target through separate type and target fields', async ({
