@@ -224,7 +224,6 @@ function createFixtureHomepageLayout(): HomepageSection['layout'] {
       items: carouselEventIDs.map((eventID) => ({
         item: { relationTo: 'events', value: eventID },
       })),
-      parentFilter: 'none',
       selectionMode: 'manual',
       slideLimit: 5,
     },

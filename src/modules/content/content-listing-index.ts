@@ -4,6 +4,10 @@ import type { Document, Event, EventCycle, Page, Post } from '@/payload-types'
 import { getRelationshipId } from '@/lib/relationships'
 import { invalidateContentSource } from '@/modules/cache/invalidate-public-data'
 import { extractRichTextText } from '@/modules/content/rich-text'
+import {
+  createListingTagSearchIndex,
+  normalizeListingTitle,
+} from '@/modules/content/listing-conditions'
 
 import type { TaxonomizableCollectionSlug, TaxonomizableDocument } from './content-listing'
 
@@ -45,6 +49,11 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
   const post = source === 'posts' ? (document as Post) : null
   const significantDate =
     contentDocument?.documentDate ?? event?.startAt ?? post?.publishedAt ?? null
+  const tagIds =
+    document.tags?.flatMap((tag) => {
+      const id = getRelationshipId(tag)
+      return id === undefined ? [] : [id]
+    }) ?? []
 
   return {
     category: getRelationshipId(document.category) ?? null,
@@ -67,12 +76,10 @@ function createIndexData(source: TaxonomizableCollectionSlug, document: Taxonomi
     source,
     sourceDocumentId: document.id,
     sourceUpdatedAt: document.updatedAt,
-    tags:
-      document.tags?.flatMap((tag) => {
-        const id = getRelationshipId(tag)
-        return id === undefined ? [] : [id]
-      }) ?? [],
     title: document.title,
+    normalizedTitle: normalizeListingTitle(document.title),
+    tagSearchIndex: createListingTagSearchIndex(tagIds),
+    tags: tagIds,
     url: buildPublicURL(source, document.slug),
   }
 }

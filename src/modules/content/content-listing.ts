@@ -8,15 +8,27 @@ import { normalizeListingWindow, paginateInMemory } from '@/modules/content/list
 import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
+import {
+  getWarsawDayAfterISOString,
+  getWarsawDayStartISOString,
+  getWarsawDaysAgoStartISOString,
+  getListingConditionRelationshipCollection,
+  isCalendarDate,
+  isListingConditionField,
+  isListingConditionOperator,
+  listingConditionOperatorsByField,
+  listingConditionSupportedSources,
+  listingSources,
+  normalizeListingTitle,
+  type ListingConditionField,
+  type ListingConditionInput,
+  type ListingConditionOperator,
+  type ListingEventTimeValue,
+  type ListingSource,
+} from '@/modules/content/listing-conditions'
 
-export const taxonomizableCollectionSlugs = [
-  'pages',
-  'posts',
-  'events',
-  'event-cycles',
-  'documents',
-] as const
-export type TaxonomizableCollectionSlug = (typeof taxonomizableCollectionSlugs)[number]
+export const taxonomizableCollectionSlugs = listingSources
+export type TaxonomizableCollectionSlug = ListingSource
 export type TaxonomizableDocument = Document | Event | EventCycle | Page | Post
 export type ContentListingSort = 'newest' | 'oldest' | 'titleAscending' | 'titleDescending'
 
@@ -28,19 +40,14 @@ export type PublicContentListItem =
   | { document: Post; kind: 'posts'; url: string }
 
 export type FindPublicContentOptions = {
-  categoryId?: number
-  eventCycleId?: number
-  eventTimeFilter?: 'all' | 'past' | 'upcoming'
+  conditions?: ListingConditionInput[] | null
   manualItems?: ManualContentReference[]
-  maxAgeDays?: number
   page: number
   pageSize: number
   pagination: boolean
-  parentId?: number
   selectionMode?: 'filters' | 'manual'
   sort: ContentListingSort
   sources: TaxonomizableCollectionSlug[]
-  tagId?: number
 }
 
 export type ManualContentReference = {
@@ -56,8 +63,20 @@ export type PublicContentResult = {
   totalPages: number
 }
 
-type CachedFindPublicContentOptions = FindPublicContentOptions & {
-  categoryIds?: number[]
+export type PreparedListingCondition = {
+  dateValue?: string
+  endDateValue?: string
+  eventTimeValue?: ListingEventTimeValue
+  field: ListingConditionField
+  numberValue?: number
+  operator: ListingConditionOperator
+  relationshipId?: number
+  relationshipIds?: number[]
+  textValue?: string
+}
+
+type CachedFindPublicContentOptions = Omit<FindPublicContentOptions, 'conditions'> & {
+  conditions: PreparedListingCondition[]
 }
 
 async function findPublicContentUncached(
@@ -107,20 +126,11 @@ export async function findPublicContent(
     return findManualPublicContent(options)
   }
 
-  const categoryIds =
-    options.categoryId === undefined ? undefined : await findCategorySubtreeIDs(options.categoryId)
-
   return findPublicContentCached({
-    categoryId: options.categoryId,
-    categoryIds,
-    eventCycleId: options.eventCycleId,
-    eventTimeFilter: options.eventTimeFilter,
-    maxAgeDays: options.maxAgeDays ?? 0,
+    conditions: await prepareListingConditions(options.conditions ?? []),
     ...normalizeListingWindow(options),
-    parentId: options.parentId,
     sort: options.sort,
     sources: [...new Set(options.sources)].sort(),
-    tagId: options.tagId,
   })
 }
 
@@ -186,59 +196,179 @@ function getManualContentReferences(
 
 function createListingWhere(options: CachedFindPublicContentOptions): Where {
   const conditions: Where[] = [{ source: { in: [...new Set(options.sources)].sort() } }]
-  if (options.categoryIds !== undefined) {
-    conditions.push({ category: { in: options.categoryIds } })
-  }
-  if (options.tagId !== undefined) conditions.push({ tags: { equals: options.tagId } })
-  if (options.parentId !== undefined) conditions.push({ parentPage: { equals: options.parentId } })
-  if (options.eventCycleId !== undefined) {
-    conditions.push({
-      or: [
-        { source: { not_equals: 'events' } },
-        {
-          and: [{ source: { equals: 'events' } }, { eventCycle: { equals: options.eventCycleId } }],
-        },
-      ],
-    })
-  }
-
-  const significantDateThreshold = getSignificantDateThreshold(options.maxAgeDays)
-  if (significantDateThreshold) {
-    conditions.push({
-      or: [
-        { significantDate: { exists: false } },
-        { significantDate: { greater_than_equal: significantDateThreshold } },
-      ],
-    })
-  }
-
-  const now = new Date().toISOString()
-  if (options.eventTimeFilter === 'upcoming') {
-    conditions.push({
-      or: [
-        { source: { not_equals: 'events' } },
-        { eventEndAt: { greater_than_equal: now } },
-        { eventStartAt: { greater_than_equal: now } },
-      ],
-    })
-  } else if (options.eventTimeFilter === 'past') {
-    conditions.push({
-      or: [
-        { source: { not_equals: 'events' } },
-        { and: [{ source: { equals: 'events' } }, { eventStartAt: { less_than: now } }] },
-      ],
-    })
-  }
+  conditions.push(...options.conditions.map(compileListingConditionWhere))
   return { and: conditions }
 }
 
-function getSignificantDateThreshold(maxAgeDays: number | undefined): string | undefined {
-  if (maxAgeDays === undefined || !Number.isFinite(maxAgeDays) || maxAgeDays <= 0) {
-    return undefined
+export function compileListingConditionWhere(condition: PreparedListingCondition): Where {
+  const predicate = createConditionPredicate(condition)
+  const supportedSources = listingConditionSupportedSources[condition.field]
+  if (supportedSources.length === listingSources.length) return predicate
+  return { or: [{ source: { not_in: [...supportedSources] } }, predicate] }
+}
+
+function createConditionPredicate(condition: PreparedListingCondition): Where {
+  switch (condition.field) {
+    case 'title':
+      return condition.operator === 'equals'
+        ? { normalizedTitle: { equals: condition.textValue } }
+        : { normalizedTitle: { contains: condition.textValue } }
+    case 'category':
+      return condition.operator === 'inSubtree'
+        ? { category: { in: condition.relationshipIds ?? [] } }
+        : { category: { equals: condition.relationshipId } }
+    case 'tag':
+      return { tagSearchIndex: { contains: `|${condition.relationshipId}|` } }
+    case 'parentPage':
+      return { parentPage: { equals: condition.relationshipId } }
+    case 'eventCycle':
+      return { eventCycle: { equals: condition.relationshipId } }
+    case 'eventTime': {
+      const now = new Date().toISOString()
+      return condition.eventTimeValue === 'upcoming'
+        ? {
+            or: [
+              { eventEndAt: { greater_than_equal: now } },
+              { eventStartAt: { greater_than_equal: now } },
+            ],
+          }
+        : {
+            or: [
+              { eventEndAt: { less_than: now } },
+              {
+                and: [{ eventEndAt: { exists: false } }, { eventStartAt: { less_than: now } }],
+              },
+            ],
+          }
+    }
+    case 'significantDate':
+      return createSignificantDateWhere(condition)
+  }
+}
+
+function createSignificantDateWhere(condition: PreparedListingCondition): Where {
+  switch (condition.operator) {
+    case 'notOlderThan':
+      return {
+        significantDate: {
+          greater_than_equal: getWarsawDaysAgoStartISOString(condition.numberValue ?? 0),
+        },
+      }
+    case 'before':
+      return {
+        significantDate: { less_than: getWarsawDayStartISOString(condition.dateValue ?? '') },
+      }
+    case 'after':
+      return {
+        significantDate: {
+          greater_than_equal: getWarsawDayAfterISOString(condition.dateValue ?? ''),
+        },
+      }
+    case 'between':
+      return {
+        and: [
+          {
+            significantDate: {
+              greater_than_equal: getWarsawDayStartISOString(condition.dateValue ?? ''),
+            },
+          },
+          {
+            significantDate: {
+              less_than: getWarsawDayAfterISOString(condition.endDateValue ?? ''),
+            },
+          },
+        ],
+      }
+    default:
+      throw new Error(`Unsupported significant-date operator: ${condition.operator}`)
+  }
+}
+
+async function prepareListingConditions(
+  values: readonly ListingConditionInput[],
+): Promise<PreparedListingCondition[]> {
+  const conditions = await Promise.all(values.map(prepareListingCondition))
+  return conditions.sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)))
+}
+
+async function prepareListingCondition(
+  value: ListingConditionInput,
+): Promise<PreparedListingCondition> {
+  if (
+    !isListingConditionField(value.field) ||
+    !isListingConditionOperator(value.operator) ||
+    !listingConditionOperatorsByField[value.field].includes(value.operator)
+  ) {
+    throw new Error('Invalid content listing condition.')
   }
 
-  const normalizedMaxAgeDays = Math.min(366, Math.floor(maxAgeDays))
-  return new Date(Date.now() - normalizedMaxAgeDays * 86_400_000).toISOString()
+  const relationshipCollection = getListingConditionRelationshipCollection(value.field)
+  if (relationshipCollection && value.relationshipValue?.relationTo !== relationshipCollection) {
+    throw new Error('Invalid content listing relationship value.')
+  }
+  const relationshipIdValue = value.relationshipValue
+    ? getFormRelationshipId(value.relationshipValue.value)
+    : undefined
+  const relationshipId = relationshipIdValue === undefined ? undefined : Number(relationshipIdValue)
+  if (relationshipCollection && (!Number.isInteger(relationshipId) || relationshipId! < 1)) {
+    throw new Error('Invalid content listing relationship value.')
+  }
+  if (value.field === 'title' && !value.textValue?.trim()) {
+    throw new Error('Invalid content listing text value.')
+  }
+  if (
+    value.field === 'eventTime' &&
+    value.eventTimeValue !== 'past' &&
+    value.eventTimeValue !== 'upcoming'
+  ) {
+    throw new Error('Invalid content listing event-time value.')
+  }
+  if (value.field === 'significantDate') {
+    if (value.operator === 'notOlderThan') {
+      if (
+        !Number.isInteger(value.numberValue) ||
+        value.numberValue! < 1 ||
+        value.numberValue! > 366
+      ) {
+        throw new Error('Invalid content listing day count.')
+      }
+    } else if (
+      !isCalendarDate(value.dateValue) ||
+      (value.operator === 'between' &&
+        (!isCalendarDate(value.endDateValue) || value.dateValue > value.endDateValue))
+    ) {
+      throw new Error('Invalid content listing date range.')
+    }
+  }
+
+  const condition: PreparedListingCondition = { field: value.field, operator: value.operator }
+  switch (value.field) {
+    case 'title':
+      condition.textValue = normalizeListingTitle(value.textValue!)
+      break
+    case 'category':
+      condition.relationshipId = relationshipId
+      if (value.operator === 'inSubtree') {
+        condition.relationshipIds = await findCategorySubtreeIDs(relationshipId!)
+      }
+      break
+    case 'tag':
+    case 'parentPage':
+    case 'eventCycle':
+      condition.relationshipId = relationshipId
+      break
+    case 'eventTime':
+      condition.eventTimeValue = value.eventTimeValue!
+      break
+    case 'significantDate':
+      if (value.operator === 'notOlderThan') {
+        condition.numberValue = value.numberValue!
+      } else {
+        condition.dateValue = value.dateValue!
+        if (value.operator === 'between') condition.endDateValue = value.endDateValue!
+      }
+  }
+  return condition
 }
 
 function getPayloadSort(sort: ContentListingSort): string[] {

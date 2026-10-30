@@ -281,10 +281,8 @@ function headingBlock(heading: string) {
 function listingBlock(view: 'compact' | 'grid' | 'tiles' = 'compact', pagination = true) {
   return {
     blockType: 'listing' as const,
-    eventTimeFilter: 'all' as const,
     pageSize: pagination ? 1 : 3,
     pagination,
-    parentFilter: 'none' as const,
     selectionMode: 'filters' as const,
     sort: 'newest' as const,
     sources: ['posts' as const],

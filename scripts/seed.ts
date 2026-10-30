@@ -555,7 +555,6 @@ async function ensureBlogPage(author: User): Promise<Page> {
           blockType: 'listing',
           pageSize: 12,
           pagination: true,
-          parentFilter: 'none',
           selectionMode: 'filters',
           sort: 'newest',
           sources: ['posts'],
@@ -642,8 +641,13 @@ async function ensureHomepageContent(author: User, image?: Media): Promise<void>
         },
         {
           blockType: 'carousel',
-          eventTimeFilter: 'upcoming',
-          parentFilter: 'none',
+          conditions: [
+            {
+              eventTimeValue: 'upcoming',
+              field: 'eventTime',
+              operator: 'equals',
+            },
+          ],
           selectionMode: 'filters',
           slideLimit: 6,
           sort: 'oldest',
@@ -660,10 +664,8 @@ async function ensureHomepageContent(author: User, image?: Media): Promise<void>
         },
         {
           blockType: 'listing',
-          eventTimeFilter: 'all',
           pageSize: 2,
           pagination: false,
-          parentFilter: 'none',
           selectionMode: 'filters',
           sort: 'newest',
           sources: ['posts'],

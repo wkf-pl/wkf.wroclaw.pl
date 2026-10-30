@@ -195,13 +195,23 @@ describe('document website access integration', () => {
       },
     })
     const filteredResult = await findPublicContent({
-      categoryId: documentCategory.id,
+      conditions: [
+        {
+          field: 'category',
+          operator: 'inSubtree',
+          relationshipValue: { relationTo: 'categories', value: documentCategory.id },
+        },
+        {
+          field: 'tag',
+          operator: 'contains',
+          relationshipValue: { relationTo: 'tags', value: documentTag.id },
+        },
+      ],
       page: 1,
       pageSize: 10,
       pagination: false,
       sort: 'newest',
       sources: ['documents'],
-      tagId: documentTag.id,
     })
     expect(filteredResult.items.map(({ document, kind }) => [kind, document.id])).toEqual([
       ['documents', publicDocument.id],

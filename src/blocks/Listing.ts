@@ -2,20 +2,15 @@ import type { Block, Validate } from 'payload'
 
 import { getFormRelationshipId } from '@/lib/relationships'
 import { createContentPresentationFields } from '@/modules/content/content-presentation'
+import { listingSources } from '@/modules/content/listing-conditions'
 
-import {
-  createListingPaginationRow,
-  createListingTaxonomyRow,
-  createMaxAgeDaysField,
-} from './listing-fields'
+import { createListingConditionsField } from './listing-condition-fields'
+import { createListingPaginationRow } from './listing-fields'
 
 type ListingSiblingData = {
-  parentFilter?: unknown
   selectionMode?: unknown
   sources?: unknown
 }
-
-export const listingSources = ['pages', 'posts', 'events', 'event-cycles', 'documents'] as const
 
 const filtersCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.selectionMode === 'filters'
@@ -76,22 +71,8 @@ export const validateListingSources: Validate<unknown, unknown, ListingSiblingDa
     return 'Każde źródło może zostać wybrane tylko raz.'
   }
 
-  if (siblingData.parentFilter && siblingData.parentFilter !== 'none') {
-    return sources.length === 1 && sources[0] === 'pages'
-      ? true
-      : 'Filtr strony nadrzędnej wymaga, aby jedynym źródłem były Strony.'
-  }
-
   return true
 }
-
-export const validateParentPage: Validate<unknown, unknown, ListingSiblingData> = (
-  value,
-  { siblingData },
-) =>
-  siblingData.selectionMode === 'manual' || siblingData.parentFilter !== 'specific' || value
-    ? true
-    : 'Wybierz stronę nadrzędną dla listingu.'
 
 export const ListingBlock: Block = {
   slug: 'listing',
@@ -127,16 +108,39 @@ export const ListingBlock: Block = {
       },
     }),
     {
-      name: 'selectionMode',
-      type: 'select',
-      admin: { isClearable: false },
-      defaultValue: 'filters',
-      label: 'Tryb wyboru',
-      options: [
-        { label: 'Ręczny', value: 'manual' },
-        { label: 'Filtry', value: 'filters' },
+      type: 'row',
+      fields: [
+        {
+          name: 'selectionMode',
+          type: 'select',
+          admin: { isClearable: false, width: '33.333%' },
+          defaultValue: 'filters',
+          label: 'Tryb wyboru',
+          options: [
+            { label: 'Ręczny', value: 'manual' },
+            { label: 'Filtry', value: 'filters' },
+          ],
+          required: true,
+        },
+        {
+          name: 'sources',
+          type: 'select',
+          admin: { condition: filtersCondition, isClearable: false, width: '66.667%' },
+          hasMany: true,
+          label: 'Źródła',
+          options: listingSources.map((source) => {
+            const labels = {
+              documents: 'Dokumenty',
+              'event-cycles': 'Cykle wydarzeń',
+              events: 'Wydarzenia',
+              pages: 'Strony',
+              posts: 'Wpisy',
+            }
+            return { label: labels[source], value: source }
+          }),
+          validate: validateListingSources,
+        },
       ],
-      required: true,
     },
     {
       name: 'items',
@@ -167,78 +171,12 @@ export const ListingBlock: Block = {
       },
       validate: validateManualListingItems,
     },
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'sources',
-          type: 'select',
-          admin: { condition: filtersCondition, isClearable: false, width: '50%' },
-          hasMany: true,
-          label: 'Źródła',
-          options: listingSources.map((source) => {
-            const labels = {
-              documents: 'Dokumenty',
-              'event-cycles': 'Cykle wydarzeń',
-              events: 'Wydarzenia',
-              pages: 'Strony',
-              posts: 'Wpisy',
-            }
-            return { label: labels[source], value: source }
-          }),
-          validate: validateListingSources,
-        },
-        {
-          name: 'parentPage',
-          type: 'relationship',
-          admin: {
-            condition: filtersCondition,
-            components: {
-              Field: '/components/admin/ListingParentPageField#ListingParentPageField',
-            },
-            width: '50%',
-          },
-          label: 'Strona nadrzędna',
-          relationTo: 'pages',
-          validate: validateParentPage,
-        },
-      ],
-    },
-    createListingTaxonomyRow({ conditional: true }),
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'eventTimeFilter',
-          type: 'select',
-          admin: { condition: filtersCondition, isClearable: false, width: '50%' },
-          defaultValue: 'all',
-          label: 'Terminy Wydarzeń',
-          options: [
-            { label: 'Wszystkie', value: 'all' },
-            { label: 'Trwające i nadchodzące', value: 'upcoming' },
-            { label: 'Minione', value: 'past' },
-          ],
-        },
-        {
-          name: 'eventCycle',
-          type: 'relationship',
-          admin: {
-            condition: filtersCondition,
-            placeholder: '<bieżący cykl lub brak>',
-            width: '50%',
-          },
-          label: 'Wskazany Cykl wydarzeń',
-          relationTo: 'event-cycles',
-        },
-      ],
-    },
+    createListingConditionsField(),
     createListingPaginationRow({
-      leadingField: createMaxAgeDaysField('25%'),
       secondaryLeadingField: {
         name: 'sort',
         type: 'select',
-        admin: { condition: filtersCondition, isClearable: false, width: '25%' },
+        admin: { condition: filtersCondition, isClearable: false, width: '33.333%' },
         defaultValue: 'newest',
         label: 'Sortowanie',
         options: [
@@ -250,18 +188,6 @@ export const ListingBlock: Block = {
         required: true,
       },
     }),
-    {
-      name: 'parentFilter',
-      type: 'select',
-      admin: { hidden: true },
-      defaultValue: 'none',
-      options: [
-        { label: 'Bez filtra', value: 'none' },
-        { label: 'Bieżąca strona', value: 'current' },
-        { label: 'Wybrana strona', value: 'specific' },
-      ],
-      required: true,
-    },
     {
       name: 'emptyMessage',
       type: 'text',
@@ -275,3 +201,5 @@ export const ListingBlock: Block = {
     singular: 'Listing',
   },
 }
+
+export { listingSources }

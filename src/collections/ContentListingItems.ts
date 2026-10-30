@@ -29,6 +29,8 @@ export const ContentListingItems: CollectionConfig = {
     { name: 'sourceDocumentId', type: 'number', index: true, required: true },
     { name: 'sourceUpdatedAt', type: 'date', required: true },
     { name: 'title', type: 'text', index: true, required: true },
+    { name: 'normalizedTitle', type: 'text', index: true, required: true },
+    { name: 'tagSearchIndex', type: 'text', required: true },
     { name: 'url', type: 'text', required: true },
     { name: 'excerpt', type: 'textarea' },
     {

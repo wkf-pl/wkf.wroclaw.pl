@@ -972,6 +972,207 @@
   }
 }
 
+.wkf-listing-conditions {
+  margin-top: calc(var(--base) * 1.25);
+  margin-bottom: calc(var(--base) * 1.25);
+
+  &__intro {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--base);
+    margin-bottom: calc(var(--base) * 0.75);
+
+    strong {
+      display: block;
+      margin-bottom: calc(var(--base) * 0.2);
+    }
+
+    p {
+      max-width: 68ch;
+      margin: 0;
+      color: var(--theme-elevation-650);
+    }
+
+    > span {
+      flex: 0 0 auto;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--theme-success-100);
+      color: var(--theme-success-700);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+  }
+
+  &__array {
+    .array-field__header {
+      display: none;
+    }
+
+    .array-field__row {
+      border-color: var(--theme-elevation-200);
+      background: var(--theme-elevation-50);
+    }
+
+    .array-field__row-header {
+      border-bottom-color: var(--theme-elevation-150);
+    }
+
+    .array-field__row > .rah-static > div > .collapsible__content {
+      padding-top: 0;
+    }
+
+    .array-field__fields {
+      padding-top: calc(var(--base) * 0.5);
+    }
+
+    .relationship .rs__group-heading {
+      display: none;
+    }
+
+    .row__fields {
+      align-items: flex-start;
+    }
+
+    .array-field__add-row {
+      margin-top: calc(var(--base) * 0.75);
+    }
+  }
+
+  &--no-sources &__array .array-field__add-row {
+    display: none;
+  }
+
+  &__disabled-add {
+    min-height: 40px;
+    margin-top: calc(var(--base) * 0.75);
+    padding: 8px 14px;
+    border: 1px solid var(--theme-elevation-250);
+    border-radius: var(--style-radius-s);
+    background: var(--theme-elevation-100);
+    color: var(--theme-elevation-500);
+    cursor: not-allowed;
+    font: inherit;
+  }
+
+  &__summary {
+    display: grid;
+    grid-template-columns: minmax(150px, 0.22fr) 1fr;
+    gap: var(--base);
+    margin-top: var(--base);
+    padding: var(--base);
+    border: 1px solid var(--theme-elevation-250);
+    border-radius: var(--style-radius-s);
+    background: var(--theme-elevation-50);
+
+    strong,
+    p {
+      margin: 0;
+    }
+
+    p {
+      color: var(--theme-elevation-750);
+    }
+  }
+}
+
+.wkf-listing-condition-row-label {
+  display: inline-flex;
+  min-width: 0;
+  max-width: min(68ch, 60vw);
+  gap: 0.3em;
+
+  strong {
+    flex: 0 0 auto;
+  }
+
+  > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.wkf-listing-condition {
+  &__connector {
+    min-height: 62px;
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 12px;
+    color: var(--theme-elevation-650);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+
+  &__scope {
+    margin: calc(var(--base) * 0.35) 0 0 calc(8% + var(--base));
+    color: var(--theme-elevation-650);
+    font-size: 0.82rem;
+
+    strong {
+      color: var(--theme-elevation-800);
+    }
+
+    &--error,
+    &--error strong {
+      color: var(--theme-error-600);
+    }
+  }
+
+  &__date input {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid var(--theme-elevation-250);
+    border-radius: var(--style-radius-s);
+    background: var(--theme-input-bg);
+    color: var(--theme-text);
+
+    &:hover:not(:disabled) {
+      border-color: var(--theme-elevation-400);
+    }
+
+    &:focus-visible {
+      border-color: var(--theme-elevation-800);
+      outline: 2px solid var(--theme-elevation-800);
+      outline-offset: 1px;
+    }
+
+    &[aria-invalid='true'] {
+      border-color: var(--theme-error-500);
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .wkf-listing-conditions {
+    &__intro,
+    &__summary {
+      display: flex;
+      flex-direction: column;
+    }
+
+    &__array .row__fields > .field-type {
+      --field-width: 100% !important;
+    }
+  }
+
+  .wkf-listing-condition {
+    &__connector {
+      min-height: 0;
+      align-items: center;
+      padding: 0;
+    }
+
+    &__scope {
+      margin-left: 0;
+    }
+  }
+}
+
 html[data-theme='light'] {
   --wkf-related-link-color: #3465a4;
   --wkf-related-link-hover-color: #204a87;

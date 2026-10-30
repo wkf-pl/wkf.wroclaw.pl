@@ -3,7 +3,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
-import { down, up } from '../../migrations/20261026_192840_global_drafts_and_content_trash'
+import {
+  down as downGlobalDrafts,
+  up as upGlobalDrafts,
+} from '../../migrations/20261026_192840_global_drafts_and_content_trash'
+import {
+  down as downListingConditions,
+  up as upListingConditions,
+} from '../../migrations/20261030_031527_listing_conditions'
 
 const globalTables = [
   'site_settings',
@@ -32,6 +39,13 @@ async function statusColumnExists(): Promise<boolean> {
   return result.rows[0]?.exists === true
 }
 
+async function listingConditionsSchemaExists(): Promise<boolean> {
+  const result = await payload.db.drizzle.execute(
+    sql`SELECT to_regclass('public.homepage_sections_blocks_listing_conditions') IS NOT NULL AS "exists"`,
+  )
+  return result.rows[0]?.exists === true
+}
+
 async function readGlobalRows(table: (typeof globalTables)[number]): Promise<unknown[]> {
   const result = await payload.db.drizzle.execute(
     sql.raw(
@@ -46,19 +60,23 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  if (payload && !(await statusColumnExists())) await up(migrationArguments())
+  if (!payload) return
+  if (!(await statusColumnExists())) await upGlobalDrafts(migrationArguments())
+  if (!(await listingConditionsSchemaExists())) await upListingConditions(migrationArguments())
 })
 
 describe('global drafts migration', () => {
   it('preserves current global content and marks every row as published', async () => {
-    await down(migrationArguments())
+    await downListingConditions(migrationArguments())
+    await downGlobalDrafts(migrationArguments())
 
     const contentBeforeMigration = new Map<string, unknown[]>()
     for (const table of globalTables) {
       contentBeforeMigration.set(table, await readGlobalRows(table))
     }
 
-    await up(migrationArguments())
+    await upGlobalDrafts(migrationArguments())
+    await upListingConditions(migrationArguments())
 
     for (const table of globalTables) {
       expect(await readGlobalRows(table)).toEqual(contentBeforeMigration.get(table))
