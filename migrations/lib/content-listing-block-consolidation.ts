@@ -24,6 +24,29 @@ function tableName(prefix: string, suffix: string): string {
   return quoteIdentifier(`${prefix}_${suffix}`)
 }
 
+function unsupportedListingSourcesStatement(prefix: string): string {
+  const listingSources = tableName(prefix, 'blocks_listing_sources')
+
+  return `
+    DO $migration$
+    DECLARE
+      unsupported_source text;
+    BEGIN
+      SELECT value::text INTO unsupported_source
+      FROM ${listingSources}
+      WHERE value::text IN ('partners', 'member-profiles')
+      LIMIT 1;
+
+      IF unsupported_source IS NOT NULL THEN
+        RAISE EXCEPTION
+          'Cannot roll back Listing consolidation: native Listing in ${listingSources} uses unsupported source %',
+          unsupported_source;
+      END IF;
+    END
+    $migration$;
+  `
+}
+
 async function execute(database: MigrationDatabase, statement: string): Promise<void> {
   await database.execute(sql.raw(statement))
 }
@@ -649,6 +672,8 @@ export async function restoreLegacyContentBlocks(database: MigrationDatabase): P
     const versionPrefix = `_${owner}_v`
     await execute(database, restoreVersionCarouselStatement(versionPrefix))
     await execute(database, restoreVersionMemberProfilesStatement(versionPrefix))
+    await execute(database, unsupportedListingSourcesStatement(owner))
+    await execute(database, unsupportedListingSourcesStatement(versionPrefix))
   }
 
   await execute(
