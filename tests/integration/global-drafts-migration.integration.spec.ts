@@ -1,6 +1,6 @@
 import { sql, type MigrateDownArgs, type MigrateUpArgs } from '@payloadcms/db-postgres'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { getPayload, type Payload } from 'payload'
+import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 
 import config from '@/payload.config'
 import {
@@ -11,6 +11,14 @@ import {
   down as downListingConditions,
   up as upListingConditions,
 } from '../../migrations/20261030_031527_listing_conditions'
+import {
+  down as downListingConsolidation,
+  up as upListingConsolidation,
+} from '../../migrations/20261031_111620_listing_sources_and_block_consolidation'
+import {
+  down as downLegacyBlockRemoval,
+  up as upLegacyBlockRemoval,
+} from '../../migrations/20261031_112000_remove_legacy_carousel_and_member_profiles_blocks'
 
 const globalTables = [
   'site_settings',
@@ -21,9 +29,14 @@ const globalTables = [
 ] as const
 
 let payload: Payload
+let migrationRequest: PayloadRequest
 
 function migrationArguments(): MigrateDownArgs & MigrateUpArgs {
-  return { db: payload.db.drizzle } as MigrateDownArgs & MigrateUpArgs
+  return {
+    db: payload.db.drizzle,
+    payload,
+    req: migrationRequest,
+  } as MigrateDownArgs & MigrateUpArgs
 }
 
 async function statusColumnExists(): Promise<boolean> {
@@ -46,6 +59,36 @@ async function listingConditionsSchemaExists(): Promise<boolean> {
   return result.rows[0]?.exists === true
 }
 
+async function tableExists(table: string): Promise<boolean> {
+  const result = await payload.db.drizzle.execute(
+    sql`SELECT to_regclass(${`public.${table}`}) IS NOT NULL AS "exists"`,
+  )
+  return result.rows[0]?.exists === true
+}
+
+async function moveToBeforeGlobalDrafts(): Promise<void> {
+  if (!(await tableExists('pages_blocks_carousel'))) {
+    await downLegacyBlockRemoval(migrationArguments())
+  }
+  if (await tableExists('_listing_block_migration_provenance')) {
+    await downListingConsolidation(migrationArguments())
+  }
+  if (await listingConditionsSchemaExists()) {
+    await downListingConditions(migrationArguments())
+  }
+}
+
+async function restoreCurrentSchema(): Promise<void> {
+  if (!(await statusColumnExists())) await upGlobalDrafts(migrationArguments())
+  if (!(await listingConditionsSchemaExists())) await upListingConditions(migrationArguments())
+  if (!(await tableExists('_listing_block_migration_provenance'))) {
+    await upListingConsolidation(migrationArguments())
+  }
+  if (await tableExists('pages_blocks_carousel')) {
+    await upLegacyBlockRemoval(migrationArguments())
+  }
+}
+
 async function readGlobalRows(table: (typeof globalTables)[number]): Promise<unknown[]> {
   const result = await payload.db.drizzle.execute(
     sql.raw(
@@ -57,17 +100,20 @@ async function readGlobalRows(table: (typeof globalTables)[number]): Promise<unk
 
 beforeAll(async () => {
   payload = await getPayload({ config })
+  migrationRequest = await createLocalReq(
+    { context: { skipContentListingSync: true, skipPublicCacheInvalidation: true } },
+    payload,
+  )
 })
 
 afterAll(async () => {
   if (!payload) return
-  if (!(await statusColumnExists())) await upGlobalDrafts(migrationArguments())
-  if (!(await listingConditionsSchemaExists())) await upListingConditions(migrationArguments())
+  await restoreCurrentSchema()
 })
 
 describe('global drafts migration', () => {
   it('preserves current global content and marks every row as published', async () => {
-    await downListingConditions(migrationArguments())
+    await moveToBeforeGlobalDrafts()
     await downGlobalDrafts(migrationArguments())
 
     const contentBeforeMigration = new Map<string, unknown[]>()
@@ -77,6 +123,8 @@ describe('global drafts migration', () => {
 
     await upGlobalDrafts(migrationArguments())
     await upListingConditions(migrationArguments())
+    await upListingConsolidation(migrationArguments())
+    await upLegacyBlockRemoval(migrationArguments())
 
     for (const table of globalTables) {
       expect(await readGlobalRows(table)).toEqual(contentBeforeMigration.get(table))

@@ -1,9 +1,20 @@
 import { sql, type MigrateDownArgs, type MigrateUpArgs } from '@payloadcms/db-postgres'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { getPayload, type Payload } from 'payload'
+import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 
 import config from '@/payload.config'
-import { down, up } from '../../migrations/20261030_031527_listing_conditions'
+import {
+  down as downListingConditions,
+  up as upListingConditions,
+} from '../../migrations/20261030_031527_listing_conditions'
+import {
+  down as downListingConsolidation,
+  up as upListingConsolidation,
+} from '../../migrations/20261031_111620_listing_sources_and_block_consolidation'
+import {
+  down as downLegacyBlockRemoval,
+  up as upLegacyBlockRemoval,
+} from '../../migrations/20261031_112000_remove_legacy_carousel_and_member_profiles_blocks'
 
 const fixtureId = 9_300_001
 const fixtureVersionId = 9_300_002
@@ -11,14 +22,26 @@ const listingBlockId = 'listing-conditions-migration-listing'
 const carouselBlockId = 'listing-conditions-migration-carousel'
 
 let payload: Payload
+let migrationRequest: PayloadRequest
 
 function migrationArguments(): MigrateDownArgs & MigrateUpArgs {
-  return { db: payload.db.drizzle } as MigrateDownArgs & MigrateUpArgs
+  return {
+    db: payload.db.drizzle,
+    payload,
+    req: migrationRequest,
+  } as MigrateDownArgs & MigrateUpArgs
 }
 
 async function conditionsSchemaExists(): Promise<boolean> {
   const result = await payload.db.drizzle.execute(
     sql`SELECT to_regclass('public.homepage_sections_blocks_listing_conditions') IS NOT NULL AS "exists"`,
+  )
+  return result.rows[0]?.exists === true
+}
+
+async function tableExists(table: string): Promise<boolean> {
+  const result = await payload.db.drizzle.execute(
+    sql`SELECT to_regclass(${`public.${table}`}) IS NOT NULL AS "exists"`,
   )
   return result.rows[0]?.exists === true
 }
@@ -37,7 +60,13 @@ async function removeLegacyFixtures(): Promise<void> {
   )
 }
 
-async function restoreCurrentSchema(): Promise<void> {
+async function moveToBeforeListingConditions(): Promise<void> {
+  if (!(await tableExists('pages_blocks_carousel'))) {
+    await downLegacyBlockRemoval(migrationArguments())
+  }
+  if (await tableExists('_listing_block_migration_provenance')) {
+    await downListingConsolidation(migrationArguments())
+  }
   if (await conditionsSchemaExists()) {
     await payload.db.drizzle.execute(
       sql.raw(`
@@ -45,15 +74,24 @@ async function restoreCurrentSchema(): Promise<void> {
       WHERE "text_value" = 'rollback guard';
     `),
     )
-    await down(migrationArguments())
+    await downListingConditions(migrationArguments())
   }
+}
 
+async function restoreCurrentSchema(): Promise<void> {
+  await moveToBeforeListingConditions()
   await removeLegacyFixtures()
-  await up(migrationArguments())
+  await upListingConditions(migrationArguments())
+  await upListingConsolidation(migrationArguments())
+  await upLegacyBlockRemoval(migrationArguments())
 }
 
 beforeAll(async () => {
   payload = await getPayload({ config })
+  migrationRequest = await createLocalReq(
+    { context: { skipContentListingSync: true, skipPublicCacheInvalidation: true } },
+    payload,
+  )
 })
 
 afterAll(async () => {
@@ -62,7 +100,7 @@ afterAll(async () => {
 
 describe('listing conditions migration', () => {
   it('backfills live, versioned, Listing, Carousel, and homepage data and rejects lossy rollback', async () => {
-    await down(migrationArguments())
+    await moveToBeforeListingConditions()
 
     await payload.db.drizzle.execute(
       sql.raw(`
@@ -129,7 +167,7 @@ describe('listing conditions migration', () => {
     `),
     )
 
-    await up(migrationArguments())
+    await upListingConditions(migrationArguments())
 
     const homepageConditions = await payload.db.drizzle.execute(sql`
       SELECT "field"::text AS "field", "operator"::text AS "operator",
@@ -179,7 +217,7 @@ describe('listing conditions migration', () => {
     `)
     expect(normalizedTitle.rows[0]?.normalizedTitle).toBe('zażółć gęślą')
 
-    await down(migrationArguments())
+    await downListingConditions(migrationArguments())
 
     const restoredLegacyValues = await payload.db.drizzle.execute(sql`
       SELECT "category_id" AS "categoryId", "tag_id" AS "tagId",
@@ -205,13 +243,15 @@ describe('listing conditions migration', () => {
       { parentFilter: 'specific', parentPageId: fixtureId },
     ])
 
-    await up(migrationArguments())
+    await upListingConditions(migrationArguments())
     await payload.db.drizzle.execute(sql`
       INSERT INTO "homepage_sections_blocks_listing_conditions"
         ("_order", "_parent_id", "id", "field", "operator", "text_value")
       VALUES (9, ${listingBlockId}, 'non-representable-title-condition', 'title', 'contains', 'rollback guard')
     `)
 
-    await expect(down(migrationArguments())).rejects.toThrow(/no lossless legacy representation/)
+    await expect(downListingConditions(migrationArguments())).rejects.toThrow(
+      /no lossless legacy representation/,
+    )
   })
 })

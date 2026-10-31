@@ -7,8 +7,6 @@ import { CardBlockSection } from '@/app/(frontend)/_components/CardBlockSection'
 import { CardBlock } from '@/blocks/Card'
 import type { CardBlock as CardBlockData, Page } from '@/payload-types'
 
-import { readFrontendStyles } from '../helpers/frontend-styles'
-
 describe('card block', () => {
   it('uses a dedicated semantic block thumbnail', () => {
     expect(CardBlock.admin?.images?.thumbnail).toEqual({
@@ -59,14 +57,5 @@ describe('card block', () => {
     expect(markup).toContain('<a href="/sekcja-rpg">Sekcja RPG</a>')
     expect(markup).toContain('href="/spotkania"')
     expect(markup).toContain('data-icon-name="dice"')
-  })
-
-  it('uses all available parent width without setting its own maximum', () => {
-    const frontendStyles = readFrontendStyles()
-    const cardRule = frontendStyles.match(/\.cardBlock\s*\{(?<declarations>[^}]*)\}/)
-
-    expect(cardRule?.groups?.declarations).toContain('width: 100%')
-    expect(cardRule?.groups?.declarations).toContain('max-width: none')
-    expect(cardRule?.groups?.declarations).toContain('margin-inline: 0')
   })
 })

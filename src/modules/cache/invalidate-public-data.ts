@@ -5,7 +5,7 @@ import type {
   GlobalAfterChangeHook,
 } from 'payload'
 
-import type { TaxonomizableCollectionSlug } from '@/modules/content/content-listing'
+import type { ContentListingSource } from '@/modules/content/listing-conditions'
 
 import {
   isPublicDataCacheEnabled,
@@ -13,7 +13,7 @@ import {
   skipPublicCacheInvalidationContextKey,
 } from './public-data-cache'
 
-const tagsBySource: Record<TaxonomizableCollectionSlug, string[]> = {
+const tagsBySource: Record<ContentListingSource, string[]> = {
   documents: [publicCacheTags.contentListings, publicCacheTags.sitemap],
   'event-cycles': [
     publicCacheTags.eventCycles,
@@ -27,7 +27,24 @@ const tagsBySource: Record<TaxonomizableCollectionSlug, string[]> = {
     publicCacheTags.homepage,
     publicCacheTags.sitemap,
   ],
+  'member-profiles': [
+    publicCacheTags.memberProfiles,
+    publicCacheTags.pages,
+    publicCacheTags.posts,
+    publicCacheTags.events,
+    publicCacheTags.eventCycles,
+    publicCacheTags.partners,
+    publicCacheTags.contentListings,
+    publicCacheTags.sitemap,
+  ],
   pages: [publicCacheTags.pages, publicCacheTags.contentListings, publicCacheTags.sitemap],
+  partners: [
+    publicCacheTags.partners,
+    publicCacheTags.events,
+    publicCacheTags.eventCycles,
+    publicCacheTags.contentListings,
+    publicCacheTags.sitemap,
+  ],
   posts: [
     publicCacheTags.posts,
     publicCacheTags.contentListings,
@@ -68,11 +85,11 @@ export const invalidatePublicCacheTags = createPublicCacheInvalidator({
   revalidate: revalidateNextCacheTag,
 })
 
-export function invalidateContentSource(source: TaxonomizableCollectionSlug): void {
+export function invalidateContentSource(source: ContentListingSource): void {
   invalidatePublicCacheTags(tagsBySource[source])
 }
 
-export function getContentSourceCacheTags(source: TaxonomizableCollectionSlug): string[] {
+export function getContentSourceCacheTags(source: ContentListingSource): string[] {
   return [...tagsBySource[source]]
 }
 
@@ -135,12 +152,7 @@ const homepageInvalidators = createCollectionCacheInvalidators([publicCacheTags.
 export const invalidateHomepageAfterChange = homepageInvalidators.afterChange
 export const invalidateHomepageAfterDelete = homepageInvalidators.afterDelete
 
-const partnerCacheTags = [
-  publicCacheTags.partners,
-  publicCacheTags.events,
-  publicCacheTags.eventCycles,
-  publicCacheTags.sitemap,
-]
+const partnerCacheTags = tagsBySource.partners
 
 const eventTypeCacheTags = [
   publicCacheTags.eventTypes,
@@ -148,15 +160,7 @@ const eventTypeCacheTags = [
   publicCacheTags.homepage,
 ]
 
-const memberProfileCacheTags = [
-  publicCacheTags.memberProfiles,
-  publicCacheTags.pages,
-  publicCacheTags.posts,
-  publicCacheTags.events,
-  publicCacheTags.eventCycles,
-  publicCacheTags.partners,
-  publicCacheTags.sitemap,
-]
+const memberProfileCacheTags = tagsBySource['member-profiles']
 
 const memberProfileImageCacheTags = memberProfileCacheTags.filter(
   (tag) => tag !== publicCacheTags.sitemap,

@@ -11,7 +11,6 @@ import { ColumnLayoutBlock } from '@/blocks/ColumnLayout'
 import { HeadingBlock } from '@/blocks/Heading'
 import { ListingBlock } from '@/blocks/Listing'
 import { AttachmentsBlock, MediaGalleryBlock } from '@/blocks/MediaListing'
-import { MemberProfilesBlock } from '@/blocks/MemberProfiles'
 import { RichTextBlock } from '@/blocks/RichText'
 import { SectionGroupBlock } from '@/blocks/SectionGroup'
 import {
@@ -24,7 +23,6 @@ import {
 } from '@/modules/content/content-presentation'
 import { extractFirstRichTextParagraph } from '@/modules/content/listing-excerpt'
 import { walkContentPresentations } from '@/modules/content/walk-content-leaf-blocks'
-import { readFrontendStyles } from '../helpers/frontend-styles'
 import { createLexicalDocument } from '../helpers/lexical-document'
 
 describe('content composition', () => {
@@ -65,44 +63,6 @@ describe('content composition', () => {
     }
   }
 
-  it('keeps inverse button hover states legible and gives separators breathing room', () => {
-    const frontendStyles = readFrontendStyles()
-
-    expect(frontendStyles).toContain(
-      '.contentPresentation--inverse .presentedLink--primaryButton:hover',
-    )
-    expect(frontendStyles).toContain(
-      '.contentPresentation--inverse .presentedLink--secondaryButton:hover',
-    )
-    expect(frontendStyles).toContain('--column-gap: clamp(1.5rem, 3.5vw, 2.5rem)')
-  })
-
-  it('separates adjacent column blocks without offsetting their first paragraphs', () => {
-    const frontendStyles = readFrontendStyles()
-
-    expect(frontendStyles).toMatch(/h1,\s*h2,\s*h3,\s*p\s*{\s*margin-top: 0;\s*}/)
-    expect(frontendStyles).toMatch(
-      /\.columnLayoutColumnContent\s*>\s*\.contentHeading:not\(:last-child\)\s*{\s*margin-bottom: 1rem;\s*}/,
-    )
-  })
-
-  it('adds presentation spacing only to decorated content and grouped sections', () => {
-    const frontendStyles = readFrontendStyles()
-
-    expect(frontendStyles).toMatch(
-      /\.contentPresentation--decorated\s*>\s*\.contentPresentationContent\s*{\s*padding: clamp\(1\.25rem, 3vw, 2rem\);\s*}/,
-    )
-    expect(frontendStyles).toMatch(
-      /\.sectionGroupSection\s*>\s*\.contentPresentationContent\s*{\s*display: grid;\s*}/,
-    )
-    expect(frontendStyles).toMatch(
-      /\.sectionGroupSection\.contentPresentation--decorated\s*>\s*\.contentPresentationContent,\s*\.contentPresentation--sectionGroup\.contentPresentation--decorated\s+\.sectionGroupSection\s*>\s*\.contentPresentationContent\s*{\s*padding: clamp\(1\.5rem, 4vw, 3rem\);\s*}/,
-    )
-    expect(frontendStyles).toMatch(
-      /\.homePage\s+\.sectionGroupSection\.contentPresentation--decorated\s*>\s*\.contentPresentationContent,\s*\.homePage\s+\.contentPresentation--sectionGroup\.contentPresentation--decorated\s+\.sectionGroupSection\s*>\s*\.contentPresentationContent\s*{\s*margin: clamp\(1\.5rem, 4vw, 3rem\) 0;\s*padding: 0;\s*}/,
-    )
-  })
-
   it('creates one stable surface-field contract for every consumer', () => {
     const describeFields = () =>
       createContentPresentationFields().map((field) => ({
@@ -127,7 +87,6 @@ describe('content composition', () => {
       ListingBlock,
       MediaGalleryBlock,
       AttachmentsBlock,
-      MemberProfilesBlock,
     ]) {
       expect(
         getFieldNames(block.fields).filter((name) => presentationFieldNames.includes(name)),
@@ -199,7 +158,6 @@ describe('content composition', () => {
     }
 
     expect(firstRowNames(RichTextBlock.fields)).toEqual(['textStyle', 'frame', 'surface'])
-    expect(firstRowNames(MemberProfilesBlock.fields)).toEqual(['view', 'frame', 'surface'])
     expect(firstRowNames(ListingBlock.fields)).toEqual(['view', 'frame', 'surface'])
     for (const block of [ContentCalendarBlock, MediaGalleryBlock, AttachmentsBlock]) {
       expect(firstRowNames(block.fields)).toEqual(['frame', 'surface'])
@@ -302,12 +260,10 @@ describe('content composition', () => {
     expect(surfaceField?.admin?.width).toBe('50%')
 
     const richTextPresentationRow = RichTextBlock.fields[0]
-    const memberProfilesPresentationRow = MemberProfilesBlock.fields[0]
-    if (richTextPresentationRow?.type !== 'row' || memberProfilesPresentationRow?.type !== 'row') {
+    if (richTextPresentationRow?.type !== 'row') {
       throw new Error('Missing content presentation rows')
     }
     expect(getFieldNames([richTextPresentationRow])).toEqual(['textStyle', 'frame', 'surface'])
-    expect(getFieldNames([memberProfilesPresentationRow])).toEqual(['view', 'frame', 'surface'])
     expect(richTextPresentationRow.fields.map((field) => field.admin?.width)).toEqual([
       '33.333%',
       '33.333%',

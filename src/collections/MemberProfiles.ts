@@ -30,6 +30,10 @@ import {
   createTrashUpdateAccess,
   markTrashMutation,
 } from '@/modules/content/trash-access'
+import {
+  removeContentListingAfterDelete,
+  syncContentListingAfterChange,
+} from '@/modules/content/content-listing-index'
 
 const publicProfileConstraint: Where = { _status: { equals: 'published' } }
 
@@ -342,8 +346,16 @@ export const MemberProfiles: CollectionConfig = {
     },
   ],
   hooks: {
-    afterChange: [reconcileMemberProfileImages, invalidateMemberProfilesAfterChange],
-    afterDelete: [deleteMemberProfileImage, invalidateMemberProfilesAfterDelete],
+    afterChange: [
+      reconcileMemberProfileImages,
+      syncContentListingAfterChange,
+      invalidateMemberProfilesAfterChange,
+    ],
+    afterDelete: [
+      deleteMemberProfileImage,
+      removeContentListingAfterDelete,
+      invalidateMemberProfilesAfterDelete,
+    ],
     beforeOperation: [markTrashMutation],
     beforeValidate: [prepareMemberProfile],
   },

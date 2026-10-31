@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import type { PublicContentListItem } from '@/modules/content/content-listing'
+import { getContentListingPresentation } from '@/modules/content/content-listing-presentation'
 
 import { ContentCard } from './ContentCard'
 import { ContentCarousel } from './ContentCarousel'
@@ -47,14 +48,14 @@ export function ContentList({ emptyMessage, items, view }: ContentListProperties
   return (
     <div className="contentList contentList-compact">
       {items.map((item) => {
-        const { document } = item
+        const presentation = getContentListingPresentation(item, 'compact')
 
         return (
-          <article className="contentCard" key={`${item.kind}-${document.id}`}>
+          <article className="contentCard" key={`${item.kind}-${item.document.id}`}>
             <div className="contentCardContent">
-              <ContentListingMeta item={item} />
+              <ContentListingMeta item={item} view="compact" />
               <h2>
-                <Link href={item.url}>{document.title}</Link>
+                <Link href={presentation.url}>{presentation.title}</Link>
               </h2>
             </div>
           </article>

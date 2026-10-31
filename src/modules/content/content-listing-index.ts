@@ -1,106 +1,22 @@
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, PayloadRequest } from 'payload'
 
-import type { Document, Event, EventCycle, Page, Post } from '@/payload-types'
-import { getRelationshipId } from '@/lib/relationships'
 import { invalidateContentSource } from '@/modules/cache/invalidate-public-data'
-import { extractRichTextText } from '@/modules/content/rich-text'
-import {
-  createListingTagSearchIndex,
-  normalizeListingTitle,
-} from '@/modules/content/listing-conditions'
+import { allListingSources, type ContentListingSource } from '@/modules/content/listing-conditions'
 
-import type { TaxonomizableCollectionSlug, TaxonomizableDocument } from './content-listing'
+import {
+  createContentListingIndexData,
+  findPublishedContentListingDocument,
+} from './content-listing-sources'
 
 export const contentListingSyncContextKey = 'skipContentListingSync'
 
-const contentListingSourceSelect = {
-  category: true,
-  createdAt: true,
-  cycle: true,
-  documentDate: true,
-  endAt: true,
-  excerpt: true,
-  heroImage: true,
-  id: true,
-  listingExcerpt: true,
-  parent: true,
-  publishedAt: true,
-  slug: true,
-  startAt: true,
-  summary: true,
-  tags: true,
-  title: true,
-  updatedAt: true,
-} as const
-
-function buildPublicURL(source: TaxonomizableCollectionSlug, slug: string): string {
-  if (source === 'documents') return `/dokumenty/${slug}`
-  if (source === 'posts') return `/blog/${slug}`
-  if (source === 'events') return `/events/${slug}`
-  if (source === 'event-cycles') return `/events/series/${slug}`
-  return `/${slug}`
-}
-
-function createIndexData(source: TaxonomizableCollectionSlug, document: TaxonomizableDocument) {
-  const event = source === 'events' ? (document as Event) : null
-  const cycle = source === 'event-cycles' ? (document as EventCycle) : null
-  const contentDocument = source === 'documents' ? (document as Document) : null
-  const page = source === 'pages' ? (document as Page) : null
-  const post = source === 'posts' ? (document as Post) : null
-  const significantDate =
-    contentDocument?.documentDate ?? event?.startAt ?? post?.publishedAt ?? null
-  const tagIds =
-    document.tags?.flatMap((tag) => {
-      const id = getRelationshipId(tag)
-      return id === undefined ? [] : [id]
-    }) ?? []
-
-  return {
-    category: getRelationshipId(document.category) ?? null,
-    eventCycle: event ? (getRelationshipId(event.cycle) ?? null) : null,
-    eventEndAt: event?.endAt ?? null,
-    eventStartAt: event?.startAt ?? null,
-    excerpt:
-      contentDocument?.summary?.trim() ||
-      page?.listingExcerpt?.trim() ||
-      post?.excerpt ||
-      extractRichTextText(event?.excerpt ?? cycle?.excerpt) ||
-      null,
-    heroImage:
-      getRelationshipId(
-        page?.heroImage ?? post?.heroImage ?? event?.heroImage ?? cycle?.heroImage,
-      ) ?? null,
-    hasSignificantDate: significantDate !== null,
-    parentPage: page ? (getRelationshipId(page.parent) ?? null) : null,
-    significantDate,
-    source,
-    sourceDocumentId: document.id,
-    sourceUpdatedAt: document.updatedAt,
-    title: document.title,
-    normalizedTitle: normalizeListingTitle(document.title),
-    tagSearchIndex: createListingTagSearchIndex(tagIds),
-    tags: tagIds,
-    url: buildPublicURL(source, document.slug),
-  }
-}
-
 export async function syncContentListingItem(
   req: PayloadRequest,
-  source: TaxonomizableCollectionSlug,
+  source: ContentListingSource,
   documentID: number,
 ): Promise<boolean> {
-  const [publishedResult, existingResult] = await Promise.all([
-    req.payload.find({
-      collection: source,
-      depth: 0,
-      draft: false,
-      limit: 1,
-      overrideAccess: true,
-      pagination: false,
-      req,
-      select: contentListingSourceSelect,
-      where: { and: [{ id: { equals: documentID } }, { _status: { equals: 'published' } }] },
-    }),
+  const [publishedDocument, existingResult] = await Promise.all([
+    findPublishedContentListingDocument(req, source, documentID),
     req.payload.find({
       collection: 'content-listing-items',
       depth: 0,
@@ -114,7 +30,6 @@ export async function syncContentListingItem(
     }),
   ])
 
-  const publishedDocument = publishedResult.docs[0] as TaxonomizableDocument | undefined
   const existingItem = existingResult.docs[0]
   if (!publishedDocument) {
     if (existingItem) {
@@ -130,7 +45,7 @@ export async function syncContentListingItem(
   }
 
   if (existingItem?.sourceUpdatedAt === publishedDocument.updatedAt) return false
-  const data = createIndexData(source, publishedDocument)
+  const data = createContentListingIndexData(source, publishedDocument)
   if (existingItem) {
     await req.payload.update({
       collection: 'content-listing-items',
@@ -150,14 +65,8 @@ export async function syncContentListingItem(
   return true
 }
 
-function isTaxonomizableCollection(value: string): value is TaxonomizableCollectionSlug {
-  return (
-    value === 'pages' ||
-    value === 'posts' ||
-    value === 'events' ||
-    value === 'event-cycles' ||
-    value === 'documents'
-  )
+function isContentListingSource(value: string): value is ContentListingSource {
+  return allListingSources.some((source) => source === value)
 }
 
 export const syncContentListingAfterChange: CollectionAfterChangeHook = async ({
@@ -165,7 +74,7 @@ export const syncContentListingAfterChange: CollectionAfterChangeHook = async ({
   doc,
   req,
 }) => {
-  if (req.context?.[contentListingSyncContextKey] || !isTaxonomizableCollection(collection.slug)) {
+  if (req.context?.[contentListingSyncContextKey] || !isContentListingSource(collection.slug)) {
     return doc
   }
   if (await syncContentListingItem(req, collection.slug, doc.id)) {
@@ -179,7 +88,7 @@ export const removeContentListingAfterDelete: CollectionAfterDeleteHook = async 
   doc,
   req,
 }) => {
-  if (req.context?.[contentListingSyncContextKey] || !isTaxonomizableCollection(collection.slug)) {
+  if (req.context?.[contentListingSyncContextKey] || !isContentListingSource(collection.slug)) {
     return doc
   }
   const indexed = await req.payload.find({

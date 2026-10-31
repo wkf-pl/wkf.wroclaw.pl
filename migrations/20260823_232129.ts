@@ -1,19 +1,14 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
-import type { TaxonomizableCollectionSlug } from '../src/modules/content/content-listing'
+import type { ContentListingSource } from '../src/modules/content/content-listing'
 import { syncContentListingItem } from '../src/modules/content/content-listing-index'
 
 const batchSize = 100
-const indexedCollections: TaxonomizableCollectionSlug[] = [
-  'pages',
-  'posts',
-  'events',
-  'event-cycles',
-]
+const indexedCollections: ContentListingSource[] = ['pages', 'posts', 'events', 'event-cycles']
 
 async function findPublishedDocumentIDs(
   db: MigrateUpArgs['db'],
-  collection: TaxonomizableCollectionSlug,
+  collection: ContentListingSource,
   lastDocumentID: number,
 ): Promise<number[]> {
   const query =

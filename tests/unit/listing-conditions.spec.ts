@@ -4,6 +4,7 @@ import { validateListingConditions } from '@/blocks/listing-condition-fields'
 import { compileListingConditionWhere } from '@/modules/content/content-listing'
 import {
   createListingTagSearchIndex,
+  allListingSources,
   formatPolishListingConditionCount,
   getApplicableListingSources,
   getListingConditionOperatorLabel,
@@ -13,14 +14,15 @@ import {
   listingConditionFields,
   listingConditionOperatorsByField,
   listingConditionSupportedSources,
-  listingSources,
+  listingSourceLabels,
+  listingSourceSingularLabels,
   normalizeListingTitle,
   type ListingConditionInput,
 } from '@/modules/content/listing-conditions'
 
 function validate(
   conditions: ListingConditionInput[],
-  sources: readonly string[] = listingSources,
+  sources: readonly string[] = allListingSources,
 ): true | string {
   return validateListingConditions(conditions, {
     siblingData: { selectionMode: 'filters', sources },
@@ -29,6 +31,23 @@ function validate(
 
 describe('listing conditions', () => {
   it('defines the supported fields, operators, and source capabilities', () => {
+    expect(allListingSources).toEqual([
+      'pages',
+      'posts',
+      'events',
+      'event-cycles',
+      'documents',
+      'partners',
+      'member-profiles',
+    ])
+    expect(listingSourceLabels).toMatchObject({
+      'member-profiles': 'Wizytówki',
+      partners: 'Partnerzy',
+    })
+    expect(listingSourceSingularLabels).toMatchObject({
+      'member-profiles': 'Wizytówka',
+      partners: 'Partner',
+    })
     expect(listingConditionFields).toEqual([
       'title',
       'category',
@@ -55,6 +74,9 @@ describe('listing conditions', () => {
       'events',
       'documents',
     ])
+    expect(listingConditionSupportedSources.category).not.toContain('partners')
+    expect(listingConditionSupportedSources.category).not.toContain('member-profiles')
+    expect(listingConditionSupportedSources.title).toEqual(allListingSources)
     expect(getApplicableListingSources('title', ['pages', 'events'])).toEqual(['pages', 'events'])
   })
 
@@ -104,6 +126,19 @@ describe('listing conditions', () => {
     },
   ])('accepts a complete condition %#', (condition) => {
     expect(validate([condition])).toBe(true)
+  })
+
+  it('accepts source-only listings and client-side array row counts', () => {
+    const validationOptions = {
+      siblingData: { selectionMode: 'filters', sources: ['event-cycles'] },
+    } as never
+
+    expect(validate([])).toBe(true)
+    expect(validateListingConditions(0 as never, validationOptions)).toBe(true)
+    expect(validateListingConditions(1 as never, validationOptions)).toBe(true)
+    expect(validateListingConditions(11 as never, validationOptions)).toContain(
+      'najwyżej 10 warunków',
+    )
   })
 
   it('rejects invalid pairs, values, relationship types, duplicates, and inactive conditions', () => {

@@ -42,7 +42,7 @@ import {
   type ListingConditionField,
   type ListingConditionInput,
   type ListingConditionOperator,
-  type ListingSource,
+  type ContentListingSource,
 } from '@/modules/content/listing-conditions'
 
 type SelectOption<T extends string> = {
@@ -340,7 +340,7 @@ function ListingConditionsSummary({
   sources,
 }: {
   conditions: ListingConditionInput[]
-  sources: ListingSource[]
+  sources: ContentListingSource[]
 }) {
   if (!conditions.length || !sources.length) return null
 
@@ -525,7 +525,7 @@ function getRelationshipLabel(value: unknown): string {
   return ''
 }
 
-function useListingSources(path: string): ListingSource[] {
+function useListingSources(path: string): ContentListingSource[] {
   const value = useFormFields(([fields]) => fields[getSourcesPath(path)]?.value)
   return Array.isArray(value) ? value.filter(isListingSource) : []
 }

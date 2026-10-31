@@ -164,7 +164,7 @@ describe('content hero', () => {
     expect(styles).toMatch(
       /\.pageBlocks > \*,[\s\S]*?width: 100%;[\s\S]*?max-width: none;[\s\S]*?margin-inline: 0;/,
     )
-    expect(styles).not.toContain('.pageBlocks > .richText,\n.memberProfilesBlock > h2')
+    expect(styles).not.toContain('.pageBlocks > .richText')
   })
 
   it('routes all requested detail-page families through the shared hero', () => {

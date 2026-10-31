@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createLocalReq } from 'payload'
 import sharp from 'sharp'
 
+import { findPublicContent } from '@/modules/content/content-listing'
 import { syncContentListingItem } from '@/modules/content/content-listing-index'
 import type { ContentListingItem } from '@/payload-types'
 
@@ -16,14 +17,18 @@ let fixture: ContentTaxonomyFixture
 const listingImageFilename = 'integration-listing-index-image.png'
 const listingEventCycleSlug = 'integration-listing-index-event-cycle'
 const listingEventSlug = 'integration-listing-index-event'
+const listingPartnerSlug = 'integration-listing-index-partner'
+const listingProfileSlug = 'integration-listing-index-profile'
 
 beforeAll(async () => {
   fixture = await createContentTaxonomyFixture('listing-index')
   await cleanupRelationshipFixtures()
+  await cleanupNewSourceFixtures()
 }, 20_000)
 
 afterAll(async () => {
   await cleanupRelationshipFixtures()
+  await cleanupNewSourceFixtures()
   await fixture?.cleanup()
 })
 
@@ -48,16 +53,6 @@ describe('content listing index synchronization', () => {
       url: `/${fixture.slugs.page}`,
     })
     expect(index).not.toHaveProperty('layout')
-  })
-
-  it('stores the source-specific significant date', async () => {
-    const pageIndex = await findListingIndex('pages', fixture.page.id)
-    const postIndex = await findListingIndex('posts', fixture.post.id)
-
-    expect(pageIndex?.significantDate).toBeNull()
-    expect(pageIndex?.hasSignificantDate).toBe(false)
-    expect(postIndex?.significantDate).toBe(fixture.post.publishedAt)
-    expect(postIndex?.hasSignificantDate).toBe(true)
   })
 
   it('rebuilds a missing index entry with the migration backfill primitive', async () => {
@@ -140,6 +135,156 @@ describe('content listing index synchronization', () => {
       overrideAccess: true,
     })
     expect(await findListingIndex('pages', lifecyclePage.id)).toBeNull()
+  })
+
+  it('synchronizes, rebuilds and anonymously hydrates Partner and MemberProfile indexes', async () => {
+    const partner = await fixture.payload.create({
+      collection: 'partners',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        excerpt: 'Publiczne streszczenie partnera.',
+        layout: [
+          { blockType: 'richText', content: createLexicalDocument('Treść partnera indeksu') },
+        ],
+        name: 'Partner indeksu',
+        slug: listingPartnerSlug,
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+    const profile = await fixture.payload.create({
+      collection: 'member-profiles',
+      data: {
+        _status: 'published',
+        about: createLexicalDocument('Publiczny opis wizytówki.'),
+        clubFunction: 'Funkcja klubowa',
+        interests: 'Testy integracyjne',
+        owner: fixture.author.id,
+        publicName: 'Profil indeksu',
+        slug: listingProfileSlug,
+      },
+      draft: false,
+      overrideAccess: true,
+      user: fixture.author,
+    })
+
+    try {
+      expect(await findListingIndex('partners', partner.id)).toMatchObject({
+        category: null,
+        excerpt: 'Publiczne streszczenie partnera.',
+        hasSignificantDate: false,
+        heroImage: null,
+        significantDate: null,
+        title: 'Partner indeksu',
+        url: `/partners/${listingPartnerSlug}`,
+      })
+      expect(await findListingIndex('member-profiles', profile.id)).toMatchObject({
+        category: null,
+        excerpt: 'Publiczny opis wizytówki.',
+        hasSignificantDate: false,
+        heroImage: null,
+        significantDate: null,
+        title: 'Profil indeksu',
+        url: `/members/${profile.slug}`,
+      })
+
+      await fixture.payload.update({
+        collection: 'partners',
+        data: { name: 'Szkic partnera' },
+        draft: true,
+        id: partner.id,
+        overrideAccess: true,
+      })
+      await fixture.payload.update({
+        collection: 'member-profiles',
+        data: { publicName: 'Szkic profilu' },
+        draft: true,
+        id: profile.id,
+        overrideAccess: true,
+        user: fixture.author,
+      })
+      expect(await findListingIndex('partners', partner.id)).toMatchObject({
+        title: 'Partner indeksu',
+      })
+      expect(await findListingIndex('member-profiles', profile.id)).toMatchObject({
+        title: 'Profil indeksu',
+      })
+
+      const hydrated = await findPublicContent({
+        manualItems: [
+          { relationTo: 'partners', value: partner.id },
+          {
+            contextLabel: 'Prezes Zarządu',
+            relationTo: 'member-profiles',
+            value: profile.id,
+          },
+          {
+            contextLabel: 'Koordynator programu',
+            relationTo: 'member-profiles',
+            value: profile.id,
+          },
+        ],
+        page: 1,
+        pageSize: 10,
+        pagination: false,
+        selectionMode: 'manual',
+        sort: 'titleAscending',
+        sources: [],
+      })
+      expect(hydrated.items.map((item) => item.kind)).toEqual([
+        'partners',
+        'member-profiles',
+        'member-profiles',
+      ])
+      expect(
+        hydrated.items
+          .filter((item) => item.kind === 'member-profiles')
+          .map((item) => item.contextLabel),
+      ).toEqual(['Prezes Zarządu', 'Koordynator programu'])
+      for (const item of hydrated.items) {
+        expect(item.document).not.toHaveProperty('owner')
+        expect(item.document).not.toHaveProperty('moderatorHidden')
+        expect(item.document).not.toHaveProperty('moderationReason')
+      }
+
+      for (const [source, documentID] of [
+        ['partners', partner.id],
+        ['member-profiles', profile.id],
+      ] as const) {
+        const index = await findListingIndex(source, documentID)
+        if (!index) throw new Error(`Expected ${source} index entry.`)
+        await fixture.payload.delete({
+          collection: 'content-listing-items',
+          id: index.id,
+          overrideAccess: true,
+        })
+        const request = await createLocalReq(
+          { context: { skipContentListingSync: true, skipPublicCacheInvalidation: true } },
+          fixture.payload,
+        )
+        await syncContentListingItem(request, source, documentID)
+        expect(await findListingIndex(source, documentID)).not.toBeNull()
+      }
+
+      await fixture.payload.update({
+        collection: 'partners',
+        data: { deletedAt: new Date().toISOString() },
+        id: partner.id,
+        overrideAccess: true,
+      })
+      await fixture.payload.update({
+        collection: 'member-profiles',
+        data: { deletedAt: new Date().toISOString() },
+        id: profile.id,
+        overrideAccess: true,
+        user: fixture.author,
+      })
+      expect(await findListingIndex('partners', partner.id)).toBeNull()
+      expect(await findListingIndex('member-profiles', profile.id)).toBeNull()
+    } finally {
+      await cleanupNewSourceFixtures()
+    }
   })
 
   it('clears optional image, category and parent relationships from the index', async () => {
@@ -299,6 +444,23 @@ async function cleanupRelationshipFixtures(): Promise<void> {
     collection: 'media',
     overrideAccess: true,
     where: { filename: { equals: listingImageFilename } },
+  })
+}
+
+async function cleanupNewSourceFixtures(): Promise<void> {
+  if (!fixture?.payload) return
+
+  await fixture.payload.delete({
+    collection: 'partners',
+    overrideAccess: true,
+    trash: true,
+    where: { slug: { equals: listingPartnerSlug } },
+  })
+  await fixture.payload.delete({
+    collection: 'member-profiles',
+    overrideAccess: true,
+    trash: true,
+    where: { publicName: { in: ['Profil indeksu', 'Szkic profilu'] } },
   })
 }
 

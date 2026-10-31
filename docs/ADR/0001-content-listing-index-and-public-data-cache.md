@@ -5,15 +5,15 @@
 
 ## Context
 
-Public listings combine pages, posts, events, and event cycles. Previously, every collection was
-queried separately for a record count equal to the page number multiplied by the page size. The
-application then merged, sorted, and trimmed the results. Query cost, data transfer, and memory use
-grew linearly with the page number. Fetching the complete `layout` only to generate an excerpt added
-further cost.
+Public listings combine pages, posts, events, event cycles, documents, partners, and member
+profiles. Previously, every collection was queried separately for a record count equal to the page
+number multiplied by the page size. The application then merged, sorted, and trimmed the results.
+Query cost, data transfer, and memory use grew linearly with the page number. Fetching the complete
+`layout` only to generate an excerpt added further cost.
 
 Public reads of these collections have one access variant: anonymous. Signing in to the application
-does not broaden the visibility of public pages, posts, events, or cycles. Protected documents and
-files still require dynamic access checks and are outside this decision.
+does not broaden the visibility of public pages, posts, events, cycles, documents, partners, or
+member profiles. Protected files still require dynamic access checks and are outside this decision.
 
 ## Decision
 
@@ -27,15 +27,25 @@ The index stores only fields needed by listings: the document source, ID, and up
 URL; excerpt; sort and event dates; visibility; image; taxonomies; parent page; and event cycle.
 Database indexes cover the source-ID pair, sort date, title, parent, cycle, and event dates.
 
-Hooks on Pages, Posts, Events, and EventCycles read the canonical published version in the same
-transaction as the document write. They upsert the index or remove the record after unpublishing.
-A draft autosave is skipped when the published version's update time has not changed. Deleting a
-source also deletes its index record.
+Hooks on all seven source collections read the canonical published version in the same transaction
+as the document write. They upsert the index or remove the record after unpublishing. A draft
+autosave is skipped when the published version's update time has not changed. Trashing or deleting
+a source also deletes its index record.
 
-A listing performs one query with the correct `page` and `limit`, `depth: 1`, and restricted
-`select` and `populate` values. It does not fetch `layout`. Existing filters remain unchanged, and
-ties are resolved consistently by title, source type, and ID. `sortDate` is the event start or
-publication date, falling back to the creation date.
+Source-specific adapters own the published-document query, index projection, and anonymous batch
+hydration. The shared listing service only depends on this small adapter contract and does not know
+the `select` shape of individual collections. Partner titles come from `name`, link to
+`/partners/{slug}`, and use `excerpt` and `heroImage`. Member profile titles come from `publicName`,
+link to `/members/{slug}`, and use normalized text from `about`. Neither source has taxonomy,
+hierarchy, or a significant date. Profile images are deliberately absent from the index and are
+resolved after hydration with the member-profile image policy.
+
+A filtered listing performs one index query with the correct `page` and `limit`, then hydrates the
+selected source IDs in one restricted query per represented collection. Hydration uses an anonymous
+user, public-site context, `overrideAccess: false`, and source-specific `select` values. It does not
+fetch `layout`, ownership, or moderation fields. Existing filters remain unchanged, and ties are
+resolved consistently by title, source type, and ID. `sortDate` is the event start or publication
+date where the source defines one; partners and member profiles do not synthesize dates.
 
 We chose a Payload collection over a SQL view because it uses the same relationships, access
 control, types, and migration mechanism as the rest of the application. A regular view would still
@@ -69,12 +79,12 @@ sides of the relationship; for example, a partner's events carry both `events` a
 
 Broad collection tags plus `content-listings`, `homepage`, and `public-sitemap` tags invalidate
 dependent data after creation, publication, updates, unpublishing, and deletion. A partner change
-invalidates partner, event, event-cycle, and sitemap data. A profile change invalidates its
-directory and detail data plus the details of pages, posts, events, cycles, and partners that may
-embed the profile; changing a profile image performs the same invalidations except for the sitemap.
-Category and tag changes also cover media listings, while a media or web-access-setting change
-invalidates the entire public cache. These broad dependencies are intentional because documents
-fetched at greater depth contain embedded relationship data.
+invalidates partner, event, event-cycle, content-listing, and sitemap data. A profile change
+invalidates its directory and detail data, content listings, and the details of pages, posts,
+events, cycles, and partners that may embed the profile; changing a profile image performs the same
+invalidations except for the sitemap. Category and tag changes also cover media listings, while a
+media or web-access-setting change invalidates the entire public cache. These broad dependencies
+are intentional because documents fetched at greater depth contain embedded relationship data.
 
 Every cached read uses an anonymous user and public-site context and does not bypass access control.
 This also applies to partners, profiles, media, and event and cycle relationships. Member-only events
@@ -110,9 +120,9 @@ keep the index synchronized.
 
 A hook failure rolls back the write transaction, so the source and index cannot diverge. Projection
 logic errors can still produce a technically consistent but incorrect record; integration tests
-cover the complete publication lifecycle. Cache invalidation after synchronization uses broad tags
-and may cause more re-fetching than a minimal dependency graph. A single replica limits throughput
-and availability during restarts.
+cover the complete publication lifecycle for every source adapter. Cache invalidation after
+synchronization uses broad tags and may cause more re-fetching than a minimal dependency graph. A
+single replica limits throughput and availability during restarts.
 
 ## Migration and rollback
 

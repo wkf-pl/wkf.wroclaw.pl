@@ -3,12 +3,10 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
-import { RasterIcon } from '@/components/RasterIcon'
 import { CmsRichText } from '@/components/CmsRichText'
+import { RasterIcon } from '@/components/RasterIcon'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
-import { getDocumentTypeLabel } from '@/modules/documents/document-types'
-import { formatEventDate } from '@/modules/events/presentation'
-import type { Media } from '@/payload-types'
+import { getContentListingPresentation } from '@/modules/content/content-listing-presentation'
 
 import { CmsImage } from './CmsImage'
 import { TaxonomyLinks } from './TaxonomyLinks'
@@ -19,21 +17,6 @@ type ContentCarouselProperties = {
 }
 
 export type ContentCarouselItem = PublicContentListItem
-
-const contentKindLabels: Record<PublicContentListItem['kind'], string> = {
-  documents: 'Dokument',
-  'event-cycles': 'Cykl wydarzeń',
-  events: 'Wydarzenie',
-  pages: 'Strona',
-  posts: 'Wpis',
-}
-
-const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
-  day: 'numeric',
-  month: 'long',
-  timeZone: 'Europe/Warsaw',
-  year: 'numeric',
-})
 
 export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperties) {
   const carouselReference = useRef<HTMLDivElement>(null)
@@ -48,9 +31,7 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
 
     const observer = new IntersectionObserver(
       ([entry]) => setIsIntersecting(entry.isIntersecting),
-      {
-        threshold: 0.2,
-      },
+      { threshold: 0.2 },
     )
     observer.observe(carousel)
     return () => observer.disconnect()
@@ -104,8 +85,7 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
       <div className="contentCarouselSlides">
         {items.map((item, index) => {
           const isActive = index === displayedActiveIndex
-          const image = getCarouselImage(item)
-          const title = item.document.title
+          const presentation = getContentListingPresentation(item, 'carousel')
 
           return (
             <article
@@ -114,57 +94,111 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
               aria-roledescription="slajd"
               className={`contentCarouselSlide${isActive ? ' contentCarouselSlide--active' : ''}`}
               inert={!isActive}
-              key={`${item.kind}-${item.document.id}`}
+              key={`${item.kind}-${item.document.id}-${item.kind === 'member-profiles' ? (item.contextLabel ?? '') : ''}`}
             >
               <div className="contentCarouselVisual">
                 <Link
-                  aria-label={`Zobacz: ${title}`}
+                  aria-label={`Zobacz: ${presentation.title}`}
                   className="contentCarouselVisualLink"
-                  href={item.url}
+                  href={presentation.url}
                   tabIndex={isActive ? undefined : -1}
                 >
-                  {image ? (
-                    <CmsImage className="contentCarouselImage" media={image} />
+                  {presentation.image?.kind === 'media' ? (
+                    <CmsImage className="contentCarouselImage" media={presentation.image.media} />
+                  ) : presentation.image?.kind === 'profile' ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- profile images can use a runtime-configured Azure host.
+                    <img
+                      alt={presentation.image.alt}
+                      className="contentCarouselImage"
+                      src={presentation.image.url}
+                    />
                   ) : (
                     <span aria-hidden="true" className="contentCarouselImageFallback" />
                   )}
-                  <span className="contentCarouselTitle">{title}</span>
+                  <span className="contentCarouselTitle">{presentation.title}</span>
                 </Link>
                 {items.length > 1 ? (
                   <div aria-label="Wybór slajdu" className="contentCarouselControls">
-                    {items.map((controlItem, controlIndex) => (
-                      <button
-                        aria-label={`Pokaż: ${controlItem.document.title}`}
-                        aria-pressed={controlIndex === displayedActiveIndex}
-                        key={`${controlItem.kind}-${controlItem.document.id}`}
-                        onClick={() => setActiveIndex(controlIndex)}
-                        type="button"
-                      >
-                        <span className="srOnly">{controlIndex + 1}</span>
-                      </button>
-                    ))}
+                    {items.map((controlItem, controlIndex) => {
+                      const controlPresentation = getContentListingPresentation(
+                        controlItem,
+                        'carousel',
+                      )
+                      return (
+                        <button
+                          aria-label={`Pokaż: ${controlPresentation.title}`}
+                          aria-pressed={controlIndex === displayedActiveIndex}
+                          key={`${controlItem.kind}-${controlItem.document.id}-${controlIndex}`}
+                          onClick={() => setActiveIndex(controlIndex)}
+                          type="button"
+                        >
+                          <span className="srOnly">{controlIndex + 1}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 ) : null}
               </div>
               <div className="contentCarouselContent">
-                {renderCarouselMetadata(item)}
-                {renderCarouselExcerpt(item)}
-                {renderEventFacts(item, isActive)}
-                <TaxonomyLinks category={item.document.category} tags={item.document.tags} />
+                <p className="contentCarouselMeta">
+                  <span className="contentCarouselKind">{presentation.kindLabel}</span>
+                  {presentation.metadataText ? (
+                    <span className="contentCarouselMetaText">{presentation.metadataText}</span>
+                  ) : null}
+                  {presentation.metadataDate ? (
+                    <time dateTime={presentation.metadataDate.dateTime}>
+                      {presentation.metadataDate.label}
+                    </time>
+                  ) : null}
+                  {presentation.contextLabel ? (
+                    <span className="contentCarouselMetaText">{presentation.contextLabel}</span>
+                  ) : null}
+                </p>
+                {presentation.excerpt?.kind === 'richText' ? (
+                  <CmsRichText
+                    className="contentCarouselExcerpt"
+                    data={presentation.excerpt.value}
+                  />
+                ) : presentation.excerpt ? (
+                  <p className="contentCarouselExcerpt">{presentation.excerpt.value}</p>
+                ) : null}
+                {presentation.facts.length ? (
+                  <div className="contentCarouselEventFacts">
+                    {presentation.facts.map((fact) => (
+                      <p key={`${fact.icon}-${fact.value}`}>
+                        <span
+                          aria-label={fact.label}
+                          className="contentCarouselEventFactIcon"
+                          role="img"
+                        >
+                          <RasterIcon name={fact.icon} size="small" />
+                        </span>
+                        {fact.dateTime ? <time dateTime={fact.dateTime}>{fact.value}</time> : null}
+                        {!fact.dateTime && fact.href ? (
+                          <a href={fact.href} tabIndex={isActive ? undefined : -1}>
+                            {fact.value}
+                          </a>
+                        ) : null}
+                        {!fact.dateTime && !fact.href ? fact.value : null}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
+                <TaxonomyLinks category={presentation.category} tags={presentation.tags} />
                 <div className="contentCarouselActions">
-                  {item.kind === 'events' ? (
+                  {presentation.secondaryAction ? (
                     <Link
                       className="contentCarouselSecondaryAction"
-                      href={`/events/${item.document.slug}/calendar.ics`}
+                      href={presentation.secondaryAction.href}
                       tabIndex={isActive ? undefined : -1}
                     >
                       <RasterIcon name="calendar" size="small" />
-                      <span>Dodaj do kalendarza</span>
+                      <span>{presentation.secondaryAction.label}</span>
                     </Link>
                   ) : null}
                   <Link
                     className="contentCarouselAction"
-                    href={item.url}
+                    href={presentation.url}
                     tabIndex={isActive ? undefined : -1}
                   >
                     <span>Zobacz</span>
@@ -176,93 +210,6 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
           )
         })}
       </div>
-    </div>
-  )
-}
-
-function getCarouselImage(item: ContentCarouselItem): Media | number | null | undefined {
-  return item.kind === 'documents' ? null : item.document.heroImage
-}
-
-function renderCarouselMetadata(item: ContentCarouselItem) {
-  switch (item.kind) {
-    case 'documents':
-      return (
-        <p className="contentCarouselMeta">
-          <span className="contentCarouselKind">
-            {getDocumentTypeLabel(item.document.documentType)}
-          </span>
-          <span className="contentCarouselMetaText">
-            {item.document.documentNumber ? `nr ${item.document.documentNumber} ` : null}z dnia{' '}
-            <time dateTime={item.document.documentDate}>
-              {dateFormatter.format(new Date(item.document.documentDate))}
-            </time>
-          </span>
-        </p>
-      )
-    case 'posts':
-      return (
-        <p className="contentCarouselMeta">
-          <span className="contentCarouselKind">{contentKindLabels[item.kind]}</span>
-          {item.document.publishedAt ? (
-            <time dateTime={item.document.publishedAt}>
-              {dateFormatter.format(new Date(item.document.publishedAt))}
-            </time>
-          ) : null}
-        </p>
-      )
-    default:
-      return (
-        <p className="contentCarouselMeta">
-          <span className="contentCarouselKind">{contentKindLabels[item.kind]}</span>
-        </p>
-      )
-  }
-}
-
-function renderCarouselExcerpt(item: ContentCarouselItem) {
-  switch (item.kind) {
-    case 'event-cycles':
-    case 'events':
-      return <CmsRichText className="contentCarouselExcerpt" data={item.document.excerpt} />
-    case 'pages':
-      return item.document.listingExcerpt ? (
-        <p className="contentCarouselExcerpt">{item.document.listingExcerpt}</p>
-      ) : null
-    case 'posts':
-      return <p className="contentCarouselExcerpt">{item.document.excerpt}</p>
-    case 'documents':
-      return <p className="contentCarouselExcerpt">{item.document.summary}</p>
-  }
-}
-
-function renderEventFacts(item: ContentCarouselItem, isActive: boolean) {
-  if (item.kind !== 'events') return null
-
-  const { location } = item.document
-
-  return (
-    <div className="contentCarouselEventFacts">
-      <p>
-        <span aria-label="Kiedy" className="contentCarouselEventFactIcon" role="img">
-          <RasterIcon name="calendar" size="small" />
-        </span>
-        <time dateTime={item.document.startAt}>{formatEventDate(item.document)}</time>
-      </p>
-      {location.venueName ? (
-        <p>
-          <span aria-label="Gdzie" className="contentCarouselEventFactIcon" role="img">
-            <RasterIcon name="location" size="small" />
-          </span>
-          {location.venueWebsite ? (
-            <a href={location.venueWebsite} tabIndex={isActive ? undefined : -1}>
-              {location.venueName}
-            </a>
-          ) : (
-            location.venueName
-          )}
-        </p>
-      ) : null}
     </div>
   )
 }

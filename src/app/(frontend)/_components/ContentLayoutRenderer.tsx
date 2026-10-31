@@ -17,7 +17,6 @@ import type {
   ActionLinksBlock,
   AttachmentsBlock,
   CardBlock,
-  CarouselBlock,
   ColumnLayoutBlock,
   ContentCalendarBlock,
   Event,
@@ -26,7 +25,6 @@ import type {
   HomepageSection,
   ListingBlock,
   MediaGalleryBlock,
-  MemberProfilesBlock,
   Page,
   Partner,
   Post,
@@ -37,11 +35,9 @@ import type {
 
 import { ContentHeading, ContentPresentation } from './ContentPresentation'
 import { CardBlockSection } from './CardBlockSection'
-import { resolveCarouselBlockSection } from './CarouselBlockSection'
 import { ContentCalendarBlockSection } from './ContentCalendarBlockSection'
 import { resolveListingBlockSection } from './ListingBlockSection'
 import { resolveMediaBlockSection } from './MediaBlockSection'
-import { MemberProfilesSection } from './MemberProfilesSection'
 import { PresentedLink } from './PresentedLink'
 import { TabbedContentFrame, type TabbedContentFrameTab } from './TabbedContentFrame'
 
@@ -50,12 +46,10 @@ type ContentLeafBlock =
   | ActionLinksBlock
   | AttachmentsBlock
   | CardBlock
-  | CarouselBlock
   | ContentCalendarBlock
   | HeadingBlock
   | ListingBlock
   | MediaGalleryBlock
-  | MemberProfilesBlock
   | RichTextBlock
 type PresentedContentLeafBlock = Exclude<
   ContentLeafBlock,
@@ -530,8 +524,6 @@ async function resolvePresentedLeafBlock({
         ),
         hasEmptyFilterBlock: false,
       }
-    case 'memberProfiles':
-      return { content: await MemberProfilesSection({ block }), hasEmptyFilterBlock: false }
     case 'mediaGallery':
     case 'attachments': {
       const resolution = await resolveMediaBlockSection({
@@ -550,10 +542,6 @@ async function resolvePresentedLeafBlock({
         pathname,
         searchParams,
       })
-      return createFilterBlockResolution(block.blockType, resolution)
-    }
-    case 'carousel': {
-      const resolution = await resolveCarouselBlockSection({ block, document })
       return createFilterBlockResolution(block.blockType, resolution)
     }
     case 'contentCalendar':

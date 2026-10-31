@@ -57,6 +57,8 @@ import * as migration_20261025_110924_icon_library_batch_3 from './20261025_1109
 import * as migration_20261025_163139 from './20261025_163139'
 import * as migration_20261026_192840_global_drafts_and_content_trash from './20261026_192840_global_drafts_and_content_trash'
 import * as migration_20261030_031527_listing_conditions from './20261030_031527_listing_conditions'
+import * as migration_20261031_111620_listing_sources_and_block_consolidation from './20261031_111620_listing_sources_and_block_consolidation'
+import * as migration_20261031_112000_remove_legacy_carousel_and_member_profiles_blocks from './20261031_112000_remove_legacy_carousel_and_member_profiles_blocks'
 
 export const migrations = [
   {
@@ -353,5 +355,15 @@ export const migrations = [
     up: migration_20261030_031527_listing_conditions.up,
     down: migration_20261030_031527_listing_conditions.down,
     name: '20261030_031527_listing_conditions',
+  },
+  {
+    up: migration_20261031_111620_listing_sources_and_block_consolidation.up,
+    down: migration_20261031_111620_listing_sources_and_block_consolidation.down,
+    name: '20261031_111620_listing_sources_and_block_consolidation',
+  },
+  {
+    up: migration_20261031_112000_remove_legacy_carousel_and_member_profiles_blocks.up,
+    down: migration_20261031_112000_remove_legacy_carousel_and_member_profiles_blocks.down,
+    name: '20261031_112000_remove_legacy_carousel_and_member_profiles_blocks',
   },
 ]

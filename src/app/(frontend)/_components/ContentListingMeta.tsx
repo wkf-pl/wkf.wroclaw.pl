@@ -1,65 +1,40 @@
 import type { PublicContentListItem } from '@/modules/content/content-listing'
-import { getDocumentTypeLabel } from '@/modules/documents/document-types'
-import { formatEventStartDate } from '@/modules/events/presentation'
-
-const publicationDateFormatter = new Intl.DateTimeFormat('pl-PL', {
-  day: 'numeric',
-  month: 'long',
-  timeZone: 'Europe/Warsaw',
-  year: 'numeric',
-})
+import {
+  getContentListingPresentation,
+  type ContentListingView,
+} from '@/modules/content/content-listing-presentation'
 
 export function ContentListingMeta({
   className = 'contentCardMeta',
   item,
+  view = 'compact',
 }: {
   className?: string
   item: PublicContentListItem
+  view?: ContentListingView
 }) {
-  switch (item.kind) {
-    case 'documents':
-      return (
-        <p className={className}>
-          <span className="contentCardKind">
-            {getDocumentTypeLabel(item.document.documentType)}
-          </span>
-          <span className="contentCardMetaText">
-            {item.document.documentNumber ? `nr ${item.document.documentNumber} ` : null}z dnia{' '}
-            <time dateTime={item.document.documentDate}>
-              {publicationDateFormatter.format(new Date(item.document.documentDate))}
-            </time>
-          </span>
-        </p>
-      )
-    case 'event-cycles':
-      return (
-        <p className={className}>
-          <span className="contentCardKind">Cykl wydarzeń</span>
-        </p>
-      )
-    case 'events':
-      return (
-        <p className={className}>
-          <span className="contentCardKind">Wydarzenie</span>
-          <time dateTime={item.document.startAt}>{formatEventStartDate(item.document)}</time>
-        </p>
-      )
-    case 'pages':
-      return (
-        <p className={className}>
-          <span className="contentCardKind">Strona</span>
-        </p>
-      )
-    case 'posts':
-      return (
-        <p className={className}>
-          <span className="contentCardKind">Wpis</span>
-          {item.document.publishedAt ? (
-            <time dateTime={item.document.publishedAt}>
-              {publicationDateFormatter.format(new Date(item.document.publishedAt))}
-            </time>
-          ) : null}
-        </p>
-      )
-  }
+  const presentation = getContentListingPresentation(item, view)
+
+  return (
+    <p className={className}>
+      <span className="contentCardKind">{presentation.kindLabel}</span>
+      {presentation.metadataText ? (
+        <span className="contentCardMetaText">{presentation.metadataText}</span>
+      ) : null}
+      {presentation.metadataLink ? (
+        <>
+          <span className="contentCardMetaText">{presentation.metadataLink.prefix}</span>
+          <a className="contentCardMetaLink" href={presentation.metadataLink.href}>
+            {presentation.metadataLink.label}
+          </a>
+        </>
+      ) : null}
+      {presentation.metadataDate ? (
+        <time dateTime={presentation.metadataDate.dateTime}>{presentation.metadataDate.label}</time>
+      ) : null}
+      {presentation.contextLabel ? (
+        <span className="contentCardMetaText">{presentation.contextLabel}</span>
+      ) : null}
+    </p>
+  )
 }

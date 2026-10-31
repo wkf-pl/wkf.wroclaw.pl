@@ -13,7 +13,7 @@ import { createPaginatedURL, resolveBlockPagination } from '@/modules/content/pa
 import {
   findPublicContent,
   type ManualContentReference,
-  type TaxonomizableCollectionSlug,
+  type ContentListingSource,
 } from '@/modules/content/content-listing'
 import type { ListingConditionInput } from '@/modules/content/listing-conditions'
 
@@ -40,47 +40,53 @@ export async function resolveListingBlockSection({
   pathname,
   searchParams,
 }: ListingBlockSectionProperties) {
+  const isCarousel = block.view === 'carousel'
+  const paginationEnabled = !isCarousel && Boolean(block.pagination)
   const { parameterName, requestedPage } = resolveBlockPagination({
     blockId: block.id,
     blockPath,
-    enabled: Boolean(block.pagination),
+    enabled: paginationEnabled,
     parameterPrefix: 'listing',
     searchParams,
   })
   const result = await findPublicContent({
     conditions: (block.conditions ?? []) as ListingConditionInput[],
     manualItems: getManualItems(block),
-    page: requestedPage,
+    page: isCarousel ? 1 : requestedPage,
     pageSize: block.pageSize,
-    pagination: Boolean(block.pagination),
+    pagination: paginationEnabled,
     selectionMode: block.selectionMode,
     sort: block.sort ?? 'newest',
-    sources: (block.sources ?? []) as TaxonomizableCollectionSlug[],
+    sources: (block.sources ?? []) as ContentListingSource[],
   })
 
-  if (block.pagination && requestedPage > result.totalPages) {
+  if (paginationEnabled && requestedPage > result.totalPages) {
     redirect(createPaginatedURL(pathname, searchParams, parameterName, result.totalPages))
   }
 
   return {
-    content: (
-      <div className="listingBlock">
-        <ContentList emptyMessage={block.emptyMessage} items={result.items} view={block.view} />
-        {block.pagination ? (
-          <ContentPagination
-            currentPage={result.page}
-            parameterName={parameterName}
-            pathname={pathname}
-            searchParams={searchParams}
-            totalPages={result.totalPages}
-          />
-        ) : null}
-      </div>
-    ),
+    content:
+      block.hideWhenEmpty && result.items.length === 0 ? null : (
+        <div className="listingBlock">
+          <ContentList emptyMessage={block.emptyMessage} items={result.items} view={block.view} />
+          {paginationEnabled ? (
+            <ContentPagination
+              currentPage={result.page}
+              parameterName={parameterName}
+              pathname={pathname}
+              searchParams={searchParams}
+              totalPages={result.totalPages}
+            />
+          ) : null}
+        </div>
+      ),
     isEmpty: result.items.length === 0,
   }
 }
 
 function getManualItems(block: ListingBlock): ManualContentReference[] {
-  return (block.items?.map(({ item }) => item) ?? []) as ManualContentReference[]
+  return (block.items?.map(({ contextLabel, item }) => ({
+    contextLabel,
+    ...item,
+  })) ?? []) as ManualContentReference[]
 }

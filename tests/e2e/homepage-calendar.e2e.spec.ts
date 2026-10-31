@@ -1,10 +1,9 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
 import config from '../../src/payload.config.js'
 import type { HomepageSection } from '../../src/payload-types.js'
 import { createLexicalDocument } from '../helpers/lexical-document'
-import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
 const eventSlug = 'homepage-calendar-e2e'
@@ -12,20 +11,24 @@ const eventTitle = 'Kalendarz strony głównej E2E'
 const eventDay = 15
 const carouselEventSlugs = ['homepage-carousel-first-e2e', 'homepage-carousel-second-e2e']
 let payload: Payload
-let originalHomepageSections: HomepageSection
-let carouselEventIDs: number[] = []
+let originalHomepageVersionID: string
+let homepageLayoutChanged = false
 
 test.describe.configure({ mode: 'serial' })
 
 test.beforeAll(async () => {
   payload = await getPayload({ config })
   await cleanupCarouselFixtures()
-  carouselEventIDs = []
-  originalHomepageSections = await payload.findGlobal({
+  const homepageVersions = await payload.findGlobalVersions({
     slug: 'homepage-sections',
-    depth: 1,
+    depth: 0,
+    limit: 1,
     overrideAccess: true,
+    sort: '-createdAt',
   })
+  const originalHomepageVersion = homepageVersions.docs[0]
+  if (!originalHomepageVersion) throw new Error('Missing the original homepage sections version.')
+  originalHomepageVersionID = String(originalHomepageVersion.id)
 
   const [users, eventTypes] = await Promise.all([
     payload.find({
@@ -49,7 +52,7 @@ test.beforeAll(async () => {
   if (!eventType) throw new Error('Missing the Sesje RPG event type.')
 
   for (const [index, slug] of carouselEventSlugs.entries()) {
-    const event = await payload.create({
+    await payload.create({
       collection: 'events',
       data: {
         _status: 'published',
@@ -75,16 +78,11 @@ test.beforeAll(async () => {
       draft: false,
       overrideAccess: true,
     })
-    carouselEventIDs.push(event.id)
   }
 })
 
 test.afterAll(async () => {
-  await payload.updateGlobal({
-    slug: 'homepage-sections',
-    data: { layout: normalizeHomepageLayout(originalHomepageSections.layout) },
-    overrideAccess: true,
-  })
+  await restoreHomepageLayout()
   await cleanupCarouselFixtures()
 })
 
@@ -152,8 +150,8 @@ test('renders responsive event carousel and calendar content blocks on the homep
       }),
     )
   })
-  await login({ page, user: editorTestUser })
-  await updateHomepageLayout(page, createFixtureHomepageLayout())
+  await updateHomepageLayout(createFixtureHomepageLayout())
+  homepageLayoutChanged = true
 
   try {
     await page.goto('/')
@@ -212,7 +210,7 @@ test('renders responsive event carousel and calendar content blocks on the homep
     expect(subscriptionBox).not.toBeNull()
     expect(subscriptionBox?.y ?? 0).toBeGreaterThan(legendBox?.y ?? 0)
   } finally {
-    await updateHomepageLayout(page, normalizeHomepageLayout(originalHomepageSections.layout))
+    await restoreHomepageLayout()
   }
 })
 
@@ -220,37 +218,32 @@ function createFixtureHomepageLayout(): HomepageSection['layout'] {
   return [
     { blockType: 'heading', heading: 'Wydarzenia', headingLevel: 'h2' },
     {
-      blockType: 'carousel',
-      items: carouselEventIDs.map((eventID) => ({
-        item: { relationTo: 'events', value: eventID },
-      })),
-      selectionMode: 'manual',
-      slideLimit: 5,
+      blockType: 'listing',
+      conditions: [
+        {
+          field: 'title',
+          operator: 'contains',
+          textValue: 'Wydarzenie karuzeli E2E',
+        },
+      ],
+      pageSize: 5,
+      pagination: false,
+      selectionMode: 'filters',
+      sort: 'oldest',
+      sources: ['events'],
+      view: 'carousel',
     },
     { blockType: 'heading', heading: 'Kalendarz', headingLevel: 'h2' },
     { blockType: 'contentCalendar', sources: ['events'] },
   ]
 }
 
-async function updateHomepageLayout(page: Page, layout: HomepageSection['layout']): Promise<void> {
-  const result = await page.evaluate(async (nextLayout) => {
-    const response = await fetch('/api/globals/homepage-sections', {
-      body: JSON.stringify({ layout: nextLayout }),
-      headers: { 'Content-Type': 'application/json' },
-      method: 'POST',
-    })
-
-    return {
-      body: await response.text(),
-      ok: response.ok,
-      status: response.status,
-    }
-  }, layout)
-
-  expect(
-    result,
-    `Failed to update homepage sections: ${result.status} ${result.body}`,
-  ).toMatchObject({ ok: true })
+async function updateHomepageLayout(layout: HomepageSection['layout']): Promise<void> {
+  await payload.updateGlobal({
+    slug: 'homepage-sections',
+    data: { layout },
+    overrideAccess: true,
+  })
 }
 
 async function cleanupCarouselFixtures(): Promise<void> {
@@ -262,6 +255,12 @@ async function cleanupCarouselFixtures(): Promise<void> {
   })
 }
 
-function normalizeHomepageLayout(layout: HomepageSection['layout']): HomepageSection['layout'] {
-  return layout.map((block) => (block.blockType === 'card' ? { ...block, image: null } : block))
+async function restoreHomepageLayout(): Promise<void> {
+  if (!homepageLayoutChanged) return
+  await payload.restoreGlobalVersion({
+    slug: 'homepage-sections',
+    id: originalHomepageVersionID,
+    overrideAccess: true,
+  })
+  homepageLayoutChanged = false
 }

@@ -1,8 +1,24 @@
 import type { RelationshipID } from '@/lib/relationships'
 
-export const listingSources = ['pages', 'posts', 'events', 'event-cycles', 'documents'] as const
+export const allListingSources = [
+  'pages',
+  'posts',
+  'events',
+  'event-cycles',
+  'documents',
+  'partners',
+  'member-profiles',
+] as const
 
-export type ListingSource = (typeof listingSources)[number]
+export const taxonomizableListingSources = [
+  'pages',
+  'posts',
+  'events',
+  'event-cycles',
+  'documents',
+] as const satisfies readonly ContentListingSource[]
+
+export type ContentListingSource = (typeof allListingSources)[number]
 
 export const listingConditionFields = [
   'title',
@@ -69,25 +85,37 @@ export const listingConditionFieldLabels: Record<ListingConditionField, string> 
   title: 'Tytuł',
 }
 
-export const listingSourceLabels: Record<ListingSource, string> = {
+export const listingSourceLabels: Record<ContentListingSource, string> = {
   documents: 'Dokumenty',
   'event-cycles': 'Cykle wydarzeń',
   events: 'Wydarzenia',
+  'member-profiles': 'Wizytówki',
   pages: 'Strony',
+  partners: 'Partnerzy',
   posts: 'Wpisy',
+}
+
+export const listingSourceSingularLabels: Record<ContentListingSource, string> = {
+  documents: 'Dokument',
+  'event-cycles': 'Cykl wydarzeń',
+  events: 'Wydarzenie',
+  'member-profiles': 'Wizytówka',
+  pages: 'Strona',
+  partners: 'Partner',
+  posts: 'Wpis',
 }
 
 export const listingConditionSupportedSources: Record<
   ListingConditionField,
-  readonly ListingSource[]
+  readonly ContentListingSource[]
 > = {
-  category: listingSources,
+  category: taxonomizableListingSources,
   eventCycle: ['events'],
   eventTime: ['events'],
   parentPage: ['pages'],
   significantDate: ['posts', 'events', 'documents'],
-  tag: listingSources,
-  title: listingSources,
+  tag: taxonomizableListingSources,
+  title: allListingSources,
 }
 
 export const listingConditionOperatorsByField: Record<
@@ -140,8 +168,8 @@ export function getListingConditionRelationshipCollection(
 
 export function getApplicableListingSources(
   field: ListingConditionField,
-  sources: readonly ListingSource[],
-): ListingSource[] {
+  sources: readonly ContentListingSource[],
+): ContentListingSource[] {
   const supportedSources = new Set(listingConditionSupportedSources[field])
   return sources.filter((source) => supportedSources.has(source))
 }
@@ -154,8 +182,8 @@ export function isListingConditionOperator(value: unknown): value is ListingCond
   return listingConditionOperators.some((operator) => operator === value)
 }
 
-export function isListingSource(value: unknown): value is ListingSource {
-  return listingSources.some((source) => source === value)
+export function isListingSource(value: unknown): value is ContentListingSource {
+  return allListingSources.some((source) => source === value)
 }
 
 export function normalizeListingTitle(value: string): string {

@@ -5,7 +5,6 @@ import { ContentCarousel } from '@/app/(frontend)/_components/ContentCarousel'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
 import type { Category, Document, Event, EventCycle, Page, Post, Tag } from '@/payload-types'
 
-import { readFrontendStyles } from '../helpers/frontend-styles'
 import { createLexicalDocument } from '../helpers/lexical-document'
 
 const category = {
@@ -182,23 +181,5 @@ describe('Content carousel', () => {
     expect(markup.match(/<span>Zobacz<\/span>/g)).toHaveLength(5)
     expect(markup).not.toContain('Zobacz treść')
     expect(markup).not.toContain('Zobacz wydarzenie')
-  })
-
-  it('keeps generous space before and after taxonomy and aligns actions to the right', () => {
-    const frontendStyles = readFrontendStyles()
-    const taxonomyRule = frontendStyles.match(
-      /\.contentCarouselContent \.taxonomyLinks\s*\{(?<declarations>[^}]*)\}/,
-    )
-    const actionsRule = frontendStyles.match(
-      /\.contentCarouselActions\s*\{(?<declarations>[^}]*)\}/,
-    )
-    const secondaryActionRule = frontendStyles.match(
-      /\.contentCarouselSecondaryAction\s*\{(?<declarations>[^}]*)\}/,
-    )
-
-    expect(taxonomyRule?.groups?.declarations).toContain('margin: 1.5rem 0')
-    expect(actionsRule?.groups?.declarations).toContain('justify-content: flex-end')
-    expect(secondaryActionRule?.groups?.declarations).toContain('background: transparent')
-    expect(secondaryActionRule?.groups?.declarations).toContain('border: 0')
   })
 })

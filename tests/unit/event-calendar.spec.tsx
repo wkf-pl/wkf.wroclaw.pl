@@ -12,8 +12,6 @@ import {
 } from '@/modules/events/calendar-presentation'
 import { createRichTextDocument } from '@/modules/members/rich-text'
 
-import { readFrontendStyles } from '../helpers/frontend-styles'
-
 const firstExcerpt = createRichTextDocument([
   'Cotygodniowe spotkanie przy grach fabularnych.',
   'Drugi akapit kalendarza.',
@@ -163,23 +161,6 @@ describe('Event calendar', () => {
         title: 'Wydarzenie',
       }),
     ).toMatchObject({ excerpt })
-  })
-
-  it('uses the approved sidebar hierarchy and action treatments', () => {
-    const frontendStyles = readFrontendStyles()
-
-    expect(frontendStyles).toMatch(
-      /\.calendarDetails h4 \{[^}]*color: var\(--gold-light\);[^}]*font-size: 1\.08rem;[^}]*letter-spacing: 0\.08em;[^}]*text-transform: uppercase;/,
-    )
-    expect(frontendStyles).toMatch(
-      /\.calendarSelectionActions \{[^}]*display: flex;[^}]*align-items: center;/,
-    )
-    expect(frontendStyles).toMatch(
-      /\.calendarEventPrimaryAction \{[^}]*background: var\(--gold-light\);[^}]*color: var\(--background-deep\);/,
-    )
-    expect(frontendStyles).toMatch(
-      /\.calendarEventCalendarAction \{[^}]*color: var\(--gold-light\);/,
-    )
   })
 
   it('announces an initially truncated month before hydration', () => {

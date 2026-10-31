@@ -1,4 +1,5 @@
 import type { Payload } from 'payload'
+import { sql } from '@payloadcms/db-postgres'
 
 type MemberProfileUsageArguments = {
   id: number | string
@@ -41,6 +42,18 @@ const resolveApplicationRoutes: MemberProfileUsageResolver = ({ isPublic, slug }
 ]
 
 const resolvePageBlocks: MemberProfileUsageResolver = async ({ id, payload }) => {
+  const relationshipResult = await payload.db.drizzle.execute(sql`
+    SELECT DISTINCT "parent_id" AS "pageId"
+    FROM "pages_rels"
+    WHERE "member_profiles_id" = ${Number(id)}
+      AND "path" LIKE '%.items.%.item'
+  `)
+  const pageIDs = relationshipResult.rows.flatMap((row) => {
+    const pageID = (row as { pageId?: unknown }).pageId
+    return typeof pageID === 'number' ? [pageID] : []
+  })
+  if (pageIDs.length === 0) return []
+
   const pages = await payload.find({
     collection: 'pages',
     depth: 0,
@@ -54,10 +67,8 @@ const resolvePageBlocks: MemberProfileUsageResolver = async ({ id, payload }) =>
     },
     sort: 'title',
     where: {
-      // Payload stores leaf blocks from top-level layouts and column layouts in the same
-      // block table. The internal path differs, but this relationship path covers both.
-      'layout.entries.profile': {
-        equals: id,
+      id: {
+        in: pageIDs,
       },
     },
   })

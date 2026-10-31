@@ -5,37 +5,39 @@ import type { RelationshipFieldClientProps } from 'payload'
 import type { CSSProperties } from 'react'
 import { useState } from 'react'
 
-type ListingSource = 'documents' | 'event-cycles' | 'events' | 'pages' | 'posts'
+import {
+  allListingSources,
+  listingSourceSingularLabels,
+  type ContentListingSource,
+} from '@/modules/content/listing-conditions'
 
-const listingSourceOptions: Array<{ label: string; value: ListingSource }> = [
-  { label: 'Strona', value: 'pages' },
-  { label: 'Wpis', value: 'posts' },
-  { label: 'Wydarzenie', value: 'events' },
-  { label: 'Cykl wydarzeń', value: 'event-cycles' },
-  { label: 'Dokument', value: 'documents' },
-]
+const listingSourceOptions: Array<{ label: string; value: ContentListingSource }> =
+  allListingSources.map((source) => ({
+    label: listingSourceSingularLabels[source],
+    value: source,
+  }))
 
 type ListingItemValue = {
   relationTo?: unknown
 }
 
-function getListingSource(value: unknown): ListingSource | undefined {
+function getListingSource(value: unknown): ContentListingSource | undefined {
   if (!value || typeof value !== 'object' || !('relationTo' in value)) return undefined
 
   const relationTo = (value as ListingItemValue).relationTo
   return listingSourceOptions.some((option) => option.value === relationTo)
-    ? (relationTo as ListingSource)
+    ? (relationTo as ContentListingSource)
     : undefined
 }
 
-function getSelectedOption(value: ListingSource) {
+function getSelectedOption(value: ContentListingSource) {
   return listingSourceOptions.find((option) => option.value === value) ?? listingSourceOptions[0]
 }
 
 export function ListingManualItemField(properties: RelationshipFieldClientProps) {
   const { setValue, value } = useField<unknown>({ potentiallyStalePath: properties.path })
   const relatedSource = getListingSource(value)
-  const [selectedSource, setSelectedSource] = useState<ListingSource>(
+  const [selectedSource, setSelectedSource] = useState<ContentListingSource>(
     relatedSource ?? listingSourceOptions[0].value,
   )
   const activeSource = relatedSource ?? selectedSource
@@ -48,7 +50,7 @@ export function ListingManualItemField(properties: RelationshipFieldClientProps)
     const nextSource = option.value
     if (!listingSourceOptions.some((sourceOption) => sourceOption.value === nextSource)) return
 
-    const normalizedSource = nextSource as ListingSource
+    const normalizedSource = nextSource as ContentListingSource
     setSelectedSource(normalizedSource)
     if (relatedSource !== normalizedSource) setValue(null)
   }
