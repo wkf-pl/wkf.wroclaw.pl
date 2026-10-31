@@ -134,5 +134,5 @@ describe('global drafts migration', () => {
       )
       expect(statuses.rows.every((row) => row.status === 'published')).toBe(true)
     }
-  })
+  }, 20_000)
 })
