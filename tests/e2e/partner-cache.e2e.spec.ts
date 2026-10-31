@@ -4,7 +4,6 @@ import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 import type { Partner, User } from '@/payload-types'
 
-import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
 const partnerSlug = `e2e-partner-cache-${Date.now()}`
@@ -51,9 +50,7 @@ test('invalidates the cached partner detail after a Payload update', async ({ pa
     page.getByRole('heading', { level: 1, name: 'Partner przed aktualizacją cache' }),
   ).toBeVisible()
 
-  await login({ page, user: editorTestUser })
-  const updateResponse = await updatePartnerName(page, 'Partner po aktualizacji cache')
-  expect(updateResponse.ok, updateResponse.body).toBe(true)
+  await updatePartnerName(page, 'Partner po aktualizacji cache')
 
   await page.goto(`/partners/${partnerSlug}`)
   await expect(
@@ -64,18 +61,26 @@ test('invalidates the cached partner detail after a Payload update', async ({ pa
 async function updatePartnerName(
   page: import('@playwright/test').Page,
   name: string,
-): Promise<{ body: string; ok: boolean }> {
-  return page.evaluate(
-    async ({ name, partnerID }) => {
-      const response = await fetch(`/api/partners/${partnerID}?draft=false`, {
-        body: JSON.stringify({ _status: 'published', name }),
-        headers: { 'content-type': 'application/json' },
-        method: 'PATCH',
-      })
-      return { body: await response.text(), ok: response.ok }
+): Promise<void> {
+  const serverURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000'
+  const loginResponse = await page.request.post(`${serverURL}/api/users/login`, {
+    data: { email: editorTestUser.email, password: editorTestUser.password },
+  })
+  if (!loginResponse.ok()) {
+    throw new Error(`E2E login failed: ${loginResponse.status()} ${await loginResponse.text()}`)
+  }
+
+  const loginData = (await loginResponse.json()) as { token?: string }
+  if (!loginData.token) throw new Error('E2E login response did not include a JWT token.')
+
+  const updateResponse = await page.request.patch(
+    `${serverURL}/api/partners/${partner.id}?draft=false`,
+    {
+      data: { _status: 'published', name },
+      headers: { Authorization: `JWT ${loginData.token}` },
     },
-    { name, partnerID: partner.id },
   )
+  expect(updateResponse.ok(), await updateResponse.text()).toBe(true)
 }
 
 function createRichTextBlock(text: string) {

@@ -1,8 +1,9 @@
-import type { Block, Validate } from 'payload'
+import type { Block, FieldHook, Validate } from 'payload'
 
+import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import { getFormRelationshipId } from '@/lib/relationships'
 import { createContentPresentationFields } from '@/modules/content/content-presentation'
-import { listingSources } from '@/modules/content/listing-conditions'
+import { allListingSources, listingSourceLabels } from '@/modules/content/listing-conditions'
 
 import { createListingConditionsField } from './listing-condition-fields'
 import { createListingPaginationRow } from './listing-fields'
@@ -12,8 +13,34 @@ type ListingSiblingData = {
   sources?: unknown
 }
 
+type ListingItemSiblingData = {
+  item?: unknown
+}
+
 const filtersCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.selectionMode === 'filters'
+
+const memberProfileContextCondition = (
+  _data: unknown,
+  siblingData: Record<string, unknown>,
+): boolean => {
+  const item = siblingData.item
+  return Boolean(
+    item &&
+    typeof item === 'object' &&
+    'relationTo' in item &&
+    item.relationTo === 'member-profiles',
+  )
+}
+
+const normalizeContextLabel: FieldHook<
+  { id: number | string },
+  unknown,
+  ListingItemSiblingData
+> = ({ siblingData, value }) => {
+  if (!memberProfileContextCondition(null, siblingData as Record<string, unknown>)) return null
+  return typeof value === 'string' ? value.trim() || null : null
+}
 
 export const validateManualListingItems: Validate<unknown, unknown, ListingSiblingData> = (
   value,
@@ -39,7 +66,7 @@ export const validateManualListingItems: Validate<unknown, unknown, ListingSibli
 
     const id = getFormRelationshipId(item.value)
     return typeof item.relationTo === 'string' &&
-      listingSources.some((source) => source === item.relationTo) &&
+      allListingSources.some((source) => source === item.relationTo) &&
       id !== undefined
       ? `${item.relationTo}:${String(id)}`
       : null
@@ -49,7 +76,9 @@ export const validateManualListingItems: Validate<unknown, unknown, ListingSibli
     return 'Wybierz cel dla każdej treści.'
   }
 
-  return new Set(itemKeys).size === itemKeys.length
+  const uniqueItemKeys = itemKeys.filter((itemKey) => !itemKey?.startsWith('member-profiles:'))
+
+  return new Set(uniqueItemKeys).size === uniqueItemKeys.length
     ? true
     : 'Każda treść może zostać wybrana tylko raz.'
 }
@@ -98,11 +127,11 @@ export const ListingBlock: Block = {
         defaultValue: 'cards',
         label: 'Widok',
         options: [
+          { label: 'Kafelki', value: 'tiles' },
           { label: 'Karty', value: 'cards' },
           { label: 'Karuzela', value: 'carousel' },
           { label: 'Lista kompaktowa', value: 'compact' },
           { label: 'Siatka', value: 'grid' },
-          { label: 'Kafelki', value: 'tiles' },
         ],
         required: true,
       },
@@ -128,16 +157,10 @@ export const ListingBlock: Block = {
           admin: { condition: filtersCondition, isClearable: false, width: '66.667%' },
           hasMany: true,
           label: 'Źródła',
-          options: listingSources.map((source) => {
-            const labels = {
-              documents: 'Dokumenty',
-              'event-cycles': 'Cykle wydarzeń',
-              events: 'Wydarzenia',
-              pages: 'Strony',
-              posts: 'Wpisy',
-            }
-            return { label: labels[source], value: source }
-          }),
+          options: allListingSources.map((source) => ({
+            label: listingSourceLabels[source],
+            value: source,
+          })),
           validate: validateListingSources,
         },
       ],
@@ -160,8 +183,19 @@ export const ListingBlock: Block = {
           },
           filterOptions: { _status: { equals: 'published' } },
           label: 'Treść',
-          relationTo: [...listingSources],
+          relationTo: [...allListingSources],
           required: true,
+        },
+        {
+          name: 'contextLabel',
+          type: 'text',
+          admin: {
+            condition: memberProfileContextCondition,
+            description: 'Opcjonalna funkcja w kontekście tej strony, np. „Prezes Zarządu”.',
+          },
+          hooks: { beforeValidate: [normalizeContextLabel] },
+          label: 'Podpis funkcji',
+          maxLength: 160,
         },
       ],
       label: 'Treści',
@@ -173,6 +207,7 @@ export const ListingBlock: Block = {
     },
     createListingConditionsField(),
     createListingPaginationRow({
+      contentListing: true,
       secondaryLeadingField: {
         name: 'sort',
         type: 'select',
@@ -189,9 +224,16 @@ export const ListingBlock: Block = {
       },
     }),
     {
+      name: 'hideWhenEmpty',
+      type: 'checkbox',
+      admin: createBooleanSwitchAdmin(),
+      defaultValue: false,
+      label: 'Ukryj blok, gdy brak treści',
+    },
+    {
       name: 'emptyMessage',
       type: 'text',
-      admin: { condition: filtersCondition },
+      admin: { condition: (_data, siblingData) => siblingData.hideWhenEmpty !== true },
       label: 'Komunikat pustego listingu',
     },
   ],
@@ -201,5 +243,3 @@ export const ListingBlock: Block = {
     singular: 'Listing',
   },
 }
-
-export { listingSources }

@@ -2,8 +2,7 @@ import type { Access, CollectionConfig } from 'payload'
 
 import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import { isPublicRequest } from '@/modules/content/public-access'
-
-const sourceResources = ['pages', 'posts', 'events', 'event-cycles', 'documents'] as const
+import { allListingSources } from '@/modules/content/listing-conditions'
 
 const readContentListingItems: Access = ({ isReadingStaticFile, req }) =>
   isPublicRequest(req, isReadingStaticFile)
@@ -23,7 +22,7 @@ export const ContentListingItems: CollectionConfig = {
       name: 'source',
       type: 'select',
       index: true,
-      options: sourceResources.map((source) => ({ label: source, value: source })),
+      options: allListingSources.map((source) => ({ label: source, value: source })),
       required: true,
     },
     { name: 'sourceDocumentId', type: 'number', index: true, required: true },

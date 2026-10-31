@@ -8,12 +8,7 @@ import {
 
 describe('section group visibility', () => {
   it('tracks exactly the filter-capable content blocks that remain in scope', () => {
-    expect(sectionGroupEmptyAwareBlockTypes).toEqual([
-      'attachments',
-      'carousel',
-      'listing',
-      'mediaGallery',
-    ])
+    expect(sectionGroupEmptyAwareBlockTypes).toEqual(['attachments', 'listing', 'mediaGallery'])
     expect(isSectionGroupEmptyAwareBlockType('documents')).toBe(false)
     expect(isSectionGroupEmptyAwareBlockType('richText')).toBe(false)
   })

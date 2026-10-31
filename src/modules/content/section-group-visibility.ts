@@ -1,9 +1,4 @@
-export const sectionGroupEmptyAwareBlockTypes = [
-  'attachments',
-  'carousel',
-  'listing',
-  'mediaGallery',
-] as const
+export const sectionGroupEmptyAwareBlockTypes = ['attachments', 'listing', 'mediaGallery'] as const
 
 type SectionGroupEmptyChildBehavior = 'hideGroup' | 'show' | null | undefined
 

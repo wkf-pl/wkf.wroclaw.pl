@@ -7,7 +7,6 @@ const mediaMocks = vi.hoisted(() => ({ findPublicMedia: vi.fn() }))
 vi.mock('@/modules/content/content-listing', () => listingMocks)
 vi.mock('@/modules/media/media-listing', () => mediaMocks)
 
-import { resolveCarouselBlockSection } from '@/app/(frontend)/_components/CarouselBlockSection'
 import { SectionGroupRenderer } from '@/app/(frontend)/_components/ContentLayoutRenderer'
 import { resolveListingBlockSection } from '@/app/(frontend)/_components/ListingBlockSection'
 import { resolveMediaBlockSection } from '@/app/(frontend)/_components/MediaBlockSection'
@@ -31,11 +30,13 @@ const emptyAwareBlocks = [
     view: 'cards',
   },
   {
-    blockType: 'carousel',
+    blockType: 'listing',
+    pageSize: 5,
+    pagination: false,
     selectionMode: 'filters',
-    slideLimit: 5,
     sort: 'newest',
     sources: ['pages'],
+    view: 'carousel',
   },
   {
     blockType: 'mediaGallery',
@@ -89,18 +90,23 @@ describe('filter-capable block resolution', () => {
     )
   })
 
-  it('reports an empty Carousel while preserving its standalone empty state', async () => {
-    const resolution = await resolveCarouselBlockSection({
+  it('reports an empty Listing carousel while preserving its standalone empty state', async () => {
+    const resolution = await resolveListingBlockSection({
       block: {
-        blockType: 'carousel',
+        blockType: 'listing',
         conditions: [{ field: 'significantDate', numberValue: 14, operator: 'notOlderThan' }],
         emptyMessage: 'Brak slajdów.',
+        pageSize: 5,
+        pagination: false,
         selectionMode: 'filters',
-        slideLimit: 5,
         sort: 'newest',
         sources: ['pages'],
+        view: 'carousel',
       } as never,
+      blockPath: 'layout.0',
       document: {} as never,
+      pathname: '/test',
+      searchParams: { contentPage: '9' },
     })
 
     expect(resolution.isEmpty).toBe(true)
@@ -108,8 +114,31 @@ describe('filter-capable block resolution', () => {
     expect(listingMocks.findPublicContent).toHaveBeenCalledWith(
       expect.objectContaining({
         conditions: [{ field: 'significantDate', numberValue: 14, operator: 'notOlderThan' }],
+        page: 1,
+        pagination: false,
       }),
     )
+  })
+
+  it('omits an empty Listing configured with hideWhenEmpty', async () => {
+    const resolution = await resolveListingBlockSection({
+      block: {
+        blockType: 'listing',
+        hideWhenEmpty: true,
+        pageSize: 100,
+        pagination: false,
+        selectionMode: 'manual',
+        sort: 'titleAscending',
+        view: 'grid',
+      } as never,
+      blockPath: 'layout.0',
+      document: {} as never,
+      pathname: '/test',
+      searchParams: {},
+    })
+
+    expect(resolution.isEmpty).toBe(true)
+    expect(resolution.content).toBeNull()
   })
 
   it.each([

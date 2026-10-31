@@ -203,8 +203,18 @@ describe('member profiles integration', () => {
               {
                 blocks: [
                   {
-                    blockType: 'memberProfiles',
-                    entries: [{ contextLabel: 'Prezes Zarządu', profile: profile.id }],
+                    blockType: 'listing',
+                    hideWhenEmpty: true,
+                    items: [
+                      {
+                        contextLabel: 'Prezes Zarządu',
+                        item: { relationTo: 'member-profiles', value: profile.id },
+                      },
+                    ],
+                    pageSize: 100,
+                    pagination: false,
+                    selectionMode: 'manual',
+                    sort: 'titleAscending',
                     view: 'grid',
                   },
                 ],

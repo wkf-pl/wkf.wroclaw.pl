@@ -215,7 +215,7 @@ export interface UserAuthOperations {
  */
 export interface ContentListingItem {
   id: number;
-  source: 'pages' | 'posts' | 'events' | 'event-cycles' | 'documents';
+  source: 'pages' | 'posts' | 'events' | 'event-cycles' | 'documents' | 'partners' | 'member-profiles';
   sourceDocumentId: number;
   sourceUpdatedAt: string;
   title: string;
@@ -330,11 +330,9 @@ export interface Page {
     | ActionLinksBlock
     | CardBlock
     | ListingBlock
-    | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
     | AttachmentsBlock
-    | MemberProfilesBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
     | TabbedContentBlock
@@ -681,11 +679,9 @@ export interface EventCycle {
     | ActionLinksBlock
     | CardBlock
     | ListingBlock
-    | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
     | AttachmentsBlock
-    | MemberProfilesBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
     | TabbedContentBlock
@@ -726,11 +722,9 @@ export interface EventCycle {
       | ActionLinksBlock
       | CardBlock
       | ListingBlock
-      | CarouselBlock
       | ContentCalendarBlock
       | MediaGalleryBlock
       | AttachmentsBlock
-      | MemberProfilesBlock
       | ColumnLayoutBlock
       | SectionGroupBlock
       | TabbedContentBlock
@@ -1168,11 +1162,9 @@ export interface Post {
     | ActionLinksBlock
     | CardBlock
     | ListingBlock
-    | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
     | AttachmentsBlock
-    | MemberProfilesBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
     | TabbedContentBlock
@@ -1235,11 +1227,9 @@ export interface Event {
     | ActionLinksBlock
     | CardBlock
     | ListingBlock
-    | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
     | AttachmentsBlock
-    | MemberProfilesBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
     | TabbedContentBlock
@@ -1441,7 +1431,7 @@ export interface EventType {
  * via the `definition` "ListingBlock".
  */
 export interface ListingBlock {
-  view: 'cards' | 'carousel' | 'compact' | 'grid' | 'tiles';
+  view: 'tiles' | 'cards' | 'carousel' | 'compact' | 'grid';
   frame?: ('none' | 'outline') | null;
   surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
   /**
@@ -1451,7 +1441,7 @@ export interface ListingBlock {
   surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
   surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   selectionMode: 'manual' | 'filters';
-  sources?: ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents')[] | null;
+  sources?: ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents' | 'partners' | 'member-profiles')[] | null;
   items?:
     | {
         item:
@@ -1474,7 +1464,19 @@ export interface ListingBlock {
           | {
               relationTo: 'documents';
               value: number | Document;
+            }
+          | {
+              relationTo: 'partners';
+              value: number | Partner;
+            }
+          | {
+              relationTo: 'member-profiles';
+              value: number | MemberProfile;
             };
+        /**
+         * Opcjonalna funkcja w kontekście tej strony, np. „Prezes Zarządu”.
+         */
+        contextLabel?: string | null;
         id?: string | null;
       }[]
     | null;
@@ -1482,6 +1484,7 @@ export interface ListingBlock {
   sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
   pageSize: number;
   pagination?: boolean | null;
+  hideWhenEmpty?: boolean | null;
   emptyMessage?: string | null;
   id?: string | null;
   blockName?: string | null;
@@ -1489,52 +1492,51 @@ export interface ListingBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "CarouselBlock".
+ * via the `definition` "partners".
  */
-export interface CarouselBlock {
-  frame?: ('none' | 'outline') | null;
-  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+export interface Partner {
+  id: number;
+  name: string;
+  heroImage?: (number | null) | Media;
+  excerpt: string;
+  website?: string | null;
+  layout: (
+    | RichTextBlock
+    | HeadingBlock
+    | ActionLinksBlock
+    | CardBlock
+    | ListingBlock
+    | ContentCalendarBlock
+    | MediaGalleryBlock
+    | AttachmentsBlock
+    | ColumnLayoutBlock
+    | SectionGroupBlock
+    | TabbedContentBlock
+  )[];
+  seo?: {
+    /**
+     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
+     */
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
+     */
+    image?: (number | null) | Media;
+  };
   /**
-   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   * Adres jest tworzony automatycznie z nazwy, ale można go zmienić.
    */
-  surfaceImage?: (number | null) | Media;
-  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
-  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
-  selectionMode: 'manual' | 'filters';
-  sources?: ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents')[] | null;
-  items?:
-    | {
-        item:
-          | {
-              relationTo: 'pages';
-              value: number | Page;
-            }
-          | {
-              relationTo: 'posts';
-              value: number | Post;
-            }
-          | {
-              relationTo: 'events';
-              value: number | Event;
-            }
-          | {
-              relationTo: 'event-cycles';
-              value: number | EventCycle;
-            }
-          | {
-              relationTo: 'documents';
-              value: number | Document;
-            };
-        id?: string | null;
-      }[]
-    | null;
-  conditions?: ListingCondition;
-  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
-  slideLimit: number;
-  emptyMessage?: string | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'carousel';
+  slug: string;
+  author: number | User;
+  /**
+   * Ustawiana automatycznie przy pierwszej publikacji.
+   */
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1621,164 +1623,6 @@ export interface AttachmentsBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "MemberProfilesBlock".
- */
-export interface MemberProfilesBlock {
-  view: 'card' | 'list' | 'grid';
-  frame?: ('none' | 'outline') | null;
-  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
-  /**
-   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
-   */
-  surfaceImage?: (number | null) | Media;
-  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
-  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
-  entries: {
-    profile: number | MemberProfile;
-    /**
-     * Opcjonalna funkcja w kontekście tej strony, np. „Prezes Zarządu”.
-     */
-    contextLabel?: string | null;
-    id?: string | null;
-  }[];
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'memberProfiles';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "member-profiles".
- */
-export interface MemberProfile {
-  id: number;
-  owner: number | User;
-  /**
-   * Imię i nazwisko, ksywa albo obie formy — dokładnie tak, jak mają być widoczne publicznie.
-   */
-  publicName: string;
-  about?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * JPEG, PNG, WebP lub AVIF, maksymalnie 5 MiB. Nowy plik zastępuje poprzedni.
-   */
-  photo?: (number | null) | MemberProfileImage;
-  interests?: string | null;
-  /**
-   * Pole opcjonalne — wizytówka nie musi dotyczyć grania.
-   */
-  games?:
-    | {
-        title: string;
-        plays?: boolean | null;
-        runs?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  clubFunction?: string | null;
-  clubActivities?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  contactTopics?: string | null;
-  /**
-   * Podane adresy będą dostępne publicznie bez logowania.
-   */
-  contactChannels?:
-    | {
-        type:
-          | 'email'
-          | 'facebook'
-          | 'messenger'
-          | 'discord'
-          | 'instagram'
-          | 'bluesky'
-          | 'mastodon'
-          | 'linkedin'
-          | 'youtube'
-          | 'twitch'
-          | 'website'
-          | 'other';
-        /**
-         * Dla e-maila podaj adres. Dla pozostałych kanałów podaj pełny link HTTPS.
-         */
-        url: string;
-        id?: string | null;
-      }[]
-    | null;
-  slug: string;
-  moderatorHidden?: boolean | null;
-  moderationReason?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  deletedAt?: string | null;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "member-profile-images".
- */
-export interface MemberProfileImage {
-  id: number;
-  owner: number | User;
-  isPubliclyUsed?: boolean | null;
-  prefix?: string | null;
-  _objectKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-  sizes?: {
-    card?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    profile?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-  };
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ColumnLayoutBlock".
  */
 export interface ColumnLayoutBlock {
@@ -1810,11 +1654,9 @@ export interface ColumnLayoutBlock {
           | ActionLinksBlock
           | CardBlock
           | ListingBlock
-          | CarouselBlock
           | ContentCalendarBlock
           | MediaGalleryBlock
           | AttachmentsBlock
-          | MemberProfilesBlock
         )[]
       | null;
     id?: string | null;
@@ -1856,11 +1698,9 @@ export interface SectionGroupBlock {
       | ActionLinksBlock
       | CardBlock
       | ListingBlock
-      | CarouselBlock
       | ContentCalendarBlock
       | MediaGalleryBlock
       | AttachmentsBlock
-      | MemberProfilesBlock
       | ColumnLayoutBlock
       | TabbedContentBlock
     )[];
@@ -2276,11 +2116,9 @@ export interface TabbedContentBlock {
           | ActionLinksBlock
           | CardBlock
           | ListingBlock
-          | CarouselBlock
           | ContentCalendarBlock
           | MediaGalleryBlock
           | AttachmentsBlock
-          | MemberProfilesBlock
           | ColumnLayoutBlock
         )[]
       | null;
@@ -2292,53 +2130,135 @@ export interface TabbedContentBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "partners".
+ * via the `definition` "member-profiles".
  */
-export interface Partner {
+export interface MemberProfile {
   id: number;
-  name: string;
-  heroImage?: (number | null) | Media;
-  excerpt: string;
-  website?: string | null;
-  layout: (
-    | RichTextBlock
-    | HeadingBlock
-    | ActionLinksBlock
-    | CardBlock
-    | ListingBlock
-    | CarouselBlock
-    | ContentCalendarBlock
-    | MediaGalleryBlock
-    | AttachmentsBlock
-    | MemberProfilesBlock
-    | ColumnLayoutBlock
-    | SectionGroupBlock
-    | TabbedContentBlock
-  )[];
-  seo?: {
-    /**
-     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
-     */
-    title?: string | null;
-    description?: string | null;
-    /**
-     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
-     */
-    image?: (number | null) | Media;
-  };
+  owner: number | User;
   /**
-   * Adres jest tworzony automatycznie z nazwy, ale można go zmienić.
+   * Imię i nazwisko, ksywa albo obie formy — dokładnie tak, jak mają być widoczne publicznie.
    */
+  publicName: string;
+  about?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * JPEG, PNG, WebP lub AVIF, maksymalnie 5 MiB. Nowy plik zastępuje poprzedni.
+   */
+  photo?: (number | null) | MemberProfileImage;
+  interests?: string | null;
+  /**
+   * Pole opcjonalne — wizytówka nie musi dotyczyć grania.
+   */
+  games?:
+    | {
+        title: string;
+        plays?: boolean | null;
+        runs?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  clubFunction?: string | null;
+  clubActivities?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  contactTopics?: string | null;
+  /**
+   * Podane adresy będą dostępne publicznie bez logowania.
+   */
+  contactChannels?:
+    | {
+        type:
+          | 'email'
+          | 'facebook'
+          | 'messenger'
+          | 'discord'
+          | 'instagram'
+          | 'bluesky'
+          | 'mastodon'
+          | 'linkedin'
+          | 'youtube'
+          | 'twitch'
+          | 'website'
+          | 'other';
+        /**
+         * Dla e-maila podaj adres. Dla pozostałych kanałów podaj pełny link HTTPS.
+         */
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
   slug: string;
-  author: number | User;
-  /**
-   * Ustawiana automatycznie przy pierwszej publikacji.
-   */
-  publishedAt?: string | null;
+  moderatorHidden?: boolean | null;
+  moderationReason?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "member-profile-images".
+ */
+export interface MemberProfileImage {
+  id: number;
+  owner: number | User;
+  isPubliclyUsed?: boolean | null;
+  prefix?: string | null;
+  _objectKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    profile?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2703,11 +2623,9 @@ export interface PagesSelect<T extends boolean = true> {
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
-        carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
-        memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;
@@ -2847,12 +2765,14 @@ export interface ListingBlockSelect<T extends boolean = true> {
     | T
     | {
         item?: T;
+        contextLabel?: T;
         id?: T;
       };
   conditions?: T | ListingConditionSelect<T>;
   sort?: T;
   pageSize?: T;
   pagination?: T;
+  hideWhenEmpty?: T;
   emptyMessage?: T;
   id?: T;
   blockName?: T;
@@ -2871,31 +2791,6 @@ export interface ListingConditionSelect<T extends boolean = true> {
   dateValue?: T;
   endDateValue?: T;
   id?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "CarouselBlock_select".
- */
-export interface CarouselBlockSelect<T extends boolean = true> {
-  frame?: T;
-  surface?: T;
-  surfaceImage?: T;
-  surfaceHorizontalPosition?: T;
-  surfaceVerticalPosition?: T;
-  selectionMode?: T;
-  sources?: T;
-  items?:
-    | T
-    | {
-        item?: T;
-        id?: T;
-      };
-  conditions?: T | ListingConditionSelect<T>;
-  sort?: T;
-  slideLimit?: T;
-  emptyMessage?: T;
-  id?: T;
-  blockName?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2970,27 +2865,6 @@ export interface AttachmentsBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "MemberProfilesBlock_select".
- */
-export interface MemberProfilesBlockSelect<T extends boolean = true> {
-  view?: T;
-  frame?: T;
-  surface?: T;
-  surfaceImage?: T;
-  surfaceHorizontalPosition?: T;
-  surfaceVerticalPosition?: T;
-  entries?:
-    | T
-    | {
-        profile?: T;
-        contextLabel?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ColumnLayoutBlock_select".
  */
 export interface ColumnLayoutBlockSelect<T extends boolean = true> {
@@ -3019,11 +2893,9 @@ export interface ColumnLayoutBlockSelect<T extends boolean = true> {
               actionLinks?: T | ActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
               listing?: T | ListingBlockSelect<T>;
-              carousel?: T | CarouselBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
-              memberProfiles?: T | MemberProfilesBlockSelect<T>;
             };
         id?: T;
       };
@@ -3058,11 +2930,9 @@ export interface SectionGroupBlockSelect<T extends boolean = true> {
               actionLinks?: T | ActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
               listing?: T | ListingBlockSelect<T>;
-              carousel?: T | CarouselBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
-              memberProfiles?: T | MemberProfilesBlockSelect<T>;
               columnLayout?: T | ColumnLayoutBlockSelect<T>;
               tabs?: T | TabbedContentBlockSelect<T>;
             };
@@ -3156,11 +3026,9 @@ export interface TabbedContentBlockSelect<T extends boolean = true> {
               actionLinks?: T | ActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
               listing?: T | ListingBlockSelect<T>;
-              carousel?: T | CarouselBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
-              memberProfiles?: T | MemberProfilesBlockSelect<T>;
               columnLayout?: T | ColumnLayoutBlockSelect<T>;
             };
         id?: T;
@@ -3186,11 +3054,9 @@ export interface PostsSelect<T extends boolean = true> {
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
-        carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
-        memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;
@@ -3230,11 +3096,9 @@ export interface EventsSelect<T extends boolean = true> {
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
-        carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
-        memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;
@@ -3332,11 +3196,9 @@ export interface EventCyclesSelect<T extends boolean = true> {
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
-        carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
-        memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;
@@ -3363,11 +3225,9 @@ export interface EventCyclesSelect<T extends boolean = true> {
               actionLinks?: T | ActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
               listing?: T | ListingBlockSelect<T>;
-              carousel?: T | CarouselBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
-              memberProfiles?: T | MemberProfilesBlockSelect<T>;
               columnLayout?: T | ColumnLayoutBlockSelect<T>;
               sectionGroup?: T | SectionGroupBlockSelect<T>;
               tabs?: T | TabbedContentBlockSelect<T>;
@@ -3674,11 +3534,9 @@ export interface PartnersSelect<T extends boolean = true> {
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
-        carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
-        memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;
@@ -4154,11 +4012,9 @@ export interface HomepageSection {
     | ActionLinksBlock
     | CardBlock
     | ListingBlock
-    | CarouselBlock
     | ContentCalendarBlock
     | MediaGalleryBlock
     | AttachmentsBlock
-    | MemberProfilesBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
     | TabbedContentBlock
@@ -4555,11 +4411,9 @@ export interface HomepageSectionsSelect<T extends boolean = true> {
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
         listing?: T | ListingBlockSelect<T>;
-        carousel?: T | CarouselBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
-        memberProfiles?: T | MemberProfilesBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;

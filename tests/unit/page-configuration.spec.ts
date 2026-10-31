@@ -6,16 +6,15 @@ import { describe, expect, it } from 'vitest'
 import { AttachmentsBlock, MediaGalleryBlock } from '@/blocks/MediaListing'
 import { ActionLinksBlock } from '@/blocks/ActionLinks'
 import { CardBlock } from '@/blocks/Card'
-import { CarouselBlock } from '@/blocks/Carousel'
 import { ContentCalendarBlock, validateContentCalendarSources } from '@/blocks/ContentCalendar'
 import { ColumnLayoutBlock } from '@/blocks/ColumnLayout'
 import { HeadingBlock } from '@/blocks/Heading'
-import { MemberProfilesBlock } from '@/blocks/MemberProfiles'
 import { RichTextBlock } from '@/blocks/RichText'
 import { SectionGroupBlock } from '@/blocks/SectionGroup'
 import { TabbedContentBlock } from '@/blocks/TabbedContent'
 import { ListingBlock, validateListingSources, validateManualListingItems } from '@/blocks/Listing'
 import { validateListingConditions } from '@/blocks/listing-condition-fields'
+import { validateContentListingPageSize } from '@/blocks/listing-fields'
 import { Categories } from '@/collections/Categories'
 import { Documents } from '@/collections/Documents'
 import { EventCycles } from '@/collections/EventCycles'
@@ -85,10 +84,8 @@ describe('page configuration', () => {
     expect([
       RichTextBlock.admin?.images?.thumbnail,
       ListingBlock.admin?.images?.thumbnail,
-      CarouselBlock.admin?.images?.thumbnail,
       MediaGalleryBlock.admin?.images?.thumbnail,
       AttachmentsBlock.admin?.images?.thumbnail,
-      MemberProfilesBlock.admin?.images?.thumbnail,
       HeadingBlock.admin?.images?.thumbnail,
       ActionLinksBlock.admin?.images?.thumbnail,
       CardBlock.admin?.images?.thumbnail,
@@ -106,20 +103,12 @@ describe('page configuration', () => {
         url: '/assets/block-thumbnails/listing.png',
       },
       {
-        alt: 'Schematyczna ikona slajdów karuzeli z przełącznikiem',
-        url: '/assets/block-thumbnails/carousel.png',
-      },
-      {
         alt: 'Schematyczna ikona siatki zdjęć',
         url: '/assets/block-thumbnails/media-gallery.png',
       },
       {
         alt: 'Schematyczna ikona dokumentów połączonych spinaczem',
         url: '/assets/block-thumbnails/attachments.png',
-      },
-      {
-        alt: 'Schematyczna ikona dwóch kart profili osób',
-        url: '/assets/block-thumbnails/member-profiles.png',
       },
       {
         alt: 'Schematyczna ikona nagłówka i krótkiej treści',
@@ -156,10 +145,8 @@ describe('page configuration', () => {
     expect([
       RichTextBlock.admin?.group,
       ListingBlock.admin?.group,
-      CarouselBlock.admin?.group,
       MediaGalleryBlock.admin?.group,
       AttachmentsBlock.admin?.group,
-      MemberProfilesBlock.admin?.group,
       HeadingBlock.admin?.group,
       ActionLinksBlock.admin?.group,
       CardBlock.admin?.group,
@@ -167,8 +154,6 @@ describe('page configuration', () => {
       ColumnLayoutBlock.admin?.group,
       SectionGroupBlock.admin?.group,
     ]).toEqual([
-      'Treści',
-      'Treści',
       'Treści',
       'Treści',
       'Treści',
@@ -219,23 +204,6 @@ describe('page configuration', () => {
         },
       ],
       type: 'row',
-    })
-  })
-
-  it('offers card, list and grid views for embedded member profiles', () => {
-    const viewField = findField(MemberProfilesBlock.fields, 'view')
-
-    expect(viewField).toMatchObject({
-      admin: { isClearable: false, width: '33.333%' },
-      defaultValue: 'grid',
-      label: 'Widok',
-      options: [
-        { label: 'Karta', value: 'card' },
-        { label: 'Lista', value: 'list' },
-        { label: 'Siatka', value: 'grid' },
-      ],
-      required: true,
-      type: 'select',
     })
   })
 
@@ -293,6 +261,7 @@ describe('page configuration', () => {
       'items',
       'conditions',
       ['sort', 'pageSize', 'pagination'],
+      'hideWhenEmpty',
       'emptyMessage',
     ])
     expect(conditionsField).toMatchObject({
@@ -352,12 +321,16 @@ describe('page configuration', () => {
     expect(validateContentCalendarSources(['events', 'posts'], {} as never)).toBe(true)
   })
 
-  it('supports ordered manual Listing items from every content source', () => {
+  it('supports ordered manual Listing items from every content source', async () => {
     const selectionModeField = findField(ListingBlock.fields, 'selectionMode')
     const itemsField = findField(ListingBlock.fields, 'items')
     const itemField =
       itemsField.type === 'array'
         ? itemsField.fields.find((field) => 'name' in field && field.name === 'item')
+        : null
+    const contextLabelField =
+      itemsField.type === 'array'
+        ? itemsField.fields.find((field) => 'name' in field && field.name === 'contextLabel')
         : null
 
     expect(selectionModeField).toMatchObject({
@@ -382,10 +355,42 @@ describe('page configuration', () => {
         },
       },
       label: 'Treść',
-      relationTo: ['pages', 'posts', 'events', 'event-cycles', 'documents'],
+      relationTo: [
+        'pages',
+        'posts',
+        'events',
+        'event-cycles',
+        'documents',
+        'partners',
+        'member-profiles',
+      ],
       required: true,
       type: 'relationship',
     })
+    expect(contextLabelField).toMatchObject({ maxLength: 160, type: 'text' })
+    expect(
+      contextLabelField?.admin?.condition?.(
+        {},
+        { item: { relationTo: 'member-profiles' } },
+        {} as never,
+      ),
+    ).toBe(true)
+    const contextLabelHook =
+      contextLabelField && 'hooks' in contextLabelField
+        ? contextLabelField.hooks?.beforeValidate?.[0]
+        : undefined
+    expect(
+      await contextLabelHook?.({
+        siblingData: { item: { relationTo: 'pages' } },
+        value: 'Ukryty podpis',
+      } as never),
+    ).toBeNull()
+    expect(
+      await contextLabelHook?.({
+        siblingData: { item: { relationTo: 'member-profiles' } },
+        value: '  Prezes Zarządu  ',
+      } as never),
+    ).toBe('Prezes Zarządu')
     expect(itemsField.admin?.condition?.({}, { selectionMode: 'manual' }, {} as never)).toBe(true)
     expect(itemsField.admin?.condition?.({}, { selectionMode: 'filters' }, {} as never)).toBe(false)
     expect(findField(ListingBlock.fields, 'sources')).toMatchObject({
@@ -404,75 +409,38 @@ describe('page configuration', () => {
     expect(layoutField.blocks.map((block) => block.slug)).not.toContain('documents')
   })
 
-  it('configures Carousel selection like Listing without pagination', () => {
-    const selectionModeField = findField(CarouselBlock.fields, 'selectionMode')
-    const itemsField = findField(CarouselBlock.fields, 'items')
-    const sourcesField = findField(CarouselBlock.fields, 'sources')
-    const conditionsField = findField(CarouselBlock.fields, 'conditions')
-    const slideLimitField = findField(CarouselBlock.fields, 'slideLimit')
-    const sortField = findField(CarouselBlock.fields, 'sort')
-    const paginationField = flattenFields(CarouselBlock.fields).find(
-      (field) => 'name' in field && field.name === 'pagination',
-    )
-    const pageSizeField = flattenFields(CarouselBlock.fields).find(
-      (field) => 'name' in field && field.name === 'pageSize',
-    )
-    const itemField =
-      itemsField.type === 'array'
-        ? itemsField.fields.find((field) => 'name' in field && field.name === 'item')
-        : null
+  it('configures the Listing carousel window without pagination', async () => {
+    const pageSizeField = findField(ListingBlock.fields, 'pageSize')
+    const paginationField = findField(ListingBlock.fields, 'pagination')
 
-    expect(CarouselBlock.fields[0]).toMatchObject({
-      fields: [
-        { admin: { width: '50%' }, name: 'frame', type: 'select' },
-        { admin: { width: '50%' }, name: 'surface', type: 'select' },
-      ],
-      type: 'row',
-    })
-    expect(selectionModeField).toMatchObject({
-      admin: { width: '33.333%' },
-      defaultValue: 'filters',
-      label: 'Tryb wyboru',
-      required: true,
-      type: 'select',
-    })
-    expect(itemsField).toMatchObject({ label: 'Treści', type: 'array' })
-    expect(itemField).toMatchObject({
-      relationTo: ['pages', 'posts', 'events', 'event-cycles', 'documents'],
-      required: true,
-      type: 'relationship',
-    })
-    expect(sourcesField).toMatchObject({
-      admin: { width: '66.667%' },
-      hasMany: true,
-      label: 'Źródła',
-      options: expect.arrayContaining([{ label: 'Dokumenty', value: 'documents' }]),
-      type: 'select',
-    })
-    expect(slideLimitField).toMatchObject({
-      admin: { width: '50%' },
-      defaultValue: 5,
-      label: 'Maksymalna liczba slajdów',
-      max: 20,
+    expect(pageSizeField).toMatchObject({
+      admin: {
+        components: { Field: '/components/admin/ListingPageSizeField#ListingPageSizeField' },
+      },
+      defaultValue: 12,
+      max: 100,
       min: 1,
       required: true,
       type: 'number',
     })
-    expect(conditionsField).toMatchObject({
-      maxRows: 10,
-      type: 'array',
-    })
-    expect(sortField).toMatchObject({
-      admin: { width: '50%' },
-      options: [
-        { label: 'Najnowsze', value: 'newest' },
-        { label: 'Najstarsze', value: 'oldest' },
-        { label: 'Tytuł A–Z', value: 'titleAscending' },
-        { label: 'Tytuł Z–A', value: 'titleDescending' },
-      ],
-    })
-    expect(paginationField).toBeUndefined()
-    expect(pageSizeField).toBeUndefined()
+    expect(paginationField.admin?.condition?.({}, { view: 'carousel' }, {} as never)).toBe(false)
+    expect(paginationField.admin?.condition?.({}, { view: 'cards' }, {} as never)).toBe(true)
+    expect(validateContentListingPageSize(20, { siblingData: { view: 'carousel' } } as never)).toBe(
+      true,
+    )
+    expect(
+      validateContentListingPageSize(21, { siblingData: { view: 'carousel' } } as never),
+    ).toBeTypeOf('string')
+    const pageSizeHook =
+      'hooks' in pageSizeField ? pageSizeField.hooks?.beforeValidate?.[0] : undefined
+    const paginationHook =
+      'hooks' in paginationField ? paginationField.hooks?.beforeValidate?.[0] : undefined
+    expect(
+      await pageSizeHook?.({ siblingData: { view: 'carousel' }, value: undefined } as never),
+    ).toBe(5)
+    expect(
+      await paginationHook?.({ siblingData: { view: 'carousel' }, value: true } as never),
+    ).toBe(false)
   })
 
   it('requires unique manual Listing items within each content source', () => {
@@ -498,6 +466,21 @@ describe('page configuration', () => {
     expect(
       validateManualListingItems(
         [{ item: { relationTo: 'pages', value: 7 } }, { item: { relationTo: 'posts', value: 7 } }],
+        { siblingData: { selectionMode: 'manual' } } as never,
+      ),
+    ).toBe(true)
+    expect(
+      validateManualListingItems(
+        [
+          {
+            contextLabel: 'Prezes',
+            item: { relationTo: 'member-profiles', value: 7 },
+          },
+          {
+            contextLabel: 'Koordynator',
+            item: { relationTo: 'member-profiles', value: 7 },
+          },
+        ],
         { siblingData: { selectionMode: 'manual' } } as never,
       ),
     ).toBe(true)

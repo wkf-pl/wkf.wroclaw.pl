@@ -2,12 +2,10 @@ import {
   AttachmentsBlockLabelClient,
   ActionLinksBlockLabelClient,
   CardBlockLabelClient,
-  CarouselBlockLabelClient,
   ContentCalendarBlockLabelClient,
   ColumnLayoutBlockLabelClient,
   ListingBlockLabelClient,
   MediaGalleryBlockLabelClient,
-  MemberProfilesBlockLabelClient,
   HeadingBlockLabelClient,
   SectionGroupBlockLabelClient,
   TabbedContentBlockLabelClient,
@@ -55,10 +53,6 @@ export function ListingBlockLabel() {
   return <ListingBlockLabelClient />
 }
 
-export function CarouselBlockLabel() {
-  return <CarouselBlockLabelClient />
-}
-
 export function ContentCalendarBlockLabel() {
   return <ContentCalendarBlockLabelClient />
 }
@@ -69,10 +63,6 @@ export function MediaGalleryBlockLabel() {
 
 export function AttachmentsBlockLabel() {
   return <AttachmentsBlockLabelClient />
-}
-
-export function MemberProfilesBlockLabel() {
-  return <MemberProfilesBlockLabelClient />
 }
 
 export function HeadingBlockLabel() {

@@ -138,15 +138,6 @@
   .memberGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .memberGrid-card .memberCard {
-    grid-template-columns: 1fr;
-  }
-
-  .memberGrid-card .memberCardImage {
-    height: auto;
-    aspect-ratio: 2 / 1;
-  }
 }
 
 @media (width <= 32rem) {
@@ -163,8 +154,7 @@
 }
 
 @container content-block (width <= 48rem) {
-  .contentCard,
-  .memberGrid-card .memberCard {
+  .contentCard {
     display: block;
   }
 
@@ -172,8 +162,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .contentList-compact .contentCardContent,
-  .memberGrid-list .memberCard {
+  .contentList-compact .contentCardContent {
     grid-template-columns: minmax(0, 1fr);
   }
 

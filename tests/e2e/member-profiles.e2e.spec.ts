@@ -8,6 +8,7 @@ import { createRichTextDocument } from '../../src/modules/members/rich-text.js'
 import type { MemberProfile, Page, Role, User } from '../../src/payload-types.js'
 import config from '../../src/payload.config.js'
 import { login } from '../helpers/login'
+import { administratorTestUser } from '../helpers/seedUser'
 
 const profileOwnerUser = {
   displayName: 'Codex Member Profile Owner E2E',
@@ -157,8 +158,18 @@ test.beforeAll(async () => {
           headingLevel: 'h2',
         },
         {
-          blockType: 'memberProfiles',
-          entries: [{ contextLabel: 'Prezes Zarządu', profile: ownerProfile.id }],
+          blockType: 'listing',
+          hideWhenEmpty: true,
+          items: [
+            {
+              contextLabel: 'Prezes Zarządu',
+              item: { relationTo: 'member-profiles', value: ownerProfile.id },
+            },
+          ],
+          pageSize: 100,
+          pagination: false,
+          selectionMode: 'manual',
+          sort: 'titleAscending',
           view: 'grid',
         },
       ],
@@ -211,15 +222,24 @@ test('renders an embedded profile with its contextual label instead of the club 
   await expect(page.getByRole('heading', { level: 2, name: 'Władze testowe' })).toBeVisible()
   await expect(page.getByText('Prezes Zarządu')).toBeVisible()
   await expect(page.getByText('Opiekunka nowych klubowiczów')).toHaveCount(0)
-  await expect(page.getByRole('link', { exact: true, name: ownerPublicName })).toBeVisible()
-  await expect(page.locator('.memberGrid-grid')).toBeVisible()
+  const profileLink = page.locator('.contentCard h2').getByRole('link', {
+    exact: true,
+    name: ownerPublicName,
+  })
+  await expect(profileLink).toBeVisible()
+  await expect(profileLink).toHaveAttribute('href', `/members/${ownerProfile.slug}`)
+  await expect(page.locator('.contentList-grid')).toBeVisible()
+  await expect(page.locator('.contentCard img')).toHaveAttribute(
+    'src',
+    '/assets/member-profile-placeholder.webp',
+  )
 })
 
 test('invalidates the cached public profile after a Payload update', async ({ page }) => {
   await page.goto(`/members/${ownerProfile.slug}`)
   await expect(page.getByRole('heading', { level: 1, name: ownerPublicName })).toBeVisible()
 
-  await login({ page, user: profileOwnerUser })
+  await login({ page, user: administratorTestUser })
   const updateResponse = await updatePublicProfileName(
     page,
     ownerProfile.id,

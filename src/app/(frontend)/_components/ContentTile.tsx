@@ -1,34 +1,37 @@
 import Link from 'next/link'
 
-import type { Media } from '@/payload-types'
+import { getContentListingPresentation } from '@/modules/content/content-listing-presentation'
 
 import { CmsImage } from './CmsImage'
 import type { ContentCardItem } from './ContentCard'
 import { ContentListingMeta } from './ContentListingMeta'
 
 export function ContentTile({ item }: { item: ContentCardItem }) {
-  const image = getTileImage(item)
+  const presentation = getContentListingPresentation(item, 'tiles')
 
   return (
     <article className="contentTile">
-      <Link className="contentTileLink" href={item.url}>
+      <Link className="contentTileLink" href={presentation.url}>
         <span aria-hidden="true" className="contentTileMedia">
-          {image && typeof image === 'object' ? (
-            <CmsImage className="contentTileImage" media={image} />
+          {presentation.image?.kind === 'media' ? (
+            <CmsImage className="contentTileImage" media={presentation.image.media} />
+          ) : presentation.image?.kind === 'profile' ? (
+            // eslint-disable-next-line @next/next/no-img-element -- profile images can use a runtime-configured Azure host.
+            <img alt="" className="contentTileImage" src={presentation.image.url} />
           ) : (
             <span className="contentTileImageFallback" />
           )}
         </span>
         <span aria-hidden="true" className="contentTileOverlay" />
         <div className="contentTileContent">
-          <h2>{item.document.title}</h2>
-          <ContentListingMeta className="contentCardMeta contentTileMeta" item={item} />
+          <h2>{presentation.title}</h2>
+          <ContentListingMeta
+            className="contentCardMeta contentTileMeta"
+            item={item}
+            view="tiles"
+          />
         </div>
       </Link>
     </article>
   )
-}
-
-function getTileImage(item: ContentCardItem): Media | number | null | undefined {
-  return item.kind === 'documents' ? null : item.document.heroImage
 }

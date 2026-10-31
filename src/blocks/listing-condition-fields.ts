@@ -2,6 +2,7 @@ import type { ArrayField, ArrayFieldValidation, FieldHook } from 'payload'
 
 import { getFormRelationshipId } from '@/lib/relationships'
 import {
+  allListingSources,
   getApplicableListingSources,
   getListingConditionRelationshipCollection,
   isCalendarDate,
@@ -12,10 +13,9 @@ import {
   listingConditionFields,
   listingConditionOperators,
   listingConditionOperatorsByField,
-  listingSources,
   normalizeListingTitle,
   type ListingConditionInput,
-  type ListingSource,
+  type ContentListingSource,
 } from '@/modules/content/listing-conditions'
 
 type ListingConditionSiblingData = {
@@ -49,8 +49,15 @@ const endDateValueCondition = (_data: unknown, siblingData: Record<string, unkno
 export const validateListingConditions: ArrayFieldValidation = (value, { siblingData }) => {
   const listingSiblingData = siblingData as ListingConditionSiblingData
   if (listingSiblingData.selectionMode === 'manual') return true
-  if (value === null || value === undefined || value.length === 0) return true
+  if (value === null || value === undefined) return true
+  // Payload's client-side ArrayField validator receives the row count, while server validation
+  // receives the array itself.
+  if (typeof value === 'number') {
+    if (!Number.isInteger(value) || value < 0) return 'Warunki muszą być listą.'
+    return value <= 10 ? true : 'Możesz dodać najwyżej 10 warunków.'
+  }
   if (!Array.isArray(value)) return 'Warunki muszą być listą.'
+  if (value.length === 0) return true
   if (value.length > 10) return 'Możesz dodać najwyżej 10 warunków.'
 
   const conditions = value as ListingConditionInput[]
@@ -323,8 +330,8 @@ function getConditionSignature(condition: ListingConditionInput): string {
   }
 }
 
-export function getListingSources(value: unknown): ListingSource[] {
+export function getListingSources(value: unknown): ContentListingSource[] {
   return Array.isArray(value) ? value.filter(isListingSource) : []
 }
 
-export { listingSources }
+export { allListingSources }

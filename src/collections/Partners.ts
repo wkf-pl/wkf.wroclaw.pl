@@ -11,6 +11,10 @@ import { populateSlugFromName } from '@/modules/content/slug'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
 import {
+  removeContentListingAfterDelete,
+  syncContentListingAfterChange,
+} from '@/modules/content/content-listing-index'
+import {
   createTrashDeleteAccess,
   createTrashReadAccess,
   createTrashUpdateAccess,
@@ -112,8 +116,8 @@ export const Partners: CollectionConfig = {
     getEditorialField(editorialFields, 'publishedAt'),
   ],
   hooks: {
-    afterChange: [invalidatePartnersAfterChange],
-    afterDelete: [invalidatePartnersAfterDelete],
+    afterChange: [syncContentListingAfterChange, invalidatePartnersAfterChange],
+    afterDelete: [removeContentListingAfterDelete, invalidatePartnersAfterDelete],
     beforeChange: [setPublishedAt],
     beforeOperation: [markTrashMutation],
     beforeValidate: [validateMediaBlocks],

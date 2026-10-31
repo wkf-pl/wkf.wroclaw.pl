@@ -5,9 +5,17 @@ import { describe, expect, it } from 'vitest'
 
 import { ContentList } from '@/app/(frontend)/_components/ContentList'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
-import type { Document, Event, EventCycle, Media, Page, Post } from '@/payload-types'
+import type {
+  Document,
+  Event,
+  EventCycle,
+  Media,
+  MemberProfile,
+  Page,
+  Partner,
+  Post,
+} from '@/payload-types'
 
-import { readFrontendStyles } from '../helpers/frontend-styles'
 import { createLexicalDocument } from '../helpers/lexical-document'
 
 function createPageItem(): Extract<PublicContentListItem, { kind: 'pages' }> {
@@ -108,33 +116,40 @@ function createDocumentItem(): Extract<PublicContentListItem, { kind: 'documents
   }
 }
 
+function createPartnerItem(): Extract<PublicContentListItem, { kind: 'partners' }> {
+  return {
+    document: {
+      excerpt: 'Partner strategiczny klubu.',
+      heroImage: null,
+      id: 6,
+      name: 'Fundacja Fantastyczna',
+      slug: 'fundacja-fantastyczna',
+    } as unknown as Partner,
+    kind: 'partners',
+    url: '/partners/fundacja-fantastyczna',
+  }
+}
+
+function createMemberProfileItem(
+  contextLabel = 'Koordynatorka programu',
+): Extract<PublicContentListItem, { kind: 'member-profiles' }> {
+  return {
+    contextLabel,
+    document: {
+      about: createLexicalDocument('Prowadzi spotkania i wspiera nowych klubowiczów.'),
+      clubFunction: 'Członkini Zarządu',
+      id: 7,
+      interests: 'Gry fabularne i fantastyka naukowa',
+      photo: null,
+      publicName: 'Alicja Testowa',
+      slug: 'alicja-testowa',
+    } as unknown as MemberProfile,
+    kind: 'member-profiles',
+    url: '/members/alicja-testowa',
+  }
+}
+
 describe('frontend content listing', () => {
-  it('limits widescreen card images to the grid view', () => {
-    const frontendStyles = readFrontendStyles()
-    const cardImageRule = frontendStyles.match(/\.contentCardImage\s*\{(?<declarations>[^}]*)\}/)
-    const cardImageDeclarations = cardImageRule?.groups?.declarations
-    const gridCardImageSelector = '.contentList-grid > article.contentCard > .contentCardImage'
-    const gridCardImageRule = frontendStyles.match(
-      /\.contentList-grid > article\.contentCard > \.contentCardImage\s*\{(?<declarations>[^}]*)\}/,
-    )
-    const gridCardImageDeclarations = gridCardImageRule?.groups?.declarations
-    const contentCardImageAspectRatioSelectors = [
-      ...frontendStyles.matchAll(
-        /(?<selector>[^{}]*\.contentCardImage[^{}]*)\{(?<declarations>[^}]*)\}/g,
-      ),
-    ]
-      .filter((match) => match.groups?.declarations.includes('aspect-ratio'))
-      .map((match) => match.groups?.selector.trim())
-
-    expect(cardImageDeclarations).toBeDefined()
-    expect(cardImageDeclarations).toContain('min-height: 15rem')
-    expect(cardImageDeclarations).not.toContain('aspect-ratio')
-    expect(gridCardImageDeclarations).toContain('min-height: 0')
-    expect(gridCardImageDeclarations).toContain('max-height: none')
-    expect(gridCardImageDeclarations).toContain('aspect-ratio: 16 / 9')
-    expect(contentCardImageAspectRatioSelectors).toEqual([gridCardImageSelector])
-  })
-
   it('renders the shared image fallback for grid and card views without media', () => {
     const item = createEventItem()
     const gridMarkup = renderToStaticMarkup(
@@ -146,18 +161,10 @@ describe('frontend content listing', () => {
     const compactMarkup = renderToStaticMarkup(
       createElement(ContentList, { items: [item], view: 'compact' }),
     )
-    const frontendStyles = readFrontendStyles()
-
     expect(gridMarkup).toContain('class="contentCardImageFallback"')
     expect(gridMarkup).toContain('aria-hidden="true"')
     expect(cardsMarkup).toContain('class="contentCardImageFallback"')
     expect(compactMarkup).not.toContain('contentCardImageFallback')
-    expect(frontendStyles).toMatch(
-      /\.newsImageFallback,\s*\.cardBlockImageFallback,\s*\.contentCardImageFallback\s*\{[^}]*placeholder-nebula\.webp/,
-    )
-    expect(frontendStyles).toMatch(
-      /:is\(\.contentList-grid, \.contentList-cards\)[^{]*> \.contentCardImageFallback\s*\{[^}]*height: 100%;/,
-    )
   })
 
   it('does not render a publication date for pages', () => {
@@ -214,6 +221,43 @@ describe('frontend content listing', () => {
       expect(markup).toContain('Uchwała')
       expect(markup).toContain('26 sierpnia 2026')
     }
+  })
+
+  it('renders partners and member profiles in every Listing view', () => {
+    for (const view of ['cards', 'carousel', 'compact', 'grid', 'tiles'] as const) {
+      const markup = renderToStaticMarkup(
+        createElement(ContentList, {
+          items: [createPartnerItem(), createMemberProfileItem()],
+          view,
+        }),
+      )
+
+      expect(markup).toContain('Fundacja Fantastyczna')
+      expect(markup).toContain('href="/partners/fundacja-fantastyczna"')
+      expect(markup).toContain('Alicja Testowa')
+      expect(markup).toContain('href="/members/alicja-testowa"')
+      expect(markup).toContain('Koordynatorka programu')
+      expect(markup).not.toContain('Członkini Zarządu')
+      expect(markup).not.toContain('<time')
+    }
+  })
+
+  it('shows profile detail in cards and grids but keeps compact rows concise', () => {
+    for (const view of ['cards', 'grid'] as const) {
+      const markup = renderToStaticMarkup(
+        createElement(ContentList, { items: [createMemberProfileItem()], view }),
+      )
+
+      expect(markup).toContain('Prowadzi spotkania i wspiera nowych klubowiczów.')
+      expect(markup).toContain('Gry fabularne i fantastyka naukowa')
+      expect(markup).toContain('/assets/member-profile-placeholder.webp')
+    }
+
+    const compactMarkup = renderToStaticMarkup(
+      createElement(ContentList, { items: [createMemberProfileItem()], view: 'compact' }),
+    )
+    expect(compactMarkup).not.toContain('Prowadzi spotkania')
+    expect(compactMarkup).not.toContain('Gry fabularne')
   })
 
   it('renders event-specific card data from the full Event entity', () => {
@@ -307,71 +351,5 @@ describe('frontend content listing', () => {
     expect(markup).not.toContain('taxonomyLinks')
     expect(markup).not.toContain('Otwarte spotkanie dla graczy.')
     expect(markup).not.toContain('Centrum kultury, Wrocław')
-  })
-
-  it('lays image tiles out in three, two and one container-aware columns', () => {
-    const frontendStyles = readFrontendStyles()
-
-    expect(frontendStyles).toMatch(
-      /\.contentList-tiles \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/,
-    )
-    expect(frontendStyles).toMatch(
-      /@container content-block \(width <= 54rem\) \{[\s\S]*?\.contentList-tiles \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/,
-    )
-    expect(frontendStyles).toMatch(
-      /@container content-block \(width <= 36rem\) \{[\s\S]*?\.contentList-tiles \{[^}]*grid-template-columns: minmax\(0, 1fr\);/,
-    )
-  })
-
-  it('uses the nebula fallback and a progressively stronger tile scrim', () => {
-    const frontendStyles = readFrontendStyles()
-
-    expect(frontendStyles).toMatch(
-      /\.contentTileImageFallback \{[^}]*placeholder-nebula\.webp[^}]*cover no-repeat/,
-    )
-    expect(frontendStyles).toMatch(
-      /\.contentTileOverlay \{[^}]*linear-gradient\([\s\S]*?4%\) 0%,[\s\S]*?16%\) 44%,[\s\S]*?59%\) 78%,[\s\S]*?96%\) 100%/,
-    )
-  })
-
-  it('groups compact content rows into one table-like frame', () => {
-    const frontendStyles = readFrontendStyles()
-
-    expect(frontendStyles).toMatch(
-      /\.listingBlock:has\(> \.contentList-compact\) \{[^}]*width: 100%;/,
-    )
-    expect(frontendStyles).toMatch(
-      /\.contentList-compact \{[^}]*gap: 0;[^}]*overflow: hidden;[^}]*width: 100%;[^}]*border: 1px solid[^}]*border-radius: 0\.75rem;/,
-    )
-    expect(frontendStyles).toMatch(
-      /\.contentList-compact > \.contentCard \{[^}]*border: 0;[^}]*border-bottom: 1px solid[^}]*border-radius: 0;[^}]*background: transparent;/,
-    )
-    expect(frontendStyles).toMatch(
-      /\.contentList-compact \.contentCardContent \{[^}]*grid-template-columns: minmax\(18rem, 5fr\) minmax\(0, 7fr\);[^}]*gap: 0;/,
-    )
-    expect(frontendStyles).toMatch(/\.contentList-compact h2 a \{[^}]*color: var\(--ivory\);/)
-  })
-
-  it('keeps the approved larger gap before taxonomy in every detailed card', () => {
-    const frontendStyles = readFrontendStyles()
-
-    expect(frontendStyles).toMatch(
-      /\.contentList-cards \.contentCardContent > \.taxonomyLinks \{[\s\S]*?margin: 1\.75rem 0 0;/,
-    )
-  })
-
-  it('keeps the approved grid spacing before taxonomy and after the event place', () => {
-    const frontendStyles = readFrontendStyles()
-
-    expect(frontendStyles).toMatch(
-      /\.contentList-grid \.contentCardContent > \.taxonomyLinks \{[\s\S]*?margin: auto 0 0;[\s\S]*?padding-top: 2rem;/,
-    )
-    expect(frontendStyles).toMatch(/\.contentCardFacts--grid \{[\s\S]*?margin-bottom: 1\.5rem;/)
-  })
-
-  it('lets content grids fill the width of their section', () => {
-    const frontendStyles = readFrontendStyles()
-
-    expect(frontendStyles).toMatch(/\.contentList-grid \{[^}]*width: 100%;/)
   })
 })

@@ -43,5 +43,10 @@ pr.md
 commit.txt
 /tmp
 /output
-/.agents
+/.agents/*
+!/.agents/skills/
+/.agents/skills/*
+!/.agents/skills/package-docs/
+!/.agents/skills/update-wkf-changelog/
+!/.agents/skills/wkf-raster-icons/
 /skills-lock.json

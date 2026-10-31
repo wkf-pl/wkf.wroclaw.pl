@@ -1,5 +1,7 @@
 .contentCarousel {
   position: relative;
+  container-name: content-carousel;
+  container-type: inline-size;
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--surface-line, var(--line));
@@ -271,13 +273,13 @@
   outline-offset: 3px;
 }
 
-@media (width <= 62rem) {
+@container content-carousel (width <= 62rem) {
   .contentCarouselSlide {
     grid-template-columns: minmax(0, 1fr) minmax(18rem, 1fr);
   }
 }
 
-@media (width <= 48rem) {
+@container content-carousel (width <= 48rem) {
   .contentCarouselSlide {
     grid-template-columns: 1fr;
   }

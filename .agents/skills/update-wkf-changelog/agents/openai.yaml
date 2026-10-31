@@ -1,0 +1,7 @@
+interface:
+  display_name: 'Update WKF Changelog'
+  short_description: 'Add new master commits to the WKF changelog'
+  default_prompt: 'Use $update-wkf-changelog to add the latest master commits to CHANGELOG.md.'
+
+policy:
+  allow_implicit_invocation: false

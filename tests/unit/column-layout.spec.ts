@@ -239,7 +239,7 @@ describe('column layout', () => {
       '@container content-block (width <= 48rem)',
     )
 
-    expect(frontendStyles).toContain(':is(.listingBlock, .mediaBlock, .memberProfilesBlock)')
+    expect(frontendStyles).toContain(':is(.listingBlock, .mediaBlock)')
     expect(frontendStyles).toContain('container-name: content-block')
     expect(contentBlockQueryIndex).toBeGreaterThan(frontendStyles.lastIndexOf('@media'))
 

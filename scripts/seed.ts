@@ -640,7 +640,7 @@ async function ensureHomepageContent(author: User, image?: Media): Promise<void>
           headingLevel: 'h2',
         },
         {
-          blockType: 'carousel',
+          blockType: 'listing',
           conditions: [
             {
               eventTimeValue: 'upcoming',
@@ -649,9 +649,11 @@ async function ensureHomepageContent(author: User, image?: Media): Promise<void>
             },
           ],
           selectionMode: 'filters',
-          slideLimit: 6,
+          pageSize: 6,
+          pagination: false,
           sort: 'oldest',
           sources: ['events'],
+          view: 'carousel',
         },
         {
           blockType: 'contentCalendar',

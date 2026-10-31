@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { sql } from '@payloadcms/db-postgres'
 
 import { findPublicContent } from '@/modules/content/content-listing'
-import type { Post } from '@/payload-types'
+import { getContentListingPresentation } from '@/modules/content/content-listing-presentation'
+import type { ListingBlock, Post } from '@/payload-types'
 
 import {
   createContentTaxonomyFixture,
@@ -42,7 +43,9 @@ describe('content listing and pagination', () => {
       sources: ['pages', 'posts'],
     })
 
-    expect(result.items.map(({ document, kind }) => [kind, document.title])).toEqual([
+    expect(
+      result.items.map((item) => [item.kind, getContentListingPresentation(item, 'cards').title]),
+    ).toEqual([
       ['posts', fixture.post.title],
       ['pages', fixture.page.title],
     ])
@@ -247,7 +250,9 @@ describe('content listing and pagination', () => {
       sources: ['pages', 'posts'],
     })
 
-    expect(result.items.map(({ document, kind }) => [kind, document.title])).toEqual([
+    expect(
+      result.items.map((item) => [item.kind, getContentListingPresentation(item, 'cards').title]),
+    ).toEqual([
       ['posts', fixture.post.title],
       ['pages', fixture.childPage.title],
       ['pages', fixture.page.title],
@@ -269,9 +274,9 @@ describe('content listing and pagination', () => {
       sources: [],
     })
 
-    expect(result.items.map(({ document, kind }) => [kind, document.title])).toEqual([
-      ['pages', fixture.childPage.title],
-    ])
+    expect(
+      result.items.map((item) => [item.kind, getContentListingPresentation(item, 'cards').title]),
+    ).toEqual([['pages', fixture.childPage.title]])
     expect(result.totalDocs).toBe(3)
     expect(result.totalPages).toBe(2)
   })
@@ -398,7 +403,7 @@ describe('content listing and pagination', () => {
     }
   })
 
-  it('stores ordered polymorphic relationships in a manual Listing block', async () => {
+  it('stores a limited manual Listing carousel with pagination disabled', async () => {
     const containerPage = await fixture.payload.create({
       collection: 'pages',
       data: {
@@ -411,56 +416,10 @@ describe('content listing and pagination', () => {
               { item: { relationTo: 'posts', value: fixture.post.id } },
               { item: { relationTo: 'pages', value: fixture.page.id } },
             ],
-            pageSize: 12,
-            pagination: false,
+            pageSize: 1,
+            pagination: true,
             selectionMode: 'manual',
-            sort: 'newest',
-            view: 'cards',
-          },
-        ],
-        slug: fixture.slugs.lifecyclePage,
-        title: 'Integration manual listing container',
-      },
-      overrideAccess: true,
-    })
-
-    try {
-      const storedPage = await fixture.payload.findByID({
-        collection: 'pages',
-        depth: 0,
-        id: containerPage.id,
-        overrideAccess: true,
-      })
-      const listing = storedPage.layout?.find((block) => block.blockType === 'listing')
-
-      expect(listing?.items?.map(({ item }) => [item.relationTo, item.value])).toEqual([
-        ['posts', fixture.post.id],
-        ['pages', fixture.page.id],
-      ])
-    } finally {
-      await fixture.payload.delete({
-        collection: 'pages',
-        id: containerPage.id,
-        overrideAccess: true,
-      })
-    }
-  })
-
-  it('stores a limited manual Carousel without pagination fields', async () => {
-    const containerPage = await fixture.payload.create({
-      collection: 'pages',
-      data: {
-        _status: 'published',
-        author: fixture.author.id,
-        layout: [
-          {
-            blockType: 'carousel',
-            items: [
-              { item: { relationTo: 'posts', value: fixture.post.id } },
-              { item: { relationTo: 'pages', value: fixture.page.id } },
-            ],
-            selectionMode: 'manual',
-            slideLimit: 1,
+            view: 'carousel',
           },
         ],
         slug: `${fixture.slugs.lifecyclePage}-carousel`,
@@ -476,11 +435,14 @@ describe('content listing and pagination', () => {
         id: containerPage.id,
         overrideAccess: true,
       })
-      const carousel = storedPage.layout?.find((block) => block.blockType === 'carousel')
+      const carousel = storedPage.layout?.find(
+        (block): block is ListingBlock =>
+          block.blockType === 'listing' && block.view === 'carousel',
+      )
       const result = await findPublicContent({
-        manualItems: carousel?.items?.map(({ item }) => item),
+        manualItems: carousel?.items?.map(({ contextLabel, item }) => ({ contextLabel, ...item })),
         page: 1,
-        pageSize: carousel?.slideLimit ?? 5,
+        pageSize: carousel?.pageSize ?? 5,
         pagination: false,
         selectionMode: carousel?.selectionMode,
         sort: carousel?.sort ?? 'newest',
@@ -491,11 +453,11 @@ describe('content listing and pagination', () => {
         ['posts', fixture.post.id],
         ['pages', fixture.page.id],
       ])
-      expect(carousel).not.toHaveProperty('pagination')
-      expect(carousel).not.toHaveProperty('pageSize')
-      expect(result.items.map(({ document, kind }) => [kind, document.title])).toEqual([
-        ['posts', fixture.post.title],
-      ])
+      expect(carousel?.pagination).toBe(false)
+      expect(carousel?.pageSize).toBe(1)
+      expect(
+        result.items.map((item) => [item.kind, getContentListingPresentation(item, 'cards').title]),
+      ).toEqual([['posts', fixture.post.title]])
       expect(result.totalDocs).toBe(2)
     } finally {
       await fixture.payload.delete({

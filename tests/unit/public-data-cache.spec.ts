@@ -83,6 +83,7 @@ describe('public data cache', () => {
       publicCacheTags.partners,
       publicCacheTags.events,
       publicCacheTags.eventCycles,
+      publicCacheTags.contentListings,
       publicCacheTags.sitemap,
     ])
     expect(getMemberProfileCacheTags()).toEqual([
@@ -92,6 +93,7 @@ describe('public data cache', () => {
       publicCacheTags.events,
       publicCacheTags.eventCycles,
       publicCacheTags.partners,
+      publicCacheTags.contentListings,
       publicCacheTags.sitemap,
     ])
     expect(getMemberProfileImageCacheTags()).toEqual(
