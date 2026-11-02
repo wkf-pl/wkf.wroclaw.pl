@@ -23,6 +23,9 @@ import {
 const pageID = 9_400_001
 const pageVersionID = 9_400_002
 const memberProfileID = 9_400_003
+const partnerIndexDocumentID = 9_400_004
+const memberProfileIndexDocumentID = 9_400_005
+const nativeNewSourceListingID = 'listing-consolidation-native-new-source'
 const liveCarouselID = 'listing-consolidation-live-carousel'
 const liveMemberProfilesID = 'listing-consolidation-live-member-profiles'
 const versionCarouselUUID = 'listing-consolidation-version-carousel'
@@ -86,7 +89,9 @@ async function removeFixtures(): Promise<void> {
       DELETE FROM "_pages_v" WHERE "id" = ${pageVersionID};
       DELETE FROM "member_profiles" WHERE "id" = ${memberProfileID};
       DELETE FROM "content_listing_items"
-      WHERE "source_document_id" IN (${pageID}, ${memberProfileID});
+      WHERE "source_document_id" IN (
+        ${pageID}, ${memberProfileID}, ${partnerIndexDocumentID}, ${memberProfileIndexDocumentID}
+      );
     `),
   )
 }
@@ -258,7 +263,42 @@ describe('Listing block consolidation migration', () => {
     expect(await tableExists('_listing_block_migration_provenance')).toBe(true)
     expect(await tableExists('pages_blocks_carousel')).toBe(false)
 
+    await payload.db.drizzle.execute(sql`
+      INSERT INTO "content_listing_items" (
+        "source", "source_document_id", "source_updated_at", "title",
+        "normalized_title", "tag_search_index", "url"
+      ) VALUES
+        (
+          'partners', ${partnerIndexDocumentID}, NOW(), 'Partner rollbacku',
+          'partner rollbacku', '', '/partners/partner-rollbacku'
+        ),
+        (
+          'member-profiles', ${memberProfileIndexDocumentID}, NOW(), 'Profil rollbacku',
+          'profil rollbacku', '', '/members/profil-rollbacku'
+        )
+    `)
+
     await runMigrationInTransaction(downRemoval)
+    await payload.db.drizzle.execute(sql`
+      INSERT INTO "pages_blocks_listing" (
+        "_order", "_parent_id", "_path", "id", "view", "selection_mode"
+      ) VALUES (
+        3, ${pageID}, 'layout', ${nativeNewSourceListingID}, 'cards', 'filters'
+      )
+    `)
+    await payload.db.drizzle.execute(sql`
+      INSERT INTO "pages_blocks_listing_sources" ("order", "parent_id", "value")
+      VALUES (1, ${nativeNewSourceListingID}, 'partners')
+    `)
+    await expect(runMigrationInTransaction(downConsolidation)).rejects.toMatchObject({
+      cause: {
+        message:
+          'Cannot roll back Listing consolidation: native Listing in "pages_blocks_listing_sources" uses unsupported source partners',
+      },
+    })
+    await payload.db.drizzle.execute(
+      sql`DELETE FROM "pages_blocks_listing" WHERE "id" = ${nativeNewSourceListingID}`,
+    )
     await runMigrationInTransaction(downConsolidation)
 
     const restoredCarousel = await payload.db.drizzle.execute(sql`
@@ -281,6 +321,12 @@ describe('Listing block consolidation migration', () => {
       { contextLabel: 'Koordynator programu', order: 2, profileId: memberProfileID },
     ])
     expect(await tableExists('_listing_block_migration_provenance')).toBe(false)
+    const removedNewSourceIndexItems = await payload.db.drizzle.execute(sql`
+      SELECT count(*)::int AS "count"
+      FROM "content_listing_items"
+      WHERE "source"::text IN ('partners', 'member-profiles')
+    `)
+    expect(removedNewSourceIndexItems.rows).toEqual([{ count: 0 }])
 
     await runMigrationInTransaction(upConsolidation)
     await runMigrationInTransaction(upRemoval)
