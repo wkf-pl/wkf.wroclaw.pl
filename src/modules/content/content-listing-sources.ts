@@ -15,6 +15,7 @@ import { extractRichTextText } from '@/modules/content/rich-text'
 
 import {
   createListingTagSearchIndex,
+  isListingSource,
   normalizeListingTitle,
   type ContentListingSource,
 } from './listing-conditions'
@@ -48,6 +49,8 @@ export type ContentListingIndexData = {
   heroImage: null | number
   normalizedTitle: string
   parentPage: null | number
+  relatedTargetSearchIndex: string
+  relatedTargets: ContentListingTarget[]
   significantDate: null | string
   source: ContentListingSource
   sourceDocumentId: number
@@ -56,6 +59,11 @@ export type ContentListingIndexData = {
   tags: number[]
   title: string
   url: string
+}
+
+export type ContentListingTarget = {
+  relationTo: ContentListingSource
+  value: number
 }
 
 export async function findPublishedContentListingDocument(
@@ -100,6 +108,9 @@ export async function findPublishedContentListingDocument(
         collection: 'event-cycles',
         select: {
           category: true,
+          eventDefaults: {
+            partners: true,
+          },
           excerpt: true,
           heroImage: true,
           id: true,
@@ -122,6 +133,7 @@ export async function findPublishedContentListingDocument(
           excerpt: true,
           heroImage: true,
           id: true,
+          partners: true,
           slug: true,
           startAt: true,
           tags: true,
@@ -188,6 +200,7 @@ export async function findPublishedContentListingDocument(
           heroImage: true,
           id: true,
           publishedAt: true,
+          relatedContent: true,
           slug: true,
           tags: true,
           title: true,
@@ -348,6 +361,7 @@ function createBaseIndexData(
     url: string
   },
 ): ContentListingIndexData {
+  const relatedTargets = getContentListingTargets(source, document)
   return {
     category: null,
     eventCycle: null,
@@ -358,6 +372,8 @@ function createBaseIndexData(
     heroImage: values.heroImage ?? null,
     normalizedTitle: normalizeListingTitle(values.title),
     parentPage: null,
+    relatedTargetSearchIndex: createRelatedTargetSearchIndex(relatedTargets),
+    relatedTargets,
     significantDate: null,
     source,
     sourceDocumentId: document.id,
@@ -367,6 +383,50 @@ function createBaseIndexData(
     title: values.title,
     url: values.url,
   }
+}
+
+export function createRelatedTargetSearchIndex(targets: readonly ContentListingTarget[]): string {
+  return targets.length
+    ? `|${targets.map(({ relationTo, value }) => `${relationTo}:${value}`).join('|')}|`
+    : '|'
+}
+
+function getContentListingTargets(
+  source: ContentListingSource,
+  document: ContentListingDocument,
+): ContentListingTarget[] {
+  const targets: ContentListingTarget[] = []
+
+  if (source === 'posts') {
+    const post = document as Post
+    for (const reference of post.relatedContent ?? []) {
+      if (!isListingSource(reference.relationTo)) continue
+      const id = getRelationshipId(reference.value)
+      if (id !== undefined) targets.push({ relationTo: reference.relationTo, value: id })
+    }
+  } else if (source === 'events') {
+    const event = document as Event
+    const cycleID = getRelationshipId(event.cycle)
+    if (cycleID !== undefined) targets.push({ relationTo: 'event-cycles', value: cycleID })
+    for (const partner of event.partners ?? []) {
+      const id = getRelationshipId(partner.partner)
+      if (id !== undefined) targets.push({ relationTo: 'partners', value: id })
+    }
+  } else if (source === 'event-cycles') {
+    const eventCycle = document as EventCycle
+    for (const partner of eventCycle.eventDefaults.partners ?? []) {
+      const id = getRelationshipId(partner.partner)
+      if (id !== undefined) targets.push({ relationTo: 'partners', value: id })
+    }
+  }
+
+  const seen = new Set<string>()
+  return targets.filter(({ relationTo, value }) => {
+    const key = `${relationTo}:${value}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 function createTaxonomizableIndexData(

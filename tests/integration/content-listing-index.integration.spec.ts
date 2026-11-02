@@ -425,7 +425,212 @@ describe('content listing index synchronization', () => {
       await cleanupRelationshipFixtures()
     }
   })
+
+  it('projects typed related targets and filters by the current or selected element', async () => {
+    const partnerSlug = 'integration-related-listing-partner'
+    const cycleSlug = 'integration-related-listing-cycle'
+    const eventSlug = 'integration-related-listing-event'
+    const postSlug = 'integration-related-listing-post'
+    await cleanupRelatedListingFixtures({ cycleSlug, eventSlug, partnerSlug, postSlug })
+
+    const partner = await fixture.payload.create({
+      collection: 'partners',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        excerpt: 'Partner related listing excerpt',
+        layout: [
+          { blockType: 'richText', content: createLexicalDocument('Partner related content') },
+        ],
+        name: 'Partner related listing',
+        slug: partnerSlug,
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+    const cycle = await fixture.payload.create({
+      collection: 'event-cycles',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        eventDefaults: {
+          capacityMode: 'unlimited',
+          eventType: 1,
+          layout: [
+            { blockType: 'richText', content: createLexicalDocument('Cycle default content') },
+          ],
+          location: { city: 'Wrocław', country: 'Polska' },
+          participation: 'public',
+          partners: [{ partner: partner.id, roles: ['partner'] }],
+        },
+        excerpt: createLexicalDocument('Related listing cycle excerpt'),
+        layout: [
+          { blockType: 'richText', content: createLexicalDocument('Cycle related content') },
+        ],
+        slug: cycleSlug,
+        title: 'Related listing cycle',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+    const event = await fixture.payload.create({
+      collection: 'events',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        calendarRevision: 0,
+        capacityMode: 'unlimited',
+        cycle: cycle.id,
+        eventStatus: 'scheduled',
+        eventType: 1,
+        excerpt: createLexicalDocument('Related listing event excerpt'),
+        layout: [
+          { blockType: 'richText', content: createLexicalDocument('Event related content') },
+        ],
+        location: { city: 'Wrocław', country: 'Polska' },
+        participation: 'public',
+        partners: [{ partner: partner.id, roles: ['partner'] }],
+        slug: eventSlug,
+        startAt: '2031-09-10T16:00:00.000Z',
+        timeMode: 'timed',
+        title: 'Related listing event',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+    const post = await fixture.payload.create({
+      collection: 'posts',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        excerpt: 'Related listing post excerpt',
+        layout: [{ blockType: 'richText', content: createLexicalDocument('Post related content') }],
+        publishedAt: '2031-09-11T16:00:00.000Z',
+        relatedContent: [
+          { relationTo: 'events', value: event.id },
+          { relationTo: 'event-cycles', value: cycle.id },
+          { relationTo: 'pages', value: fixture.page.id },
+        ],
+        slug: postSlug,
+        title: 'Related listing post',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+
+    try {
+      expect(await findListingIndex('posts', post.id)).toMatchObject({
+        relatedTargetSearchIndex: `|events:${event.id}|event-cycles:${cycle.id}|pages:${fixture.page.id}|`,
+        relatedTargets: [
+          { relationTo: 'events', value: event.id },
+          { relationTo: 'event-cycles', value: cycle.id },
+          { relationTo: 'pages', value: fixture.page.id },
+        ],
+      })
+      expect(await findListingIndex('events', event.id)).toMatchObject({
+        relatedTargetSearchIndex: `|event-cycles:${cycle.id}|partners:${partner.id}|`,
+      })
+      expect(await findListingIndex('event-cycles', cycle.id)).toMatchObject({
+        relatedTargetSearchIndex: `|partners:${partner.id}|`,
+      })
+
+      const partnerResult = await findPublicContent({
+        conditions: [{ field: 'relatedTo', operator: 'contains', relatedTargetMode: 'current' }],
+        currentTarget: { relationTo: 'partners', value: partner.id },
+        page: 1,
+        pageSize: 10,
+        pagination: false,
+        sort: 'titleAscending',
+        sources: ['events', 'event-cycles'],
+      })
+      expect(partnerResult.items.map((item) => item.kind)).toEqual(['event-cycles', 'events'])
+
+      const cycleResult = await findPublicContent({
+        conditions: [{ field: 'relatedTo', operator: 'contains', relatedTargetMode: 'current' }],
+        currentTarget: { relationTo: 'event-cycles', value: cycle.id },
+        page: 1,
+        pageSize: 10,
+        pagination: false,
+        sort: 'titleAscending',
+        sources: ['posts', 'events'],
+      })
+      expect(cycleResult.items.map((item) => item.kind)).toEqual(['events', 'posts'])
+
+      const selectedPageResult = await findPublicContent({
+        conditions: [
+          {
+            field: 'relatedTo',
+            operator: 'contains',
+            relatedTargetMode: 'selected',
+            relatedTargetValue: { relationTo: 'pages', value: fixture.page.id },
+          },
+        ],
+        page: 1,
+        pageSize: 10,
+        pagination: false,
+        sort: 'titleAscending',
+        sources: ['posts'],
+      })
+      expect(selectedPageResult.items.map((item) => item.document.id)).toEqual([post.id])
+
+      const missingCurrentTargetResult = await findPublicContent({
+        conditions: [{ field: 'relatedTo', operator: 'contains', relatedTargetMode: 'current' }],
+        page: 1,
+        pageSize: 10,
+        pagination: false,
+        sort: 'titleAscending',
+        sources: ['posts'],
+      })
+      expect(missingCurrentTargetResult.items).toEqual([])
+
+      await fixture.payload.update({
+        collection: 'posts',
+        data: { _status: 'published', relatedContent: [] },
+        draft: false,
+        id: post.id,
+        overrideAccess: true,
+      })
+      expect(await findListingIndex('posts', post.id)).toMatchObject({
+        relatedTargetSearchIndex: '|',
+        relatedTargets: [],
+      })
+    } finally {
+      await cleanupRelatedListingFixtures({ cycleSlug, eventSlug, partnerSlug, postSlug })
+    }
+  })
 })
+
+async function cleanupRelatedListingFixtures(slugs: {
+  cycleSlug: string
+  eventSlug: string
+  partnerSlug: string
+  postSlug: string
+}): Promise<void> {
+  await fixture.payload.delete({
+    collection: 'posts',
+    overrideAccess: true,
+    trash: true,
+    where: { slug: { equals: slugs.postSlug } },
+  })
+  await fixture.payload.delete({
+    collection: 'events',
+    overrideAccess: true,
+    trash: true,
+    where: { slug: { equals: slugs.eventSlug } },
+  })
+  await fixture.payload.delete({
+    collection: 'event-cycles',
+    overrideAccess: true,
+    trash: true,
+    where: { slug: { equals: slugs.cycleSlug } },
+  })
+  await fixture.payload.delete({
+    collection: 'partners',
+    overrideAccess: true,
+    trash: true,
+    where: { slug: { equals: slugs.partnerSlug } },
+  })
+}
 
 async function cleanupRelationshipFixtures(): Promise<void> {
   if (!fixture?.payload) return

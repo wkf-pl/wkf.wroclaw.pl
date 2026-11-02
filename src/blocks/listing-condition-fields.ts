@@ -8,6 +8,7 @@ import {
   isCalendarDate,
   isListingConditionField,
   isListingConditionOperator,
+  isListingRelatedTargetMode,
   isListingSource,
   listingConditionFieldLabels,
   listingConditionFields,
@@ -29,6 +30,9 @@ const filtersCondition = (_data: unknown, siblingData: Record<string, unknown>) 
 const relationshipValueCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   isListingConditionField(siblingData.field) &&
   getListingConditionRelationshipCollection(siblingData.field) !== undefined
+
+const relatedTargetModeCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
+  siblingData.field === 'relatedTo'
 
 const textValueCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.field === 'title'
@@ -179,6 +183,35 @@ export function createListingConditionsField(): ArrayField {
             relationTo: ['categories', 'tags', 'pages', 'event-cycles'],
           },
           {
+            name: 'relatedTargetMode',
+            type: 'select',
+            admin: {
+              components: {
+                Field:
+                  '/components/admin/ListingConditionsField#ListingConditionRelatedTargetModeSelect',
+              },
+              condition: relatedTargetModeCondition,
+              isClearable: false,
+              width: '48%',
+            },
+            defaultValue: 'current',
+            dbName: 'related_mode',
+            label: 'Wartość',
+            options: [
+              { label: 'Bieżący element', value: 'current' },
+              { label: 'Wybrany element', value: 'selected' },
+            ],
+          },
+          {
+            name: 'relatedTargetValue',
+            type: 'relationship',
+            admin: {
+              hidden: true,
+            },
+            label: 'Wartość',
+            relationTo: [...allListingSources],
+          },
+          {
             name: 'textValue',
             type: 'text',
             admin: { condition: textValueCondition, width: '48%' },
@@ -272,6 +305,21 @@ function validateConditionValue(condition: ListingConditionInput, position: numb
       : `Wybierz termin wydarzenia w warunku ${position}.`
   }
 
+  if (condition.field === 'relatedTo') {
+    if (!isListingRelatedTargetMode(condition.relatedTargetMode)) {
+      return `Wybierz źródło wartości w warunku ${position}.`
+    }
+    if (condition.relatedTargetMode === 'current') return null
+    if (
+      !condition.relatedTargetValue ||
+      !isListingSource(condition.relatedTargetValue.relationTo) ||
+      getFormRelationshipId(condition.relatedTargetValue.value) === undefined
+    ) {
+      return `Wybierz powiązany element w warunku ${position}.`
+    }
+    return null
+  }
+
   if (condition.operator === 'notOlderThan') {
     return Number.isInteger(condition.numberValue) &&
       condition.numberValue! >= 1 &&
@@ -318,6 +366,18 @@ function getConditionSignature(condition: ListingConditionInput): string {
       ])
     case 'eventTime':
       return JSON.stringify([condition.field, condition.operator, condition.eventTimeValue])
+    case 'relatedTo':
+      return JSON.stringify([
+        condition.field,
+        condition.operator,
+        condition.relatedTargetMode,
+        condition.relatedTargetMode === 'selected'
+          ? condition.relatedTargetValue?.relationTo
+          : undefined,
+        condition.relatedTargetMode === 'selected'
+          ? getFormRelationshipId(condition.relatedTargetValue?.value)
+          : undefined,
+      ])
     case 'significantDate':
       return JSON.stringify([
         condition.field,

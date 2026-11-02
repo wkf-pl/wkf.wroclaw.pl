@@ -521,6 +521,25 @@ describe('page configuration', () => {
     expect(sidebarFieldNames(Partners)).toEqual(['slug', 'author', 'publishedAt'])
   })
 
+  it('uses one polymorphic related-content field for Posts', () => {
+    expect(findField(Posts.fields, 'relatedContent')).toMatchObject({
+      hasMany: true,
+      label: 'Powiązane treści',
+      relationTo: [
+        'pages',
+        'posts',
+        'events',
+        'event-cycles',
+        'documents',
+        'partners',
+        'member-profiles',
+      ],
+      type: 'relationship',
+    })
+    expect(() => findField(Posts.fields, 'relatedEvents')).toThrow('Missing field')
+    expect(() => findField(Posts.fields, 'relatedEventCycles')).toThrow('Missing field')
+  })
+
   it('keeps the agreed field order in Categories and Tags', () => {
     expect(describeFieldOrder(Categories.fields)).toEqual([
       'name',
@@ -589,10 +608,24 @@ describe('page configuration', () => {
 
   it('configures Listing conditions from selected sources', () => {
     const component = readFileSync('src/components/admin/ListingConditionsField.tsx', 'utf8')
+    const relatedTargetModeField = findField(ListingBlock.fields, 'relatedTargetMode')
+    const relatedTargetValueField = findField(ListingBlock.fields, 'relatedTargetValue')
 
     expect(component).toContain('useFormFields')
     expect(component).toContain('listingConditionSupportedSources')
     expect(component).toContain('Ten warunek nie dotyczy żadnego wybranego źródła')
+    expect(component).toContain('<RelationshipInput')
+    expect(component).toContain("label: 'Bieżący element'")
+    expect(component).toContain('<ul>')
+    expect(relatedTargetModeField).toMatchObject({
+      admin: { width: '48%' },
+      defaultValue: 'current',
+      label: 'Wartość',
+    })
+    expect(relatedTargetValueField).toMatchObject({
+      admin: { hidden: true },
+      label: 'Wartość',
+    })
   })
 
   it('hides plugin breadcrumbs and shows the readable hierarchy path in the sidebar', () => {

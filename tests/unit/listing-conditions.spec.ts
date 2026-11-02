@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { validateListingConditions } from '@/blocks/listing-condition-fields'
 import { compileListingConditionWhere } from '@/modules/content/content-listing'
+import { createRelatedTargetSearchIndex } from '@/modules/content/content-listing-sources'
 import {
   createListingTagSearchIndex,
   allListingSources,
@@ -55,6 +56,7 @@ describe('listing conditions', () => {
       'parentPage',
       'eventCycle',
       'eventTime',
+      'relatedTo',
       'significantDate',
     ])
     expect(listingConditionOperatorsByField).toEqual({
@@ -62,6 +64,7 @@ describe('listing conditions', () => {
       eventCycle: ['equals'],
       eventTime: ['equals'],
       parentPage: ['equals'],
+      relatedTo: ['contains'],
       significantDate: ['notOlderThan', 'before', 'after', 'between'],
       tag: ['contains'],
       title: ['contains', 'equals'],
@@ -69,6 +72,7 @@ describe('listing conditions', () => {
     expect(listingConditionSupportedSources.parentPage).toEqual(['pages'])
     expect(listingConditionSupportedSources.eventCycle).toEqual(['events'])
     expect(listingConditionSupportedSources.eventTime).toEqual(['events'])
+    expect(listingConditionSupportedSources.relatedTo).toEqual(['posts', 'events', 'event-cycles'])
     expect(listingConditionSupportedSources.significantDate).toEqual([
       'posts',
       'events',
@@ -115,6 +119,17 @@ describe('listing conditions', () => {
       relationshipValue: { relationTo: 'event-cycles', value: 4 },
     },
     { eventTimeValue: 'upcoming', field: 'eventTime', operator: 'equals' },
+    {
+      field: 'relatedTo',
+      operator: 'contains',
+      relatedTargetMode: 'current',
+    },
+    {
+      field: 'relatedTo',
+      operator: 'contains',
+      relatedTargetMode: 'selected',
+      relatedTargetValue: { relationTo: 'partners', value: 5 },
+    },
     { field: 'significantDate', numberValue: 30, operator: 'notOlderThan' },
     { dateValue: '2026-10-30', field: 'significantDate', operator: 'before' },
     { dateValue: '2026-10-30', field: 'significantDate', operator: 'after' },
@@ -183,6 +198,15 @@ describe('listing conditions', () => {
         },
       ]),
     ).toContain('nie może być późniejsza')
+    expect(
+      validate([
+        {
+          field: 'relatedTo',
+          operator: 'contains',
+          relatedTargetMode: 'selected',
+        },
+      ]),
+    ).toContain('Wybierz powiązany element')
   })
 
   it('keeps different conditions for the same field', () => {
@@ -211,6 +235,18 @@ describe('listing conditions', () => {
     expect(
       compileListingConditionWhere({ field: 'title', operator: 'contains', textValue: 'rpg' }),
     ).toEqual({ normalizedTitle: { contains: 'rpg' } })
+    expect(
+      compileListingConditionWhere({
+        field: 'relatedTo',
+        operator: 'contains',
+        relatedTarget: { relationTo: 'partners', value: 7 },
+      }),
+    ).toEqual({
+      or: [
+        { source: { not_in: ['posts', 'events', 'event-cycles'] } },
+        { relatedTargetSearchIndex: { contains: '|partners:7|' } },
+      ],
+    })
   })
 
   it('normalizes titles with Polish case rules and Unicode compatibility', () => {
@@ -232,6 +268,16 @@ describe('listing conditions', () => {
   it('creates stable, delimited tag search tokens', () => {
     expect(createListingTagSearchIndex([12, 2, 12, 20])).toBe('|2|12|20|')
     expect(createListingTagSearchIndex([])).toBe('||')
+  })
+
+  it('creates stable, typed related-target search tokens', () => {
+    expect(
+      createRelatedTargetSearchIndex([
+        { relationTo: 'events', value: 12 },
+        { relationTo: 'event-cycles', value: 12 },
+      ]),
+    ).toBe('|events:12|event-cycles:12|')
+    expect(createRelatedTargetSearchIndex([])).toBe('|')
   })
 
   it('uses full Warsaw calendar days across daylight-saving transitions', () => {

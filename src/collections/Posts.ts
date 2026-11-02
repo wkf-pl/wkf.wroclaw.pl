@@ -17,6 +17,7 @@ import {
 } from '@/modules/content/trash-access'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
+import { allListingSources } from '@/modules/content/listing-conditions'
 
 const createPosts = createRolePermissionAccess({ operation: 'create', resource: 'posts' })
 const deletePosts = createTrashDeleteAccess(
@@ -77,25 +78,17 @@ export const Posts: CollectionConfig = {
             getEditorialField(editorialFields, 'heroImage'),
             getEditorialField(editorialFields, 'excerpt'),
             {
-              type: 'row',
-              fields: [
-                {
-                  name: 'relatedEvents',
-                  type: 'relationship',
-                  admin: { placeholder: '<brak>', width: '50%' },
-                  hasMany: true,
-                  label: 'Powiązane wydarzenia',
-                  relationTo: 'events',
-                },
-                {
-                  name: 'relatedEventCycles',
-                  type: 'relationship',
-                  admin: { placeholder: '<brak>', width: '50%' },
-                  hasMany: true,
-                  label: 'Powiązane cykle',
-                  relationTo: 'event-cycles',
-                },
-              ],
+              name: 'relatedContent',
+              type: 'relationship',
+              admin: {
+                description:
+                  'Wybierz treści, z którymi wpis jest bezpośrednio powiązany. Relacja może być używana przez Listingi na stronach wybranych elementów.',
+                placeholder: '<brak>',
+              },
+              filterOptions: { _status: { equals: 'published' } },
+              hasMany: true,
+              label: 'Powiązane treści',
+              relationTo: [...allListingSources],
             },
             createContentLayoutField('Treści'),
           ],

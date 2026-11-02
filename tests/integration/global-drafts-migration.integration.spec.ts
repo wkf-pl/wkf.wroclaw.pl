@@ -19,6 +19,10 @@ import {
   down as downLegacyBlockRemoval,
   up as upLegacyBlockRemoval,
 } from '../../migrations/20261031_112000_remove_legacy_carousel_and_member_profiles_blocks'
+import {
+  down as downRelatedContent,
+  up as upRelatedContent,
+} from '../../migrations/20261102_114056_related_content_listing'
 
 const globalTables = [
   'site_settings',
@@ -66,7 +70,20 @@ async function tableExists(table: string): Promise<boolean> {
   return result.rows[0]?.exists === true
 }
 
+async function relatedContentSchemaExists(): Promise<boolean> {
+  const result = await payload.db.drizzle.execute(sql`
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'content_listing_items'
+        AND column_name = 'related_target_search_index'
+    ) AS "exists"
+  `)
+  return result.rows[0]?.exists === true
+}
+
 async function moveToBeforeGlobalDrafts(): Promise<void> {
+  if (await relatedContentSchemaExists()) await downRelatedContent(migrationArguments())
   if (!(await tableExists('pages_blocks_carousel'))) {
     await downLegacyBlockRemoval(migrationArguments())
   }
@@ -87,6 +104,7 @@ async function restoreCurrentSchema(): Promise<void> {
   if (await tableExists('pages_blocks_carousel')) {
     await upLegacyBlockRemoval(migrationArguments())
   }
+  if (!(await relatedContentSchemaExists())) await upRelatedContent(migrationArguments())
 }
 
 async function readGlobalRows(table: (typeof globalTables)[number]): Promise<unknown[]> {
@@ -125,6 +143,7 @@ describe('global drafts migration', () => {
     await upListingConditions(migrationArguments())
     await upListingConsolidation(migrationArguments())
     await upLegacyBlockRemoval(migrationArguments())
+    await upRelatedContent(migrationArguments())
 
     for (const table of globalTables) {
       expect(await readGlobalRows(table)).toEqual(contentBeforeMigration.get(table))

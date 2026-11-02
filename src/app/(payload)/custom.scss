@@ -1067,12 +1067,16 @@
     background: var(--theme-elevation-50);
 
     strong,
-    p {
+    ul {
       margin: 0;
     }
 
-    p {
+    ul {
+      display: grid;
+      gap: calc(var(--base) * 0.3);
+      padding: 0;
       color: var(--theme-elevation-750);
+      list-style: none;
     }
   }
 }
@@ -1145,6 +1149,14 @@
       border-color: var(--theme-error-500);
     }
   }
+
+  &__related-value {
+    min-width: 0;
+
+    .relationship .rs__group-heading {
+      display: block;
+    }
+  }
 }
 
 @media (max-width: 900px) {
@@ -1155,7 +1167,8 @@
       flex-direction: column;
     }
 
-    &__array .row__fields > .field-type {
+    &__array .row__fields > .field-type,
+    &__array .row__fields > .wkf-listing-condition__related-value {
       --field-width: 100% !important;
     }
   }
