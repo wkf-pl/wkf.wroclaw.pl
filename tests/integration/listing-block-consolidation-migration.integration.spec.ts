@@ -266,15 +266,15 @@ describe('Listing block consolidation migration', () => {
     await payload.db.drizzle.execute(sql`
       INSERT INTO "content_listing_items" (
         "source", "source_document_id", "source_updated_at", "title",
-        "normalized_title", "tag_search_index", "url"
+        "normalized_title", "tag_search_index", "related_target_search_index", "url"
       ) VALUES
         (
           'partners', ${partnerIndexDocumentID}, NOW(), 'Partner rollbacku',
-          'partner rollbacku', '', '/partners/partner-rollbacku'
+          'partner rollbacku', '', '|', '/partners/partner-rollbacku'
         ),
         (
           'member-profiles', ${memberProfileIndexDocumentID}, NOW(), 'Profil rollbacku',
-          'profil rollbacku', '', '/members/profil-rollbacku'
+          'profil rollbacku', '', '|', '/members/profil-rollbacku'
         )
     `)
 

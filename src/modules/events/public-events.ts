@@ -220,16 +220,12 @@ export const findCyclesForPartner = cachePublicData(
   { revalidate: 3600, tags: [publicCacheTags.eventCycles, publicCacheTags.partners] },
 )
 
-export const findPostsRelatedToEvent = cachePublicData(
-  'posts-related-to-event',
-  (eventID: number): Promise<Post[]> => findPostsRelatedTo('events', eventID),
-  { revalidate: 3600, tags: [publicCacheTags.events, publicCacheTags.posts] },
+export const findPostsRelatedToEvent = cache((eventID: number): Promise<Post[]> =>
+  findPostsRelatedTo('events', eventID),
 )
 
-export const findPostsRelatedToCycle = cachePublicData(
-  'posts-related-to-cycle',
-  (cycleID: number): Promise<Post[]> => findPostsRelatedTo('event-cycles', cycleID),
-  { revalidate: 3600, tags: [publicCacheTags.eventCycles, publicCacheTags.posts] },
+export const findPostsRelatedToCycle = cache((cycleID: number): Promise<Post[]> =>
+  findPostsRelatedTo('event-cycles', cycleID),
 )
 
 async function findPostsRelatedTo(
