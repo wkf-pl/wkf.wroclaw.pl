@@ -6,6 +6,7 @@ import {
   FieldLabel,
   ReactSelect,
   RelationshipField,
+  RelationshipInput,
   useConfig,
   useField,
   useFieldPath,
@@ -20,6 +21,7 @@ import type {
   SelectFieldClientProps,
   TextFieldClientProps,
   UIFieldClientProps,
+  ValueWithRelation,
 } from 'payload'
 import { formatAdminURL } from 'payload/shared'
 import type { ChangeEvent } from 'react'
@@ -31,6 +33,7 @@ import {
   formatPolishListingConditionCount,
   getListingConditionOperatorLabel,
   getListingConditionRelationshipCollection,
+  allListingSources,
   isListingConditionField,
   isListingConditionOperator,
   isListingSource,
@@ -70,6 +73,10 @@ export function ListingConditionsField(properties: ArrayFieldClientProps) {
         numberValue: fields[`${rowPath}.numberValue`]
           ?.value as ListingConditionInput['numberValue'],
         operator: fields[`${rowPath}.operator`]?.value as ListingConditionInput['operator'],
+        relatedTargetMode: fields[`${rowPath}.relatedTargetMode`]
+          ?.value as ListingConditionInput['relatedTargetMode'],
+        relatedTargetValue: fields[`${rowPath}.relatedTargetValue`]
+          ?.value as ListingConditionInput['relatedTargetValue'],
         relationshipValue: fields[`${rowPath}.relationshipValue`]
           ?.value as ListingConditionInput['relationshipValue'],
         textValue: fields[`${rowPath}.textValue`]?.value as ListingConditionInput['textValue'],
@@ -116,6 +123,10 @@ export function ListingConditionRowLabel() {
     field: fields[`${path}.field`]?.value as ListingConditionInput['field'],
     numberValue: fields[`${path}.numberValue`]?.value as ListingConditionInput['numberValue'],
     operator: fields[`${path}.operator`]?.value as ListingConditionInput['operator'],
+    relatedTargetMode: fields[`${path}.relatedTargetMode`]
+      ?.value as ListingConditionInput['relatedTargetMode'],
+    relatedTargetValue: fields[`${path}.relatedTargetValue`]
+      ?.value as ListingConditionInput['relatedTargetValue'],
     relationshipValue: fields[`${path}.relationshipValue`]
       ?.value as ListingConditionInput['relationshipValue'],
     textValue: fields[`${path}.textValue`]?.value as ListingConditionInput['textValue'],
@@ -150,6 +161,12 @@ export function ListingConditionFieldSelect(properties: SelectFieldClientProps) 
   const relationshipValue = useField<unknown>({
     path: siblingPath(properties.path, 'relationshipValue'),
   })
+  const relatedTargetMode = useField<unknown>({
+    path: siblingPath(properties.path, 'relatedTargetMode'),
+  })
+  const relatedTargetValue = useField<unknown>({
+    path: siblingPath(properties.path, 'relatedTargetValue'),
+  })
   const textValue = useField<unknown>({ path: siblingPath(properties.path, 'textValue') })
   const numberValue = useField<unknown>({ path: siblingPath(properties.path, 'numberValue') })
   const eventTimeValue = useField<unknown>({
@@ -175,6 +192,8 @@ export function ListingConditionFieldSelect(properties: SelectFieldClientProps) 
     setValue(option.value)
     operator.setValue(listingConditionOperatorsByField[option.value][0])
     relationshipValue.setValue(null)
+    relatedTargetMode.setValue(option.value === 'relatedTo' ? 'current' : null)
+    relatedTargetValue.setValue(null)
     textValue.setValue(null)
     numberValue.setValue(null)
     eventTimeValue.setValue(null)
@@ -267,6 +286,87 @@ export function ListingConditionRelationshipField(properties: RelationshipFieldC
   return <RelationshipField {...properties} field={targetField} key={collection} />
 }
 
+const currentRelatedTargetSentinel = '__wkf_current_element__'
+
+type RelatedTargetOption = {
+  allowEdit: boolean
+  label: string
+  options?: RelatedTargetOption[]
+  relationTo?: string
+  value: number | string
+}
+
+type RelatedTargetOptionGroup = {
+  label: string
+  options: RelatedTargetOption[]
+}
+
+const currentRelatedTargetOption: RelatedTargetOption = {
+  allowEdit: false,
+  label: 'Bieżący element',
+  relationTo: allListingSources[0],
+  value: currentRelatedTargetSentinel,
+}
+
+function prependCurrentRelatedTargetOption(
+  optionGroups: RelatedTargetOptionGroup[],
+): RelatedTargetOptionGroup[] {
+  return [{ label: 'Kontekst strony', options: [currentRelatedTargetOption] }, ...optionGroups]
+}
+
+function isRelatedTargetValue(value: unknown): value is ValueWithRelation {
+  if (!value || typeof value !== 'object') return false
+  if (!('relationTo' in value) || !isListingSource(value.relationTo)) return false
+  if (!('value' in value)) return false
+  return typeof value.value === 'number' || typeof value.value === 'string'
+}
+
+export function ListingConditionRelatedTargetModeSelect(properties: SelectFieldClientProps) {
+  const { path, setValue, showError, value } = useField<string>({
+    potentiallyStalePath: properties.path,
+  })
+  const relatedTargetField = useField<unknown>({
+    path: siblingPath(properties.path, 'relatedTargetValue'),
+  })
+  const styles = useMemo(() => mergeFieldStyles(properties.field), [properties.field])
+  const selectedTarget =
+    value === 'selected' && isRelatedTargetValue(relatedTargetField.value)
+      ? relatedTargetField.value
+      : null
+
+  function handleChange(target: ValueWithRelation | null) {
+    if (!target || target.value === currentRelatedTargetSentinel) {
+      setValue('current')
+      relatedTargetField.setValue(null)
+      return
+    }
+
+    setValue('selected')
+    relatedTargetField.setValue(target)
+  }
+
+  return (
+    <div className="wkf-listing-condition__related-value" style={styles}>
+      <RelationshipInput
+        allowCreate
+        allowEdit
+        formatDisplayedOptions={prependCurrentRelatedTargetOption}
+        hasMany={false}
+        initialValue={selectedTarget}
+        label={properties.field.label}
+        onChange={handleChange}
+        path={path}
+        placeholder="Bieżący element"
+        readOnly={properties.readOnly}
+        relationTo={[...allListingSources]}
+        required
+        showError={showError}
+        value={selectedTarget}
+      />
+    </div>
+  )
+}
+
 export function ListingConditionDateField(properties: TextFieldClientProps) {
   const { errorMessage, path, setValue, showError, value } = useField<string>({
     potentiallyStalePath: properties.path,
@@ -301,6 +401,9 @@ export function ListingConditionScope(properties: UIFieldClientProps) {
     ? conditionFieldValue
     : undefined
   const sources = useListingSources(properties.path)
+  const relatedTargetModeValue = useFormFields(
+    ([fields]) => fields[siblingPath(properties.path, 'relatedTargetMode')]?.value,
+  )
   if (!conditionField) return null
 
   const applicableSources = getApplicableListingSources(conditionField, sources)
@@ -331,6 +434,9 @@ export function ListingConditionScope(properties: UIFieldClientProps) {
       {!inactive && !allSources
         ? ` Pozostałe źródła przechodzą ten warunek bez sprawdzania.`
         : null}
+      {conditionField === 'relatedTo' && relatedTargetModeValue === 'current'
+        ? ' Bieżący element oznacza element, na którego stronie wyświetlany jest Listing.'
+        : null}
     </p>
   )
 }
@@ -347,8 +453,8 @@ function ListingConditionsSummary({
   return (
     <aside className="wkf-listing-conditions__summary">
       <strong>Jak zadziała ten filtr</strong>
-      <p>
-        {sources.map((source, sourceIndex) => {
+      <ul>
+        {sources.map((source) => {
           const applicableConditions = conditions.filter(
             (condition) =>
               isListingConditionField(condition.field) &&
@@ -356,19 +462,18 @@ function ListingConditionsSummary({
           )
 
           return (
-            <Fragment key={source}>
-              {sourceIndex > 0 ? '. ' : null}
+            <li key={source}>
               {listingSourceLabels[source]}:{' '}
               {applicableConditions.length ? (
                 <ListingConditionDescriptionList conditions={applicableConditions} />
               ) : (
                 'bez dodatkowych warunków'
               )}
-            </Fragment>
+              .
+            </li>
           )
         })}
-        .
-      </p>
+      </ul>
     </aside>
   )
 }
@@ -406,6 +511,12 @@ function describeCondition(
     ? listingConditionFieldLabels[condition.field].toLocaleLowerCase('pl-PL')
     : listingConditionFieldLabels[condition.field]
   const operatorLabel = getListingConditionOperatorLabel(condition.field, condition.operator)
+  if (condition.field === 'relatedTo') {
+    const prefix = lowercaseField ? 'powiązane z' : 'Powiązane z'
+    return condition.relatedTargetMode === 'current'
+      ? `${prefix} bieżącym elementem`
+      : `${prefix} ${relationshipLabel ? `„${relationshipLabel}”` : '…'}`
+  }
   const valueLabel = getConditionValueLabel(condition, relationshipLabel)
   return `${fieldLabel} ${operatorLabel}${valueLabel ? ` ${valueLabel}` : ''}`
 }
@@ -436,6 +547,14 @@ function mergeConditionData(
       liveCondition.relationshipValue === undefined
         ? initialCondition.relationshipValue
         : liveCondition.relationshipValue,
+    relatedTargetMode:
+      liveCondition.relatedTargetMode === undefined
+        ? initialCondition.relatedTargetMode
+        : liveCondition.relatedTargetMode,
+    relatedTargetValue:
+      liveCondition.relatedTargetValue === undefined
+        ? initialCondition.relatedTargetValue
+        : liveCondition.relatedTargetValue,
     textValue:
       liveCondition.textValue === undefined ? initialCondition.textValue : liveCondition.textValue,
   }
@@ -486,8 +605,13 @@ function useConditionRelationshipLabel(condition: ListingConditionInput): string
 
 const relationshipTitleFields = {
   categories: 'fullTitle',
+  documents: 'title',
   'event-cycles': 'title',
+  events: 'title',
+  'member-profiles': 'publicName',
   pages: 'fullTitle',
+  partners: 'name',
+  posts: 'title',
   tags: 'name',
 } as const
 
@@ -496,6 +620,7 @@ const relationshipLabelQuery = {
   select: {
     fullTitle: true,
     name: true,
+    publicName: true,
     slug: true,
     title: true,
   },
@@ -506,7 +631,8 @@ function getConditionRelationshipIdentity(condition: ListingConditionInput): {
   id: number | string
   value: unknown
 } | null {
-  const relationshipValue = condition.relationshipValue
+  const relationshipValue =
+    condition.field === 'relatedTo' ? condition.relatedTargetValue : condition.relationshipValue
   if (!relationshipValue || !(relationshipValue.relationTo in relationshipTitleFields)) return null
 
   const value = relationshipValue.value
@@ -518,7 +644,7 @@ function getRelationshipLabel(value: unknown): string {
   if (typeof value === 'string' && value.trim() && Number.isNaN(Number(value))) return value.trim()
   if (!value || typeof value !== 'object') return ''
   const record = value as Record<string, unknown>
-  for (const key of ['fullTitle', 'title', 'name', 'label', 'slug', 'doc', 'value']) {
+  for (const key of ['fullTitle', 'title', 'name', 'publicName', 'label', 'slug', 'doc', 'value']) {
     const label = getRelationshipLabel(record[key])
     if (label) return label
   }

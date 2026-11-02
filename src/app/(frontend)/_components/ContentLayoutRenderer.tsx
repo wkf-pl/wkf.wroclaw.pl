@@ -32,6 +32,7 @@ import type {
   SectionGroupBlock,
   TabbedContentBlock,
 } from '@/payload-types'
+import type { ContentListingReference } from '@/modules/content/listing-conditions'
 
 import { ContentHeading, ContentPresentation } from './ContentPresentation'
 import { CardBlockSection } from './CardBlockSection'
@@ -61,6 +62,7 @@ type ContentLayoutBlock =
   ColumnLayoutBlock | SectionGroupBlock | TabbedContentBlock | ContentLeafBlock
 
 type ContentRendererProperties = {
+  currentTarget?: ContentListingReference
   document: ContentDocument
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
@@ -76,6 +78,7 @@ type ContentBlockResolution = {
 }
 
 export async function ContentLayoutRenderer({
+  currentTarget,
   document,
   pathname,
   searchParams,
@@ -87,6 +90,7 @@ export async function ContentLayoutRenderer({
       {layout.map((block, blockIndex) => (
         <ContentBlockRenderer
           block={block}
+          currentTarget={currentTarget}
           document={document}
           key={block.id ?? `layout.${blockIndex}`}
           path={`layout.${blockIndex}`}
@@ -100,6 +104,7 @@ export async function ContentLayoutRenderer({
 
 async function ContentBlockRenderer({
   block,
+  currentTarget,
   document,
   path,
   pathname,
@@ -109,6 +114,7 @@ async function ContentBlockRenderer({
     return (
       <SectionGroupRenderer
         block={block}
+        currentTarget={currentTarget}
         document={document}
         path={path}
         pathname={pathname}
@@ -121,6 +127,7 @@ async function ContentBlockRenderer({
     return (
       <ColumnLayoutRenderer
         block={block}
+        currentTarget={currentTarget}
         document={document}
         path={path}
         pathname={pathname}
@@ -133,6 +140,7 @@ async function ContentBlockRenderer({
     return (
       <TabbedContentRenderer
         block={block}
+        currentTarget={currentTarget}
         document={document}
         path={path}
         pathname={pathname}
@@ -144,6 +152,7 @@ async function ContentBlockRenderer({
   return (
     <ContentLeafBlockRenderer
       block={block}
+      currentTarget={currentTarget}
       document={document}
       path={path}
       pathname={pathname}
@@ -154,6 +163,7 @@ async function ContentBlockRenderer({
 
 async function TabbedContentRenderer({
   block,
+  currentTarget,
   document,
   path,
   pathname,
@@ -182,6 +192,7 @@ async function TabbedContentRenderer({
           return nestedBlock.blockType === 'columnLayout'
             ? resolveColumnLayout({
                 block: nestedBlock,
+                currentTarget,
                 document,
                 path: nestedPath,
                 pathname,
@@ -189,6 +200,7 @@ async function TabbedContentRenderer({
               })
             : resolveContentLeafBlock({
                 block: nestedBlock,
+                currentTarget,
                 document,
                 path: nestedPath,
                 pathname,
@@ -237,6 +249,7 @@ function renderTabbedContentMenu(items: ReturnType<typeof resolvePresentedLinks>
 
 export async function SectionGroupRenderer({
   block,
+  currentTarget,
   document,
   path,
   pathname,
@@ -258,6 +271,7 @@ export async function SectionGroupRenderer({
           if (nestedBlock.blockType === 'columnLayout') {
             return resolveColumnLayout({
               block: nestedBlock,
+              currentTarget,
               document,
               path: nestedPath,
               pathname,
@@ -269,6 +283,7 @@ export async function SectionGroupRenderer({
             return {
               content: await TabbedContentRenderer({
                 block: nestedBlock,
+                currentTarget,
                 document,
                 path: nestedPath,
                 pathname,
@@ -280,6 +295,7 @@ export async function SectionGroupRenderer({
 
           return resolveContentLeafBlock({
             block: nestedBlock,
+            currentTarget,
             document,
             path: nestedPath,
             pathname,
@@ -337,6 +353,7 @@ async function ColumnLayoutRenderer({
 
 async function resolveColumnLayout({
   block,
+  currentTarget,
   document,
   path,
   pathname,
@@ -365,6 +382,7 @@ async function resolveColumnLayout({
         blocks.map((nestedBlock, nestedBlockIndex) =>
           resolveContentLeafBlock({
             block: nestedBlock,
+            currentTarget,
             document,
             path: `${columnPath}.blocks.${nestedBlockIndex}`,
             pathname,
@@ -425,6 +443,7 @@ export async function ContentLeafBlockRenderer({
 
 async function resolveContentLeafBlock({
   block,
+  currentTarget,
   document,
   path,
   pathname,
@@ -481,6 +500,7 @@ async function resolveContentLeafBlock({
 
   const resolution = await resolvePresentedLeafBlock({
     block,
+    currentTarget,
     document,
     path,
     pathname,
@@ -505,6 +525,7 @@ async function resolveContentLeafBlock({
 
 async function resolvePresentedLeafBlock({
   block,
+  currentTarget,
   document,
   path,
   pathname,
@@ -538,6 +559,7 @@ async function resolvePresentedLeafBlock({
       const resolution = await resolveListingBlockSection({
         block,
         blockPath: path,
+        currentTarget,
         document,
         pathname,
         searchParams,

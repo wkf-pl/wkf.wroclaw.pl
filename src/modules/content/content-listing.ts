@@ -15,17 +15,21 @@ import {
   isCalendarDate,
   isListingConditionField,
   isListingConditionOperator,
+  isListingRelatedTargetMode,
+  isListingSource,
   listingConditionOperatorsByField,
   listingConditionSupportedSources,
   allListingSources,
   normalizeListingTitle,
   type ContentListingSource,
+  type ContentListingReference,
   type ListingConditionField,
   type ListingConditionInput,
   type ListingConditionOperator,
   type ListingEventTimeValue,
 } from '@/modules/content/listing-conditions'
 import {
+  createRelatedTargetSearchIndex,
   hydrateContentListingItems,
   type ContentListingDocument,
   type PublicContentListItem,
@@ -37,6 +41,7 @@ export type { ContentListingDocument, ContentListingSource, PublicContentListIte
 
 export type FindPublicContentOptions = {
   conditions?: ListingConditionInput[] | null
+  currentTarget?: ContentListingReference
   manualItems?: ManualContentReference[]
   page: number
   pageSize: number
@@ -69,6 +74,10 @@ export type PreparedListingCondition = {
   operator: ListingConditionOperator
   relationshipId?: number
   relationshipIds?: number[]
+  relatedTarget?: {
+    relationTo: ContentListingSource
+    value: number
+  }
   textValue?: string
 }
 
@@ -123,9 +132,15 @@ export async function findPublicContent(
     return findManualPublicContent(options)
   }
 
+  const conditions = await prepareListingConditions(options.conditions ?? [], options.currentTarget)
+  const { page, pageSize } = normalizeListingWindow(options)
   return findPublicContentCached({
-    conditions: await prepareListingConditions(options.conditions ?? []),
-    ...normalizeListingWindow(options),
+    conditions,
+    manualItems: options.manualItems,
+    page,
+    pageSize,
+    pagination: options.pagination,
+    selectionMode: options.selectionMode,
     sort: options.sort,
     sources: [...new Set(options.sources)].sort(),
   })
@@ -247,6 +262,14 @@ function createConditionPredicate(condition: PreparedListingCondition): Where {
             ],
           }
     }
+    case 'relatedTo':
+      return condition.relatedTarget
+        ? {
+            relatedTargetSearchIndex: {
+              contains: createRelatedTargetSearchIndex([condition.relatedTarget]),
+            },
+          }
+        : { relatedTargetSearchIndex: { equals: '__missing-current-target__' } }
     case 'significantDate':
       return createSignificantDateWhere(condition)
   }
@@ -292,13 +315,17 @@ function createSignificantDateWhere(condition: PreparedListingCondition): Where 
 
 async function prepareListingConditions(
   values: readonly ListingConditionInput[],
+  currentTarget?: ContentListingReference,
 ): Promise<PreparedListingCondition[]> {
-  const conditions = await Promise.all(values.map(prepareListingCondition))
+  const conditions = await Promise.all(
+    values.map((value) => prepareListingCondition(value, currentTarget)),
+  )
   return conditions.sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)))
 }
 
 async function prepareListingCondition(
   value: ListingConditionInput,
+  currentTarget?: ContentListingReference,
 ): Promise<PreparedListingCondition> {
   if (
     !isListingConditionField(value.field) ||
@@ -306,6 +333,9 @@ async function prepareListingCondition(
     !listingConditionOperatorsByField[value.field].includes(value.operator)
   ) {
     throw new Error('Invalid content listing condition.')
+  }
+  if (value.field === 'relatedTo' && !isListingRelatedTargetMode(value.relatedTargetMode)) {
+    throw new Error('Invalid content listing related-target mode.')
   }
 
   const relationshipCollection = getListingConditionRelationshipCollection(value.field)
@@ -366,6 +396,28 @@ async function prepareListingCondition(
     case 'eventTime':
       condition.eventTimeValue = value.eventTimeValue!
       break
+    case 'relatedTo': {
+      const reference =
+        value.relatedTargetMode === 'selected' ? value.relatedTargetValue : currentTarget
+      if (value.relatedTargetMode === 'selected' && !reference) {
+        throw new Error('Invalid content listing related target.')
+      }
+      const targetID = reference ? getFormRelationshipId(reference.value) : undefined
+      if (reference && (!isListingSource(reference.relationTo) || targetID === undefined)) {
+        throw new Error('Invalid content listing related target.')
+      }
+      if (reference) {
+        const numericTargetID = Number(targetID)
+        if (!Number.isInteger(numericTargetID) || numericTargetID < 1) {
+          throw new Error('Invalid content listing related target.')
+        }
+        condition.relatedTarget = {
+          relationTo: reference.relationTo,
+          value: numericTargetID,
+        }
+      }
+      break
+    }
     case 'significantDate':
       if (value.operator === 'notOlderThan') {
         condition.numberValue = value.numberValue!

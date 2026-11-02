@@ -30,6 +30,13 @@ export const ContentListingItems: CollectionConfig = {
     { name: 'title', type: 'text', index: true, required: true },
     { name: 'normalizedTitle', type: 'text', index: true, required: true },
     { name: 'tagSearchIndex', type: 'text', required: true },
+    { name: 'relatedTargetSearchIndex', type: 'text', required: true },
+    {
+      name: 'relatedTargets',
+      type: 'relationship',
+      hasMany: true,
+      relationTo: [...allListingSources],
+    },
     { name: 'url', type: 'text', required: true },
     { name: 'excerpt', type: 'textarea' },
     {

@@ -6,6 +6,7 @@ import config from '@payload-config'
 import type { Event, EventCycle, Partner, Post } from '@/payload-types'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import { publicRequestContext } from '@/modules/content/public-access'
+import { findPublicContent } from '@/modules/content/content-listing'
 
 const published: Where = { _status: { equals: 'published' } }
 
@@ -219,42 +220,32 @@ export const findCyclesForPartner = cachePublicData(
   { revalidate: 3600, tags: [publicCacheTags.eventCycles, publicCacheTags.partners] },
 )
 
-export const findPostsRelatedToEvent = cachePublicData(
-  'posts-related-to-event',
-  async (eventID: number): Promise<Post[]> => {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'posts',
-      context: publicRequestContext,
-      depth: 2,
-      draft: false,
-      limit: 100,
-      overrideAccess: false,
-      sort: ['-publishedAt'],
-      user: null,
-      where: { and: [published, { relatedEvents: { equals: eventID } }] },
-    })
-    return result.docs
-  },
-  { revalidate: 3600, tags: [publicCacheTags.events, publicCacheTags.posts] },
+export const findPostsRelatedToEvent = cache((eventID: number): Promise<Post[]> =>
+  findPostsRelatedTo('events', eventID),
 )
 
-export const findPostsRelatedToCycle = cachePublicData(
-  'posts-related-to-cycle',
-  async (cycleID: number): Promise<Post[]> => {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'posts',
-      context: publicRequestContext,
-      depth: 2,
-      draft: false,
-      limit: 100,
-      overrideAccess: false,
-      sort: ['-publishedAt'],
-      user: null,
-      where: { and: [published, { relatedEventCycles: { equals: cycleID } }] },
-    })
-    return result.docs
-  },
-  { revalidate: 3600, tags: [publicCacheTags.eventCycles, publicCacheTags.posts] },
+export const findPostsRelatedToCycle = cache((cycleID: number): Promise<Post[]> =>
+  findPostsRelatedTo('event-cycles', cycleID),
 )
+
+async function findPostsRelatedTo(
+  relationTo: 'event-cycles' | 'events',
+  value: number,
+): Promise<Post[]> {
+  const result = await findPublicContent({
+    conditions: [
+      {
+        field: 'relatedTo',
+        operator: 'contains',
+        relatedTargetMode: 'selected',
+        relatedTargetValue: { relationTo, value },
+      },
+    ],
+    page: 1,
+    pageSize: 100,
+    pagination: false,
+    sort: 'newest',
+    sources: ['posts'],
+  })
+  return result.items.flatMap((item) => (item.kind === 'posts' ? [item.document] : []))
+}

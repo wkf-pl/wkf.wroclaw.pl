@@ -20,6 +20,17 @@ export const taxonomizableListingSources = [
 
 export type ContentListingSource = (typeof allListingSources)[number]
 
+export const relatedListingSources = [
+  'posts',
+  'events',
+  'event-cycles',
+] as const satisfies readonly ContentListingSource[]
+
+export type ContentListingReference = {
+  relationTo: ContentListingSource
+  value: RelationshipID | Record<string, unknown>
+}
+
 export const listingConditionFields = [
   'title',
   'category',
@@ -27,6 +38,7 @@ export const listingConditionFields = [
   'parentPage',
   'eventCycle',
   'eventTime',
+  'relatedTo',
   'significantDate',
 ] as const
 
@@ -44,6 +56,7 @@ export const listingConditionOperators = [
 
 export type ListingConditionOperator = (typeof listingConditionOperators)[number]
 export type ListingEventTimeValue = 'past' | 'upcoming'
+export type ListingRelatedTargetMode = 'current' | 'selected'
 export type ListingConditionRelationshipCollection =
   'categories' | 'event-cycles' | 'pages' | 'tags'
 
@@ -60,6 +73,8 @@ export type ListingConditionInput = {
   id?: null | string
   numberValue?: null | number
   operator?: ListingConditionOperator | null
+  relatedTargetMode?: ListingRelatedTargetMode | null
+  relatedTargetValue?: ContentListingReference | null
   relationshipValue?: ListingConditionRelationshipValue | null
   textValue?: null | string
 }
@@ -71,6 +86,10 @@ export type NormalizedListingCondition = {
   field: ListingConditionField
   numberValue?: number
   operator: ListingConditionOperator
+  relatedTarget?: {
+    relationTo: ContentListingSource
+    value: RelationshipID
+  }
   relationshipId?: number
   textValue?: string
 }
@@ -80,6 +99,7 @@ export const listingConditionFieldLabels: Record<ListingConditionField, string> 
   eventCycle: 'Cykl wydarzeń',
   eventTime: 'Termin wydarzenia',
   parentPage: 'Strona nadrzędna',
+  relatedTo: 'Powiązane z',
   significantDate: 'Data treści',
   tag: 'Tag',
   title: 'Tytuł',
@@ -113,6 +133,7 @@ export const listingConditionSupportedSources: Record<
   eventCycle: ['events'],
   eventTime: ['events'],
   parentPage: ['pages'],
+  relatedTo: relatedListingSources,
   significantDate: ['posts', 'events', 'documents'],
   tag: taxonomizableListingSources,
   title: allListingSources,
@@ -126,6 +147,7 @@ export const listingConditionOperatorsByField: Record<
   eventCycle: ['equals'],
   eventTime: ['equals'],
   parentPage: ['equals'],
+  relatedTo: ['contains'],
   significantDate: ['notOlderThan', 'before', 'after', 'between'],
   tag: ['contains'],
   title: ['contains', 'equals'],
@@ -180,6 +202,10 @@ export function isListingConditionField(value: unknown): value is ListingConditi
 
 export function isListingConditionOperator(value: unknown): value is ListingConditionOperator {
   return listingConditionOperators.some((operator) => operator === value)
+}
+
+export function isListingRelatedTargetMode(value: unknown): value is ListingRelatedTargetMode {
+  return value === 'current' || value === 'selected'
 }
 
 export function isListingSource(value: unknown): value is ContentListingSource {

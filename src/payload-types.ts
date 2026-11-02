@@ -12,7 +12,7 @@
  */
 export type ListingCondition =
   | {
-      field: 'title' | 'category' | 'tag' | 'parentPage' | 'eventCycle' | 'eventTime' | 'significantDate';
+      field: 'title' | 'category' | 'tag' | 'parentPage' | 'eventCycle' | 'eventTime' | 'relatedTo' | 'significantDate';
       operator: 'contains' | 'equals' | 'inSubtree' | 'notOlderThan' | 'before' | 'after' | 'between';
       relationshipValue?:
         | ({
@@ -30,6 +30,36 @@ export type ListingCondition =
         | ({
             relationTo: 'event-cycles';
             value: number | EventCycle;
+          } | null);
+      relatedTargetMode?: ('current' | 'selected') | null;
+      relatedTargetValue?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'posts';
+            value: number | Post;
+          } | null)
+        | ({
+            relationTo: 'events';
+            value: number | Event;
+          } | null)
+        | ({
+            relationTo: 'event-cycles';
+            value: number | EventCycle;
+          } | null)
+        | ({
+            relationTo: 'documents';
+            value: number | Document;
+          } | null)
+        | ({
+            relationTo: 'partners';
+            value: number | Partner;
+          } | null)
+        | ({
+            relationTo: 'member-profiles';
+            value: number | MemberProfile;
           } | null);
       textValue?: string | null;
       numberValue?: number | null;
@@ -221,6 +251,39 @@ export interface ContentListingItem {
   title: string;
   normalizedTitle: string;
   tagSearchIndex: string;
+  relatedTargetSearchIndex: string;
+  relatedTargets?:
+    | (
+        | {
+            relationTo: 'pages';
+            value: number | Page;
+          }
+        | {
+            relationTo: 'posts';
+            value: number | Post;
+          }
+        | {
+            relationTo: 'events';
+            value: number | Event;
+          }
+        | {
+            relationTo: 'event-cycles';
+            value: number | EventCycle;
+          }
+        | {
+            relationTo: 'documents';
+            value: number | Document;
+          }
+        | {
+            relationTo: 'partners';
+            value: number | Partner;
+          }
+        | {
+            relationTo: 'member-profiles';
+            value: number | MemberProfile;
+          }
+      )[]
+    | null;
   url: string;
   excerpt?: string | null;
   hasSignificantDate?: boolean | null;
@@ -232,6 +295,69 @@ export interface ContentListingItem {
   tags?: (number | Tag)[] | null;
   parentPage?: (number | null) | Page;
   eventCycle?: (number | null) | EventCycle;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages".
+ */
+export interface Page {
+  id: number;
+  title: string;
+  parent?: (number | null) | Page;
+  fullTitle?: string | null;
+  heroImage?: (number | null) | Media;
+  /**
+   * Opcjonalny opis karty. Bez niego użyty zostanie początek pierwszego bloku treści.
+   */
+  listingExcerpt?: string | null;
+  layout: (
+    | RichTextBlock
+    | HeadingBlock
+    | ActionLinksBlock
+    | CardBlock
+    | ListingBlock
+    | ContentCalendarBlock
+    | MediaGalleryBlock
+    | AttachmentsBlock
+    | ColumnLayoutBlock
+    | SectionGroupBlock
+    | TabbedContentBlock
+  )[];
+  seo?: {
+    /**
+     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
+     */
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
+     */
+    image?: (number | null) | Media;
+  };
+  /**
+   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
+   */
+  slug: string;
+  breadcrumbs?:
+    | {
+        doc?: (number | null) | Page;
+        url?: string | null;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  category?: (number | null) | Category;
+  tags?: (number | Tag)[] | null;
+  author: number | User;
+  systemKey?: string | null;
+  /**
+   * Ustawiana automatycznie przy pierwszej publikacji.
+   */
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -312,18 +438,51 @@ export interface Category {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "pages".
+ * via the `definition` "posts".
  */
-export interface Page {
+export interface Post {
   id: number;
   title: string;
-  parent?: (number | null) | Page;
-  fullTitle?: string | null;
   heroImage?: (number | null) | Media;
   /**
-   * Opcjonalny opis karty. Bez niego użyty zostanie początek pierwszego bloku treści.
+   * Krótkie wprowadzenie wyświetlane na listach wpisów.
    */
-  listingExcerpt?: string | null;
+  excerpt: string;
+  /**
+   * Wybierz treści, z którymi wpis jest bezpośrednio powiązany. Relacja może być używana przez Listingi na stronach wybranych elementów.
+   */
+  relatedContent?:
+    | (
+        | {
+            relationTo: 'pages';
+            value: number | Page;
+          }
+        | {
+            relationTo: 'posts';
+            value: number | Post;
+          }
+        | {
+            relationTo: 'events';
+            value: number | Event;
+          }
+        | {
+            relationTo: 'event-cycles';
+            value: number | EventCycle;
+          }
+        | {
+            relationTo: 'documents';
+            value: number | Document;
+          }
+        | {
+            relationTo: 'partners';
+            value: number | Partner;
+          }
+        | {
+            relationTo: 'member-profiles';
+            value: number | MemberProfile;
+          }
+      )[]
+    | null;
   layout: (
     | RichTextBlock
     | HeadingBlock
@@ -352,18 +511,299 @@ export interface Page {
    * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
    */
   slug: string;
-  breadcrumbs?:
-    | {
-        doc?: (number | null) | Page;
-        url?: string | null;
-        label?: string | null;
-        id?: string | null;
-      }[]
-    | null;
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
   author: number | User;
-  systemKey?: string | null;
+  /**
+   * Ustawiana automatycznie przy pierwszej publikacji.
+   */
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  cycle?: (number | null) | EventCycle;
+  title: string;
+  eventType: number | EventType;
+  heroImage?: (number | null) | Media;
+  excerpt: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  layout: (
+    | RichTextBlock
+    | HeadingBlock
+    | ActionLinksBlock
+    | CardBlock
+    | ListingBlock
+    | ContentCalendarBlock
+    | MediaGalleryBlock
+    | AttachmentsBlock
+    | ColumnLayoutBlock
+    | SectionGroupBlock
+    | TabbedContentBlock
+  )[];
+  timeMode: 'timed' | 'allDay';
+  startAt: string;
+  endAt?: string | null;
+  eventStatus: 'scheduled' | 'completed' | 'cancelled' | 'postponed' | 'rescheduled';
+  location: {
+    venueName?: string | null;
+    venueWebsite?: string | null;
+    streetAddress?: string | null;
+    postalCode?: string | null;
+    city?: string | null;
+    /**
+     * W Mapach Google wybierz „Udostępnij → Umieść mapę” i wklej skopiowany kod HTML.
+     */
+    mapEmbedURL?: string | null;
+    country: string;
+  };
+  participation: 'public' | 'members';
+  capacityMode: 'unlimited' | 'exact' | 'approximate';
+  capacity?: number | null;
+  organizers?:
+    | {
+        profile: number | MemberProfile;
+        role?: string | null;
+        responsibilities?: string | null;
+        contactFor?: string | null;
+        showContactChannels?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  partners?:
+    | {
+        partner: number | Partner;
+        roles: ('coOrganizer' | 'sponsor' | 'partner' | 'patron' | 'venueHost' | 'support')[];
+        contribution?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  externalLinks?:
+    | {
+        label: string;
+        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+        eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
+        partner?: (number | null) | Partner;
+        page?: (number | null) | Page;
+        tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+        /**
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+         */
+        customAddress?: string | null;
+        openInNewTab?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  seo?: {
+    /**
+     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
+     */
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
+     */
+    image?: (number | null) | Media;
+  };
+  /**
+   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
+   */
+  slug: string;
+  category?: (number | null) | Category;
+  tags?: (number | Tag)[] | null;
+  author: number | User;
+  defaultsAppliedCycle?: (number | null) | EventCycle;
+  previousStartAt?: string | null;
+  publishedStartAt?: string | null;
+  calendarUID?: string | null;
+  calendarRevision: number;
+  calendarFingerprint?: string | null;
+  /**
+   * Ustawiana automatycznie przy pierwszej publikacji.
+   */
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-cycles".
+ */
+export interface EventCycle {
+  id: number;
+  title: string;
+  heroImage?: (number | null) | Media;
+  excerpt: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  layout: (
+    | RichTextBlock
+    | HeadingBlock
+    | ActionLinksBlock
+    | CardBlock
+    | ListingBlock
+    | ContentCalendarBlock
+    | MediaGalleryBlock
+    | AttachmentsBlock
+    | ColumnLayoutBlock
+    | SectionGroupBlock
+    | TabbedContentBlock
+  )[];
+  seo?: {
+    /**
+     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
+     */
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
+     */
+    image?: (number | null) | Media;
+  };
+  eventDefaults: {
+    title?: string | null;
+    eventType: number | EventType;
+    heroImage?: (number | null) | Media;
+    excerpt?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+    layout: (
+      | RichTextBlock
+      | HeadingBlock
+      | ActionLinksBlock
+      | CardBlock
+      | ListingBlock
+      | ContentCalendarBlock
+      | MediaGalleryBlock
+      | AttachmentsBlock
+      | ColumnLayoutBlock
+      | SectionGroupBlock
+      | TabbedContentBlock
+    )[];
+    category?: (number | null) | Category;
+    tags?: (number | Tag)[] | null;
+    recurrenceType?: ('daily' | 'weekly' | 'monthlyDate' | 'monthlyWeekday') | null;
+    weekInterval?: number | null;
+    monthDay?: number | null;
+    weekOfMonth?: number | null;
+    recurrenceWeekday?: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday') | null;
+    defaultDayCount?: number | null;
+    defaultStartTime?: string | null;
+    defaultEndTime?: string | null;
+    location: {
+      venueName?: string | null;
+      venueWebsite?: string | null;
+      streetAddress?: string | null;
+      postalCode?: string | null;
+      city?: string | null;
+      /**
+       * W Mapach Google wybierz „Udostępnij → Umieść mapę” i wklej skopiowany kod HTML.
+       */
+      mapEmbedURL?: string | null;
+      country: string;
+    };
+    participation: 'public' | 'members';
+    capacityMode: 'unlimited' | 'exact' | 'approximate';
+    capacity?: number | null;
+    organizers?:
+      | {
+          profile: number | MemberProfile;
+          role?: string | null;
+          responsibilities?: string | null;
+          contactFor?: string | null;
+          showContactChannels?: boolean | null;
+          id?: string | null;
+        }[]
+      | null;
+    partners?:
+      | {
+          partner: number | Partner;
+          roles: ('coOrganizer' | 'sponsor' | 'partner' | 'patron' | 'venueHost' | 'support')[];
+          contribution?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    externalLinks?:
+      | {
+          label: string;
+          targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+          eventCycle?: (number | null) | EventCycle;
+          document?: (number | null) | Document;
+          category?: (number | null) | Category;
+          partner?: (number | null) | Partner;
+          page?: (number | null) | Page;
+          tag?: (number | null) | Tag;
+          post?: (number | null) | Post;
+          event?: (number | null) | Event;
+          customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+          /**
+           * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+           */
+          customAddress?: string | null;
+          openInNewTab?: boolean | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
+   */
+  slug: string;
+  category?: (number | null) | Category;
+  tags?: (number | Tag)[] | null;
+  author: number | User;
+  calendarFeedKey?: string | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -652,309 +1092,6 @@ export interface ActionLinksBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "event-cycles".
- */
-export interface EventCycle {
-  id: number;
-  title: string;
-  heroImage?: (number | null) | Media;
-  excerpt: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  layout: (
-    | RichTextBlock
-    | HeadingBlock
-    | ActionLinksBlock
-    | CardBlock
-    | ListingBlock
-    | ContentCalendarBlock
-    | MediaGalleryBlock
-    | AttachmentsBlock
-    | ColumnLayoutBlock
-    | SectionGroupBlock
-    | TabbedContentBlock
-  )[];
-  seo?: {
-    /**
-     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
-     */
-    title?: string | null;
-    description?: string | null;
-    /**
-     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
-     */
-    image?: (number | null) | Media;
-  };
-  eventDefaults: {
-    title?: string | null;
-    eventType: number | EventType;
-    heroImage?: (number | null) | Media;
-    excerpt?: {
-      root: {
-        type: string;
-        children: {
-          type: any;
-          version: number;
-          [k: string]: unknown;
-        }[];
-        direction: ('ltr' | 'rtl') | null;
-        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-        indent: number;
-        version: number;
-      };
-      [k: string]: unknown;
-    } | null;
-    layout: (
-      | RichTextBlock
-      | HeadingBlock
-      | ActionLinksBlock
-      | CardBlock
-      | ListingBlock
-      | ContentCalendarBlock
-      | MediaGalleryBlock
-      | AttachmentsBlock
-      | ColumnLayoutBlock
-      | SectionGroupBlock
-      | TabbedContentBlock
-    )[];
-    category?: (number | null) | Category;
-    tags?: (number | Tag)[] | null;
-    recurrenceType?: ('daily' | 'weekly' | 'monthlyDate' | 'monthlyWeekday') | null;
-    weekInterval?: number | null;
-    monthDay?: number | null;
-    weekOfMonth?: number | null;
-    recurrenceWeekday?: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday') | null;
-    defaultDayCount?: number | null;
-    defaultStartTime?: string | null;
-    defaultEndTime?: string | null;
-    location: {
-      venueName?: string | null;
-      venueWebsite?: string | null;
-      streetAddress?: string | null;
-      postalCode?: string | null;
-      city?: string | null;
-      /**
-       * W Mapach Google wybierz „Udostępnij → Umieść mapę” i wklej skopiowany kod HTML.
-       */
-      mapEmbedURL?: string | null;
-      country: string;
-    };
-    participation: 'public' | 'members';
-    capacityMode: 'unlimited' | 'exact' | 'approximate';
-    capacity?: number | null;
-    organizers?:
-      | {
-          profile: number | MemberProfile;
-          role?: string | null;
-          responsibilities?: string | null;
-          contactFor?: string | null;
-          showContactChannels?: boolean | null;
-          id?: string | null;
-        }[]
-      | null;
-    partners?:
-      | {
-          partner: number | Partner;
-          roles: ('coOrganizer' | 'sponsor' | 'partner' | 'patron' | 'venueHost' | 'support')[];
-          contribution?: string | null;
-          id?: string | null;
-        }[]
-      | null;
-    externalLinks?:
-      | {
-          label: string;
-          targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
-          eventCycle?: (number | null) | EventCycle;
-          document?: (number | null) | Document;
-          category?: (number | null) | Category;
-          partner?: (number | null) | Partner;
-          page?: (number | null) | Page;
-          tag?: (number | null) | Tag;
-          post?: (number | null) | Post;
-          event?: (number | null) | Event;
-          customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
-          /**
-           * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
-           */
-          customAddress?: string | null;
-          openInNewTab?: boolean | null;
-          id?: string | null;
-        }[]
-      | null;
-  };
-  /**
-   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
-   */
-  slug: string;
-  category?: (number | null) | Category;
-  tags?: (number | Tag)[] | null;
-  author: number | User;
-  calendarFeedKey?: string | null;
-  /**
-   * Ustawiana automatycznie przy pierwszej publikacji.
-   */
-  publishedAt?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  deletedAt?: string | null;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "CardBlock".
- */
-export interface CardBlock {
-  title: string;
-  destinationPage?: (number | null) | Page;
-  image?: (number | null) | Media;
-  links?:
-    | {
-        /**
-         * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
-         */
-        label?: string | null;
-        appearance: 'link' | 'primaryButton' | 'secondaryButton';
-        iconName?:
-          | (
-              | 'camera'
-              | 'astronaut'
-              | 'ticket'
-              | 'bluesky'
-              | 'mace'
-              | 'bottle-mana'
-              | 'cthulhu'
-              | 'time'
-              | 'skull'
-              | 'dnd5'
-              | 'discord'
-              | 'document'
-              | 'pumpkin-halloween'
-              | 'mail'
-              | 'facebook'
-              | 'guitar'
-              | 'globe'
-              | 'board-game'
-              | 'star'
-              | 'instagram'
-              | 'calendar'
-              | 'hat'
-              | 'gun'
-              | 'cards'
-              | 'playing-cards'
-              | 'collection'
-              | 'compass'
-              | 'confetti'
-              | 'dice'
-              | 'd10'
-              | 'd12'
-              | 'd20'
-              | 'd4'
-              | 'd6'
-              | 'd8'
-              | 'water-drop'
-              | 'crystal-ball'
-              | 'book'
-              | 'fireball'
-              | 'larp'
-              | 'external-link'
-              | 'linkedin'
-              | 'location'
-              | 'bow'
-              | 'mage'
-              | 'pirate-map'
-              | 'vendetta'
-              | 'messenger'
-              | 'sword'
-              | 'potion'
-              | 'music'
-              | 'image'
-              | 'announcement'
-              | 'eye'
-              | 'partner'
-              | 'pdf'
-              | 'seal'
-              | 'pawn'
-              | 'quill'
-              | 'flame'
-              | 'download'
-              | 'review'
-              | 'wand'
-              | 'sf'
-              | 'seance'
-              | 'arrows'
-              | 'slack'
-              | 'users'
-              | 'star-trek'
-              | 'star-wars-empire'
-              | 'star-wars-rebel-alliance'
-              | 'steampunk'
-              | 'home'
-              | 'arrow'
-              | 'arrow-left'
-              | 'arrow-right'
-              | 'superhero'
-              | 'stormtrooper'
-              | 'soundtrack'
-              | 'tag'
-              | 'shield'
-              | 'axe'
-              | 'twitch'
-              | 'shuttle'
-              | 'fighter'
-              | 'event'
-              | 'filled-star'
-              | 'youtube'
-              | 'scroll'
-            )
-          | null;
-        targetType:
-          | 'eventCycle'
-          | 'document'
-          | 'siteContactEmail'
-          | 'category'
-          | 'partner'
-          | 'page'
-          | 'tag'
-          | 'custom'
-          | 'post'
-          | 'event';
-        eventCycle?: (number | null) | EventCycle;
-        document?: (number | null) | Document;
-        category?: (number | null) | Category;
-        partner?: (number | null) | Partner;
-        page?: (number | null) | Page;
-        tag?: (number | null) | Tag;
-        post?: (number | null) | Post;
-        event?: (number | null) | Event;
-        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
-        /**
-         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
-         */
-        customAddress?: string | null;
-        emailSubject?: string | null;
-        emailBody?: string | null;
-        openInNewTab?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'card';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "documents".
  */
 export interface Document {
@@ -1144,18 +1281,14 @@ export interface Tag {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "posts".
+ * via the `definition` "partners".
  */
-export interface Post {
+export interface Partner {
   id: number;
-  title: string;
+  name: string;
   heroImage?: (number | null) | Media;
-  /**
-   * Krótkie wprowadzenie wyświetlane na listach wpisów.
-   */
   excerpt: string;
-  relatedEvents?: (number | Event)[] | null;
-  relatedEventCycles?: (number | EventCycle)[] | null;
+  website?: string | null;
   layout: (
     | RichTextBlock
     | HeadingBlock
@@ -1181,11 +1314,9 @@ export interface Post {
     image?: (number | null) | Media;
   };
   /**
-   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
+   * Adres jest tworzony automatycznie z nazwy, ale można go zmienić.
    */
   slug: string;
-  category?: (number | null) | Category;
-  tags?: (number | Tag)[] | null;
   author: number | User;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
@@ -1198,83 +1329,123 @@ export interface Post {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "events".
+ * via the `definition` "CardBlock".
  */
-export interface Event {
-  id: number;
-  cycle?: (number | null) | EventCycle;
+export interface CardBlock {
   title: string;
-  eventType: number | EventType;
-  heroImage?: (number | null) | Media;
-  excerpt: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  layout: (
-    | RichTextBlock
-    | HeadingBlock
-    | ActionLinksBlock
-    | CardBlock
-    | ListingBlock
-    | ContentCalendarBlock
-    | MediaGalleryBlock
-    | AttachmentsBlock
-    | ColumnLayoutBlock
-    | SectionGroupBlock
-    | TabbedContentBlock
-  )[];
-  timeMode: 'timed' | 'allDay';
-  startAt: string;
-  endAt?: string | null;
-  eventStatus: 'scheduled' | 'completed' | 'cancelled' | 'postponed' | 'rescheduled';
-  location: {
-    venueName?: string | null;
-    venueWebsite?: string | null;
-    streetAddress?: string | null;
-    postalCode?: string | null;
-    city?: string | null;
-    /**
-     * W Mapach Google wybierz „Udostępnij → Umieść mapę” i wklej skopiowany kod HTML.
-     */
-    mapEmbedURL?: string | null;
-    country: string;
-  };
-  participation: 'public' | 'members';
-  capacityMode: 'unlimited' | 'exact' | 'approximate';
-  capacity?: number | null;
-  organizers?:
+  destinationPage?: (number | null) | Page;
+  image?: (number | null) | Media;
+  links?:
     | {
-        profile: number | MemberProfile;
-        role?: string | null;
-        responsibilities?: string | null;
-        contactFor?: string | null;
-        showContactChannels?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  partners?:
-    | {
-        partner: number | Partner;
-        roles: ('coOrganizer' | 'sponsor' | 'partner' | 'patron' | 'venueHost' | 'support')[];
-        contribution?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  externalLinks?:
-    | {
-        label: string;
-        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+        /**
+         * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
+         */
+        label?: string | null;
+        appearance: 'link' | 'primaryButton' | 'secondaryButton';
+        iconName?:
+          | (
+              | 'camera'
+              | 'astronaut'
+              | 'ticket'
+              | 'bluesky'
+              | 'mace'
+              | 'bottle-mana'
+              | 'cthulhu'
+              | 'time'
+              | 'skull'
+              | 'dnd5'
+              | 'discord'
+              | 'document'
+              | 'pumpkin-halloween'
+              | 'mail'
+              | 'facebook'
+              | 'guitar'
+              | 'globe'
+              | 'board-game'
+              | 'star'
+              | 'instagram'
+              | 'calendar'
+              | 'hat'
+              | 'gun'
+              | 'cards'
+              | 'playing-cards'
+              | 'collection'
+              | 'compass'
+              | 'confetti'
+              | 'dice'
+              | 'd10'
+              | 'd12'
+              | 'd20'
+              | 'd4'
+              | 'd6'
+              | 'd8'
+              | 'water-drop'
+              | 'crystal-ball'
+              | 'book'
+              | 'fireball'
+              | 'larp'
+              | 'external-link'
+              | 'linkedin'
+              | 'location'
+              | 'bow'
+              | 'mage'
+              | 'pirate-map'
+              | 'vendetta'
+              | 'messenger'
+              | 'sword'
+              | 'potion'
+              | 'music'
+              | 'image'
+              | 'announcement'
+              | 'eye'
+              | 'partner'
+              | 'pdf'
+              | 'seal'
+              | 'pawn'
+              | 'quill'
+              | 'flame'
+              | 'download'
+              | 'review'
+              | 'wand'
+              | 'sf'
+              | 'seance'
+              | 'arrows'
+              | 'slack'
+              | 'users'
+              | 'star-trek'
+              | 'star-wars-empire'
+              | 'star-wars-rebel-alliance'
+              | 'steampunk'
+              | 'home'
+              | 'arrow'
+              | 'arrow-left'
+              | 'arrow-right'
+              | 'superhero'
+              | 'stormtrooper'
+              | 'soundtrack'
+              | 'tag'
+              | 'shield'
+              | 'axe'
+              | 'twitch'
+              | 'shuttle'
+              | 'fighter'
+              | 'event'
+              | 'filled-star'
+              | 'youtube'
+              | 'scroll'
+            )
+          | null;
+        targetType:
+          | 'eventCycle'
+          | 'document'
+          | 'siteContactEmail'
+          | 'category'
+          | 'partner'
+          | 'page'
+          | 'tag'
+          | 'custom'
+          | 'post'
+          | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
         category?: (number | null) | Category;
@@ -1288,143 +1459,15 @@ export interface Event {
          * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
          */
         customAddress?: string | null;
+        emailSubject?: string | null;
+        emailBody?: string | null;
         openInNewTab?: boolean | null;
         id?: string | null;
       }[]
     | null;
-  seo?: {
-    /**
-     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
-     */
-    title?: string | null;
-    description?: string | null;
-    /**
-     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
-     */
-    image?: (number | null) | Media;
-  };
-  /**
-   * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
-   */
-  slug: string;
-  category?: (number | null) | Category;
-  tags?: (number | Tag)[] | null;
-  author: number | User;
-  defaultsAppliedCycle?: (number | null) | EventCycle;
-  previousStartAt?: string | null;
-  publishedStartAt?: string | null;
-  calendarUID?: string | null;
-  calendarRevision: number;
-  calendarFingerprint?: string | null;
-  /**
-   * Ustawiana automatycznie przy pierwszej publikacji.
-   */
-  publishedAt?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  deletedAt?: string | null;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "event-types".
- */
-export interface EventType {
-  id: number;
-  name: string;
-  iconName:
-    | 'announcement'
-    | 'arrow-right'
-    | 'arrow'
-    | 'arrow-left'
-    | 'arrows'
-    | 'calendar'
-    | 'download'
-    | 'event'
-    | 'external-link'
-    | 'eye'
-    | 'filled-star'
-    | 'globe'
-    | 'home'
-    | 'location'
-    | 'compass'
-    | 'confetti'
-    | 'star'
-    | 'ticket'
-    | 'time'
-    | 'book'
-    | 'camera'
-    | 'collection'
-    | 'document'
-    | 'guitar'
-    | 'image'
-    | 'music'
-    | 'pdf'
-    | 'quill'
-    | 'review'
-    | 'seance'
-    | 'soundtrack'
-    | 'scroll'
-    | 'seal'
-    | 'tag'
-    | 'board-game'
-    | 'cards'
-    | 'dice'
-    | 'd4'
-    | 'd6'
-    | 'd8'
-    | 'd10'
-    | 'd12'
-    | 'd20'
-    | 'dnd5'
-    | 'pawn'
-    | 'playing-cards'
-    | 'larp'
-    | 'sword'
-    | 'axe'
-    | 'bow'
-    | 'fighter'
-    | 'fireball'
-    | 'bottle-mana'
-    | 'crystal-ball'
-    | 'flame'
-    | 'cthulhu'
-    | 'hat'
-    | 'mace'
-    | 'mage'
-    | 'pirate-map'
-    | 'potion'
-    | 'pumpkin-halloween'
-    | 'shield'
-    | 'wand'
-    | 'astronaut'
-    | 'gun'
-    | 'sf'
-    | 'shuttle'
-    | 'skull'
-    | 'star-trek'
-    | 'star-wars-empire'
-    | 'star-wars-rebel-alliance'
-    | 'steampunk'
-    | 'stormtrooper'
-    | 'superhero'
-    | 'vendetta'
-    | 'water-drop'
-    | 'partner'
-    | 'users'
-    | 'bluesky'
-    | 'discord'
-    | 'facebook'
-    | 'instagram'
-    | 'linkedin'
-    | 'mail'
-    | 'messenger'
-    | 'slack'
-    | 'twitch'
-    | 'youtube';
-  iconColor: 'lantern-glow' | 'mist-silver' | 'parchment-ivory';
-  updatedAt: string;
-  createdAt: string;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'card';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1492,51 +1535,135 @@ export interface ListingBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "partners".
+ * via the `definition` "member-profiles".
  */
-export interface Partner {
+export interface MemberProfile {
   id: number;
-  name: string;
-  heroImage?: (number | null) | Media;
-  excerpt: string;
-  website?: string | null;
-  layout: (
-    | RichTextBlock
-    | HeadingBlock
-    | ActionLinksBlock
-    | CardBlock
-    | ListingBlock
-    | ContentCalendarBlock
-    | MediaGalleryBlock
-    | AttachmentsBlock
-    | ColumnLayoutBlock
-    | SectionGroupBlock
-    | TabbedContentBlock
-  )[];
-  seo?: {
-    /**
-     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
-     */
-    title?: string | null;
-    description?: string | null;
-    /**
-     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
-     */
-    image?: (number | null) | Media;
-  };
+  owner: number | User;
   /**
-   * Adres jest tworzony automatycznie z nazwy, ale można go zmienić.
+   * Imię i nazwisko, ksywa albo obie formy — dokładnie tak, jak mają być widoczne publicznie.
    */
+  publicName: string;
+  about?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * JPEG, PNG, WebP lub AVIF, maksymalnie 5 MiB. Nowy plik zastępuje poprzedni.
+   */
+  photo?: (number | null) | MemberProfileImage;
+  interests?: string | null;
+  /**
+   * Pole opcjonalne — wizytówka nie musi dotyczyć grania.
+   */
+  games?:
+    | {
+        title: string;
+        plays?: boolean | null;
+        runs?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  clubFunction?: string | null;
+  clubActivities?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  contactTopics?: string | null;
+  /**
+   * Podane adresy będą dostępne publicznie bez logowania.
+   */
+  contactChannels?:
+    | {
+        type:
+          | 'email'
+          | 'facebook'
+          | 'messenger'
+          | 'discord'
+          | 'instagram'
+          | 'bluesky'
+          | 'mastodon'
+          | 'linkedin'
+          | 'youtube'
+          | 'twitch'
+          | 'website'
+          | 'other';
+        /**
+         * Dla e-maila podaj adres. Dla pozostałych kanałów podaj pełny link HTTPS.
+         */
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
   slug: string;
-  author: number | User;
-  /**
-   * Ustawiana automatycznie przy pierwszej publikacji.
-   */
-  publishedAt?: string | null;
+  moderatorHidden?: boolean | null;
+  moderationReason?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "member-profile-images".
+ */
+export interface MemberProfileImage {
+  id: number;
+  owner: number | User;
+  isPubliclyUsed?: boolean | null;
+  prefix?: string | null;
+  _objectKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    profile?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2130,135 +2257,104 @@ export interface TabbedContentBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "member-profiles".
+ * via the `definition` "event-types".
  */
-export interface MemberProfile {
+export interface EventType {
   id: number;
-  owner: number | User;
-  /**
-   * Imię i nazwisko, ksywa albo obie formy — dokładnie tak, jak mają być widoczne publicznie.
-   */
-  publicName: string;
-  about?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * JPEG, PNG, WebP lub AVIF, maksymalnie 5 MiB. Nowy plik zastępuje poprzedni.
-   */
-  photo?: (number | null) | MemberProfileImage;
-  interests?: string | null;
-  /**
-   * Pole opcjonalne — wizytówka nie musi dotyczyć grania.
-   */
-  games?:
-    | {
-        title: string;
-        plays?: boolean | null;
-        runs?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  clubFunction?: string | null;
-  clubActivities?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  contactTopics?: string | null;
-  /**
-   * Podane adresy będą dostępne publicznie bez logowania.
-   */
-  contactChannels?:
-    | {
-        type:
-          | 'email'
-          | 'facebook'
-          | 'messenger'
-          | 'discord'
-          | 'instagram'
-          | 'bluesky'
-          | 'mastodon'
-          | 'linkedin'
-          | 'youtube'
-          | 'twitch'
-          | 'website'
-          | 'other';
-        /**
-         * Dla e-maila podaj adres. Dla pozostałych kanałów podaj pełny link HTTPS.
-         */
-        url: string;
-        id?: string | null;
-      }[]
-    | null;
-  slug: string;
-  moderatorHidden?: boolean | null;
-  moderationReason?: string | null;
+  name: string;
+  iconName:
+    | 'announcement'
+    | 'arrow-right'
+    | 'arrow'
+    | 'arrow-left'
+    | 'arrows'
+    | 'calendar'
+    | 'download'
+    | 'event'
+    | 'external-link'
+    | 'eye'
+    | 'filled-star'
+    | 'globe'
+    | 'home'
+    | 'location'
+    | 'compass'
+    | 'confetti'
+    | 'star'
+    | 'ticket'
+    | 'time'
+    | 'book'
+    | 'camera'
+    | 'collection'
+    | 'document'
+    | 'guitar'
+    | 'image'
+    | 'music'
+    | 'pdf'
+    | 'quill'
+    | 'review'
+    | 'seance'
+    | 'soundtrack'
+    | 'scroll'
+    | 'seal'
+    | 'tag'
+    | 'board-game'
+    | 'cards'
+    | 'dice'
+    | 'd4'
+    | 'd6'
+    | 'd8'
+    | 'd10'
+    | 'd12'
+    | 'd20'
+    | 'dnd5'
+    | 'pawn'
+    | 'playing-cards'
+    | 'larp'
+    | 'sword'
+    | 'axe'
+    | 'bow'
+    | 'fighter'
+    | 'fireball'
+    | 'bottle-mana'
+    | 'crystal-ball'
+    | 'flame'
+    | 'cthulhu'
+    | 'hat'
+    | 'mace'
+    | 'mage'
+    | 'pirate-map'
+    | 'potion'
+    | 'pumpkin-halloween'
+    | 'shield'
+    | 'wand'
+    | 'astronaut'
+    | 'gun'
+    | 'sf'
+    | 'shuttle'
+    | 'skull'
+    | 'star-trek'
+    | 'star-wars-empire'
+    | 'star-wars-rebel-alliance'
+    | 'steampunk'
+    | 'stormtrooper'
+    | 'superhero'
+    | 'vendetta'
+    | 'water-drop'
+    | 'partner'
+    | 'users'
+    | 'bluesky'
+    | 'discord'
+    | 'facebook'
+    | 'instagram'
+    | 'linkedin'
+    | 'mail'
+    | 'messenger'
+    | 'slack'
+    | 'twitch'
+    | 'youtube';
+  iconColor: 'lantern-glow' | 'mist-silver' | 'parchment-ivory';
   updatedAt: string;
   createdAt: string;
-  deletedAt?: string | null;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "member-profile-images".
- */
-export interface MemberProfileImage {
-  id: number;
-  owner: number | User;
-  isPubliclyUsed?: boolean | null;
-  prefix?: string | null;
-  _objectKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-  sizes?: {
-    card?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    profile?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2593,6 +2689,8 @@ export interface ContentListingItemsSelect<T extends boolean = true> {
   title?: T;
   normalizedTitle?: T;
   tagSearchIndex?: T;
+  relatedTargetSearchIndex?: T;
+  relatedTargets?: T;
   url?: T;
   excerpt?: T;
   hasSignificantDate?: T;
@@ -2785,6 +2883,8 @@ export interface ListingConditionSelect<T extends boolean = true> {
   field?: T;
   operator?: T;
   relationshipValue?: T;
+  relatedTargetMode?: T;
+  relatedTargetValue?: T;
   textValue?: T;
   numberValue?: T;
   eventTimeValue?: T;
@@ -3044,8 +3144,7 @@ export interface PostsSelect<T extends boolean = true> {
   title?: T;
   heroImage?: T;
   excerpt?: T;
-  relatedEvents?: T;
-  relatedEventCycles?: T;
+  relatedContent?: T;
   layout?:
     | T
     | {

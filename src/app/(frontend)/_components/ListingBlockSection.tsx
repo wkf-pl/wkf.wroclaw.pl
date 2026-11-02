@@ -16,6 +16,7 @@ import {
   type ContentListingSource,
 } from '@/modules/content/content-listing'
 import type { ListingConditionInput } from '@/modules/content/listing-conditions'
+import type { ContentListingReference } from '@/modules/content/listing-conditions'
 
 import { ContentList } from './ContentList'
 import { ContentPagination } from './ContentPagination'
@@ -26,6 +27,7 @@ type ListingBlockSectionProperties = {
   block: ListingBlock
   blockPath: string
   document: ContentDocument
+  currentTarget?: ContentListingReference
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
 }
@@ -37,6 +39,7 @@ export async function ListingBlockSection(properties: ListingBlockSectionPropert
 export async function resolveListingBlockSection({
   block,
   blockPath,
+  currentTarget,
   pathname,
   searchParams,
 }: ListingBlockSectionProperties) {
@@ -51,6 +54,7 @@ export async function resolveListingBlockSection({
   })
   const result = await findPublicContent({
     conditions: (block.conditions ?? []) as ListingConditionInput[],
+    currentTarget,
     manualItems: getManualItems(block),
     page: isCarousel ? 1 : requestedPage,
     pageSize: block.pageSize,

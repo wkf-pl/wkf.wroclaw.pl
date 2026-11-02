@@ -104,6 +104,7 @@ export async function CmsPageDocument({
             <div className="eventPageColumns">
               <div className="eventPageMain">
                 <ContentLayoutRenderer
+                  currentTarget={{ relationTo: collection, value: document.id }}
                   document={document}
                   pathname={pathname}
                   searchParams={searchParams}
@@ -117,6 +118,7 @@ export async function CmsPageDocument({
           ) : (
             <>
               <ContentLayoutRenderer
+                currentTarget={{ relationTo: collection, value: document.id }}
                 document={document}
                 pathname={pathname}
                 searchParams={searchParams}
