@@ -14,6 +14,7 @@ const adminIconNames: Record<string, RasterIconName> = {
   'homepage-sections': 'home',
   media: 'image',
   navigation: 'globe',
+  'page-templates': 'collection',
   pages: 'document',
   partners: 'partner',
   posts: 'document',

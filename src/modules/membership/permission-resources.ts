@@ -1,7 +1,7 @@
 type PermissionResourceDefinition = {
   collection?: string
   global?: string
-  kind: 'collection' | 'global'
+  kind: 'collection' | 'custom' | 'global'
   label: string
   ownershipField?: string
   publishedField?: string
@@ -108,6 +108,10 @@ export const permissionResources = {
     collection: 'tags',
     kind: 'collection',
     label: 'Tagi',
+  },
+  'page-templates': {
+    kind: 'custom',
+    label: 'Szablony stron',
   },
   navigation: {
     global: 'navigation',

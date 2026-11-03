@@ -1219,6 +1219,7 @@ export interface Role {
           | 'club-sections'
           | 'categories'
           | 'tags'
+          | 'page-templates'
           | 'navigation'
           | 'site-settings';
         readAllowed?: boolean | null;
