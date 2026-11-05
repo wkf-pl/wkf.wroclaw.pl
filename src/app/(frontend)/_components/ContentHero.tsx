@@ -18,11 +18,12 @@ export type ContentHeroImage = {
 type ContentHeroProperties = {
   breadcrumbs: PublicBreadcrumb[]
   children?: ReactNode
+  customCopy?: ReactNode
   description?: null | string
-  eyebrow: ReactNode
+  eyebrow?: ReactNode
   image?: ContentHeroImage
   media?: ReactNode
-  title: string
+  title?: string
 }
 
 type ContentHeroMetaProperties = {
@@ -37,6 +38,7 @@ type ContentHeroMetaProperties = {
 export function ContentHero({
   breadcrumbs,
   children,
+  customCopy,
   description,
   eyebrow,
   image,
@@ -61,10 +63,14 @@ export function ContentHero({
           <div className="contentHeroBreadcrumbSlot">
             <HierarchyBreadcrumbs breadcrumbs={intermediateBreadcrumbs} />
           </div>
-          <p className="eyebrow contentHeroEyebrow">{eyebrow}</p>
-          <h1>{title}</h1>
-          {description ? <p className="contentHeroDescription">{description}</p> : null}
-          {children}
+          {customCopy ?? (
+            <>
+              <p className="eyebrow contentHeroEyebrow">{eyebrow}</p>
+              {title ? <h1>{title}</h1> : null}
+              {description ? <p className="contentHeroDescription">{description}</p> : null}
+              {children}
+            </>
+          )}
         </div>
 
         {media !== undefined ? (

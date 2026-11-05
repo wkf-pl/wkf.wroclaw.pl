@@ -131,6 +131,7 @@ export interface Config {
   blocks: {};
   collections: {
     'content-listing-items': ContentListingItem;
+    'page-templates': PageTemplate;
     pages: Page;
     posts: Post;
     events: Event;
@@ -171,6 +172,7 @@ export interface Config {
   };
   collectionsSelect: {
     'content-listing-items': ContentListingItemsSelect<false> | ContentListingItemsSelect<true>;
+    'page-templates': PageTemplatesSelect<false> | PageTemplatesSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
@@ -2358,6 +2360,726 @@ export interface EventType {
   createdAt: string;
 }
 /**
+ * Globalne układy tras kontrolowane przez aplikację. Typów szablonów nie można dodawać ani usuwać.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-templates".
+ */
+export interface PageTemplate {
+  id: number;
+  templateKey:
+    | 'blog-index'
+    | 'events-index'
+    | 'members-index'
+    | 'tag-detail'
+    | 'category-detail'
+    | 'event-detail'
+    | 'event-cycle-detail'
+    | 'partner-detail'
+    | 'member-detail';
+  /**
+   * Zmiana wpłynie na stronę publiczną dopiero po opublikowaniu tej wersji szablonu.
+   */
+  renderingMode: 'legacy' | 'template';
+  /**
+   * Element kolekcji używany podczas podglądu wersji roboczej szablonu.
+   */
+  previewTarget?:
+    | ({
+        relationTo: 'tags';
+        value: number | Tag;
+      } | null)
+    | ({
+        relationTo: 'categories';
+        value: number | Category;
+      } | null)
+    | ({
+        relationTo: 'events';
+        value: number | Event;
+      } | null)
+    | ({
+        relationTo: 'event-cycles';
+        value: number | EventCycle;
+      } | null)
+    | ({
+        relationTo: 'partners';
+        value: number | Partner;
+      } | null)
+    | ({
+        relationTo: 'member-profiles';
+        value: number | MemberProfile;
+      } | null);
+  /**
+   * Opcjonalny obraz Hero wspólny dla wszystkich stron korzystających z tej trasy.
+   */
+  heroImage?: (number | null) | Media;
+  hero?: (RichTextBlock | HeadingBlock | ActionLinksBlock | CurrentItemFieldBlock)[] | null;
+  informationPanel?:
+    | (
+        | RichTextBlock
+        | HeadingBlock
+        | ActionLinksBlock
+        | CurrentItemFieldBlock
+        | InformationPanelColumnsBlock
+        | InformationPanelGroupBlock
+      )[]
+    | null;
+  content?:
+    | (
+        | RichTextBlock
+        | HeadingBlock
+        | ActionLinksBlock
+        | CardBlock
+        | ListingBlock
+        | ContentCalendarBlock
+        | MediaGalleryBlock
+        | AttachmentsBlock
+        | CurrentItemFieldBlock
+        | CurrentItemContentBlock
+        | PageTemplateColumnLayoutBlock
+        | PageTemplateSectionGroupBlock
+        | PageTemplateTabbedContentBlock
+      )[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CurrentItemFieldBlock".
+ */
+export interface CurrentItemFieldBlock {
+  field:
+    | 'name'
+    | 'description'
+    | 'hierarchy'
+    | 'eventType'
+    | 'eventStatus'
+    | 'title'
+    | 'excerpt'
+    | 'eventCycle'
+    | 'tags'
+    | 'eventTime'
+    | 'eventLocation'
+    | 'eventAudience'
+    | 'eventCapacity'
+    | 'eventActions'
+    | 'partners'
+    | 'organizers'
+    | 'website'
+    | 'publicName'
+    | 'clubFunction'
+    | 'about'
+    | 'contactChannels';
+  variant:
+    | 'primaryHeading'
+    | 'sectionHeading'
+    | 'eyebrow'
+    | 'lead'
+    | 'body'
+    | 'compact'
+    | 'inline'
+    | 'list'
+    | 'pills'
+    | 'badge'
+    | 'emphasizedBadge'
+    | 'icon'
+    | 'plain';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'currentItemField';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "InformationPanelColumnsBlock".
+ */
+export interface InformationPanelColumnsBlock {
+  name?: string | null;
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  verticalAlignment: 'start' | 'center' | 'end';
+  columnSeparators: 'none' | 'between';
+  columns: {
+    width: number;
+    frame?: ('none' | 'outline') | null;
+    surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+    /**
+     * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+     */
+    surfaceImage?: (number | null) | Media;
+    surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+    surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+    blocks?: (RichTextBlock | HeadingBlock | ActionLinksBlock | CurrentItemFieldBlock)[] | null;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'infoColumns';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "InformationPanelGroupBlock".
+ */
+export interface InformationPanelGroupBlock {
+  name?: string | null;
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  /**
+   * Dotyczy Listingu, Galerii mediów, Karuzeli i Załączników, również wewnątrz układu kolumnowego.
+   */
+  emptyChildBehavior?: ('show' | 'hideGroup') | null;
+  sections: {
+    frame?: ('none' | 'outline') | null;
+    surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+    /**
+     * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+     */
+    surfaceImage?: (number | null) | Media;
+    surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+    surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+    blocks: (RichTextBlock | HeadingBlock | ActionLinksBlock | CurrentItemFieldBlock | InformationPanelColumnsBlock)[];
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'infoGroup';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CurrentItemContentBlock".
+ */
+export interface CurrentItemContentBlock {
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'currentItemContent';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateColumnLayoutBlock".
+ */
+export interface PageTemplateColumnLayoutBlock {
+  name?: string | null;
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  verticalAlignment: 'start' | 'center' | 'end';
+  columnSeparators: 'none' | 'between';
+  columns: {
+    width: number;
+    frame?: ('none' | 'outline') | null;
+    surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+    /**
+     * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+     */
+    surfaceImage?: (number | null) | Media;
+    surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+    surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+    blocks?:
+      | (
+          | RichTextBlock
+          | HeadingBlock
+          | ActionLinksBlock
+          | CardBlock
+          | ListingBlock
+          | ContentCalendarBlock
+          | MediaGalleryBlock
+          | AttachmentsBlock
+          | CurrentItemFieldBlock
+          | CurrentItemContentBlock
+        )[]
+      | null;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'columnLayout';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateSectionGroupBlock".
+ */
+export interface PageTemplateSectionGroupBlock {
+  name?: string | null;
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  /**
+   * Dotyczy Listingu, Galerii mediów, Karuzeli i Załączników, również wewnątrz układu kolumnowego.
+   */
+  emptyChildBehavior?: ('show' | 'hideGroup') | null;
+  sections: {
+    frame?: ('none' | 'outline') | null;
+    surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+    /**
+     * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+     */
+    surfaceImage?: (number | null) | Media;
+    surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+    surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+    blocks: (
+      | RichTextBlock
+      | HeadingBlock
+      | ActionLinksBlock
+      | CardBlock
+      | ListingBlock
+      | ContentCalendarBlock
+      | MediaGalleryBlock
+      | AttachmentsBlock
+      | CurrentItemFieldBlock
+      | CurrentItemContentBlock
+      | PageTemplateColumnLayoutBlock
+      | PageTemplateTabbedContentBlock
+    )[];
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'sectionGroup';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateTabbedContentBlock".
+ */
+export interface PageTemplateTabbedContentBlock {
+  name?: string | null;
+  headerLeftItems?:
+    | {
+        /**
+         * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
+         */
+        label?: string | null;
+        appearance: 'link' | 'primaryButton' | 'secondaryButton';
+        iconName?:
+          | (
+              | 'camera'
+              | 'astronaut'
+              | 'ticket'
+              | 'bluesky'
+              | 'mace'
+              | 'bottle-mana'
+              | 'cthulhu'
+              | 'time'
+              | 'skull'
+              | 'dnd5'
+              | 'discord'
+              | 'document'
+              | 'pumpkin-halloween'
+              | 'mail'
+              | 'facebook'
+              | 'guitar'
+              | 'globe'
+              | 'board-game'
+              | 'star'
+              | 'instagram'
+              | 'calendar'
+              | 'hat'
+              | 'gun'
+              | 'cards'
+              | 'playing-cards'
+              | 'collection'
+              | 'compass'
+              | 'confetti'
+              | 'dice'
+              | 'd10'
+              | 'd12'
+              | 'd20'
+              | 'd4'
+              | 'd6'
+              | 'd8'
+              | 'water-drop'
+              | 'crystal-ball'
+              | 'book'
+              | 'fireball'
+              | 'larp'
+              | 'external-link'
+              | 'linkedin'
+              | 'location'
+              | 'bow'
+              | 'mage'
+              | 'pirate-map'
+              | 'vendetta'
+              | 'messenger'
+              | 'sword'
+              | 'potion'
+              | 'music'
+              | 'image'
+              | 'announcement'
+              | 'eye'
+              | 'partner'
+              | 'pdf'
+              | 'seal'
+              | 'pawn'
+              | 'quill'
+              | 'flame'
+              | 'download'
+              | 'review'
+              | 'wand'
+              | 'sf'
+              | 'seance'
+              | 'arrows'
+              | 'slack'
+              | 'users'
+              | 'star-trek'
+              | 'star-wars-empire'
+              | 'star-wars-rebel-alliance'
+              | 'steampunk'
+              | 'home'
+              | 'arrow'
+              | 'arrow-left'
+              | 'arrow-right'
+              | 'superhero'
+              | 'stormtrooper'
+              | 'soundtrack'
+              | 'tag'
+              | 'shield'
+              | 'axe'
+              | 'twitch'
+              | 'shuttle'
+              | 'fighter'
+              | 'event'
+              | 'filled-star'
+              | 'youtube'
+              | 'scroll'
+            )
+          | null;
+        targetType:
+          | 'eventCycle'
+          | 'document'
+          | 'siteContactEmail'
+          | 'category'
+          | 'partner'
+          | 'page'
+          | 'tag'
+          | 'custom'
+          | 'post'
+          | 'event';
+        eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
+        partner?: (number | null) | Partner;
+        page?: (number | null) | Page;
+        tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+        /**
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+         */
+        customAddress?: string | null;
+        emailSubject?: string | null;
+        emailBody?: string | null;
+        openInNewTab?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  headerRightItems?:
+    | {
+        /**
+         * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
+         */
+        label?: string | null;
+        appearance: 'link' | 'primaryButton' | 'secondaryButton';
+        iconName?:
+          | (
+              | 'camera'
+              | 'astronaut'
+              | 'ticket'
+              | 'bluesky'
+              | 'mace'
+              | 'bottle-mana'
+              | 'cthulhu'
+              | 'time'
+              | 'skull'
+              | 'dnd5'
+              | 'discord'
+              | 'document'
+              | 'pumpkin-halloween'
+              | 'mail'
+              | 'facebook'
+              | 'guitar'
+              | 'globe'
+              | 'board-game'
+              | 'star'
+              | 'instagram'
+              | 'calendar'
+              | 'hat'
+              | 'gun'
+              | 'cards'
+              | 'playing-cards'
+              | 'collection'
+              | 'compass'
+              | 'confetti'
+              | 'dice'
+              | 'd10'
+              | 'd12'
+              | 'd20'
+              | 'd4'
+              | 'd6'
+              | 'd8'
+              | 'water-drop'
+              | 'crystal-ball'
+              | 'book'
+              | 'fireball'
+              | 'larp'
+              | 'external-link'
+              | 'linkedin'
+              | 'location'
+              | 'bow'
+              | 'mage'
+              | 'pirate-map'
+              | 'vendetta'
+              | 'messenger'
+              | 'sword'
+              | 'potion'
+              | 'music'
+              | 'image'
+              | 'announcement'
+              | 'eye'
+              | 'partner'
+              | 'pdf'
+              | 'seal'
+              | 'pawn'
+              | 'quill'
+              | 'flame'
+              | 'download'
+              | 'review'
+              | 'wand'
+              | 'sf'
+              | 'seance'
+              | 'arrows'
+              | 'slack'
+              | 'users'
+              | 'star-trek'
+              | 'star-wars-empire'
+              | 'star-wars-rebel-alliance'
+              | 'steampunk'
+              | 'home'
+              | 'arrow'
+              | 'arrow-left'
+              | 'arrow-right'
+              | 'superhero'
+              | 'stormtrooper'
+              | 'soundtrack'
+              | 'tag'
+              | 'shield'
+              | 'axe'
+              | 'twitch'
+              | 'shuttle'
+              | 'fighter'
+              | 'event'
+              | 'filled-star'
+              | 'youtube'
+              | 'scroll'
+            )
+          | null;
+        targetType:
+          | 'eventCycle'
+          | 'document'
+          | 'siteContactEmail'
+          | 'category'
+          | 'partner'
+          | 'page'
+          | 'tag'
+          | 'custom'
+          | 'post'
+          | 'event';
+        eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
+        partner?: (number | null) | Partner;
+        page?: (number | null) | Page;
+        tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+        /**
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+         */
+        customAddress?: string | null;
+        emailSubject?: string | null;
+        emailBody?: string | null;
+        openInNewTab?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  footerItems?:
+    | {
+        /**
+         * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
+         */
+        label?: string | null;
+        appearance: 'link' | 'primaryButton' | 'secondaryButton';
+        iconName?:
+          | (
+              | 'camera'
+              | 'astronaut'
+              | 'ticket'
+              | 'bluesky'
+              | 'mace'
+              | 'bottle-mana'
+              | 'cthulhu'
+              | 'time'
+              | 'skull'
+              | 'dnd5'
+              | 'discord'
+              | 'document'
+              | 'pumpkin-halloween'
+              | 'mail'
+              | 'facebook'
+              | 'guitar'
+              | 'globe'
+              | 'board-game'
+              | 'star'
+              | 'instagram'
+              | 'calendar'
+              | 'hat'
+              | 'gun'
+              | 'cards'
+              | 'playing-cards'
+              | 'collection'
+              | 'compass'
+              | 'confetti'
+              | 'dice'
+              | 'd10'
+              | 'd12'
+              | 'd20'
+              | 'd4'
+              | 'd6'
+              | 'd8'
+              | 'water-drop'
+              | 'crystal-ball'
+              | 'book'
+              | 'fireball'
+              | 'larp'
+              | 'external-link'
+              | 'linkedin'
+              | 'location'
+              | 'bow'
+              | 'mage'
+              | 'pirate-map'
+              | 'vendetta'
+              | 'messenger'
+              | 'sword'
+              | 'potion'
+              | 'music'
+              | 'image'
+              | 'announcement'
+              | 'eye'
+              | 'partner'
+              | 'pdf'
+              | 'seal'
+              | 'pawn'
+              | 'quill'
+              | 'flame'
+              | 'download'
+              | 'review'
+              | 'wand'
+              | 'sf'
+              | 'seance'
+              | 'arrows'
+              | 'slack'
+              | 'users'
+              | 'star-trek'
+              | 'star-wars-empire'
+              | 'star-wars-rebel-alliance'
+              | 'steampunk'
+              | 'home'
+              | 'arrow'
+              | 'arrow-left'
+              | 'arrow-right'
+              | 'superhero'
+              | 'stormtrooper'
+              | 'soundtrack'
+              | 'tag'
+              | 'shield'
+              | 'axe'
+              | 'twitch'
+              | 'shuttle'
+              | 'fighter'
+              | 'event'
+              | 'filled-star'
+              | 'youtube'
+              | 'scroll'
+            )
+          | null;
+        targetType:
+          | 'eventCycle'
+          | 'document'
+          | 'siteContactEmail'
+          | 'category'
+          | 'partner'
+          | 'page'
+          | 'tag'
+          | 'custom'
+          | 'post'
+          | 'event';
+        eventCycle?: (number | null) | EventCycle;
+        document?: (number | null) | Document;
+        category?: (number | null) | Category;
+        partner?: (number | null) | Partner;
+        page?: (number | null) | Page;
+        tag?: (number | null) | Tag;
+        post?: (number | null) | Post;
+        event?: (number | null) | Event;
+        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+        /**
+         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+         */
+        customAddress?: string | null;
+        emailSubject?: string | null;
+        emailBody?: string | null;
+        openInNewTab?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  footerAlignment?: ('start' | 'center' | 'end') | null;
+  tabs: {
+    label: string;
+    blocks?:
+      | (
+          | RichTextBlock
+          | HeadingBlock
+          | ActionLinksBlock
+          | CardBlock
+          | ListingBlock
+          | ContentCalendarBlock
+          | MediaGalleryBlock
+          | AttachmentsBlock
+          | CurrentItemFieldBlock
+          | CurrentItemContentBlock
+          | PageTemplateColumnLayoutBlock
+        )[]
+      | null;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'tabs';
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "url-aliases".
  */
@@ -2570,6 +3292,10 @@ export interface PayloadLockedDocument {
   id: number;
   document?:
     | ({
+        relationTo: 'page-templates';
+        value: number | PageTemplate;
+      } | null)
+    | ({
         relationTo: 'pages';
         value: number | Page;
       } | null)
@@ -2706,15 +3432,32 @@ export interface ContentListingItemsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "pages_select".
+ * via the `definition` "page-templates_select".
  */
-export interface PagesSelect<T extends boolean = true> {
-  title?: T;
-  parent?: T;
-  fullTitle?: T;
+export interface PageTemplatesSelect<T extends boolean = true> {
+  templateKey?: T;
+  renderingMode?: T;
+  previewTarget?: T;
   heroImage?: T;
-  listingExcerpt?: T;
-  layout?:
+  hero?:
+    | T
+    | {
+        richText?: T | RichTextBlockSelect<T>;
+        heading?: T | HeadingBlockSelect<T>;
+        actionLinks?: T | ActionLinksBlockSelect<T>;
+        currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+      };
+  informationPanel?:
+    | T
+    | {
+        richText?: T | RichTextBlockSelect<T>;
+        heading?: T | HeadingBlockSelect<T>;
+        actionLinks?: T | ActionLinksBlockSelect<T>;
+        currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+        infoColumns?: T | InformationPanelColumnsBlockSelect<T>;
+        infoGroup?: T | InformationPanelGroupBlockSelect<T>;
+      };
+  content?:
     | T
     | {
         richText?: T | RichTextBlockSelect<T>;
@@ -2725,34 +3468,14 @@ export interface PagesSelect<T extends boolean = true> {
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
-        columnLayout?: T | ColumnLayoutBlockSelect<T>;
-        sectionGroup?: T | SectionGroupBlockSelect<T>;
-        tabs?: T | TabbedContentBlockSelect<T>;
+        currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+        currentItemContent?: T | CurrentItemContentBlockSelect<T>;
+        columnLayout?: T | PageTemplateColumnLayoutBlockSelect<T>;
+        sectionGroup?: T | PageTemplateSectionGroupBlockSelect<T>;
+        tabs?: T | PageTemplateTabbedContentBlockSelect<T>;
       };
-  seo?:
-    | T
-    | {
-        title?: T;
-        description?: T;
-        image?: T;
-      };
-  slug?: T;
-  breadcrumbs?:
-    | T
-    | {
-        doc?: T;
-        url?: T;
-        label?: T;
-        id?: T;
-      };
-  category?: T;
-  tags?: T;
-  author?: T;
-  systemKey?: T;
-  publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
-  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -2809,6 +3532,85 @@ export interface ActionLinksBlockSelect<T extends boolean = true> {
         emailSubject?: T;
         emailBody?: T;
         openInNewTab?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CurrentItemFieldBlock_select".
+ */
+export interface CurrentItemFieldBlockSelect<T extends boolean = true> {
+  field?: T;
+  variant?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "InformationPanelColumnsBlock_select".
+ */
+export interface InformationPanelColumnsBlockSelect<T extends boolean = true> {
+  name?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
+  verticalAlignment?: T;
+  columnSeparators?: T;
+  columns?:
+    | T
+    | {
+        width?: T;
+        frame?: T;
+        surface?: T;
+        surfaceImage?: T;
+        surfaceHorizontalPosition?: T;
+        surfaceVerticalPosition?: T;
+        blocks?:
+          | T
+          | {
+              richText?: T | RichTextBlockSelect<T>;
+              heading?: T | HeadingBlockSelect<T>;
+              actionLinks?: T | ActionLinksBlockSelect<T>;
+              currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+            };
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "InformationPanelGroupBlock_select".
+ */
+export interface InformationPanelGroupBlockSelect<T extends boolean = true> {
+  name?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
+  emptyChildBehavior?: T;
+  sections?:
+    | T
+    | {
+        frame?: T;
+        surface?: T;
+        surfaceImage?: T;
+        surfaceHorizontalPosition?: T;
+        surfaceVerticalPosition?: T;
+        blocks?:
+          | T
+          | {
+              richText?: T | RichTextBlockSelect<T>;
+              heading?: T | HeadingBlockSelect<T>;
+              actionLinks?: T | ActionLinksBlockSelect<T>;
+              currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+              infoColumns?: T | InformationPanelColumnsBlockSelect<T>;
+            };
         id?: T;
       };
   id?: T;
@@ -2963,6 +3765,244 @@ export interface AttachmentsBlockSelect<T extends boolean = true> {
   emptyMessage?: T;
   id?: T;
   blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CurrentItemContentBlock_select".
+ */
+export interface CurrentItemContentBlockSelect<T extends boolean = true> {
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateColumnLayoutBlock_select".
+ */
+export interface PageTemplateColumnLayoutBlockSelect<T extends boolean = true> {
+  name?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
+  verticalAlignment?: T;
+  columnSeparators?: T;
+  columns?:
+    | T
+    | {
+        width?: T;
+        frame?: T;
+        surface?: T;
+        surfaceImage?: T;
+        surfaceHorizontalPosition?: T;
+        surfaceVerticalPosition?: T;
+        blocks?:
+          | T
+          | {
+              richText?: T | RichTextBlockSelect<T>;
+              heading?: T | HeadingBlockSelect<T>;
+              actionLinks?: T | ActionLinksBlockSelect<T>;
+              card?: T | CardBlockSelect<T>;
+              listing?: T | ListingBlockSelect<T>;
+              contentCalendar?: T | ContentCalendarBlockSelect<T>;
+              mediaGallery?: T | MediaGalleryBlockSelect<T>;
+              attachments?: T | AttachmentsBlockSelect<T>;
+              currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+              currentItemContent?: T | CurrentItemContentBlockSelect<T>;
+            };
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateSectionGroupBlock_select".
+ */
+export interface PageTemplateSectionGroupBlockSelect<T extends boolean = true> {
+  name?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
+  emptyChildBehavior?: T;
+  sections?:
+    | T
+    | {
+        frame?: T;
+        surface?: T;
+        surfaceImage?: T;
+        surfaceHorizontalPosition?: T;
+        surfaceVerticalPosition?: T;
+        blocks?:
+          | T
+          | {
+              richText?: T | RichTextBlockSelect<T>;
+              heading?: T | HeadingBlockSelect<T>;
+              actionLinks?: T | ActionLinksBlockSelect<T>;
+              card?: T | CardBlockSelect<T>;
+              listing?: T | ListingBlockSelect<T>;
+              contentCalendar?: T | ContentCalendarBlockSelect<T>;
+              mediaGallery?: T | MediaGalleryBlockSelect<T>;
+              attachments?: T | AttachmentsBlockSelect<T>;
+              currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+              currentItemContent?: T | CurrentItemContentBlockSelect<T>;
+              columnLayout?: T | PageTemplateColumnLayoutBlockSelect<T>;
+              tabs?: T | PageTemplateTabbedContentBlockSelect<T>;
+            };
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateTabbedContentBlock_select".
+ */
+export interface PageTemplateTabbedContentBlockSelect<T extends boolean = true> {
+  name?: T;
+  headerLeftItems?:
+    | T
+    | {
+        label?: T;
+        appearance?: T;
+        iconName?: T;
+        targetType?: T;
+        eventCycle?: T;
+        document?: T;
+        category?: T;
+        partner?: T;
+        page?: T;
+        tag?: T;
+        post?: T;
+        event?: T;
+        customScheme?: T;
+        customAddress?: T;
+        emailSubject?: T;
+        emailBody?: T;
+        openInNewTab?: T;
+        id?: T;
+      };
+  headerRightItems?:
+    | T
+    | {
+        label?: T;
+        appearance?: T;
+        iconName?: T;
+        targetType?: T;
+        eventCycle?: T;
+        document?: T;
+        category?: T;
+        partner?: T;
+        page?: T;
+        tag?: T;
+        post?: T;
+        event?: T;
+        customScheme?: T;
+        customAddress?: T;
+        emailSubject?: T;
+        emailBody?: T;
+        openInNewTab?: T;
+        id?: T;
+      };
+  footerItems?:
+    | T
+    | {
+        label?: T;
+        appearance?: T;
+        iconName?: T;
+        targetType?: T;
+        eventCycle?: T;
+        document?: T;
+        category?: T;
+        partner?: T;
+        page?: T;
+        tag?: T;
+        post?: T;
+        event?: T;
+        customScheme?: T;
+        customAddress?: T;
+        emailSubject?: T;
+        emailBody?: T;
+        openInNewTab?: T;
+        id?: T;
+      };
+  footerAlignment?: T;
+  tabs?:
+    | T
+    | {
+        label?: T;
+        blocks?:
+          | T
+          | {
+              richText?: T | RichTextBlockSelect<T>;
+              heading?: T | HeadingBlockSelect<T>;
+              actionLinks?: T | ActionLinksBlockSelect<T>;
+              card?: T | CardBlockSelect<T>;
+              listing?: T | ListingBlockSelect<T>;
+              contentCalendar?: T | ContentCalendarBlockSelect<T>;
+              mediaGallery?: T | MediaGalleryBlockSelect<T>;
+              attachments?: T | AttachmentsBlockSelect<T>;
+              currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+              currentItemContent?: T | CurrentItemContentBlockSelect<T>;
+              columnLayout?: T | PageTemplateColumnLayoutBlockSelect<T>;
+            };
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages_select".
+ */
+export interface PagesSelect<T extends boolean = true> {
+  title?: T;
+  parent?: T;
+  fullTitle?: T;
+  heroImage?: T;
+  listingExcerpt?: T;
+  layout?:
+    | T
+    | {
+        richText?: T | RichTextBlockSelect<T>;
+        heading?: T | HeadingBlockSelect<T>;
+        actionLinks?: T | ActionLinksBlockSelect<T>;
+        card?: T | CardBlockSelect<T>;
+        listing?: T | ListingBlockSelect<T>;
+        contentCalendar?: T | ContentCalendarBlockSelect<T>;
+        mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        attachments?: T | AttachmentsBlockSelect<T>;
+        columnLayout?: T | ColumnLayoutBlockSelect<T>;
+        sectionGroup?: T | SectionGroupBlockSelect<T>;
+        tabs?: T | TabbedContentBlockSelect<T>;
+      };
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
+  slug?: T;
+  breadcrumbs?:
+    | T
+    | {
+        doc?: T;
+        url?: T;
+        label?: T;
+        id?: T;
+      };
+  category?: T;
+  tags?: T;
+  author?: T;
+  systemKey?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

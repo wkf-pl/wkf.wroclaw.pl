@@ -43,7 +43,7 @@ test('groups administrator navigation under Administracja', async ({ page }) => 
 
   await expect(
     navigation.getByRole('button', { name: 'Administracja' }).locator('..'),
-  ).toContainText('UżytkownicyRoleSzablony stron')
+  ).toContainText('Szablony stronUżytkownicyRole')
   await expect(navigation.getByRole('button', { name: 'Klubowe' }).locator('..')).toContainText(
     'Wizytówki klubowiczów',
   )
@@ -52,18 +52,18 @@ test('groups administrator navigation under Administracja', async ({ page }) => 
   expect(groupLabels).toEqual(['Klubowe', 'Administracja', 'Użytkownik'])
 })
 
-test('shows accessible custom destinations on the administration dashboard', async ({ page }) => {
+test('shows accessible collections on the administration dashboard', async ({ page }) => {
   await login({ page, user: administratorTestUser })
 
   await expect(page.getByRole('heading', { level: 2, name: 'Administracja' })).toBeVisible()
   await expect(page.getByRole('heading', { level: 3, name: 'Szablony stron' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Pokaż wszystkie Szablony stron' })).toHaveAttribute(
     'href',
-    '/admin/page-templates',
+    '/admin/collections/page-templates',
   )
 })
 
-test('hides inaccessible custom destinations from navigation and dashboard', async ({ page }) => {
+test('hides inaccessible collections from navigation and dashboard', async ({ page }) => {
   await login({ page, user: editorTestUser })
 
   await expect(page.locator('aside nav').getByRole('link', { name: 'Szablony stron' })).toHaveCount(
@@ -72,12 +72,12 @@ test('hides inaccessible custom destinations from navigation and dashboard', asy
   await expect(page.getByRole('heading', { level: 3, name: 'Szablony stron' })).toHaveCount(0)
 })
 
-test('shows the read-only page template registry to administrators', async ({ page }) => {
+test('shows the fixed page template collection to administrators', async ({ page }) => {
   await login({ page, user: administratorTestUser })
 
   await expect(page.getByRole('link', { name: 'Szablony stron' })).toHaveAttribute(
     'href',
-    '/admin/page-templates',
+    '/admin/collections/page-templates',
   )
 
   await page.goto('/admin/collections/roles')
@@ -85,9 +85,9 @@ test('shows the read-only page template registry to administrators', async ({ pa
     .getByRole('heading', { level: 1, name: 'Role' })
     .boundingBox()
 
-  await page.goto('/admin/page-templates')
+  await page.goto('/admin/collections/page-templates')
 
-  await expect(page).toHaveURL(/\/admin\/page-templates$/)
+  await expect(page).toHaveURL(/\/admin\/collections\/page-templates(?:\?.*)?$/)
   const templateTitle = page.getByRole('heading', { level: 1, name: 'Szablony stron' })
   await expect(templateTitle).toBeVisible()
   await expect(page.locator('.step-nav')).toContainText('Szablony stron')
@@ -102,30 +102,42 @@ test('shows the read-only page template registry to administrators', async ({ pa
   expect(Math.abs((templateTitleBox?.y ?? 0) - (collectionTitleBox?.y ?? 0))).toBeLessThanOrEqual(2)
 
   await expect(page.getByRole('row')).toHaveCount(10)
-  await expect(page.getByRole('columnheader')).toHaveText([
-    'Szablon',
-    'Rodzaj',
-    'Tryb',
-    'Publikacja',
-  ])
-  await expect(page.getByRole('cell', { name: 'Legacy' })).toHaveCount(9)
-  await expect(page.getByRole('cell', { name: 'Nieskonfigurowany' })).toHaveCount(9)
+  await expect(page.getByRole('columnheader', { name: 'Szablon' })).toBeVisible()
+  await expect(page.getByText('Dotychczasowy układ (legacy)', { exact: true })).toHaveCount(9)
+  await expect(page.getByRole('link', { name: /Dodaj/ })).toHaveCount(0)
 
-  await page.getByRole('button', { name: /Szczegóły wydarzenia/ }).click()
-  const details = page.getByRole('complementary', { name: 'Możliwości szablonu' })
-  await expect(details).toContainText('Wydarzenie')
-  await expect(details.getByText('Regiony', { exact: true })).toHaveCount(0)
-  await expect(details).toContainText('Wymagany dokładnie jeden blok')
-  await expect(details.getByRole('button', { name: 'Edytuj układ szablonu' })).toBeDisabled()
-  await expect(page.getByRole('switch')).toHaveCount(0)
+  await page
+    .getByRole('row')
+    .filter({ hasText: 'Szczegóły wydarzenia' })
+    .getByRole('link')
+    .first()
+    .click()
+  await expect(page.getByText('Szczegóły wydarzenia', { exact: true })).toBeVisible()
+  await expect(page.getByText('/events/[slug]', { exact: true })).toBeVisible()
+  await expect(page.getByText('Nowy renderer tej trasy nie został jeszcze wdrożony.')).toHaveCount(
+    0,
+  )
+  await expect(page.getByRole('button', { name: /Usuń/ })).toHaveCount(0)
+
+  await page.locator('#renderingMode').locator('xpath=../../..').click()
+  await page.getByRole('option', { name: 'Układ z szablonu' }).click()
+  const confirmation = page.getByRole('dialog')
+  await expect(
+    confirmation.getByRole('heading', { name: 'Przełączyć na układ z szablonu?' }),
+  ).toBeVisible()
+  await confirmation.getByRole('button', { name: 'Anuluj' }).click()
+  await expect(
+    page.getByText('Dotychczasowy układ (legacy)', { exact: true }).first(),
+  ).toBeVisible()
 })
 
-test('redirects non-administrators away from the page template registry', async ({ page }) => {
+test('denies non-administrators access to the page template collection', async ({ page }) => {
   await login({ page, user: editorTestUser })
 
-  await page.goto('/admin/page-templates')
+  await page.goto('/admin/collections/page-templates')
 
-  await expect(page).toHaveURL(/\/admin\/?$/)
+  await expect(page).toHaveURL(/\/admin\/collections\/page-templates$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'Nic nie znaleziono' })).toBeVisible()
 })
 
 test('shows the selected logo and compact header item controls', async ({ page }) => {

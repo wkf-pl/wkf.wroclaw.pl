@@ -1,15 +1,22 @@
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
+import { PageTemplates } from '@/collections/PageTemplates'
+import {
+  permissionResources,
+  resourceSupportsCreateAndDelete,
+} from '@/modules/membership/permission-resources'
+import {
+  getAllowedPageTemplateBlockSlugs,
+  InformationPanelColumnsBlock,
+} from '@/modules/page-templates/page-template-blocks'
 import {
   getPageTemplateDefinition,
   pageTemplateRegistry,
 } from '@/modules/page-templates/page-template-registry'
 import {
-  addCustomDestinationsToGroups,
-  customAdminDestinations,
-} from '@/modules/admin/custom-admin-destinations'
+  preservePageTemplateKey,
+  validatePageTemplateData,
+} from '@/modules/page-templates/page-template-validation'
 
 describe('page template registry', () => {
   it('defines the closed set of supported route templates', () => {
@@ -28,26 +35,15 @@ describe('page template registry', () => {
     expect(new Set(pageTemplateRegistry.map(({ route }) => route)).size).toBe(9)
   })
 
-  it('makes the optional information panel available to every template', () => {
+  it('defines route-specific regions, dynamic fields, and image behavior', () => {
     expect(pageTemplateRegistry.every(({ regions }) => regions.includes('informationPanel'))).toBe(
       true,
     )
-  })
-
-  it('describes the event detail requirements', () => {
     expect(getPageTemplateDefinition('event-detail')).toMatchObject({
       currentItemLabel: 'Wydarzenie',
       heroImageRule: 'currentItem',
       requiresCurrentItemContent: true,
     })
-    expect(
-      getPageTemplateDefinition('event-detail')?.allowedBlocks.find(
-        ({ blockType }) => blockType === 'listing',
-      )?.variants,
-    ).toEqual(['tiles', 'cards', 'carousel', 'compact', 'grid'])
-  })
-
-  it('keeps collection index Hero images configurable', () => {
     expect(
       pageTemplateRegistry
         .filter(({ routeKind }) => routeKind === 'collectionIndex')
@@ -55,80 +51,82 @@ describe('page template registry', () => {
     ).toBe(true)
   })
 
-  it('registers an administrator-only custom view and navigation entry', () => {
-    const payloadConfig = readFileSync('src/payload.config.ts', 'utf8')
-    const navigation = readFileSync('src/components/admin/AdminNavClient.tsx', 'utf8')
-    const serverNavigation = readFileSync('src/components/admin/AdminNav.tsx', 'utf8')
-    const pageTemplateRegistryView = readFileSync(
-      'src/components/admin/PageTemplatesRegistry.tsx',
-      'utf8',
+  it('supports layout blocks in the information panel', () => {
+    expect(InformationPanelColumnsBlock.slug).toBe('infoColumns')
+    expect(getAllowedPageTemplateBlockSlugs('event-detail', 'informationPanel')).toEqual(
+      expect.arrayContaining(['currentItemField', 'infoColumns', 'infoGroup']),
     )
-    const pageTemplateView = readFileSync('src/components/admin/PageTemplatesView.tsx', 'utf8')
-    const memberProfileView = readFileSync('src/components/admin/MemberProfileView.tsx', 'utf8')
-    const sharedAdminViewTemplate = readFileSync(
-      'src/components/admin/AdminViewTemplate.tsx',
-      'utf8',
-    )
-    const dashboardCards = readFileSync('src/components/admin/AdminResourceCards.tsx', 'utf8')
-
-    expect(payloadConfig).toContain("path: '/page-templates'")
-    expect(payloadConfig).toContain('/components/admin/PageTemplatesView#PageTemplatesView')
-    expect(payloadConfig).toContain('/components/admin/AdminResourceCards#AdminResourceCards')
-    expect(navigation).toContain('customDestinations')
-    expect(serverNavigation).toContain('getAccessibleCustomAdminDestinations')
-    expect(dashboardCards).toContain('getAccessibleCustomAdminDestinations')
-    expect(pageTemplateRegistryView).toContain('<SetStepNav nav={pageTemplateStepNav} />')
-    expect(pageTemplateRegistryView).toContain('<Gutter>')
-    expect(pageTemplateView).toContain('<AdminViewTemplate')
-    expect(pageTemplateView).toContain('viewActions={viewActions}')
-    expect(memberProfileView).toContain('<AdminViewTemplate')
-    expect(sharedAdminViewTemplate).toContain('<DefaultTemplate')
-    expect(sharedAdminViewTemplate).toContain('viewActions={viewActions}')
   })
 
-  it('shares custom administration destinations between navigation and dashboard groups', () => {
-    expect(customAdminDestinations).toEqual([
-      expect.objectContaining({
-        group: 'Administracja',
-        id: 'page-templates',
-        label: 'Szablony stron',
-        path: '/page-templates',
-        resource: 'page-templates',
-      }),
-    ])
+  it('registers page templates as a normal collection without create and delete operations', () => {
+    expect(PageTemplates.slug).toBe('page-templates')
+    expect(PageTemplates.versions).toMatchObject({ drafts: true, maxPerDoc: 50 })
+    expect(PageTemplates.disableDuplicate).toBe(true)
+    expect(permissionResources['page-templates']).toMatchObject({
+      collection: 'page-templates',
+      kind: 'collection',
+    })
+    expect(resourceSupportsCreateAndDelete('page-templates')).toBe(false)
+  })
 
+  it('keeps the fixed template identity immutable on update', () => {
     expect(
-      addCustomDestinationsToGroups(
-        [{ entities: [], label: 'Administracja' }],
-        [...customAdminDestinations],
-      ),
-    ).toEqual([
-      {
-        entities: [expect.objectContaining({ id: 'page-templates' })],
-        label: 'Administracja',
-      },
-    ])
+      preservePageTemplateKey({ templateKey: 'blog-index' }, 'update', {
+        templateKey: 'event-detail',
+      }),
+    ).toMatchObject({ templateKey: 'event-detail' })
   })
 
-  it('extends the default collection cards widget without changing saved layout identifiers', async () => {
-    const { default: configPromise } = await import('@/payload.config')
-    const config = await configPromise
-    const collectionCardsWidget = config.admin.dashboard?.widgets.find(
-      ({ slug }) => slug === 'collections',
-    )
+  it('allows incomplete drafts but validates configured blocks', () => {
+    expect(() =>
+      validatePageTemplateData({
+        _status: 'draft',
+        renderingMode: 'template',
+        templateKey: 'event-detail',
+      }),
+    ).not.toThrow()
 
-    expect(collectionCardsWidget?.Component).toBe(
-      '/components/admin/AdminResourceCards#AdminResourceCards',
-    )
-    expect(config.admin.dashboard?.defaultLayout).toEqual([
-      { widgetSlug: 'collections', width: 'full' },
-    ])
+    expect(() =>
+      validatePageTemplateData({
+        _status: 'draft',
+        hero: [{ blockType: 'currentItemContent' }],
+        renderingMode: 'legacy',
+        templateKey: 'event-detail',
+      }),
+    ).toThrow('nie jest dozwolony w regionie hero')
   })
 
-  it('uses informational styling instead of warning styling', () => {
-    const styles = readFileSync('src/components/admin/PageTemplatesRegistry.scss', 'utf8')
+  it('prevents publishing through the template mode before its route renderer exists', () => {
+    expect(() =>
+      validatePageTemplateData({
+        _status: 'published',
+        renderingMode: 'template',
+        templateKey: 'events-index',
+      }),
+    ).toThrow('Nowy renderer tej trasy nie został jeszcze wdrożony')
+  })
 
-    expect(styles).toContain('--color-blue-')
-    expect(styles).not.toContain('--theme-warning-')
+  it('requires the accessible event title and its content when publishing the event template', () => {
+    const publishedTemplate = {
+      _status: 'published',
+      content: [{ blockType: 'currentItemContent' }],
+      hero: [
+        {
+          blockType: 'currentItemField',
+          field: 'title',
+          variant: 'primaryHeading',
+        },
+      ],
+      renderingMode: 'template',
+      templateKey: 'event-detail',
+    }
+
+    expect(() => validatePageTemplateData(publishedTemplate)).not.toThrow()
+    expect(() =>
+      validatePageTemplateData({
+        ...publishedTemplate,
+        hero: [],
+      }),
+    ).toThrow('wymaga w Hero pola „Tytuł” w wyglądzie „Nagłówek główny”')
   })
 })

@@ -6,8 +6,6 @@ import { RenderServerComponent } from '@payloadcms/ui/elements/RenderServerCompo
 import { EntityType, groupNavItems } from '@payloadcms/ui/shared'
 import { PREFERENCE_KEYS } from 'payload/shared'
 
-import { getAccessibleCustomAdminDestinations } from '@/modules/admin/custom-admin-destinations'
-
 import { AdminNavClient } from './AdminNavClient'
 import { AdminNavHamburger, AdminNavWrapper } from './AdminNavChrome'
 
@@ -67,8 +65,6 @@ export async function AdminNav(properties: AdminNavProperties) {
   })
   const remainingGroups = groups.filter((group) => !desiredGroupOrder.includes(group.label))
   const navPreferences = await getNavPreferences(_req)
-  const customDestinations = await getAccessibleCustomAdminDestinations(_req)
-
   const logoutComponent = RenderServerComponent({
     clientProps: { documentSubViewType, viewType },
     Component: logout?.Button,
@@ -102,7 +98,6 @@ export async function AdminNav(properties: AdminNavProperties) {
       <nav className={`${baseClass}__wrap`}>
         {renderComponent(beforeNavLinks)}
         <AdminNavClient
-          customDestinations={customDestinations}
           groups={[...orderedGroups, ...remainingGroups]}
           navPreferences={navPreferences}
         />

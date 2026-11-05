@@ -3,6 +3,7 @@ import {
   type ArrayField,
   type ArrayFieldValidation,
   type Block,
+  type BlocksField,
   type FieldHook,
 } from 'payload'
 
@@ -56,102 +57,121 @@ function createMenuField(name: MenuFieldName, label: string): ArrayField {
   }
 }
 
-export const TabbedContentBlock: Block = {
-  slug: 'tabs',
-  admin: {
-    components: {
-      Label: '/components/admin/ContentBlockLabel#TabbedContentBlockLabel',
-    },
-    disableBlockName: true,
-    group: 'Układ',
-    images: {
-      thumbnail: {
-        alt: 'Schematyczna ikona treści przełączanej zakładkami',
-        url: '/assets/block-thumbnails/tabbed-content.png',
-      },
-    },
-  },
-  fields: [
-    {
-      admin: {
-        components: {
-          Field: '/components/admin/TabbedLayoutField#TabbedContentTabsField',
-        },
-      },
-      type: 'group',
-      fields: [
-        createLayoutBlockNameField(),
-        createMenuField('headerLeftItems', 'Menu po lewej stronie nagłówka'),
-        createMenuField('headerRightItems', 'Menu po prawej stronie nagłówka'),
-        createMenuField('footerItems', 'Menu w stopce'),
-        {
-          name: 'footerAlignment',
-          type: 'select',
-          admin: {
-            condition: (_, siblingData) =>
-              Array.isArray(siblingData.footerItems) && siblingData.footerItems.length > 0,
-            isClearable: false,
-          },
-          defaultValue: 'center',
-          label: 'Wyrównanie menu w stopce',
-          options: [
-            { label: 'Do lewej', value: 'start' },
-            { label: 'Do środka', value: 'center' },
-            { label: 'Do prawej', value: 'end' },
-          ],
-          required: true,
-        },
-        {
-          name: 'tabs',
-          type: 'array',
-          admin: {
-            components: {
-              RowLabel: '/components/admin/DynamicRowLabel#TabbedContentTabRowLabel',
-            },
-            initCollapsed: false,
-          },
-          defaultValue: [
-            { blocks: [], label: 'Najbliższe' },
-            { blocks: [], label: 'Kalendarz' },
-          ],
-          hooks: {
-            beforeValidate: [enforceTabbedContentTabs],
-          },
-          fields: [
-            {
-              name: 'label',
-              type: 'text',
-              label: 'Nazwa zakładki',
-              required: true,
-            },
-            {
-              name: 'blocks',
-              type: 'blocks',
-              admin: { initCollapsed: false },
-              blocks: [...contentLeafBlocks, ColumnLayoutBlock],
-              label: 'Treść zakładki',
-              labels: {
-                plural: 'Bloki treści',
-                singular: 'blok treści',
-              },
-            },
-          ],
-          label: 'Zakładki',
-          labels: {
-            plural: 'Zakładki',
-            singular: 'zakładkę',
-          },
-          maxRows: maximumTabCount,
-          minRows: minimumTabCount,
-          required: true,
-          validate: validateTabbedContentTabs,
-        },
-      ],
-    },
-  ],
-  interfaceName: 'TabbedContentBlock',
-  labels: {
-    plural: 'Zakładki',
-    singular: 'Zakładki',
-  },
+type TabbedContentBlockOptions = {
+  blockSlug?: string
+  interfaceName?: string
+  layoutBlocks?: Block[]
+  leafBlocks?: Block[]
+  nestedFilterOptions?: BlocksField['filterOptions']
 }
+
+export function createTabbedContentBlock({
+  blockSlug = 'tabs',
+  interfaceName = 'TabbedContentBlock',
+  layoutBlocks = [ColumnLayoutBlock],
+  leafBlocks = contentLeafBlocks,
+  nestedFilterOptions,
+}: TabbedContentBlockOptions = {}): Block {
+  return {
+    slug: blockSlug,
+    admin: {
+      components: {
+        Label: '/components/admin/ContentBlockLabel#TabbedContentBlockLabel',
+      },
+      disableBlockName: true,
+      group: 'Układ',
+      images: {
+        thumbnail: {
+          alt: 'Schematyczna ikona treści przełączanej zakładkami',
+          url: '/assets/block-thumbnails/tabbed-content.png',
+        },
+      },
+    },
+    fields: [
+      {
+        admin: {
+          components: {
+            Field: '/components/admin/TabbedLayoutField#TabbedContentTabsField',
+          },
+        },
+        type: 'group',
+        fields: [
+          createLayoutBlockNameField(),
+          createMenuField('headerLeftItems', 'Menu po lewej stronie nagłówka'),
+          createMenuField('headerRightItems', 'Menu po prawej stronie nagłówka'),
+          createMenuField('footerItems', 'Menu w stopce'),
+          {
+            name: 'footerAlignment',
+            type: 'select',
+            admin: {
+              condition: (_, siblingData) =>
+                Array.isArray(siblingData.footerItems) && siblingData.footerItems.length > 0,
+              isClearable: false,
+            },
+            defaultValue: 'center',
+            label: 'Wyrównanie menu w stopce',
+            options: [
+              { label: 'Do lewej', value: 'start' },
+              { label: 'Do środka', value: 'center' },
+              { label: 'Do prawej', value: 'end' },
+            ],
+            required: true,
+          },
+          {
+            name: 'tabs',
+            type: 'array',
+            admin: {
+              components: {
+                RowLabel: '/components/admin/DynamicRowLabel#TabbedContentTabRowLabel',
+              },
+              initCollapsed: false,
+            },
+            defaultValue: [
+              { blocks: [], label: 'Najbliższe' },
+              { blocks: [], label: 'Kalendarz' },
+            ],
+            hooks: {
+              beforeValidate: [enforceTabbedContentTabs],
+            },
+            fields: [
+              {
+                name: 'label',
+                type: 'text',
+                label: 'Nazwa zakładki',
+                required: true,
+              },
+              {
+                name: 'blocks',
+                type: 'blocks',
+                admin: { initCollapsed: false },
+                blocks: [...leafBlocks, ...layoutBlocks],
+                filterOptions: nestedFilterOptions,
+                label: 'Treść zakładki',
+                labels: {
+                  plural: 'Bloki treści',
+                  singular: 'blok treści',
+                },
+              },
+            ],
+            label: 'Zakładki',
+            labels: {
+              plural: 'Zakładki',
+              singular: 'zakładkę',
+            },
+            maxRows: maximumTabCount,
+            minRows: minimumTabCount,
+            required: true,
+            validate: validateTabbedContentTabs,
+          },
+        ],
+      },
+    ],
+    interfaceName,
+    labels: {
+      plural: 'Zakładki',
+      singular: 'Zakładki',
+    },
+  }
+}
+
+export const TabbedContentBlock: Block = createTabbedContentBlock()

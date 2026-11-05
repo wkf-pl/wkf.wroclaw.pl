@@ -1,4 +1,8 @@
-export { ColumnLayoutBlock, validateColumnLayoutColumns } from './ColumnLayout'
+export {
+  ColumnLayoutBlock,
+  createColumnLayoutBlock,
+  validateColumnLayoutColumns,
+} from './ColumnLayout'
 export { ActionLinksBlock } from './ActionLinks'
 export { CardBlock } from './Card'
 export { contentLeafBlocks } from './contentLeafBlocks'
@@ -7,5 +11,5 @@ export { ContentCalendarBlock } from './ContentCalendar'
 export { AttachmentsBlock, MediaGalleryBlock } from './MediaListing'
 export { HeadingBlock } from './Heading'
 export { RichTextBlock } from './RichText'
-export { SectionGroupBlock } from './SectionGroup'
-export { TabbedContentBlock } from './TabbedContent'
+export { createSectionGroupBlock, SectionGroupBlock } from './SectionGroup'
+export { createTabbedContentBlock, TabbedContentBlock } from './TabbedContent'

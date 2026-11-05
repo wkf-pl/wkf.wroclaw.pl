@@ -128,6 +128,7 @@ test.beforeAll(async () => {
         },
       ],
       name: 'Przystań Wyobraźni E2E',
+      publishedAt: '2026-11-03T12:00:00.000Z',
       slug: fixture.partnerSlug,
       website: 'https://example.com/route-appearance-partner',
     },

@@ -10,8 +10,10 @@ import {
 
 import config from '@payload-config'
 
-import type { Page, Post } from '@/payload-types'
+import type { Page, PageTemplate, Post } from '@/payload-types'
 import type { DraftPreviewGlobal } from './draft-preview'
+import type { PageTemplateID } from '@/modules/page-templates/page-template-registry'
+import { findPublishedPageTemplate } from '@/modules/page-templates/public-page-templates'
 import {
   findPublishedPageBySlug,
   findPublishedPostBySlug,
@@ -86,6 +88,36 @@ export const findPostForRequest = cache(
       pagination: false,
       user,
       where: { slug: { equals: slug } },
+    })
+
+    return { document: result.docs[0] ?? null, isDraftPreview: true }
+  },
+)
+
+export const findPageTemplateForRequest = cache(
+  async (templateKey: PageTemplateID): Promise<PreviewContentResult<PageTemplate>> => {
+    const { isEnabled } = await draftMode()
+
+    if (!isEnabled) {
+      return { document: await findPublishedPageTemplate(templateKey), isDraftPreview: false }
+    }
+
+    const payload = await getPayload({ config })
+    const user = await authenticatePreviewUser(payload)
+
+    if (!user) {
+      return { document: null, isDraftPreview: true }
+    }
+
+    const result = await payload.find({
+      collection: 'page-templates',
+      depth: 3,
+      draft: true,
+      limit: 1,
+      overrideAccess: false,
+      pagination: false,
+      user,
+      where: { templateKey: { equals: templateKey } },
     })
 
     return { document: result.docs[0] ?? null, isDraftPreview: true }

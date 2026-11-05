@@ -11,7 +11,6 @@ import { formatAdminURL } from 'payload/shared'
 import { Fragment } from 'react'
 
 import type { User } from '@/payload-types'
-import type { CustomAdminDestination } from '@/modules/admin/custom-admin-destinations'
 import { userHasRole } from '@/modules/membership/user-roles'
 
 import { AdminNavIcon } from './AdminNavIcon'
@@ -19,11 +18,9 @@ import { AdminNavIcon } from './AdminNavIcon'
 const baseClass = 'nav'
 
 export function AdminNavClient({
-  customDestinations,
   groups,
   navPreferences,
 }: {
-  customDestinations: CustomAdminDestination[]
   groups: ReturnType<typeof groupNavItems>
   navPreferences: NavPreferences
 }) {
@@ -39,8 +36,6 @@ export function AdminNavClient({
   } = useConfig()
   const { i18n } = useTranslation()
   const hasMemberRole = userHasRole(user, 'member')
-  const customDestinationGroups = new Set(customDestinations.map(({ group }) => group))
-
   return (
     <Fragment>
       {groups.map(({ entities, label }, key) => (
@@ -62,34 +57,8 @@ export function AdminNavClient({
               />
             )
           })}
-          {customDestinations
-            .filter((destination) => destination.group === label)
-            .map((destination) => (
-              <CustomAdminNavLink
-                adminRoute={adminRoute}
-                destination={destination}
-                key={destination.id}
-                pathname={pathname}
-              />
-            ))}
         </NavGroup>
       ))}
-      {[...customDestinationGroups]
-        .filter((groupLabel) => !groups.some(({ label }) => label === groupLabel))
-        .map((groupLabel) => (
-          <NavGroup key={groupLabel} label={groupLabel}>
-            {customDestinations
-              .filter(({ group }) => group === groupLabel)
-              .map((destination) => (
-                <CustomAdminNavLink
-                  adminRoute={adminRoute}
-                  destination={destination}
-                  key={destination.id}
-                  pathname={pathname}
-                />
-              ))}
-          </NavGroup>
-        ))}
       <NavGroup label="Użytkownik">
         <AdminNavLink
           href={formatAdminURL({ adminRoute, path: accountRoute })}
@@ -111,29 +80,6 @@ export function AdminNavClient({
         ) : null}
       </NavGroup>
     </Fragment>
-  )
-}
-
-function CustomAdminNavLink({
-  adminRoute,
-  destination,
-  pathname,
-}: {
-  adminRoute: string
-  destination: CustomAdminDestination
-  pathname: string
-}) {
-  const href = formatAdminURL({ adminRoute, path: destination.path })
-
-  return (
-    <AdminNavLink
-      href={href}
-      iconName={destination.iconName}
-      id={`nav-${destination.id}`}
-      isActive={isActivePath(pathname, href)}
-      isExact={pathname === href}
-      label={destination.label}
-    />
   )
 }
 

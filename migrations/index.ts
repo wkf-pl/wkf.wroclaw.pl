@@ -61,6 +61,7 @@ import * as migration_20261031_111620_listing_sources_and_block_consolidation fr
 import * as migration_20261031_112000_remove_legacy_carousel_and_member_profiles_blocks from './20261031_112000_remove_legacy_carousel_and_member_profiles_blocks'
 import * as migration_20261102_114056_related_content_listing from './20261102_114056_related_content_listing'
 import * as migration_20261103_150000_page_template_permissions from './20261103_150000_page_template_permissions'
+import * as migration_20261104_020601_page_templates_collection from './20261104_020601_page_templates_collection'
 
 export const migrations = [
   {
@@ -377,5 +378,10 @@ export const migrations = [
     up: migration_20261103_150000_page_template_permissions.up,
     down: migration_20261103_150000_page_template_permissions.down,
     name: '20261103_150000_page_template_permissions',
+  },
+  {
+    up: migration_20261104_020601_page_templates_collection.up,
+    down: migration_20261104_020601_page_templates_collection.down,
+    name: '20261104_020601_page_templates_collection',
   },
 ]

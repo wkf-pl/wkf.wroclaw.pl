@@ -3,7 +3,6 @@ import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { lexicalEditor, LinkFeature } from '@payloadcms/richtext-lexical'
 import { pl } from '@payloadcms/translations/languages/pl'
 import path from 'path'
-import type { SanitizedConfig } from 'payload'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
@@ -23,6 +22,7 @@ import {
   MemberProfileImages,
   MemberProfiles,
   Pages,
+  PageTemplates,
   Partners,
   Posts,
   Roles,
@@ -85,11 +85,6 @@ export default buildConfig({
         account: {
           Component: '/components/admin/AccountView#AccountView',
         },
-        pageTemplates: {
-          Component: '/components/admin/PageTemplatesView#PageTemplatesView',
-          exact: true,
-          path: '/page-templates',
-        },
         profile: {
           Component: '/components/admin/MemberProfileView#MemberProfileView',
           exact: true,
@@ -122,6 +117,7 @@ export default buildConfig({
   },
   collections: [
     ContentListingItems,
+    PageTemplates,
     Pages,
     Posts,
     Events,
@@ -183,34 +179,7 @@ export default buildConfig({
     }),
     ...createStoragePlugins(),
   ],
-}).then(useUnifiedAdminResourceCards)
-
-function useUnifiedAdminResourceCards(config: SanitizedConfig): SanitizedConfig {
-  const dashboard = config.admin.dashboard
-  const collectionCardsWidget = dashboard?.widgets.find(({ slug }) => slug === 'collections')
-
-  if (!dashboard || !collectionCardsWidget) {
-    throw new Error('Payload did not register the default collections dashboard widget.')
-  }
-
-  return {
-    ...config,
-    admin: {
-      ...config.admin,
-      dashboard: {
-        ...dashboard,
-        widgets: dashboard.widgets.map((widget) =>
-          widget.slug === collectionCardsWidget.slug
-            ? {
-                ...widget,
-                Component: '/components/admin/AdminResourceCards#AdminResourceCards',
-              }
-            : widget,
-        ),
-      },
-    },
-  }
-}
+})
 
 function getTrustedOrigins(configuredServerURL: string | undefined): string[] {
   if (!configuredServerURL) {

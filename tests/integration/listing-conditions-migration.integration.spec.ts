@@ -19,6 +19,10 @@ import {
   down as downRelatedContent,
   up as upRelatedContent,
 } from '../../migrations/20261102_114056_related_content_listing'
+import {
+  down as downPageTemplates,
+  up as upPageTemplates,
+} from '../../migrations/20261104_020601_page_templates_collection'
 
 const fixtureId = 9_300_001
 const fixtureVersionId = 9_300_002
@@ -77,6 +81,7 @@ async function removeLegacyFixtures(): Promise<void> {
 }
 
 async function moveToBeforeListingConditions(): Promise<void> {
+  if (await tableExists('page_templates')) await downPageTemplates(migrationArguments())
   if (await relatedContentSchemaExists()) await downRelatedContent(migrationArguments())
   if (!(await tableExists('pages_blocks_carousel'))) {
     await downLegacyBlockRemoval(migrationArguments())
@@ -102,6 +107,7 @@ async function restoreCurrentSchema(): Promise<void> {
   await upListingConsolidation(migrationArguments())
   await upLegacyBlockRemoval(migrationArguments())
   await upRelatedContent(migrationArguments())
+  await upPageTemplates(migrationArguments())
 }
 
 beforeAll(async () => {

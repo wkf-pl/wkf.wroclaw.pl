@@ -23,6 +23,10 @@ import {
   down as downRelatedContent,
   up as upRelatedContent,
 } from '../../migrations/20261102_114056_related_content_listing'
+import {
+  down as downPageTemplates,
+  up as upPageTemplates,
+} from '../../migrations/20261104_020601_page_templates_collection'
 
 const globalTables = [
   'site_settings',
@@ -83,6 +87,7 @@ async function relatedContentSchemaExists(): Promise<boolean> {
 }
 
 async function moveToBeforeGlobalDrafts(): Promise<void> {
+  if (await tableExists('page_templates')) await downPageTemplates(migrationArguments())
   if (await relatedContentSchemaExists()) await downRelatedContent(migrationArguments())
   if (!(await tableExists('pages_blocks_carousel'))) {
     await downLegacyBlockRemoval(migrationArguments())
@@ -105,6 +110,7 @@ async function restoreCurrentSchema(): Promise<void> {
     await upLegacyBlockRemoval(migrationArguments())
   }
   if (!(await relatedContentSchemaExists())) await upRelatedContent(migrationArguments())
+  if (!(await tableExists('page_templates'))) await upPageTemplates(migrationArguments())
 }
 
 async function readGlobalRows(table: (typeof globalTables)[number]): Promise<unknown[]> {
@@ -144,6 +150,7 @@ describe('global drafts migration', () => {
     await upListingConsolidation(migrationArguments())
     await upLegacyBlockRemoval(migrationArguments())
     await upRelatedContent(migrationArguments())
+    await upPageTemplates(migrationArguments())
 
     for (const table of globalTables) {
       expect(await readGlobalRows(table)).toEqual(contentBeforeMigration.get(table))

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 
 import { RasterIcon } from '@/components/RasterIcon'
 import { createContentMetadata } from '@/modules/content/content-metadata'
+import { findPageTemplateForRequest } from '@/modules/content/preview-content'
 import { extractRichTextText } from '@/modules/content/rich-text'
 import { resolveEventStatus } from '@/modules/events/event-status'
 import { buildGoogleMapsURL } from '@/modules/events/map-embed'
@@ -15,6 +16,7 @@ import { CmsPageDocument } from '../../_components/CmsPageDocument'
 import { SmallPostList } from '../../_components/SmallPostList'
 import { StructuredData } from '../../_components/StructuredData'
 import { EventHeroEyebrow, EventSidebar, EventSummary } from './EventDetails'
+import { EventTemplateDocument } from './EventTemplateDocument'
 
 type Properties = {
   params: Promise<{ slug: string }>
@@ -28,6 +30,24 @@ export async function generateMetadata({ params }: Properties): Promise<Metadata
 export default async function EventPage({ params, searchParams }: Properties) {
   const event = await findPublishedEventBySlug((await params).slug)
   if (!event) notFound()
+  const [pageTemplate, resolvedSearchParams] = await Promise.all([
+    findPageTemplateForRequest('event-detail'),
+    searchParams,
+  ])
+
+  if (pageTemplate.document?.renderingMode === 'template') {
+    return (
+      <>
+        <StructuredData value={createEventStructuredData(event)} />
+        <EventTemplateDocument
+          event={event}
+          searchParams={resolvedSearchParams}
+          template={pageTemplate.document}
+        />
+      </>
+    )
+  }
+
   const relatedPosts = await findPostsRelatedToEvent(event.id)
   const location = event.location
   const mapURL = buildGoogleMapsURL({
@@ -105,7 +125,7 @@ export default async function EventPage({ params, searchParams }: Properties) {
           ) : null
         }
         pathname={`/events/${event.slug}`}
-        searchParams={await searchParams}
+        searchParams={resolvedSearchParams}
         showHeroMeta={false}
       />
     </>

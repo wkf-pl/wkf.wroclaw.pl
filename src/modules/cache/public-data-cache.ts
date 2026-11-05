@@ -11,6 +11,7 @@ export const publicCacheTags = {
   memberProfiles: 'public:member-profiles',
   navigation: 'public:navigation',
   pages: 'public:pages',
+  pageTemplates: 'public:page-templates',
   partners: 'public:partners',
   posts: 'public:posts',
   siteSettings: 'public:site-settings',
@@ -20,7 +21,9 @@ export const publicCacheTags = {
 
 export const skipPublicCacheInvalidationContextKey = 'skipPublicCacheInvalidation'
 export const isPublicDataCacheEnabled =
-  process.env.NODE_ENV !== 'test' && process.env.VITEST !== 'true'
+  process.env.NODE_ENV !== 'test' &&
+  process.env.VITEST !== 'true' &&
+  process.env.WKF_DISABLE_PUBLIC_CACHE !== 'true'
 
 type PublicDataCacheOptions = { revalidate: number; tags: string[] }
 
