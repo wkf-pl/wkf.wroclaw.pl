@@ -11,7 +11,7 @@ import {
 import config from '@payload-config'
 
 import type { Page, PageTemplate, Post } from '@/payload-types'
-import type { DraftPreviewGlobal } from './draft-preview'
+import { shouldRenderPageTemplate, type DraftPreviewGlobal } from './draft-preview'
 import type { PageTemplateID } from '@/modules/page-templates/page-template-registry'
 import { findPublishedPageTemplate } from '@/modules/page-templates/public-page-templates'
 import {
@@ -124,6 +124,23 @@ export const findPageTemplateForRequest = cache(
     return { document: result.docs[0] ?? null, isDraftPreview: true }
   },
 )
+
+export async function findRenderablePageTemplateForRequest(
+  templateKey: PageTemplateID,
+  searchParams: Record<string, string | string[] | undefined>,
+): Promise<PreviewContentResult<PageTemplate>> {
+  const { document, isDraftPreview } = await findPageTemplateForRequest(templateKey)
+  const shouldRender =
+    document &&
+    shouldRenderPageTemplate({
+      isDraftPreview,
+      renderingMode: document.renderingMode,
+      searchParams,
+      templateKey,
+    })
+
+  return { document: shouldRender ? document : null, isDraftPreview }
+}
 
 export const findFooterForRequest = cache(() => findGlobalForRequest('footer', getPublicFooter))
 

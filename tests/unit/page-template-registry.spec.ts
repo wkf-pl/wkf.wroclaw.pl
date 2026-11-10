@@ -126,7 +126,7 @@ describe('page template registry', () => {
       validatePageTemplateData({
         _status: 'published',
         renderingMode: 'template',
-        templateKey: 'blog-index',
+        templateKey: 'members-index',
       }),
     ).toThrow('Nowy renderer tej trasy nie został jeszcze wdrożony')
   })

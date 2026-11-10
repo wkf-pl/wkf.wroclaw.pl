@@ -1,6 +1,5 @@
 import { BooleanSwitchField as BooleanSwitchField_02c72a1b2f0f9c4a9d954970997296e5 } from '../../../components/admin/BooleanSwitchField'
 import { PageTemplateNameCell as PageTemplateNameCell_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
-import { PageTemplateIdentity as PageTemplateIdentity_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
 import { PageTemplateRenderingModeField as PageTemplateRenderingModeField_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
 import { PageTemplatePreviewTargetField as PageTemplatePreviewTargetField_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
 import { ContentSurfacePreview as ContentSurfacePreview_2d1684ff15a8c01dcfb8f45de029b3fe } from '../../../components/admin/ContentSurfacePreview'
@@ -68,6 +67,7 @@ import { NavigationItemRowLabel as NavigationItemRowLabel_25248d319d0ee96f21b07b
 import { TabbedContentTabRowLabel as TabbedContentTabRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { TabbedContentTabsField as TabbedContentTabsField_432a355624980b16474727ea268404c1 } from '../../../components/admin/TabbedLayoutField'
 import { TabbedContentBlockLabel as TabbedContentBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
+import { PageTemplateDescription as PageTemplateDescription_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
 import { DraftPreviewButton as DraftPreviewButton_4de757febecdd22106568bfa9952c5dd } from '../../../components/admin/DraftPreviewButton'
 import { HierarchyPath as HierarchyPath_6311b6033928ec6e076fdd24567b1bb0 } from '../../../components/admin/HierarchyPath'
 import { UserRelationshipCell as UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
@@ -117,7 +117,6 @@ import { AzureClientUploadHandler as AzureClientUploadHandler_635fb302eaf52f6bac
 export const importMap = {
   "/components/admin/BooleanSwitchField#BooleanSwitchField": BooleanSwitchField_02c72a1b2f0f9c4a9d954970997296e5,
   "/components/admin/PageTemplateFields#PageTemplateNameCell": PageTemplateNameCell_f1adb3d66022274ca5caca04eb1122e1,
-  "/components/admin/PageTemplateFields#PageTemplateIdentity": PageTemplateIdentity_f1adb3d66022274ca5caca04eb1122e1,
   "/components/admin/PageTemplateFields#PageTemplateRenderingModeField": PageTemplateRenderingModeField_f1adb3d66022274ca5caca04eb1122e1,
   "/components/admin/PageTemplateFields#PageTemplatePreviewTargetField": PageTemplatePreviewTargetField_f1adb3d66022274ca5caca04eb1122e1,
   "/components/admin/ContentSurfacePreview#ContentSurfacePreview": ContentSurfacePreview_2d1684ff15a8c01dcfb8f45de029b3fe,
@@ -185,6 +184,7 @@ export const importMap = {
   "/components/admin/DynamicRowLabel#TabbedContentTabRowLabel": TabbedContentTabRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/TabbedLayoutField#TabbedContentTabsField": TabbedContentTabsField_432a355624980b16474727ea268404c1,
   "/components/admin/ContentBlockLabel#TabbedContentBlockLabel": TabbedContentBlockLabel_d53c993bb109710411f82eaaf564eeff,
+  "/components/admin/PageTemplateFields#PageTemplateDescription": PageTemplateDescription_f1adb3d66022274ca5caca04eb1122e1,
   "/components/admin/DraftPreviewButton#DraftPreviewButton": DraftPreviewButton_4de757febecdd22106568bfa9952c5dd,
   "/components/admin/HierarchyPath#HierarchyPath": HierarchyPath_6311b6033928ec6e076fdd24567b1bb0,
   "/components/admin/UserIdentity#UserRelationshipCell": UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53,

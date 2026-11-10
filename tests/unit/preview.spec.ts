@@ -98,7 +98,8 @@ describe('draft preview', () => {
     expect(createPageTemplateDraftPreviewURL('events-index')).toBe(
       '/preview?pageTemplate=events-index',
     )
-    expect(createPageTemplateDraftPreviewURL('blog-index')).toBeNull()
+    expect(createPageTemplateDraftPreviewURL('blog-index')).toBe('/preview?pageTemplate=blog-index')
+    expect(createPageTemplateDraftPreviewURL('members-index')).toBeNull()
   })
 
   it('previews a draft template independently from its public rendering mode', () => {

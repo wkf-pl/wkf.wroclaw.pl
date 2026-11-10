@@ -164,7 +164,7 @@ const eventInformationFields: readonly PageTemplateDynamicField[] = [
 ]
 
 export const pageTemplateRegistry: readonly PageTemplateDefinition[] = [
-  createIndexTemplate('blog-index', 'Blog', '/blog'),
+  createIndexTemplate('blog-index', 'Blog', '/blog', true),
   createIndexTemplate('events-index', 'Wydarzenia', '/events', true),
   createIndexTemplate('members-index', 'Klubowicze', '/members'),
   {

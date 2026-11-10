@@ -41,6 +41,7 @@ export const PageTemplates: CollectionConfig = {
   },
   admin: {
     components: {
+      Description: '/components/admin/PageTemplateFields#PageTemplateDescription',
       edit: {
         PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
       },
@@ -76,15 +77,6 @@ export const PageTemplates: CollectionConfig = {
       options: pageTemplateRegistry.map(({ id, label }) => ({ label, value: id })),
       required: true,
       unique: true,
-    },
-    {
-      name: 'templateIdentity',
-      type: 'ui',
-      admin: {
-        components: {
-          Field: '/components/admin/PageTemplateFields#PageTemplateIdentity',
-        },
-      },
     },
     {
       name: 'renderingMode',

@@ -1099,28 +1099,6 @@
   }
 }
 
-.page-template-identity {
-  display: grid;
-  gap: calc(var(--base) * 0.35);
-  padding: calc(var(--base) * 0.8);
-  border: 1px solid var(--theme-elevation-250);
-  border-radius: var(--style-radius-s);
-  background: var(--theme-elevation-50);
-
-  strong {
-    font-size: 1.15rem;
-  }
-
-  code,
-  p {
-    margin: 0;
-  }
-
-  p {
-    color: var(--theme-elevation-650);
-  }
-}
-
 .wkf-listing-condition {
   &__connector {
     min-height: 62px;

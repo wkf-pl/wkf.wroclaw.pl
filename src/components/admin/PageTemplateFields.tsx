@@ -8,11 +8,14 @@ import {
   Link,
   ReactSelect,
   RelationshipField,
+  useDocumentInfo,
+  useDocumentTitle,
   useField,
   useFormFields,
   useConfig,
   useModal,
   useRowLabel,
+  ViewDescription,
 } from '@payloadcms/ui'
 import { mergeFieldStyles } from '@payloadcms/ui/shared'
 import type {
@@ -20,10 +23,9 @@ import type {
   RelationshipFieldClientProps,
   SelectFieldClient,
   SelectFieldClientProps,
-  UIFieldClientProps,
 } from 'payload'
 import { formatAdminURL } from 'payload/shared'
-import { Fragment, useId, useMemo, useState } from 'react'
+import { Fragment, useEffect, useId, useMemo, useState, type ComponentProps } from 'react'
 
 import { extractRichTextText } from '@/modules/content/rich-text'
 import {
@@ -55,6 +57,8 @@ export function PageTemplateRenderingModeField(properties: SelectFieldClientProp
   const { openModal } = useModal()
   const modalSlug = `page-template-mode-${useId().replaceAll(':', '')}`
   const [pendingMode, setPendingMode] = useState<PageTemplateRenderingMode | null>(null)
+  const templateKey = useTemplateKey()
+  const definition = templateKey ? getPageTemplateDefinition(templateKey) : undefined
   const currentMode: PageTemplateRenderingMode = value === 'template' ? 'template' : 'legacy'
   const selectedOption = renderingModeOptions.find(({ value }) => value === currentMode)
   const styles = useMemo(() => mergeFieldStyles(properties.field), [properties.field])
@@ -86,7 +90,14 @@ export function PageTemplateRenderingModeField(properties: SelectFieldClientProp
         value={selectedOption}
       />
       <FieldError message={errorMessage} path={path} showError={showError} />
-      <FieldDescription description={properties.field.admin?.description} path={path} />
+      <FieldDescription
+        description={
+          definition?.rendererAvailable === false
+            ? 'Nowy renderer tej trasy nie został jeszcze wdrożony.'
+            : properties.field.admin?.description
+        }
+        path={path}
+      />
       <ConfirmationModal
         body={
           pendingMode === 'template'
@@ -280,20 +291,35 @@ export function PageTemplatePreviewTargetField(properties: RelationshipFieldClie
   )
 }
 
-export function PageTemplateIdentity(_properties: UIFieldClientProps) {
-  const templateKey = useTemplateKey()
-  const definition = templateKey ? getPageTemplateDefinition(templateKey) : undefined
-  if (!definition) return null
+export function PageTemplateDescription(properties: ComponentProps<typeof ViewDescription>) {
+  const { id, data } = useDocumentInfo()
+  const { title, setDocumentTitle } = useDocumentTitle()
+  const definition = isPageTemplateID(data?.templateKey)
+    ? getPageTemplateDefinition(data.templateKey)
+    : undefined
+  const label = definition?.label
 
-  return (
-    <div className="page-template-identity">
-      <strong>{definition.label}</strong>
+  useEffect(() => {
+    if (id == null || !label || title === label || !setDocumentTitle) return
+
+    // Payload schedules the field-derived title in an animation frame after client navigation.
+    let titleFrame: number | undefined
+    const payloadFrame = requestAnimationFrame(() => {
+      titleFrame = requestAnimationFrame(() => setDocumentTitle(label))
+    })
+    return () => {
+      cancelAnimationFrame(payloadFrame)
+      if (titleFrame !== undefined) cancelAnimationFrame(titleFrame)
+    }
+  }, [id, label, setDocumentTitle, title])
+
+  if (id == null) return <ViewDescription {...properties} />
+
+  return definition ? (
+    <div className="custom-view-description">
       <code>{definition.route}</code>
-      {!definition.rendererAvailable ? (
-        <p>Nowy renderer tej trasy nie został jeszcze wdrożony.</p>
-      ) : null}
     </div>
-  )
+  ) : null
 }
 
 export function PageTemplateNameCell({

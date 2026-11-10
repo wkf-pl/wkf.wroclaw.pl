@@ -73,6 +73,7 @@ test('hides inaccessible collections from navigation and dashboard', async ({ pa
 })
 
 test('shows the fixed page template collection to administrators', async ({ page }) => {
+  test.setTimeout(60_000)
   await login({ page, user: administratorTestUser })
 
   await expect(page.getByRole('link', { name: 'Szablony stron' })).toHaveAttribute(
@@ -106,14 +107,28 @@ test('shows the fixed page template collection to administrators', async ({ page
   await expect(page.getByText('Dotychczasowy układ (legacy)', { exact: true })).toHaveCount(9)
   await expect(page.getByRole('link', { name: /Dodaj/ })).toHaveCount(0)
 
-  await page
-    .getByRole('row')
-    .filter({ hasText: 'Szczegóły wydarzenia' })
-    .getByRole('link')
-    .first()
-    .click()
-  await expect(page.getByText('Szczegóły wydarzenia', { exact: true })).toBeVisible()
-  await expect(page.getByText('/events/[slug]', { exact: true })).toBeVisible()
+  const collectionDescription = page.getByText(
+    'Globalne układy tras kontrolowane przez aplikację. Typów szablonów nie można dodawać ani usuwać.',
+    { exact: true },
+  )
+  await expect(collectionDescription).toBeVisible()
+
+  for (const { label, route } of [
+    { label: 'Wydarzenia', route: '/events' },
+    { label: 'Szczegóły wydarzenia', route: '/events/[slug]' },
+  ]) {
+    const templateRow = page.getByRole('row').filter({
+      has: page.getByText(route, { exact: true }),
+    })
+    await templateRow.getByRole('link').first().click()
+    await expect(page.getByRole('heading', { level: 1, name: label, exact: true })).toBeVisible()
+    await expect(
+      page.locator('.doc-header__after-header').getByText(route, { exact: true }),
+    ).toBeVisible()
+    await expect(collectionDescription).toHaveCount(0)
+    await expect(page.locator('.page-template-identity')).toHaveCount(0)
+    if (route === '/events') await page.goto('/admin/collections/page-templates')
+  }
   await expect(page.getByText('Nowy renderer tej trasy nie został jeszcze wdrożony.')).toHaveCount(
     0,
   )
