@@ -34,11 +34,13 @@ export function EventTemplateDocument({
         { label: 'Wydarzenia', url: '/events' },
         { label: event.title, url: null },
       ]}
-      currentTarget={{ relationTo: 'events', value: event.id }}
-      document={event}
+      currentItem={{
+        document: event,
+        renderField: (block) => <EventCurrentItemField block={block} event={event} />,
+        target: { relationTo: 'events', value: event.id },
+      }}
       image={getContentHeroImage(event.heroImage)}
       pathname={`/events/${event.slug}`}
-      renderCurrentItemField={(block) => <EventCurrentItemField block={block} event={event} />}
       searchParams={searchParams}
       template={template}
     />

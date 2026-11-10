@@ -1,4 +1,4 @@
-import { getPayload, type Where } from 'payload'
+import { getPayload, type Payload, type Where } from 'payload'
 
 import config from '@payload-config'
 
@@ -8,6 +8,10 @@ import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import type { PartnerRole } from '@/modules/events/constants'
+import {
+  createEventsIndexTimeWhere,
+  createUpcomingEventsIndexWhere,
+} from '@/modules/events/events-index-time'
 import {
   getWarsawDayAfterISOString,
   getWarsawDayStartISOString,
@@ -43,6 +47,7 @@ export type { ContentListingDocument, ContentListingSource, PublicContentListIte
 export type FindPublicContentOptions = {
   conditions?: ListingConditionInput[] | null
   currentTarget?: ContentListingReference
+  eventTimeScope?: 'eventsIndex'
   manualItems?: ManualContentReference[]
   page: number
   pageSize: number
@@ -106,7 +111,7 @@ async function findPublicContentUncached(
     },
     sort: getPayloadSort(options.sort),
     user: null,
-    where: createListingWhere(options),
+    where: await createListingWhere(payload, options),
   })
 
   return {
@@ -138,6 +143,7 @@ export async function findPublicContent(
   const { page, pageSize } = normalizeListingWindow(options)
   return findPublicContentCached({
     conditions,
+    eventTimeScope: options.eventTimeScope,
     manualItems: options.manualItems,
     page,
     pageSize,
@@ -220,10 +226,43 @@ function getManualContentReferences(values: readonly ManualContentReference[] | 
   )
 }
 
-function createListingWhere(options: CachedFindPublicContentOptions): Where {
+async function createListingWhere(
+  payload: Payload,
+  options: CachedFindPublicContentOptions,
+): Promise<Where> {
   const conditions: Where[] = [{ source: { in: [...new Set(options.sources)].sort() } }]
-  conditions.push(...options.conditions.map(compileListingConditionWhere))
+  const now = new Date()
+  for (const condition of options.conditions) {
+    if (options.eventTimeScope !== 'eventsIndex' || condition.field !== 'eventTime') {
+      conditions.push(compileListingConditionWhere(condition))
+    } else if (condition.eventTimeValue === 'upcoming') {
+      conditions.push(await findUpcomingEventsIndexWhere(payload, now))
+    } else {
+      conditions.push(
+        createEventsIndexTimeWhere('past', now, { start: 'eventStartAt', end: 'eventEndAt' }),
+      )
+    }
+  }
   return { and: conditions }
+}
+
+async function findUpcomingEventsIndexWhere(payload: Payload, now: Date): Promise<Where> {
+  // Read the stored status before the Events afterRead hook derives the display status.
+  const { docs } = await payload.find({
+    collection: 'events',
+    context: publicRequestContext,
+    depth: 0,
+    draft: false,
+    overrideAccess: false,
+    pagination: false,
+    select: { updatedAt: true },
+    user: null,
+    where: {
+      and: [{ _status: { equals: 'published' } }, createUpcomingEventsIndexWhere(now)],
+    },
+  })
+
+  return { sourceDocumentId: { in: docs.map(({ id }) => id) } }
 }
 
 export function compileListingConditionWhere(condition: PreparedListingCondition): Where {

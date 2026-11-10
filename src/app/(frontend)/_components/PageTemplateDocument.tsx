@@ -8,6 +8,7 @@ import type {
   PageTemplate,
   PageTemplateActionLinksBlock,
 } from '@/payload-types'
+import { normalizeContentHeading } from '@/modules/content/content-presentation'
 import { getPublicSiteSettings } from '@/modules/content/public-content'
 import type { ContentListingReference } from '@/modules/content/listing-conditions'
 import type { PublicBreadcrumb } from '@/modules/content/public-hierarchy'
@@ -22,6 +23,7 @@ import {
   type ContentLayoutDocument,
 } from './ContentLayoutRenderer'
 import { ActionLinksList } from './ActionLinksList'
+import { ContentHeading } from './ContentPresentation'
 import { ContentHero, type ContentHeroImage } from './ContentHero'
 
 const fieldRowTextConverters: JSXConvertersFunction = ({ defaultConverters }) => ({
@@ -44,40 +46,57 @@ const fieldRowTextStyleClasses = {
 
 type PageTemplateDocumentProperties = {
   breadcrumbs: PublicBreadcrumb[]
-  currentTarget: ContentListingReference
-  document: ContentLayoutDocument
+  currentItem?: {
+    document: Exclude<ContentLayoutDocument, PageTemplate>
+    target: ContentListingReference
+    renderField: (
+      block: CurrentItemFieldBlock,
+      region: 'content' | 'hero' | 'informationPanel',
+    ) => ReactNode
+  }
   image?: ContentHeroImage
+  indexTitle?: string
   pathname: string
-  renderCurrentItemField: (
-    block: CurrentItemFieldBlock,
-    region: 'content' | 'hero' | 'informationPanel',
-  ) => ReactNode
   searchParams: Record<string, string | string[] | undefined>
   template: PageTemplate
 }
 
 export async function PageTemplateDocument({
   breadcrumbs,
-  currentTarget,
-  document,
+  currentItem,
   image,
+  indexTitle,
   pathname,
-  renderCurrentItemField,
   searchParams,
   template,
 }: PageTemplateDocumentProperties) {
+  const document = currentItem?.document ?? template
+  const currentTarget = currentItem?.target
+  const heroTitleIndex = indexTitle
+    ? (template.hero?.findIndex(
+        (block) => block.blockType === 'heading' && block.heading?.trim(),
+      ) ?? -1)
+    : -1
+
   const renderCustomBlock = async (
     properties: ContentLayoutCustomBlockProperties,
   ): Promise<ContentLayoutCustomBlockResolution | undefined> => {
+    if (properties.block.blockType === 'heading' && properties.path === `hero.${heroTitleIndex}`) {
+      return {
+        content: <ContentHeading as="h1" heading={normalizeContentHeading(properties.block)} />,
+      }
+    }
+
     if (properties.block.blockType === 'currentItemField') {
       const region = getRegionFromPath(properties.path)
-      if (!region) return { content: null }
+      if (!currentItem || !region) return { content: null }
       return {
-        content: renderCurrentItemField(properties.block as CurrentItemFieldBlock, region),
+        content: currentItem.renderField(properties.block as CurrentItemFieldBlock, region),
       }
     }
 
     if (properties.block.blockType === 'currentItemContent') {
+      if (!currentItem) return { content: null }
       return {
         content: (
           <ContentLayoutRenderer
@@ -211,15 +230,18 @@ export async function PageTemplateDocument({
         <ContentHero
           breadcrumbs={breadcrumbs}
           customCopy={
-            <ContentLayoutRenderer
-              currentTarget={currentTarget}
-              customBlockRenderer={renderCustomBlock}
-              document={document}
-              layout={toContentLayoutBlocks(template.hero)}
-              layoutPath="hero"
-              pathname={pathname}
-              searchParams={searchParams}
-            />
+            <>
+              {indexTitle && heroTitleIndex === -1 ? <h1>{indexTitle}</h1> : null}
+              <ContentLayoutRenderer
+                currentTarget={currentTarget}
+                customBlockRenderer={renderCustomBlock}
+                document={document}
+                layout={toContentLayoutBlocks(template.hero)}
+                layoutPath="hero"
+                pathname={pathname}
+                searchParams={searchParams}
+              />
+            </>
           }
           image={image}
         />

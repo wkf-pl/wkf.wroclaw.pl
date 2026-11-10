@@ -32,6 +32,7 @@ import type {
   ListingBlock,
   MediaGalleryBlock,
   Page,
+  PageTemplate,
   PageTemplateActionLinksBlock,
   PageTemplateColumnLayoutBlock,
   PageTemplateIconBlock,
@@ -55,7 +56,8 @@ import { resolveMediaBlockSection } from './MediaBlockSection'
 import { PresentedLink } from './PresentedLink'
 import { TabbedContentFrame, type TabbedContentFrameTab } from './TabbedContentFrame'
 
-export type ContentLayoutDocument = Event | EventCycle | HomepageSection | Page | Partner | Post
+export type ContentLayoutDocument =
+  Event | EventCycle | HomepageSection | Page | PageTemplate | Partner | Post
 type ContentLeafBlock =
   | ActionLinksBlock
   | PageTemplateActionLinksBlock
@@ -140,7 +142,9 @@ export async function ContentLayoutRenderer({
   pathname,
   searchParams,
 }: ContentRendererProperties) {
-  const layout = providedLayout ?? ((document.layout ?? []) as ContentLayoutBlock[])
+  const layout =
+    providedLayout ??
+    (('layout' in document ? (document.layout ?? []) : []) as ContentLayoutBlock[])
 
   return (
     <div className="pageBlocks">

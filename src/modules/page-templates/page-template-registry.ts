@@ -165,7 +165,7 @@ const eventInformationFields: readonly PageTemplateDynamicField[] = [
 
 export const pageTemplateRegistry: readonly PageTemplateDefinition[] = [
   createIndexTemplate('blog-index', 'Blog', '/blog'),
-  createIndexTemplate('events-index', 'Wydarzenia', '/events'),
+  createIndexTemplate('events-index', 'Wydarzenia', '/events', true),
   createIndexTemplate('members-index', 'Klubowicze', '/members'),
   {
     allowedBlocks: standardContentBlocks,
@@ -362,6 +362,7 @@ function createIndexTemplate(
   id: Extract<PageTemplateID, `${string}-index`>,
   label: string,
   route: string,
+  rendererAvailable = false,
 ): PageTemplateDefinition {
   return {
     allowedBlocks: standardContentBlocks,
@@ -372,7 +373,7 @@ function createIndexTemplate(
     label,
     previewCollection: null,
     regions: pageTemplateRegions,
-    rendererAvailable: false,
+    rendererAvailable,
     requiresCurrentItemContent: false,
     route,
     routeKind: 'collectionIndex',

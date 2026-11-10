@@ -112,6 +112,7 @@ export const findPageTemplateForRequest = cache(
     const result = await payload.find({
       collection: 'page-templates',
       depth: 3,
+      disableErrors: true,
       draft: true,
       limit: 1,
       overrideAccess: false,
@@ -162,12 +163,15 @@ async function findGlobalForRequest<Slug extends DraftPreviewGlobal & GlobalSlug
   const document = await payload.findGlobal({
     slug,
     depth: 2,
+    disableErrors: true,
     draft: true,
     overrideAccess: false,
     user,
   })
 
-  return { document, isDraftPreview: true }
+  return document
+    ? { document, isDraftPreview: true }
+    : { document: await findPublishedGlobal(), isDraftPreview: false }
 }
 
 const authenticatePreviewUser = cache(async (payload: Payload): Promise<null | TypedUser> => {
