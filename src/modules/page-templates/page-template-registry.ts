@@ -11,15 +11,28 @@ export type PageTemplatePreviewCollection =
 
 export type PageTemplateFieldVariant = {
   label: string
+  legacy?: boolean
   value: string
 }
 
 export type PageTemplateDynamicField = {
   defaultVariant: string
+  inline: boolean
   key: string
   label: string
   regions: readonly PageTemplateRegion[]
   variants: readonly PageTemplateFieldVariant[]
+}
+
+export type PageTemplateContextAction = {
+  key: 'eventCalendar' | 'eventCycleCalendar' | 'eventMap'
+  label: string
+}
+
+export type PageTemplateContextListingRelation = {
+  key: 'eventPartners'
+  label: string
+  source: 'partners'
 }
 
 export type PageTemplateBlockCapability = {
@@ -31,6 +44,8 @@ export type PageTemplateBlockCapability = {
 
 export type PageTemplateDefinition = {
   allowedBlocks: readonly PageTemplateBlockCapability[]
+  contextActions?: readonly PageTemplateContextAction[]
+  contextListingRelations?: readonly PageTemplateContextListingRelation[]
   currentItemLabel: string | null
   dynamicFields: readonly PageTemplateDynamicField[]
   heroImageRule: PageTemplateHeroImageRule
@@ -69,7 +84,7 @@ const textVariants = [
   { label: 'Tekst kompaktowy', value: 'compact' },
 ] as const
 
-const badgeVariants = [
+export const pageTemplateBadgeVariants = [
   { label: 'Etykieta', value: 'badge' },
   { label: 'Etykieta wyróżniona', value: 'emphasizedBadge' },
 ] as const
@@ -81,8 +96,8 @@ const listVariants = [
 ] as const
 
 const informationVariants = [
-  { label: 'Z ikoną', value: 'icon' },
-  { label: 'Bez ikony', value: 'plain' },
+  { label: 'Standardowo', legacy: true, value: 'icon' },
+  { label: 'Standardowo', value: 'plain' },
   { label: 'Kompaktowo', value: 'compact' },
 ] as const
 
@@ -94,6 +109,12 @@ const standardContentBlocks: readonly PageTemplateBlockCapability[] = [
     label: 'Odnośniki akcji',
     regions: ['hero', 'informationPanel', 'content'],
   },
+  {
+    blockType: 'currentItemFieldRow',
+    label: 'Wiersz pól',
+    regions: ['hero', 'informationPanel', 'content'],
+  },
+  { blockType: 'pageTemplateIcon', label: 'Ikona', regions: pageTemplateRegions },
   {
     blockType: 'listing',
     label: 'Listing',
@@ -124,11 +145,22 @@ const itemContentBlock: PageTemplateBlockCapability = {
 }
 
 const eventInformationFields: readonly PageTemplateDynamicField[] = [
-  createDynamicField('eventTime', 'Termin', ['informationPanel'], informationVariants),
-  createDynamicField('eventLocation', 'Miejsce', ['informationPanel'], informationVariants),
-  createDynamicField('eventAudience', 'Publiczność', ['informationPanel'], informationVariants),
-  createDynamicField('eventCapacity', 'Liczba miejsc', ['informationPanel'], informationVariants),
-  createDynamicField('eventActions', 'Akcje wydarzenia', ['informationPanel'], listVariants),
+  createDynamicField('eventTime', 'Termin', ['informationPanel'], informationVariants, true),
+  createDynamicField('eventLocation', 'Miejsce', ['informationPanel'], informationVariants, true),
+  createDynamicField(
+    'eventAudience',
+    'Publiczność',
+    ['informationPanel'],
+    informationVariants,
+    true,
+  ),
+  createDynamicField(
+    'eventCapacity',
+    'Liczba miejsc',
+    ['informationPanel'],
+    informationVariants,
+    true,
+  ),
 ]
 
 export const pageTemplateRegistry: readonly PageTemplateDefinition[] = [
@@ -172,14 +204,32 @@ export const pageTemplateRegistry: readonly PageTemplateDefinition[] = [
   },
   {
     allowedBlocks: [...standardContentBlocks, itemContentBlock],
+    contextActions: [
+      { key: 'eventCalendar', label: 'Dodaj do kalendarza' },
+      { key: 'eventMap', label: 'Otwórz w Mapach' },
+      { key: 'eventCycleCalendar', label: 'Subskrybuj cykl' },
+    ],
+    contextListingRelations: [
+      {
+        key: 'eventPartners',
+        label: 'Partnerzy bieżącego wydarzenia',
+        source: 'partners',
+      },
+    ],
     currentItemLabel: 'Wydarzenie',
     dynamicFields: [
-      createDynamicField('eventType', 'Typ wydarzenia', ['hero'], badgeVariants),
-      createDynamicField('eventStatus', 'Status wydarzenia', ['hero'], badgeVariants),
+      createDynamicField('eventType', 'Typ wydarzenia', ['hero'], pageTemplateBadgeVariants, true),
+      createDynamicField(
+        'eventStatus',
+        'Status wydarzenia',
+        ['hero'],
+        pageTemplateBadgeVariants,
+        true,
+      ),
       createDynamicField('title', 'Tytuł', ['hero'], headingVariants),
       createDynamicField('excerpt', 'Opis', ['hero', 'content'], textVariants),
-      createDynamicField('eventCycle', 'Cykl', ['hero', 'content'], listVariants),
-      createDynamicField('tags', 'Tagi', ['hero', 'content'], listVariants),
+      createDynamicField('eventCycle', 'Cykl', ['hero', 'content'], listVariants, true),
+      createDynamicField('tags', 'Tagi', ['hero', 'content'], listVariants, true),
       ...eventInformationFields,
       createDynamicField('partners', 'Partnerzy', ['content'], listVariants),
     ],
@@ -271,6 +321,24 @@ export function getPageTemplateDynamicField(
   )
 }
 
+export function getPageTemplateContextAction(
+  templateID: PageTemplateID,
+  actionKey: string,
+): PageTemplateContextAction | undefined {
+  return getPageTemplateDefinition(templateID)?.contextActions?.find(
+    (action) => action.key === actionKey,
+  )
+}
+
+export function getPageTemplateContextListingRelation(
+  templateID: PageTemplateID,
+  relationKey: string,
+): PageTemplateContextListingRelation | undefined {
+  return getPageTemplateDefinition(templateID)?.contextListingRelations?.find(
+    (relation) => relation.key === relationKey,
+  )
+}
+
 export function getPageTemplateRegionFromPath(path: string): PageTemplateRegion | undefined {
   const rootSegment = path.split('.')[0]
   return rootSegment === 'hero' || rootSegment === 'informationPanel' || rootSegment === 'content'
@@ -283,10 +351,11 @@ function createDynamicField(
   label: string,
   regions: readonly PageTemplateRegion[],
   variants: readonly PageTemplateFieldVariant[],
+  inline = false,
 ): PageTemplateDynamicField {
-  const defaultVariant = variants[0]?.value
+  const defaultVariant = variants.find(({ legacy }) => !legacy)?.value
   if (!defaultVariant) throw new Error(`Page template field ${key} requires at least one variant.`)
-  return { defaultVariant, key, label, regions, variants }
+  return { defaultVariant, inline, key, label, regions, variants }
 }
 
 function createIndexTemplate(

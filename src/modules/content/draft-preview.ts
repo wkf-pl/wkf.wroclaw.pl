@@ -16,6 +16,8 @@ export const draftPreviewGlobals = [
 export type DraftPreviewCollection = (typeof draftPreviewCollections)[number]
 export type DraftPreviewGlobal = (typeof draftPreviewGlobals)[number]
 
+export const pageTemplatePreviewParameter = 'pageTemplatePreview'
+
 export type DraftPreviewTarget =
   | {
       collection: DraftPreviewCollection
@@ -60,6 +62,30 @@ export function createPageTemplateDraftPreviewURL(templateKey: unknown): null | 
   if (!definition?.rendererAvailable) return null
 
   return `/preview?${new URLSearchParams({ pageTemplate: templateKey }).toString()}`
+}
+
+export function appendPageTemplatePreviewContext(
+  path: string,
+  templateKey: PageTemplateID,
+): string {
+  const url = new URL(path, 'http://localhost')
+  url.searchParams.set(pageTemplatePreviewParameter, templateKey)
+  return `${url.pathname}${url.search}`
+}
+
+export function shouldRenderPageTemplate({
+  isDraftPreview,
+  renderingMode,
+  searchParams,
+  templateKey,
+}: {
+  isDraftPreview: boolean
+  renderingMode: unknown
+  searchParams: Record<string, string | string[] | undefined>
+  templateKey: PageTemplateID
+}): boolean {
+  if (!isDraftPreview) return renderingMode === 'template'
+  return searchParams[pageTemplatePreviewParameter] === templateKey
 }
 
 export function parseDraftPreviewTarget(parameters: URLSearchParams): DraftPreviewTarget | null {

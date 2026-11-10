@@ -4,7 +4,10 @@ import { getPayload } from 'payload'
 
 import config from '@payload-config'
 
-import { parseDraftPreviewTarget } from '@/modules/content/draft-preview'
+import {
+  appendPageTemplatePreviewContext,
+  parseDraftPreviewTarget,
+} from '@/modules/content/draft-preview'
 import {
   getPageTemplateDefinition,
   type PageTemplatePreviewCollection,
@@ -52,20 +55,15 @@ export async function GET(request: Request): Promise<Response> {
     if (!template || !definition?.rendererAvailable) {
       return new Response('Page template preview is not available.', { status: 404 })
     }
-    if (template.renderingMode !== 'template') {
-      return new Response('Switch the draft to template rendering mode before previewing it.', {
-        status: 400,
-      })
-    }
-
     try {
-      previewPath = await resolvePageTemplatePreviewPath({
+      const targetPath = await resolvePageTemplatePreviewPath({
         payload,
         previewCollection: definition.previewCollection,
         previewTarget: template.previewTarget,
         route: definition.route,
         user: authenticatedUser,
       })
+      previewPath = appendPageTemplatePreviewContext(targetPath, target.pageTemplate)
     } catch (err) {
       if (err instanceof ResponseError) {
         return new Response(err.message, { status: err.status })

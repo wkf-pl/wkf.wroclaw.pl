@@ -21,8 +21,10 @@ import type {
   ContentCalendarBlock,
   CurrentItemContentBlock,
   CurrentItemFieldBlock,
+  CurrentItemFieldRowBlock,
   Event,
   EventCycle,
+  FieldRowTextBlock,
   HeadingBlock,
   HomepageSection,
   InformationPanelColumnsBlock,
@@ -30,7 +32,10 @@ import type {
   ListingBlock,
   MediaGalleryBlock,
   Page,
+  PageTemplateActionLinksBlock,
   PageTemplateColumnLayoutBlock,
+  PageTemplateIconBlock,
+  PageTemplateListingBlock,
   PageTemplateSectionGroupBlock,
   PageTemplateTabbedContentBlock,
   Partner,
@@ -41,6 +46,7 @@ import type {
 } from '@/payload-types'
 import type { ContentListingReference } from '@/modules/content/listing-conditions'
 
+import { ActionLinksList } from './ActionLinksList'
 import { ContentHeading, ContentPresentation } from './ContentPresentation'
 import { CardBlockSection } from './CardBlockSection'
 import { ContentCalendarBlockSection } from './ContentCalendarBlockSection'
@@ -52,24 +58,29 @@ import { TabbedContentFrame, type TabbedContentFrameTab } from './TabbedContentF
 export type ContentLayoutDocument = Event | EventCycle | HomepageSection | Page | Partner | Post
 type ContentLeafBlock =
   | ActionLinksBlock
+  | PageTemplateActionLinksBlock
   | AttachmentsBlock
   | CardBlock
   | ContentCalendarBlock
   | HeadingBlock
   | ListingBlock
+  | PageTemplateListingBlock
   | MediaGalleryBlock
   | RichTextBlock
 type PresentedContentLeafBlock = Exclude<
   ContentLeafBlock,
-  ActionLinksBlock | CardBlock | HeadingBlock
+  ActionLinksBlock | PageTemplateActionLinksBlock | CardBlock | HeadingBlock
 >
 type SectionContentBlock = ColumnLayoutBlock | TabbedContentBlock | ContentLeafBlock
 type TabbedContentSectionBlock = ColumnLayoutBlock | ContentLeafBlock
 type PageTemplateLayoutBlock =
   | CurrentItemContentBlock
   | CurrentItemFieldBlock
+  | CurrentItemFieldRowBlock
+  | FieldRowTextBlock
   | InformationPanelColumnsBlock
   | InformationPanelGroupBlock
+  | PageTemplateIconBlock
   | PageTemplateColumnLayoutBlock
   | PageTemplateSectionGroupBlock
   | PageTemplateTabbedContentBlock
@@ -554,26 +565,18 @@ async function resolveContentLeafBlock({
   }
 
   if (block.blockType === 'actionLinks') {
-    const actionLinksBlock = block as ActionLinksBlock
+    const actionLinksBlock = block as ActionLinksBlock | PageTemplateActionLinksBlock
     const siteSettings = await getPublicSiteSettings()
     const items = resolvePresentedLinks(actionLinksBlock.items ?? [], {
       siteContactEmail: siteSettings.contactEmail,
     })
-    if (!items.length) {
-      return { content: null, hasEmptyFilterBlock: false }
-    }
-
     return {
       content: (
-        <ul
-          className={`actionLinks actionLinks--${actionLinksBlock.layout ?? 'inline'} actionLinks--align-${actionLinksBlock.alignment ?? 'start'}`}
-        >
-          {items.map((item, itemIndex) => (
-            <li key={`${item.link.href}-${itemIndex}`}>
-              <PresentedLink item={item} />
-            </li>
-          ))}
-        </ul>
+        <ActionLinksList
+          alignment={actionLinksBlock.alignment}
+          items={items}
+          layout={actionLinksBlock.layout}
+        />
       ),
       hasEmptyFilterBlock: false,
     }

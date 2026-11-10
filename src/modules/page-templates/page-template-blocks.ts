@@ -1,13 +1,26 @@
+import {
+  BoldFeature,
+  FixedToolbarFeature,
+  ItalicFeature,
+  lexicalEditor,
+  ParagraphFeature,
+  SubscriptFeature,
+  SuperscriptFeature,
+  UnderlineFeature,
+} from '@payloadcms/richtext-lexical'
 import type { Block, BlocksField } from 'payload'
 
+import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
+import { createRasterIconField } from '@/modules/icons/fields'
+
 import {
-  ActionLinksBlock,
   AttachmentsBlock,
   CardBlock,
   ContentCalendarBlock,
   HeadingBlock,
-  ListingBlock,
   MediaGalleryBlock,
+  PageTemplateActionLinksBlock,
+  PageTemplateListingBlock,
   RichTextBlock,
   createColumnLayoutBlock,
   createSectionGroupBlock,
@@ -17,6 +30,7 @@ import {
 import {
   getPageTemplateDefinition,
   isPageTemplateID,
+  pageTemplateBadgeVariants,
   pageTemplateRegistry,
   type PageTemplateRegion,
 } from './page-template-registry'
@@ -40,34 +54,47 @@ export const CurrentItemFieldBlock: Block = {
       Label: '/components/admin/PageTemplateFields#CurrentItemFieldBlockLabel',
     },
     disableBlockName: true,
-    group: 'Bieżący element',
+    group: 'Elementy',
+    images: {
+      thumbnail: {
+        alt: 'Pojedyncze pole wyróżnione na karcie',
+        url: '/assets/block-thumbnails/current-item-field.png',
+      },
+    },
   },
   fields: [
     {
-      name: 'field',
-      type: 'select',
-      admin: {
-        components: {
-          Field: '/components/admin/PageTemplateFields#CurrentItemFieldSelect',
+      type: 'row',
+      fields: [
+        {
+          name: 'field',
+          type: 'select',
+          admin: {
+            components: {
+              Field: '/components/admin/PageTemplateFields#CurrentItemFieldSelect',
+            },
+            isClearable: false,
+            width: '66.667%',
+          },
+          label: 'Pole',
+          options: dynamicFieldOptions,
+          required: true,
         },
-        isClearable: false,
-      },
-      label: 'Pole',
-      options: dynamicFieldOptions,
-      required: true,
-    },
-    {
-      name: 'variant',
-      type: 'select',
-      admin: {
-        components: {
-          Field: '/components/admin/PageTemplateFields#CurrentItemFieldVariantSelect',
+        {
+          name: 'variant',
+          type: 'select',
+          admin: {
+            components: {
+              Field: '/components/admin/PageTemplateFields#CurrentItemFieldVariantSelect',
+            },
+            isClearable: false,
+            width: '33.333%',
+          },
+          label: 'Wygląd',
+          options: dynamicFieldVariantOptions,
+          required: true,
         },
-        isClearable: false,
-      },
-      label: 'Wygląd',
-      options: dynamicFieldVariantOptions,
-      required: true,
+      ],
     },
   ],
   interfaceName: 'CurrentItemFieldBlock',
@@ -84,7 +111,13 @@ export const CurrentItemContentBlock: Block = {
       Label: '/components/admin/PageTemplateFields#CurrentItemContentBlockLabel',
     },
     disableBlockName: true,
-    group: 'Bieżący element',
+    group: 'Elementy',
+    images: {
+      thumbnail: {
+        alt: 'Dokument z treścią bieżącego elementu',
+        url: '/assets/block-thumbnails/current-item-content.png',
+      },
+    },
   },
   fields: [],
   interfaceName: 'CurrentItemContentBlock',
@@ -94,18 +127,161 @@ export const CurrentItemContentBlock: Block = {
   },
 }
 
-const informationLeafBlocks = [RichTextBlock, HeadingBlock, ActionLinksBlock, CurrentItemFieldBlock]
+const FieldRowTextBlock: Block = {
+  slug: 'fieldRowText',
+  admin: {
+    components: {
+      Label: '/components/admin/PageTemplateFields#FieldRowTextBlockLabel',
+    },
+    disableBlockName: true,
+    group: 'Elementy',
+    images: {
+      thumbnail: {
+        alt: 'Krótki tekst',
+        url: '/assets/block-thumbnails/rich-text.png',
+      },
+    },
+  },
+  fields: [
+    {
+      name: 'style',
+      type: 'select',
+      admin: { isClearable: false },
+      defaultValue: 'plain',
+      label: 'Styl',
+      options: [
+        { label: 'Zwykły tekst', value: 'plain' },
+        ...pageTemplateBadgeVariants,
+        { label: 'Etykieta informacyjna', value: 'informationLabel' },
+      ],
+    },
+    {
+      name: 'text',
+      type: 'richText',
+      editor: lexicalEditor({
+        features: () => [
+          ParagraphFeature(),
+          BoldFeature(),
+          ItalicFeature(),
+          UnderlineFeature(),
+          SuperscriptFeature(),
+          SubscriptFeature(),
+          FixedToolbarFeature(),
+        ],
+      }),
+      label: 'Tekst',
+      required: true,
+    },
+  ],
+  interfaceName: 'FieldRowTextBlock',
+  labels: { plural: 'Teksty', singular: 'Tekst' },
+}
+
+const PageTemplateIconBlock: Block = {
+  slug: 'pageTemplateIcon',
+  admin: {
+    components: {
+      Label: '/components/admin/PageTemplateFields#PageTemplateIconBlockLabel',
+    },
+    disableBlockName: true,
+    group: 'Elementy',
+    images: {
+      thumbnail: {
+        alt: 'Symbol ikony',
+        url: '/assets/block-thumbnails/page-template-icon.png',
+      },
+    },
+  },
+  fields: [
+    {
+      type: 'row',
+      fields: [
+        { ...createRasterIconField({ adminWidth: '75%' }), required: true },
+        {
+          name: 'iconInverted',
+          type: 'checkbox',
+          admin: createBooleanSwitchAdmin({ width: '25%' }),
+          defaultValue: false,
+          label: 'Inwersja',
+        },
+      ],
+    },
+    {
+      name: 'hanging',
+      type: 'checkbox',
+      admin: {
+        ...createBooleanSwitchAdmin(),
+        description:
+          'Wyrównuje kolejne bloki w tej samej sekcji lub kolumnie do treści obok ikony.',
+      },
+      defaultValue: false,
+      label: 'Ikona na marginesie',
+    },
+  ],
+  interfaceName: 'PageTemplateIconBlock',
+  labels: { plural: 'Ikony', singular: 'Ikona' },
+}
+
+export const CurrentItemFieldRowBlock: Block = {
+  slug: 'currentItemFieldRow',
+  admin: {
+    components: {
+      Label: '/components/admin/PageTemplateFields#CurrentItemFieldRowBlockLabel',
+    },
+    disableBlockName: true,
+    group: 'Układ',
+    images: {
+      thumbnail: {
+        alt: 'Trzy elementy ustawione w jednym wierszu',
+        url: '/assets/block-thumbnails/current-item-field-row.png',
+      },
+    },
+  },
+  fields: [
+    {
+      name: 'items',
+      type: 'blocks',
+      admin: { initCollapsed: false },
+      blocks: [
+        CurrentItemFieldBlock,
+        FieldRowTextBlock,
+        PageTemplateIconBlock,
+        PageTemplateActionLinksBlock,
+      ],
+      label: 'Elementy wiersza',
+      labels: { plural: 'Elementy wiersza', singular: 'element wiersza' },
+      minRows: 1,
+      required: true,
+    },
+  ],
+  interfaceName: 'CurrentItemFieldRowBlock',
+  labels: {
+    plural: 'Wiersze pól',
+    singular: 'Wiersz pól',
+  },
+}
+
+const informationLeafBlocks = [
+  RichTextBlock,
+  HeadingBlock,
+  PageTemplateActionLinksBlock,
+  CurrentItemFieldBlock,
+  CurrentItemFieldRowBlock,
+  PageTemplateIconBlock,
+]
 const contentLeafBlocks = [
   RichTextBlock,
   HeadingBlock,
-  ActionLinksBlock,
+  PageTemplateActionLinksBlock,
   CardBlock,
-  ListingBlock,
+  PageTemplateListingBlock,
   ContentCalendarBlock,
   MediaGalleryBlock,
   AttachmentsBlock,
   CurrentItemFieldBlock,
+  CurrentItemFieldRowBlock,
   CurrentItemContentBlock,
+  PageTemplateIconBlock,
 ]
 
 const informationLeafFilter = createNestedBlockFilter('informationPanel', informationLeafBlocks)
@@ -163,7 +339,14 @@ const regionBlocks: Record<PageTemplateRegion, Block[]> = {
     PageTemplateSectionGroupBlock,
     PageTemplateTabbedContentBlock,
   ],
-  hero: [RichTextBlock, HeadingBlock, ActionLinksBlock, CurrentItemFieldBlock],
+  hero: [
+    RichTextBlock,
+    HeadingBlock,
+    PageTemplateActionLinksBlock,
+    CurrentItemFieldBlock,
+    CurrentItemFieldRowBlock,
+    PageTemplateIconBlock,
+  ],
   informationPanel: [
     ...informationLeafBlocks,
     InformationPanelColumnsBlock,

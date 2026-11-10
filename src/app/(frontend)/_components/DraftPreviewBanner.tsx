@@ -1,13 +1,17 @@
 type DraftPreviewBannerProperties = {
+  message?: string
   pathname: string
 }
 
-export function DraftPreviewBanner({ pathname }: DraftPreviewBannerProperties) {
+export function DraftPreviewBanner({
+  message = 'Wyświetlasz zapisany szkic.',
+  pathname,
+}: DraftPreviewBannerProperties) {
   const exitURL = `/preview/exit?${new URLSearchParams({ path: pathname }).toString()}`
 
   return (
     <aside className="draftPreviewBanner" role="status">
-      <span>Wyświetlasz zapisany szkic.</span>
+      <span>{message}</span>
       <a href={exitURL}>Wyłącz podgląd</a>
     </aside>
   )

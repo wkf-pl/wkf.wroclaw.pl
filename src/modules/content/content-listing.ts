@@ -7,6 +7,7 @@ import { normalizeListingWindow, paginateInMemory } from '@/modules/content/list
 import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
+import type { PartnerRole } from '@/modules/events/constants'
 import {
   getWarsawDayAfterISOString,
   getWarsawDayStartISOString,
@@ -53,6 +54,7 @@ export type FindPublicContentOptions = {
 
 export type ManualContentReference = {
   contextLabel?: null | string
+  partnerRoles?: readonly PartnerRole[]
   relationTo: ContentListingSource
   value: ContentListingDocument | RelationshipID
 }
@@ -181,9 +183,9 @@ async function findManualPublicContent(
     const itemsByReference = new Map(
       result.docs.map((item) => [`${item.source}:${String(item.sourceDocumentId)}`, item]),
     )
-    selectedItems = references.flatMap(({ contextLabel, id, source }) => {
+    selectedItems = references.flatMap(({ contextLabel, id, partnerRoles, source }) => {
       const item = itemsByReference.get(`${source}:${String(id)}`)
-      return item ? [{ ...item, contextLabel }] : []
+      return item ? [{ ...item, contextLabel, partnerRoles }] : []
     })
   }
 
@@ -195,9 +197,12 @@ async function findManualPublicContent(
   }
 }
 
-function getManualContentReferences(
-  values: readonly ManualContentReference[] | null | undefined,
-): { contextLabel?: null | string; id: RelationshipID; source: ContentListingSource }[] {
+function getManualContentReferences(values: readonly ManualContentReference[] | null | undefined): {
+  contextLabel?: null | string
+  id: RelationshipID
+  partnerRoles?: readonly PartnerRole[]
+  source: ContentListingSource
+}[] {
   return (
     values?.flatMap((value) => {
       const id = getFormRelationshipId(value.value)
@@ -205,9 +210,9 @@ function getManualContentReferences(
         ? []
         : [
             {
-              contextLabel:
-                value.relationTo === 'member-profiles' ? value.contextLabel?.trim() || null : null,
+              contextLabel: value.contextLabel?.trim() || null,
               id,
+              partnerRoles: value.partnerRoles,
               source: value.relationTo,
             },
           ]

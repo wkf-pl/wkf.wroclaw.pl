@@ -2,34 +2,46 @@ import type { Field, Validate } from 'payload'
 
 import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import { createRasterIconField, iconNameOptions } from '@/modules/icons/fields'
+import { pageTemplateRegistry } from '@/modules/page-templates/page-template-registry'
 
 import { normalizeCustomAddress, validateCustomAddress } from './custom-target'
 
 type NavigationSiblingData = {
+  actionSource?: unknown
   appearance?: unknown
+  contextAction?: unknown
   iconName?: unknown
   label?: unknown
   targetType?: unknown
 }
 
 export function isCustomTarget(_data: unknown, siblingData: NavigationSiblingData): boolean {
-  return siblingData.targetType === 'custom'
+  return isStandardLink(siblingData) && siblingData.targetType === 'custom'
 }
 
 export function isPageTarget(_data: unknown, siblingData: NavigationSiblingData): boolean {
-  return siblingData.targetType === 'page'
+  return isStandardLink(siblingData) && siblingData.targetType === 'page'
 }
 
 export function isCategoryTarget(_data: unknown, siblingData: NavigationSiblingData): boolean {
-  return siblingData.targetType === 'category'
+  return isStandardLink(siblingData) && siblingData.targetType === 'category'
 }
 
 export function isTagTarget(_data: unknown, siblingData: NavigationSiblingData): boolean {
-  return siblingData.targetType === 'tag'
+  return isStandardLink(siblingData) && siblingData.targetType === 'tag'
 }
 
 function isTarget(type: string) {
-  return (_data: unknown, siblingData: NavigationSiblingData) => siblingData.targetType === type
+  return (_data: unknown, siblingData: NavigationSiblingData) =>
+    isStandardLink(siblingData) && siblingData.targetType === type
+}
+
+function isStandardLink(siblingData: NavigationSiblingData): boolean {
+  return siblingData.actionSource !== 'contextAction'
+}
+
+function isContextAction(_data: unknown, siblingData: NavigationSiblingData): boolean {
+  return siblingData.actionSource === 'contextAction'
 }
 
 function isNotSiteContactTarget(_data: unknown, siblingData: NavigationSiblingData): boolean {
@@ -41,33 +53,51 @@ export { iconNameOptions }
 export const validatePageTarget: Validate<unknown, unknown, NavigationSiblingData> = (
   value,
   { siblingData },
-) => (siblingData.targetType !== 'page' || value ? true : 'Wybierz stronę docelową.')
+) =>
+  !isStandardLink(siblingData) || siblingData.targetType !== 'page' || value
+    ? true
+    : 'Wybierz stronę docelową.'
 
 export const validateCategoryTarget: Validate<unknown, unknown, NavigationSiblingData> = (
   value,
   { siblingData },
-) => (siblingData.targetType !== 'category' || value ? true : 'Wybierz kategorię docelową.')
+) =>
+  !isStandardLink(siblingData) || siblingData.targetType !== 'category' || value
+    ? true
+    : 'Wybierz kategorię docelową.'
 
 export const validateTagTarget: Validate<unknown, unknown, NavigationSiblingData> = (
   value,
   { siblingData },
-) => (siblingData.targetType !== 'tag' || value ? true : 'Wybierz tag docelowy.')
+) =>
+  !isStandardLink(siblingData) || siblingData.targetType !== 'tag' || value
+    ? true
+    : 'Wybierz tag docelowy.'
 
 function validateTarget(
   type: string,
   message: string,
 ): Validate<unknown, unknown, NavigationSiblingData> {
-  return (value, { siblingData }) => (siblingData.targetType !== type || value ? true : message)
+  return (value, { siblingData }) =>
+    !isStandardLink(siblingData) || siblingData.targetType !== type || value ? true : message
 }
+
+const validateContextAction: Validate<unknown, unknown, NavigationSiblingData> = (
+  value,
+  { siblingData },
+) =>
+  siblingData.actionSource !== 'contextAction' || value ? true : 'Wybierz akcję bieżącego elementu.'
 
 export function createLinkFields({
   compactDatabaseNames = false,
+  includeContextAction = false,
   includeLabel = true,
   includePartner = true,
   includeSiteContactEmail = false,
   openInNewTabFieldName = 'openInNewTab',
 }: {
   compactDatabaseNames?: boolean
+  includeContextAction?: boolean
   includeLabel?: boolean
   includePartner?: boolean
   includeSiteContactEmail?: boolean
@@ -101,13 +131,57 @@ export function createLinkFields({
           },
         ] satisfies Field[])
       : []),
+    ...(includeContextAction
+      ? ([
+          {
+            type: 'row',
+            fields: [
+              {
+                name: 'actionSource',
+                type: 'select',
+                admin: { isClearable: false, width: '50%' },
+                ...(compactDatabaseNames ? { dbName: 'action_source' } : {}),
+                defaultValue: 'standard',
+                label: 'Rodzaj odnośnika',
+                options: [
+                  { label: 'Standardowy', value: 'standard' },
+                  { label: 'Akcja bieżącego elementu', value: 'contextAction' },
+                ],
+                required: true,
+              },
+              {
+                name: 'contextAction',
+                type: 'select',
+                admin: {
+                  components: {
+                    Field: '/components/admin/PageTemplateFields#PageTemplateContextActionSelect',
+                  },
+                  condition: isContextAction,
+                  isClearable: false,
+                  width: '50%',
+                },
+                ...(compactDatabaseNames ? { dbName: 'context_action' } : {}),
+                label: 'Akcja',
+                options: uniquePageTemplateContextActions(),
+                validate: validateContextAction,
+              },
+            ],
+          },
+        ] satisfies Field[])
+      : []),
     {
       type: 'row',
       fields: [
         {
           name: 'targetType',
           type: 'select',
-          admin: { isClearable: false, width: '50%' },
+          admin: {
+            condition: includeContextAction
+              ? (_data, siblingData) => isStandardLink(siblingData)
+              : undefined,
+            isClearable: false,
+            width: '50%',
+          },
           dbName: databaseName('target'),
           defaultValue: 'custom',
           label: 'Cel odnośnika',
@@ -325,11 +399,13 @@ export function createPresentedLinkFields({
   defaultAppearance = 'link',
   iconEnumName,
   includeSiteContactEmail = false,
+  includeContextAction = false,
 }: {
   compactDatabaseNames?: boolean
   defaultAppearance?: 'link' | 'primaryButton' | 'secondaryButton'
   iconEnumName?: string
   includeSiteContactEmail?: boolean
+  includeContextAction?: boolean
 } = {}): Field[] {
   const databaseName = (name: string): string | undefined =>
     compactDatabaseNames ? name : undefined
@@ -364,10 +440,21 @@ export function createPresentedLinkFields({
     ...createIconFields({ enumName: iconEnumName, requiredWhenLabelEmpty: true }),
     ...createLinkFields({
       compactDatabaseNames,
+      includeContextAction,
       includeLabel: false,
       includeSiteContactEmail,
     }),
   ]
+}
+
+function uniquePageTemplateContextActions(): Array<{ label: string; value: string }> {
+  const actions = new Map<string, string>()
+  for (const definition of pageTemplateRegistry) {
+    for (const action of definition.contextActions ?? []) {
+      if (!actions.has(action.key)) actions.set(action.key, action.label)
+    }
+  }
+  return [...actions].map(([value, label]) => ({ label, value }))
 }
 
 export function createSiteMenuLinkFields({

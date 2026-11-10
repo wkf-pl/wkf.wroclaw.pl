@@ -281,6 +281,60 @@ describe('content listing and pagination', () => {
     expect(result.totalPages).toBe(2)
   })
 
+  it('preserves event roles and the contribution label for a contextual Partner listing', async () => {
+    const partner = await fixture.payload.create({
+      collection: 'partners',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        excerpt: 'Partner contextual listing excerpt.',
+        layout: [
+          {
+            blockType: 'richText',
+            content: createLexicalDocument('Partner contextual listing content.'),
+          },
+        ],
+        name: 'Contextual listing partner',
+        slug: 'integration-contextual-listing-partner',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+
+    try {
+      const result = await findPublicContent({
+        manualItems: [
+          {
+            contextLabel: 'Partner strategiczny',
+            partnerRoles: ['sponsor', 'support'],
+            relationTo: 'partners',
+            value: partner.id,
+          },
+        ],
+        page: 1,
+        pageSize: 12,
+        pagination: false,
+        selectionMode: 'manual',
+        sort: 'titleAscending',
+        sources: [],
+      })
+
+      expect(result.items).toHaveLength(1)
+      expect(result.items[0]).toMatchObject({
+        contextLabel: 'Partner strategiczny',
+        kind: 'partners',
+        partnerRoles: ['sponsor', 'support'],
+      })
+      expect(getContentListingPresentation(result.items[0]!, 'cards')).toMatchObject({
+        contextLabel: 'Partner strategiczny',
+        kindLabel: 'Partner',
+        title: partner.name,
+      })
+    } finally {
+      await fixture.payload.delete({ collection: 'partners', id: partner.id, overrideAccess: true })
+    }
+  })
+
   it('filters dated content by age while passing through sources without that field', async () => {
     const recentPost = await fixture.payload.create({
       collection: 'posts',

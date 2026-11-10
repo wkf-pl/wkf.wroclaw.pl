@@ -34,3 +34,5 @@ export const partnerRoleOptions = [
   { label: 'Gospodarz miejsca', value: 'venueHost' },
   { label: 'Wsparcie', value: 'support' },
 ] as const
+
+export type PartnerRole = (typeof partnerRoleOptions)[number]['value']

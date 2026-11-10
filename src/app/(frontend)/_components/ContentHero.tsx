@@ -2,7 +2,8 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 
 import type { PublicBreadcrumb } from '@/modules/content/public-hierarchy'
-import type { Category } from '@/payload-types'
+import type { Category, Media } from '@/payload-types'
+import { getMediaURL } from '@/modules/media/media-url'
 
 import { HierarchyBreadcrumbs } from './HierarchyBreadcrumbs'
 import { RasterIcon } from '@/components/RasterIcon'
@@ -13,6 +14,20 @@ export type ContentHeroImage = {
   src: string
   variant?: 'landscape' | 'portrait'
   width?: number
+}
+
+export function getContentHeroImage(
+  media: Pick<Media, 'alt' | 'height' | 'url' | 'width'> | number | null | undefined,
+): ContentHeroImage | undefined {
+  const src = getMediaURL(media)
+  if (!src || !media || typeof media !== 'object') return undefined
+
+  return {
+    alt: media.alt,
+    height: media.height || undefined,
+    src,
+    width: media.width || undefined,
+  }
 }
 
 type ContentHeroProperties = {

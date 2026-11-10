@@ -9,6 +9,7 @@ import type {
   Partner,
   Post,
 } from '@/payload-types'
+import type { PageTemplateListingBlock } from '@/payload-types'
 import { createPaginatedURL, resolveBlockPagination } from '@/modules/content/pagination'
 import {
   findPublicContent,
@@ -17,6 +18,7 @@ import {
 } from '@/modules/content/content-listing'
 import type { ListingConditionInput } from '@/modules/content/listing-conditions'
 import type { ContentListingReference } from '@/modules/content/listing-conditions'
+import { resolvePageTemplateListingItems } from '@/modules/page-templates/page-template-context'
 
 import { ContentList } from './ContentList'
 import { ContentPagination } from './ContentPagination'
@@ -24,7 +26,7 @@ import { ContentPagination } from './ContentPagination'
 type ContentDocument = Event | EventCycle | HomepageSection | Page | Partner | Post
 
 type ListingBlockSectionProperties = {
-  block: ListingBlock
+  block: ListingBlock | PageTemplateListingBlock
   blockPath: string
   document: ContentDocument
   currentTarget?: ContentListingReference
@@ -40,6 +42,7 @@ export async function resolveListingBlockSection({
   block,
   blockPath,
   currentTarget,
+  document,
   pathname,
   searchParams,
 }: ListingBlockSectionProperties) {
@@ -52,14 +55,17 @@ export async function resolveListingBlockSection({
     parameterPrefix: 'listing',
     searchParams,
   })
+  const usesContextRelation = block.selectionMode === 'contextRelation'
   const result = await findPublicContent({
     conditions: (block.conditions ?? []) as ListingConditionInput[],
     currentTarget,
-    manualItems: getManualItems(block),
+    manualItems: usesContextRelation
+      ? resolvePageTemplateListingItems(getContextRelation(block), document)
+      : getManualItems(block),
     page: isCarousel ? 1 : requestedPage,
     pageSize: block.pageSize,
     pagination: paginationEnabled,
-    selectionMode: block.selectionMode,
+    selectionMode: usesContextRelation || block.selectionMode === 'manual' ? 'manual' : 'filters',
     sort: block.sort ?? 'newest',
     sources: (block.sources ?? []) as ContentListingSource[],
   })
@@ -88,9 +94,13 @@ export async function resolveListingBlockSection({
   }
 }
 
-function getManualItems(block: ListingBlock): ManualContentReference[] {
+function getManualItems(block: ListingBlock | PageTemplateListingBlock): ManualContentReference[] {
   return (block.items?.map(({ contextLabel, item }) => ({
     contextLabel,
     ...item,
   })) ?? []) as ManualContentReference[]
+}
+
+function getContextRelation(block: ListingBlock | PageTemplateListingBlock): string | undefined {
+  return 'contextRelation' in block ? (block.contextRelation ?? undefined) : undefined
 }

@@ -1,4 +1,4 @@
-import type { Field, Validate } from 'payload'
+import type { SelectField, Validate } from 'payload'
 
 import { rasterIconDefinitions, type SelectableRasterIconName } from '@/modules/icons/icon-registry'
 
@@ -24,7 +24,7 @@ export function createRasterIconField<SiblingData = Record<string, unknown>>({
   label = 'Ikona',
   name = 'iconName',
   validate,
-}: CreateRasterIconFieldOptions<SiblingData> = {}): Field {
+}: CreateRasterIconFieldOptions<SiblingData> = {}): SelectField {
   return {
     name,
     type: 'select',

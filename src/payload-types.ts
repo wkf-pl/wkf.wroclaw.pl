@@ -2413,13 +2413,24 @@ export interface PageTemplate {
    * Opcjonalny obraz Hero wspólny dla wszystkich stron korzystających z tej trasy.
    */
   heroImage?: (number | null) | Media;
-  hero?: (RichTextBlock | HeadingBlock | ActionLinksBlock | CurrentItemFieldBlock)[] | null;
+  hero?:
+    | (
+        | RichTextBlock
+        | HeadingBlock
+        | PageTemplateActionLinksBlock
+        | CurrentItemFieldBlock
+        | CurrentItemFieldRowBlock
+        | PageTemplateIconBlock
+      )[]
+    | null;
   informationPanel?:
     | (
         | RichTextBlock
         | HeadingBlock
-        | ActionLinksBlock
+        | PageTemplateActionLinksBlock
         | CurrentItemFieldBlock
+        | CurrentItemFieldRowBlock
+        | PageTemplateIconBlock
         | InformationPanelColumnsBlock
         | InformationPanelGroupBlock
       )[]
@@ -2428,14 +2439,16 @@ export interface PageTemplate {
     | (
         | RichTextBlock
         | HeadingBlock
-        | ActionLinksBlock
+        | PageTemplateActionLinksBlock
         | CardBlock
-        | ListingBlock
+        | PageTemplateListingBlock
         | ContentCalendarBlock
         | MediaGalleryBlock
         | AttachmentsBlock
         | CurrentItemFieldBlock
+        | CurrentItemFieldRowBlock
         | CurrentItemContentBlock
+        | PageTemplateIconBlock
         | PageTemplateColumnLayoutBlock
         | PageTemplateSectionGroupBlock
         | PageTemplateTabbedContentBlock
@@ -2444,6 +2457,150 @@ export interface PageTemplate {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateActionLinksBlock".
+ */
+export interface PageTemplateActionLinksBlock {
+  layout: 'inline' | 'stacked';
+  alignment: 'start' | 'center' | 'end';
+  items: {
+    /**
+     * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
+     */
+    label?: string | null;
+    appearance: 'link' | 'primaryButton' | 'secondaryButton';
+    iconName?:
+      | (
+          | 'camera'
+          | 'astronaut'
+          | 'ticket'
+          | 'bluesky'
+          | 'mace'
+          | 'bottle-mana'
+          | 'cthulhu'
+          | 'time'
+          | 'skull'
+          | 'dnd5'
+          | 'discord'
+          | 'document'
+          | 'pumpkin-halloween'
+          | 'mail'
+          | 'facebook'
+          | 'guitar'
+          | 'globe'
+          | 'board-game'
+          | 'star'
+          | 'instagram'
+          | 'calendar'
+          | 'hat'
+          | 'gun'
+          | 'cards'
+          | 'playing-cards'
+          | 'collection'
+          | 'compass'
+          | 'confetti'
+          | 'dice'
+          | 'd10'
+          | 'd12'
+          | 'd20'
+          | 'd4'
+          | 'd6'
+          | 'd8'
+          | 'water-drop'
+          | 'crystal-ball'
+          | 'book'
+          | 'fireball'
+          | 'larp'
+          | 'external-link'
+          | 'linkedin'
+          | 'location'
+          | 'bow'
+          | 'mage'
+          | 'pirate-map'
+          | 'vendetta'
+          | 'messenger'
+          | 'sword'
+          | 'potion'
+          | 'music'
+          | 'image'
+          | 'announcement'
+          | 'eye'
+          | 'partner'
+          | 'pdf'
+          | 'seal'
+          | 'pawn'
+          | 'quill'
+          | 'flame'
+          | 'download'
+          | 'review'
+          | 'wand'
+          | 'sf'
+          | 'seance'
+          | 'arrows'
+          | 'slack'
+          | 'users'
+          | 'star-trek'
+          | 'star-wars-empire'
+          | 'star-wars-rebel-alliance'
+          | 'steampunk'
+          | 'home'
+          | 'arrow'
+          | 'arrow-left'
+          | 'arrow-right'
+          | 'superhero'
+          | 'stormtrooper'
+          | 'soundtrack'
+          | 'tag'
+          | 'shield'
+          | 'axe'
+          | 'twitch'
+          | 'shuttle'
+          | 'fighter'
+          | 'event'
+          | 'filled-star'
+          | 'youtube'
+          | 'scroll'
+        )
+      | null;
+    actionSource: 'standard' | 'contextAction';
+    contextAction?: ('eventCalendar' | 'eventMap' | 'eventCycleCalendar') | null;
+    targetType?:
+      | (
+          | 'eventCycle'
+          | 'document'
+          | 'siteContactEmail'
+          | 'category'
+          | 'partner'
+          | 'page'
+          | 'tag'
+          | 'custom'
+          | 'post'
+          | 'event'
+        )
+      | null;
+    eventCycle?: (number | null) | EventCycle;
+    document?: (number | null) | Document;
+    category?: (number | null) | Category;
+    partner?: (number | null) | Partner;
+    page?: (number | null) | Page;
+    tag?: (number | null) | Tag;
+    post?: (number | null) | Post;
+    event?: (number | null) | Event;
+    customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
+    /**
+     * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
+     */
+    customAddress?: string | null;
+    emailSubject?: string | null;
+    emailBody?: string | null;
+    openInNewTab?: boolean | null;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'actionLinks';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2464,7 +2621,6 @@ export interface CurrentItemFieldBlock {
     | 'eventLocation'
     | 'eventAudience'
     | 'eventCapacity'
-    | 'eventActions'
     | 'partners'
     | 'organizers'
     | 'website'
@@ -2492,6 +2648,145 @@ export interface CurrentItemFieldBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CurrentItemFieldRowBlock".
+ */
+export interface CurrentItemFieldRowBlock {
+  items: (CurrentItemFieldBlock | FieldRowTextBlock | PageTemplateIconBlock | PageTemplateActionLinksBlock)[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'currentItemFieldRow';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FieldRowTextBlock".
+ */
+export interface FieldRowTextBlock {
+  style?: ('plain' | 'badge' | 'emphasizedBadge' | 'informationLabel') | null;
+  text: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'fieldRowText';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateIconBlock".
+ */
+export interface PageTemplateIconBlock {
+  iconName:
+    | 'camera'
+    | 'astronaut'
+    | 'ticket'
+    | 'bluesky'
+    | 'mace'
+    | 'bottle-mana'
+    | 'cthulhu'
+    | 'time'
+    | 'skull'
+    | 'dnd5'
+    | 'discord'
+    | 'document'
+    | 'pumpkin-halloween'
+    | 'mail'
+    | 'facebook'
+    | 'guitar'
+    | 'globe'
+    | 'board-game'
+    | 'star'
+    | 'instagram'
+    | 'calendar'
+    | 'hat'
+    | 'gun'
+    | 'cards'
+    | 'playing-cards'
+    | 'collection'
+    | 'compass'
+    | 'confetti'
+    | 'dice'
+    | 'd10'
+    | 'd12'
+    | 'd20'
+    | 'd4'
+    | 'd6'
+    | 'd8'
+    | 'water-drop'
+    | 'crystal-ball'
+    | 'book'
+    | 'fireball'
+    | 'larp'
+    | 'external-link'
+    | 'linkedin'
+    | 'location'
+    | 'bow'
+    | 'mage'
+    | 'pirate-map'
+    | 'vendetta'
+    | 'messenger'
+    | 'sword'
+    | 'potion'
+    | 'music'
+    | 'image'
+    | 'announcement'
+    | 'eye'
+    | 'partner'
+    | 'pdf'
+    | 'seal'
+    | 'pawn'
+    | 'quill'
+    | 'flame'
+    | 'download'
+    | 'review'
+    | 'wand'
+    | 'sf'
+    | 'seance'
+    | 'arrows'
+    | 'slack'
+    | 'users'
+    | 'star-trek'
+    | 'star-wars-empire'
+    | 'star-wars-rebel-alliance'
+    | 'steampunk'
+    | 'home'
+    | 'arrow'
+    | 'arrow-left'
+    | 'arrow-right'
+    | 'superhero'
+    | 'stormtrooper'
+    | 'soundtrack'
+    | 'tag'
+    | 'shield'
+    | 'axe'
+    | 'twitch'
+    | 'shuttle'
+    | 'fighter'
+    | 'event'
+    | 'filled-star'
+    | 'youtube'
+    | 'scroll';
+  iconInverted?: boolean | null;
+  /**
+   * Wyrównuje kolejne bloki w tej samej sekcji lub kolumnie do treści obok ikony.
+   */
+  hanging?: boolean | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'pageTemplateIcon';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "InformationPanelColumnsBlock".
  */
 export interface InformationPanelColumnsBlock {
@@ -2516,7 +2811,16 @@ export interface InformationPanelColumnsBlock {
     surfaceImage?: (number | null) | Media;
     surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
     surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
-    blocks?: (RichTextBlock | HeadingBlock | ActionLinksBlock | CurrentItemFieldBlock)[] | null;
+    blocks?:
+      | (
+          | RichTextBlock
+          | HeadingBlock
+          | PageTemplateActionLinksBlock
+          | CurrentItemFieldBlock
+          | CurrentItemFieldRowBlock
+          | PageTemplateIconBlock
+        )[]
+      | null;
     id?: string | null;
   }[];
   id?: string | null;
@@ -2550,12 +2854,85 @@ export interface InformationPanelGroupBlock {
     surfaceImage?: (number | null) | Media;
     surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
     surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
-    blocks: (RichTextBlock | HeadingBlock | ActionLinksBlock | CurrentItemFieldBlock | InformationPanelColumnsBlock)[];
+    blocks: (
+      | RichTextBlock
+      | HeadingBlock
+      | PageTemplateActionLinksBlock
+      | CurrentItemFieldBlock
+      | CurrentItemFieldRowBlock
+      | PageTemplateIconBlock
+      | InformationPanelColumnsBlock
+    )[];
     id?: string | null;
   }[];
   id?: string | null;
   blockName?: string | null;
   blockType: 'infoGroup';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateListingBlock".
+ */
+export interface PageTemplateListingBlock {
+  view: 'tiles' | 'cards' | 'carousel' | 'compact' | 'grid';
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  selectionMode: 'manual' | 'filters' | 'contextRelation';
+  sources?: ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents' | 'partners' | 'member-profiles')[] | null;
+  contextRelation?: 'eventPartners' | null;
+  items?:
+    | {
+        item:
+          | {
+              relationTo: 'pages';
+              value: number | Page;
+            }
+          | {
+              relationTo: 'posts';
+              value: number | Post;
+            }
+          | {
+              relationTo: 'events';
+              value: number | Event;
+            }
+          | {
+              relationTo: 'event-cycles';
+              value: number | EventCycle;
+            }
+          | {
+              relationTo: 'documents';
+              value: number | Document;
+            }
+          | {
+              relationTo: 'partners';
+              value: number | Partner;
+            }
+          | {
+              relationTo: 'member-profiles';
+              value: number | MemberProfile;
+            };
+        /**
+         * Opcjonalna funkcja w kontekście tej strony, np. „Prezes Zarządu”.
+         */
+        contextLabel?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  conditions?: ListingCondition;
+  sort?: ('newest' | 'oldest' | 'titleAscending' | 'titleDescending') | null;
+  pageSize: number;
+  pagination?: boolean | null;
+  hideWhenEmpty?: boolean | null;
+  emptyMessage?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'listing';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2596,14 +2973,16 @@ export interface PageTemplateColumnLayoutBlock {
       | (
           | RichTextBlock
           | HeadingBlock
-          | ActionLinksBlock
+          | PageTemplateActionLinksBlock
           | CardBlock
-          | ListingBlock
+          | PageTemplateListingBlock
           | ContentCalendarBlock
           | MediaGalleryBlock
           | AttachmentsBlock
           | CurrentItemFieldBlock
+          | CurrentItemFieldRowBlock
           | CurrentItemContentBlock
+          | PageTemplateIconBlock
         )[]
       | null;
     id?: string | null;
@@ -2642,14 +3021,16 @@ export interface PageTemplateSectionGroupBlock {
     blocks: (
       | RichTextBlock
       | HeadingBlock
-      | ActionLinksBlock
+      | PageTemplateActionLinksBlock
       | CardBlock
-      | ListingBlock
+      | PageTemplateListingBlock
       | ContentCalendarBlock
       | MediaGalleryBlock
       | AttachmentsBlock
       | CurrentItemFieldBlock
+      | CurrentItemFieldRowBlock
       | CurrentItemContentBlock
+      | PageTemplateIconBlock
       | PageTemplateColumnLayoutBlock
       | PageTemplateTabbedContentBlock
     )[];
@@ -3062,14 +3443,16 @@ export interface PageTemplateTabbedContentBlock {
       | (
           | RichTextBlock
           | HeadingBlock
-          | ActionLinksBlock
+          | PageTemplateActionLinksBlock
           | CardBlock
-          | ListingBlock
+          | PageTemplateListingBlock
           | ContentCalendarBlock
           | MediaGalleryBlock
           | AttachmentsBlock
           | CurrentItemFieldBlock
+          | CurrentItemFieldRowBlock
           | CurrentItemContentBlock
+          | PageTemplateIconBlock
           | PageTemplateColumnLayoutBlock
         )[]
       | null;
@@ -3444,16 +3827,20 @@ export interface PageTemplatesSelect<T extends boolean = true> {
     | {
         richText?: T | RichTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
-        actionLinks?: T | ActionLinksBlockSelect<T>;
+        actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
         currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+        currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
+        pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
       };
   informationPanel?:
     | T
     | {
         richText?: T | RichTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
-        actionLinks?: T | ActionLinksBlockSelect<T>;
+        actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
         currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+        currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
+        pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
         infoColumns?: T | InformationPanelColumnsBlockSelect<T>;
         infoGroup?: T | InformationPanelGroupBlockSelect<T>;
       };
@@ -3462,14 +3849,16 @@ export interface PageTemplatesSelect<T extends boolean = true> {
     | {
         richText?: T | RichTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
-        actionLinks?: T | ActionLinksBlockSelect<T>;
+        actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
-        listing?: T | ListingBlockSelect<T>;
+        listing?: T | PageTemplateListingBlockSelect<T>;
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
         currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+        currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
         currentItemContent?: T | CurrentItemContentBlockSelect<T>;
+        pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
         columnLayout?: T | PageTemplateColumnLayoutBlockSelect<T>;
         sectionGroup?: T | PageTemplateSectionGroupBlockSelect<T>;
         tabs?: T | PageTemplateTabbedContentBlockSelect<T>;
@@ -3507,9 +3896,9 @@ export interface HeadingBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ActionLinksBlock_select".
+ * via the `definition` "PageTemplateActionLinksBlock_select".
  */
-export interface ActionLinksBlockSelect<T extends boolean = true> {
+export interface PageTemplateActionLinksBlockSelect<T extends boolean = true> {
   layout?: T;
   alignment?: T;
   items?:
@@ -3518,6 +3907,8 @@ export interface ActionLinksBlockSelect<T extends boolean = true> {
         label?: T;
         appearance?: T;
         iconName?: T;
+        actionSource?: T;
+        contextAction?: T;
         targetType?: T;
         eventCycle?: T;
         document?: T;
@@ -3549,6 +3940,43 @@ export interface CurrentItemFieldBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CurrentItemFieldRowBlock_select".
+ */
+export interface CurrentItemFieldRowBlockSelect<T extends boolean = true> {
+  items?:
+    | T
+    | {
+        currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+        fieldRowText?: T | FieldRowTextBlockSelect<T>;
+        pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
+        actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FieldRowTextBlock_select".
+ */
+export interface FieldRowTextBlockSelect<T extends boolean = true> {
+  style?: T;
+  text?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateIconBlock_select".
+ */
+export interface PageTemplateIconBlockSelect<T extends boolean = true> {
+  iconName?: T;
+  iconInverted?: T;
+  hanging?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "InformationPanelColumnsBlock_select".
  */
 export interface InformationPanelColumnsBlockSelect<T extends boolean = true> {
@@ -3574,8 +4002,10 @@ export interface InformationPanelColumnsBlockSelect<T extends boolean = true> {
           | {
               richText?: T | RichTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
-              actionLinks?: T | ActionLinksBlockSelect<T>;
+              actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
               currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+              currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
+              pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
             };
         id?: T;
       };
@@ -3607,8 +4037,10 @@ export interface InformationPanelGroupBlockSelect<T extends boolean = true> {
           | {
               richText?: T | RichTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
-              actionLinks?: T | ActionLinksBlockSelect<T>;
+              actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
               currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+              currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
+              pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
               infoColumns?: T | InformationPanelColumnsBlockSelect<T>;
             };
         id?: T;
@@ -3651,9 +4083,9 @@ export interface CardBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ListingBlock_select".
+ * via the `definition` "PageTemplateListingBlock_select".
  */
-export interface ListingBlockSelect<T extends boolean = true> {
+export interface PageTemplateListingBlockSelect<T extends boolean = true> {
   view?: T;
   frame?: T;
   surface?: T;
@@ -3662,6 +4094,7 @@ export interface ListingBlockSelect<T extends boolean = true> {
   surfaceVerticalPosition?: T;
   selectionMode?: T;
   sources?: T;
+  contextRelation?: T;
   items?:
     | T
     | {
@@ -3801,14 +4234,16 @@ export interface PageTemplateColumnLayoutBlockSelect<T extends boolean = true> {
           | {
               richText?: T | RichTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
-              actionLinks?: T | ActionLinksBlockSelect<T>;
+              actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
-              listing?: T | ListingBlockSelect<T>;
+              listing?: T | PageTemplateListingBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
               currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+              currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
               currentItemContent?: T | CurrentItemContentBlockSelect<T>;
+              pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
             };
         id?: T;
       };
@@ -3840,14 +4275,16 @@ export interface PageTemplateSectionGroupBlockSelect<T extends boolean = true> {
           | {
               richText?: T | RichTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
-              actionLinks?: T | ActionLinksBlockSelect<T>;
+              actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
-              listing?: T | ListingBlockSelect<T>;
+              listing?: T | PageTemplateListingBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
               currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+              currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
               currentItemContent?: T | CurrentItemContentBlockSelect<T>;
+              pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
               columnLayout?: T | PageTemplateColumnLayoutBlockSelect<T>;
               tabs?: T | PageTemplateTabbedContentBlockSelect<T>;
             };
@@ -3938,14 +4375,16 @@ export interface PageTemplateTabbedContentBlockSelect<T extends boolean = true> 
           | {
               richText?: T | RichTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
-              actionLinks?: T | ActionLinksBlockSelect<T>;
+              actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
-              listing?: T | ListingBlockSelect<T>;
+              listing?: T | PageTemplateListingBlockSelect<T>;
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
               currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+              currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
               currentItemContent?: T | CurrentItemContentBlockSelect<T>;
+              pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
               columnLayout?: T | PageTemplateColumnLayoutBlockSelect<T>;
             };
         id?: T;
@@ -4003,6 +4442,67 @@ export interface PagesSelect<T extends boolean = true> {
   createdAt?: T;
   deletedAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ActionLinksBlock_select".
+ */
+export interface ActionLinksBlockSelect<T extends boolean = true> {
+  layout?: T;
+  alignment?: T;
+  items?:
+    | T
+    | {
+        label?: T;
+        appearance?: T;
+        iconName?: T;
+        targetType?: T;
+        eventCycle?: T;
+        document?: T;
+        category?: T;
+        partner?: T;
+        page?: T;
+        tag?: T;
+        post?: T;
+        event?: T;
+        customScheme?: T;
+        customAddress?: T;
+        emailSubject?: T;
+        emailBody?: T;
+        openInNewTab?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ListingBlock_select".
+ */
+export interface ListingBlockSelect<T extends boolean = true> {
+  view?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
+  selectionMode?: T;
+  sources?: T;
+  items?:
+    | T
+    | {
+        item?: T;
+        contextLabel?: T;
+        id?: T;
+      };
+  conditions?: T | ListingConditionSelect<T>;
+  sort?: T;
+  pageSize?: T;
+  pagination?: T;
+  hideWhenEmpty?: T;
+  emptyMessage?: T;
+  id?: T;
+  blockName?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

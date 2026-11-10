@@ -52,7 +52,7 @@ const endDateValueCondition = (_data: unknown, siblingData: Record<string, unkno
 
 export const validateListingConditions: ArrayFieldValidation = (value, { siblingData }) => {
   const listingSiblingData = siblingData as ListingConditionSiblingData
-  if (listingSiblingData.selectionMode === 'manual') return true
+  if (listingSiblingData.selectionMode !== 'filters') return true
   if (value === null || value === undefined) return true
   // Payload's client-side ArrayField validator receives the row count, while server validation
   // receives the array itself.

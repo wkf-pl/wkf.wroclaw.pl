@@ -242,6 +242,38 @@ describe('frontend content listing', () => {
     }
   })
 
+  it.each(['tiles', 'compact'] as const)(
+    'shows the event partner roles below the title in the %s view',
+    (view) => {
+      for (const [partnerRoles, label] of [
+        [['sponsor'], 'Sponsor'],
+        [['venueHost', 'coOrganizer'], 'Gospodarz miejsca, Współorganizator'],
+      ] as const) {
+        const markup = renderToStaticMarkup(
+          createElement(ContentList, {
+            items: [
+              {
+                ...createPartnerItem(),
+                contextLabel: 'Udostępnia salę.',
+                partnerRoles: [...partnerRoles],
+              },
+            ],
+            view,
+          }),
+        )
+
+        expect(markup).toMatch(new RegExp(`Fundacja Fantastyczna.*</h2>.*>${label}</span>`))
+        expect(markup).not.toContain('>Partner</span>')
+        expect(markup).toContain('Udostępnia salę.')
+      }
+
+      const markupWithoutRoles = renderToStaticMarkup(
+        createElement(ContentList, { items: [createPartnerItem()], view }),
+      )
+      expect(markupWithoutRoles).toContain('>Partner</span>')
+    },
+  )
+
   it('shows profile detail in cards and grids but keeps compact rows concise', () => {
     for (const view of ['cards', 'grid'] as const) {
       const markup = renderToStaticMarkup(

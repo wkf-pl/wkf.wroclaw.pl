@@ -27,6 +27,7 @@ import {
   down as downPageTemplates,
   up as upPageTemplates,
 } from '../../migrations/20261104_020601_page_templates_collection'
+import { setPageTemplateCompositionSchema } from '../helpers/page-template-composition-migration'
 
 const globalTables = [
   'site_settings',
@@ -87,6 +88,7 @@ async function relatedContentSchemaExists(): Promise<boolean> {
 }
 
 async function moveToBeforeGlobalDrafts(): Promise<void> {
+  await setPageTemplateCompositionSchema(migrationArguments(), false)
   if (await tableExists('page_templates')) await downPageTemplates(migrationArguments())
   if (await relatedContentSchemaExists()) await downRelatedContent(migrationArguments())
   if (!(await tableExists('pages_blocks_carousel'))) {
@@ -111,6 +113,7 @@ async function restoreCurrentSchema(): Promise<void> {
   }
   if (!(await relatedContentSchemaExists())) await upRelatedContent(migrationArguments())
   if (!(await tableExists('page_templates'))) await upPageTemplates(migrationArguments())
+  await setPageTemplateCompositionSchema(migrationArguments(), true)
 }
 
 async function readGlobalRows(table: (typeof globalTables)[number]): Promise<unknown[]> {
@@ -151,6 +154,7 @@ describe('global drafts migration', () => {
     await upLegacyBlockRemoval(migrationArguments())
     await upRelatedContent(migrationArguments())
     await upPageTemplates(migrationArguments())
+    await setPageTemplateCompositionSchema(migrationArguments(), true)
 
     for (const table of globalTables) {
       expect(await readGlobalRows(table)).toEqual(contentBeforeMigration.get(table))

@@ -3,10 +3,10 @@ export {
   createColumnLayoutBlock,
   validateColumnLayoutColumns,
 } from './ColumnLayout'
-export { ActionLinksBlock } from './ActionLinks'
+export { ActionLinksBlock, PageTemplateActionLinksBlock } from './ActionLinks'
 export { CardBlock } from './Card'
 export { contentLeafBlocks } from './contentLeafBlocks'
-export { ListingBlock } from './Listing'
+export { ListingBlock, PageTemplateListingBlock } from './Listing'
 export { ContentCalendarBlock } from './ContentCalendar'
 export { AttachmentsBlock, MediaGalleryBlock } from './MediaListing'
 export { HeadingBlock } from './Heading'

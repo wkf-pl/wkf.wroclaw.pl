@@ -58,6 +58,31 @@ describe('page template registry', () => {
     )
   })
 
+  it('supports field rows and standalone icons in every template region', () => {
+    for (const region of ['hero', 'informationPanel', 'content'] as const) {
+      expect(getAllowedPageTemplateBlockSlugs('event-detail', region)).toEqual(
+        expect.arrayContaining(['currentItemFieldRow', 'pageTemplateIcon']),
+      )
+    }
+  })
+
+  it('defines event-specific actions and contextual Listing relations', () => {
+    expect(getPageTemplateDefinition('event-detail')).toMatchObject({
+      contextActions: [
+        { key: 'eventCalendar', label: 'Dodaj do kalendarza' },
+        { key: 'eventMap', label: 'Otwórz w Mapach' },
+        { key: 'eventCycleCalendar', label: 'Subskrybuj cykl' },
+      ],
+      contextListingRelations: [
+        {
+          key: 'eventPartners',
+          label: 'Partnerzy bieżącego wydarzenia',
+          source: 'partners',
+        },
+      ],
+    })
+  })
+
   it('registers page templates as a normal collection without create and delete operations', () => {
     expect(PageTemplates.slug).toBe('page-templates')
     expect(PageTemplates.versions).toMatchObject({ drafts: true, maxPerDoc: 50 })
@@ -128,5 +153,36 @@ describe('page template registry', () => {
         hero: [],
       }),
     ).toThrow('wymaga w Hero pola „Tytuł” w wyglądzie „Nagłówek główny”')
+  })
+
+  it('rejects unsupported contextual actions and Listing relations', () => {
+    expect(() =>
+      validatePageTemplateData({
+        _status: 'draft',
+        hero: [
+          {
+            blockType: 'actionLinks',
+            items: [{ actionSource: 'contextAction', contextAction: 'unknownAction' }],
+          },
+        ],
+        renderingMode: 'legacy',
+        templateKey: 'event-detail',
+      }),
+    ).toThrow('nie jest dostępna dla tego szablonu')
+
+    expect(() =>
+      validatePageTemplateData({
+        _status: 'draft',
+        content: [
+          {
+            blockType: 'listing',
+            contextRelation: 'unknownRelation',
+            selectionMode: 'contextRelation',
+          },
+        ],
+        renderingMode: 'legacy',
+        templateKey: 'event-detail',
+      }),
+    ).toThrow('nie jest dostępna dla tego szablonu')
   })
 })

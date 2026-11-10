@@ -10,6 +10,7 @@ import {
   down as downPageTemplates,
   up as upPageTemplates,
 } from '../../migrations/20261104_020601_page_templates_collection'
+import { setPageTemplateCompositionSchema } from '../helpers/page-template-composition-migration'
 import {
   createContentTaxonomyFixture,
   type ContentTaxonomyFixture,
@@ -51,6 +52,7 @@ async function pageTemplatesSchemaExists(): Promise<boolean> {
 }
 
 async function suspendPageTemplatesSchema(): Promise<void> {
+  await setPageTemplateCompositionSchema(migrationArguments(), false)
   if (await pageTemplatesSchemaExists()) await downPageTemplates(migrationArguments())
   await fixture.payload.db.drizzle.execute(sql`
     ALTER TABLE "payload_locked_documents_rels"
@@ -59,12 +61,14 @@ async function suspendPageTemplatesSchema(): Promise<void> {
 }
 
 async function restorePageTemplatesSchema(): Promise<void> {
-  if (await pageTemplatesSchemaExists()) return
-  await fixture.payload.db.drizzle.execute(sql`
-    ALTER TABLE "payload_locked_documents_rels"
-    DROP COLUMN IF EXISTS "page_templates_id"
-  `)
-  await upPageTemplates(migrationArguments())
+  if (!(await pageTemplatesSchemaExists())) {
+    await fixture.payload.db.drizzle.execute(sql`
+      ALTER TABLE "payload_locked_documents_rels"
+      DROP COLUMN IF EXISTS "page_templates_id"
+    `)
+    await upPageTemplates(migrationArguments())
+  }
+  await setPageTemplateCompositionSchema(migrationArguments(), true)
 }
 
 async function cleanupFixtures(): Promise<void> {
@@ -109,7 +113,7 @@ afterAll(async () => {
 })
 
 describe('related content migration', () => {
-  it('migrates live and versioned Post relations and blocks lossy rollback', async () => {
+  it('backfills Post relations and guards rollback', { timeout: 20_000 }, async () => {
     const cycle = await fixture.payload.create({
       collection: 'event-cycles',
       data: {

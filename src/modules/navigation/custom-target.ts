@@ -96,6 +96,7 @@ export function validateCustomAddressValue(scheme: CustomScheme, address: string
 }
 
 type CustomTargetSiblingData = {
+  actionSource?: unknown
   customScheme?: unknown
   id: number | string
   targetType?: unknown
@@ -124,7 +125,7 @@ export const validateCustomAddress: Validate<
   unknown,
   CustomTargetSiblingData
 > = (value, { siblingData }) => {
-  if (siblingData.targetType !== 'custom') {
+  if (siblingData.actionSource === 'contextAction' || siblingData.targetType !== 'custom') {
     return true
   }
 

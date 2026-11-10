@@ -49,14 +49,23 @@ export function ContentList({ emptyMessage, items, view }: ContentListProperties
     <div className="contentList contentList-compact">
       {items.map((item) => {
         const presentation = getContentListingPresentation(item, 'compact')
+        const showsPartnerRoles = item.kind === 'partners' && Boolean(item.partnerRoles?.length)
+        const metadata = <ContentListingMeta item={item} view="compact" />
 
         return (
           <article className="contentCard" key={`${item.kind}-${item.document.id}`}>
-            <div className="contentCardContent">
-              <ContentListingMeta item={item} view="compact" />
+            <div
+              className={
+                showsPartnerRoles
+                  ? 'contentCardContent contentCardContent--partnerRoles'
+                  : 'contentCardContent'
+              }
+            >
+              {showsPartnerRoles ? null : metadata}
               <h2>
                 <Link href={presentation.url}>{presentation.title}</Link>
               </h2>
+              {showsPartnerRoles ? metadata : null}
             </div>
           </article>
         )

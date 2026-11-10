@@ -3,6 +3,8 @@ import { APIError } from 'payload'
 import { getAllowedPageTemplateBlockSlugs } from './page-template-blocks'
 import {
   getPageTemplateDefinition,
+  getPageTemplateContextAction,
+  getPageTemplateContextListingRelation,
   getPageTemplateDynamicField,
   isPageTemplateID,
   type PageTemplateDefinition,
@@ -131,6 +133,15 @@ function validateRegion(
     if (candidate.blockType === 'currentItemField') {
       validateCurrentItemField(candidate, templateID, region)
     }
+    if (candidate.blockType === 'currentItemFieldRow') {
+      validateCurrentItemFieldRow(candidate, templateID, region)
+    }
+    if (candidate.blockType === 'actionLinks') {
+      validateContextActions(candidate, templateID)
+    }
+    if (candidate.blockType === 'listing' && candidate.selectionMode === 'contextRelation') {
+      validateContextListingRelation(candidate, templateID)
+    }
     if (
       candidate.blockType === 'listing' &&
       definition.routeKind !== 'collectionItem' &&
@@ -144,6 +155,65 @@ function validateRegion(
   })
 
   return currentItemContentCount
+}
+
+function validateCurrentItemFieldRow(
+  block: Record<string, unknown>,
+  templateID: PageTemplateID,
+  region: PageTemplateRegion,
+): void {
+  if (!Array.isArray(block.items) || block.items.length === 0) {
+    throw new APIError('Wiersz pól wymaga co najmniej jednego elementu.', 400)
+  }
+
+  for (const item of block.items) {
+    if (
+      !isRecord(item) ||
+      !['currentItemField', 'fieldRowText', 'pageTemplateIcon', 'actionLinks'].includes(
+        String(item.blockType),
+      )
+    ) {
+      throw new APIError('Wiersz pól zawiera nieobsługiwany element.', 400)
+    }
+    if (item.blockType !== 'currentItemField' || typeof item.field !== 'string') continue
+
+    const dynamicField = getPageTemplateDynamicField(templateID, item.field, region)
+    if (!dynamicField?.inline) {
+      throw new APIError(`Pole ${item.field} nie może być użyte w bloku „Wiersz pól”.`, 400)
+    }
+  }
+}
+
+function validateContextActions(block: Record<string, unknown>, templateID: PageTemplateID): void {
+  if (!Array.isArray(block.items)) return
+
+  for (const item of block.items) {
+    if (!isRecord(item) || item.actionSource !== 'contextAction') continue
+    if (
+      typeof item.contextAction !== 'string' ||
+      !getPageTemplateContextAction(templateID, item.contextAction)
+    ) {
+      throw new APIError(
+        `Akcja ${String(item.contextAction)} nie jest dostępna dla tego szablonu.`,
+        400,
+      )
+    }
+  }
+}
+
+function validateContextListingRelation(
+  block: Record<string, unknown>,
+  templateID: PageTemplateID,
+): void {
+  if (
+    typeof block.contextRelation !== 'string' ||
+    !getPageTemplateContextListingRelation(templateID, block.contextRelation)
+  ) {
+    throw new APIError(
+      `Relacja ${String(block.contextRelation)} nie jest dostępna dla tego szablonu.`,
+      400,
+    )
+  }
 }
 
 function validateCurrentItemField(
@@ -168,13 +238,14 @@ function validateCurrentItemField(
 
 function listingUsesCurrentItem(block: Record<string, unknown>): boolean {
   return (
-    Array.isArray(block.conditions) &&
-    block.conditions.some(
-      (condition) =>
-        isRecord(condition) &&
-        condition.field === 'relatedTo' &&
-        condition.relatedTargetMode === 'current',
-    )
+    block.selectionMode === 'contextRelation' ||
+    (Array.isArray(block.conditions) &&
+      block.conditions.some(
+        (condition) =>
+          isRecord(condition) &&
+          condition.field === 'relatedTo' &&
+          condition.relatedTargetMode === 'current',
+      ))
   )
 }
 

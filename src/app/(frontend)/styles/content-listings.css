@@ -670,6 +670,11 @@
   padding: 1rem 1.25rem;
 }
 
+.contentList-compact .contentCardContent--partnerRoles {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+}
+
 .contentList-compact h2 {
   margin: 0;
   font-size: 1.25rem;

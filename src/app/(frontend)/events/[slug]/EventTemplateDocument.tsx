@@ -1,15 +1,19 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
-import { RasterIcon } from '@/components/RasterIcon'
-import { getMediaURL } from '@/modules/media/media-url'
 import { extractRichTextText } from '@/modules/content/rich-text'
 import { resolveEventStatus } from '@/modules/events/event-status'
-import { buildGoogleMapsURL } from '@/modules/events/map-embed'
-import { formatEventDateParts, getEventStatusLabel } from '@/modules/events/presentation'
+import {
+  formatEventCapacity,
+  formatEventDateParts,
+  formatEventLocationAddress,
+  getEventAudienceLabel,
+  getEventStatusLabel,
+} from '@/modules/events/presentation'
 import type { CurrentItemFieldBlock, Event, PageTemplate } from '@/payload-types'
 
 import { PageTemplateDocument } from '../../_components/PageTemplateDocument'
+import { getContentHeroImage } from '../../_components/ContentHero'
 import { TaxonomyLinks } from '../../_components/TaxonomyLinks'
 
 type EventTemplateDocumentProperties = {
@@ -23,14 +27,6 @@ export function EventTemplateDocument({
   searchParams,
   template,
 }: EventTemplateDocumentProperties) {
-  const location = event.location
-  const mapURL = buildGoogleMapsURL({
-    city: location?.city,
-    name: location?.venueName,
-    postalCode: location?.postalCode,
-    streetAddress: location?.streetAddress,
-  })
-
   return (
     <PageTemplateDocument
       breadcrumbs={[
@@ -40,26 +36,16 @@ export function EventTemplateDocument({
       ]}
       currentTarget={{ relationTo: 'events', value: event.id }}
       document={event}
-      image={getEventHeroImage(event)}
+      image={getContentHeroImage(event.heroImage)}
       pathname={`/events/${event.slug}`}
-      renderCurrentItemField={(block) => (
-        <EventCurrentItemField block={block} event={event} mapURL={mapURL} />
-      )}
+      renderCurrentItemField={(block) => <EventCurrentItemField block={block} event={event} />}
       searchParams={searchParams}
       template={template}
     />
   )
 }
 
-function EventCurrentItemField({
-  block,
-  event,
-  mapURL,
-}: {
-  block: CurrentItemFieldBlock
-  event: Event
-  mapURL: string
-}) {
+function EventCurrentItemField({ block, event }: { block: CurrentItemFieldBlock; event: Event }) {
   switch (block.field) {
     case 'eventType':
       return <EventTypeField event={event} variant={block.variant} />
@@ -81,8 +67,6 @@ function EventCurrentItemField({
       return <EventAudienceField event={event} variant={block.variant} />
     case 'eventCapacity':
       return <EventCapacityField event={event} variant={block.variant} />
-    case 'eventActions':
-      return <EventActionsField event={event} mapURL={mapURL} variant={block.variant} />
     case 'partners':
       return <EventPartnersField event={event} variant={block.variant} />
     default:
@@ -94,21 +78,14 @@ function EventTypeField({ event, variant }: { event: Event; variant: string }) {
   const eventType = typeof event.eventType === 'object' ? event.eventType : null
   if (!eventType) return null
 
-  return (
-    <span className={`pageTemplateBadge pageTemplateBadge--${variant}`}>
-      <RasterIcon name={eventType.iconName} size="small" />
-      <span>{eventType.name}</span>
-    </span>
-  )
+  return <span className={`pageTemplateBadge pageTemplateBadge--${variant}`}>{eventType.name}</span>
 }
 
 function EventStatusField({ event, variant }: { event: Event; variant: string }) {
+  const status = resolveEventStatus(event.eventStatus, event)
   return (
-    <span
-      className={`pageTemplateBadge pageTemplateBadge--${variant}`}
-      data-event-status={resolveEventStatus(event.eventStatus, event)}
-    >
-      {getEventStatusLabel(resolveEventStatus(event.eventStatus, event))}
+    <span className={`pageTemplateBadge pageTemplateBadge--${variant}`} data-event-status={status}>
+      {getEventStatusLabel(status)}
     </span>
   )
 }
@@ -135,78 +112,48 @@ function EventCycleField({ event, variant }: { event: Event; variant: string }) 
   if (!cycle) return null
 
   return (
-    <p className={`pageTemplateList pageTemplateList--${variant}`}>
-      <Link href={`/events/series/${cycle.slug}`}>Cykl: {cycle.title}</Link>
-      {cycle.calendarFeedKey ? (
-        <Link href={`/events/calendar.ics?series=${cycle.calendarFeedKey}`}>Subskrybuj cykl</Link>
-      ) : null}
-    </p>
+    <span className={`pageTemplateList pageTemplateList--${variant}`}>
+      <Link href={`/events/series/${cycle.slug}`}>{cycle.title}</Link>
+    </span>
   )
 }
 
 function EventTimeField({ event, variant }: { event: Event; variant: string }) {
   const date = formatEventDateParts(event)
   return (
-    <EventInformationField icon="calendar" label="Kiedy" variant={variant}>
+    <EventInformationValue variant={variant}>
       <time dateTime={event.startAt}>
         <strong>{date.date}</strong>
         <span>{date.time}</span>
       </time>
-    </EventInformationField>
+    </EventInformationValue>
   )
 }
 
 function EventLocationField({ event, variant }: { event: Event; variant: string }) {
-  const address = formatLocationAddress(event.location)
+  const address = formatEventLocationAddress(event.location)
   const venue = event.location.venueName
+  if (!address && !venue) return null
 
   return (
-    <EventInformationField icon="location" label="Gdzie" variant={variant}>
+    <EventInformationValue variant={variant}>
       {venue ? <strong>{venue}</strong> : null}
-      {address ? <span>{address}</span> : <span>Do ustalenia</span>}
-    </EventInformationField>
+      {address ? <span>{address}</span> : null}
+    </EventInformationValue>
   )
 }
 
 function EventAudienceField({ event, variant }: { event: Event; variant: string }) {
   return (
-    <EventInformationField icon="users" label="Dla kogo" variant={variant}>
-      <span>{event.participation === 'members' ? 'Dla klubowiczów' : 'Wydarzenie publiczne'}</span>
-    </EventInformationField>
+    <EventInformationValue variant={variant}>
+      {getEventAudienceLabel(event.participation)}
+    </EventInformationValue>
   )
 }
 
 function EventCapacityField({ event, variant }: { event: Event; variant: string }) {
   return (
-    <EventInformationField icon="collection" label="Miejsca" variant={variant}>
-      <span>{formatCapacity(event)}</span>
-    </EventInformationField>
-  )
-}
-
-function EventActionsField({
-  event,
-  mapURL,
-  variant,
-}: {
-  event: Event
-  mapURL: string
-  variant: string
-}) {
-  const hasLocation = Boolean(event.location.venueName || formatLocationAddress(event.location))
-  return (
-    <div className={`pageTemplateEventActions pageTemplateEventActions--${variant}`}>
-      <Link className="eventPrimaryAction" href={`/events/${event.slug}/calendar.ics`}>
-        <RasterIcon name="calendar" size="small" />
-        Dodaj do kalendarza
-      </Link>
-      {hasLocation ? (
-        <a className="eventSecondaryAction" href={mapURL} rel="noreferrer noopener" target="_blank">
-          <RasterIcon name="location" size="small" />
-          Otwórz w Mapach
-        </a>
-      ) : null}
-    </div>
+    <EventInformationValue variant={variant}>{formatEventCapacity(event)}</EventInformationValue>
   )
 }
 
@@ -215,64 +162,30 @@ function EventPartnersField({ event, variant }: { event: Event; variant: string 
   if (!partners.length) return null
 
   return (
-    <section className={`pageTemplatePartners pageTemplatePartners--${variant}`}>
-      <h2>Partnerzy</h2>
-      <ul>
-        {partners.map((item, index) => {
-          const partner = typeof item.partner === 'object' ? item.partner : null
-          return (
-            <li key={item.id ?? `partner-${index}`}>
-              {partner ? <Link href={`/partners/${partner.slug}`}>{partner.name}</Link> : 'Partner'}
-              {item.contribution ? <span>{item.contribution}</span> : null}
-            </li>
-          )
-        })}
-      </ul>
-    </section>
+    <ul className={`pageTemplatePartners pageTemplatePartners--${variant}`}>
+      {partners.map((item, index) => {
+        const partner = typeof item.partner === 'object' ? item.partner : null
+        return partner ? (
+          <li key={item.id ?? `partner-${index}`}>
+            <Link href={`/partners/${partner.slug}`}>{partner.name}</Link>
+            {item.contribution ? <span>{item.contribution}</span> : null}
+          </li>
+        ) : null
+      })}
+    </ul>
   )
 }
 
-function EventInformationField({
-  children,
-  icon,
-  label,
-  variant,
-}: {
-  children: ReactNode
-  icon: 'calendar' | 'collection' | 'location' | 'users'
-  label: string
-  variant: string
-}) {
+function EventInformationValue({ children, variant }: { children: ReactNode; variant: string }) {
   return (
-    <dl className={`pageTemplateEventFact pageTemplateEventFact--${variant}`}>
-      <dt>
-        {variant === 'icon' ? <RasterIcon name={icon} size="medium" /> : null}
-        <span>{label}</span>
-      </dt>
-      <dd>{children}</dd>
-    </dl>
+    <div
+      className={
+        variant === 'compact'
+          ? 'pageTemplateEventFact pageTemplateEventFact--compact'
+          : 'pageTemplateEventFact'
+      }
+    >
+      {children}
+    </div>
   )
-}
-
-function getEventHeroImage(event: Event) {
-  const source = getMediaURL(event.heroImage)
-  if (!source || !event.heroImage || typeof event.heroImage !== 'object') return undefined
-
-  return {
-    alt: event.heroImage.alt,
-    height: event.heroImage.height || undefined,
-    src: source,
-    width: event.heroImage.width || undefined,
-  }
-}
-
-function formatCapacity(event: Pick<Event, 'capacity' | 'capacityMode'>): string {
-  if (event.capacityMode === 'unlimited') return 'Bez limitu'
-  if (!event.capacity) return 'Liczba miejsc do potwierdzenia'
-  return event.capacityMode === 'approximate' ? `Około ${event.capacity}` : String(event.capacity)
-}
-
-function formatLocationAddress(location: Event['location']): string {
-  const cityLine = [location.postalCode, location.city].filter(Boolean).join(' ')
-  return [location.streetAddress, cityLine].filter(Boolean).join(', ')
 }

@@ -1,8 +1,18 @@
+import { RichText, type JSXConvertersFunction } from '@payloadcms/richtext-lexical/react'
 import type { ReactNode } from 'react'
 
-import type { CurrentItemFieldBlock, PageTemplate } from '@/payload-types'
+import { RasterIcon } from '@/components/RasterIcon'
+import type {
+  CurrentItemFieldBlock,
+  CurrentItemFieldRowBlock,
+  PageTemplate,
+  PageTemplateActionLinksBlock,
+} from '@/payload-types'
+import { getPublicSiteSettings } from '@/modules/content/public-content'
 import type { ContentListingReference } from '@/modules/content/listing-conditions'
 import type { PublicBreadcrumb } from '@/modules/content/public-hierarchy'
+import { isSelectableRasterIconName } from '@/modules/icons/icon-registry'
+import { resolvePageTemplateActionLinks } from '@/modules/page-templates/page-template-context'
 
 import {
   ContentLayoutRenderer,
@@ -11,7 +21,26 @@ import {
   type ContentLayoutCustomBlockResolution,
   type ContentLayoutDocument,
 } from './ContentLayoutRenderer'
+import { ActionLinksList } from './ActionLinksList'
 import { ContentHero, type ContentHeroImage } from './ContentHero'
+
+const fieldRowTextConverters: JSXConvertersFunction = ({ defaultConverters }) => ({
+  text: defaultConverters.text,
+  paragraph: ({ childIndex, node, nodesToJSX }) => (
+    <>
+      {childIndex > 0 ? ' ' : null}
+      {nodesToJSX({ nodes: node.children })}
+    </>
+  ),
+  linebreak: () => ' ',
+})
+
+const fieldRowTextStyleClasses = {
+  badge: ' pageTemplateBadge',
+  emphasizedBadge: ' pageTemplateBadge pageTemplateBadge--emphasizedBadge',
+  informationLabel: ' pageTemplateFieldRowText--informationLabel',
+  plain: '',
+}
 
 type PageTemplateDocumentProperties = {
   breadcrumbs: PublicBreadcrumb[]
@@ -57,6 +86,80 @@ export async function PageTemplateDocument({
             pathname={pathname}
             searchParams={searchParams}
           />
+        ),
+      }
+    }
+
+    if (properties.block.blockType === 'currentItemFieldRow') {
+      const block = properties.block as CurrentItemFieldRowBlock
+      const hasHangingIcon = block.items?.some(
+        (item) =>
+          item.blockType === 'pageTemplateIcon' &&
+          item.hanging &&
+          isSelectableRasterIconName(item.iconName),
+      )
+      return {
+        content: (
+          <div
+            className={
+              hasHangingIcon
+                ? 'pageTemplateFieldRow pageTemplateFieldRow--hanging'
+                : 'pageTemplateFieldRow'
+            }
+          >
+            <ContentLayoutRenderer
+              currentTarget={currentTarget}
+              customBlockRenderer={renderCustomBlock}
+              document={document}
+              layout={toContentLayoutBlocks(block.items)}
+              layoutPath={`${properties.path}.items`}
+              pathname={pathname}
+              searchParams={searchParams}
+            />
+          </div>
+        ),
+      }
+    }
+
+    if (properties.block.blockType === 'fieldRowText') {
+      const { style, text } = properties.block
+      return {
+        content: (
+          <span className={`pageTemplateFieldRowText${fieldRowTextStyleClasses[style ?? 'plain']}`}>
+            <RichText converters={fieldRowTextConverters} data={text} disableContainer />
+          </span>
+        ),
+      }
+    }
+
+    if (properties.block.blockType === 'pageTemplateIcon') {
+      const { hanging, iconInverted, iconName } = properties.block
+      if (!isSelectableRasterIconName(iconName)) return { content: null }
+
+      const className = hanging ? 'pageTemplateIcon pageTemplateIcon--hanging' : 'pageTemplateIcon'
+      return {
+        content: iconInverted ? (
+          <span className={`${className} contentHeadingIcon contentHeadingIcon--inverted`}>
+            <RasterIcon name={iconName} size="medium" />
+          </span>
+        ) : (
+          <RasterIcon className={className} name={iconName} size="medium" />
+        ),
+      }
+    }
+
+    if (properties.block.blockType === 'actionLinks') {
+      const block = properties.block as PageTemplateActionLinksBlock
+      const needsSiteContactEmail = block.items?.some(
+        (item) => item.targetType === 'siteContactEmail',
+      )
+      const siteSettings = needsSiteContactEmail ? await getPublicSiteSettings() : undefined
+      const items = resolvePageTemplateActionLinks(block.items, document, {
+        siteContactEmail: siteSettings?.contactEmail,
+      })
+      return {
+        content: (
+          <ActionLinksList alignment={block.alignment} items={items} layout={block.layout} />
         ),
       }
     }
