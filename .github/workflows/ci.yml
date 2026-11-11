@@ -122,6 +122,9 @@ jobs:
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Install Roboto Condensed for screenshot tests
+        run: sudo apt-get install --yes --no-install-recommends fonts-roboto-unhinted
+
       - name: Run end-to-end tests
         env:
           PLAYWRIGHT_SHARD: ${{ matrix.shard }}/4
