@@ -1,4 +1,4 @@
-import { getPayload, type Where } from 'payload'
+import { getPayload, type Payload, type Where } from 'payload'
 
 import config from '@payload-config'
 
@@ -7,6 +7,11 @@ import { normalizeListingWindow, paginateInMemory } from '@/modules/content/list
 import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
+import type { PartnerRole } from '@/modules/events/constants'
+import {
+  createEventsIndexTimeWhere,
+  createUpcomingEventsIndexWhere,
+} from '@/modules/events/events-index-time'
 import {
   getWarsawDayAfterISOString,
   getWarsawDayStartISOString,
@@ -20,9 +25,10 @@ import {
   listingConditionOperatorsByField,
   listingConditionSupportedSources,
   allListingSources,
+  createListingTagSearchIndex,
   normalizeListingTitle,
   type ContentListingSource,
-  type ContentListingReference,
+  type CurrentListingTarget,
   type ListingConditionField,
   type ListingConditionInput,
   type ListingConditionOperator,
@@ -41,7 +47,8 @@ export type { ContentListingDocument, ContentListingSource, PublicContentListIte
 
 export type FindPublicContentOptions = {
   conditions?: ListingConditionInput[] | null
-  currentTarget?: ContentListingReference
+  currentTarget?: CurrentListingTarget
+  eventTimeScope?: 'eventsIndex'
   manualItems?: ManualContentReference[]
   page: number
   pageSize: number
@@ -53,6 +60,7 @@ export type FindPublicContentOptions = {
 
 export type ManualContentReference = {
   contextLabel?: null | string
+  partnerRoles?: readonly PartnerRole[]
   relationTo: ContentListingSource
   value: ContentListingDocument | RelationshipID
 }
@@ -104,7 +112,7 @@ async function findPublicContentUncached(
     },
     sort: getPayloadSort(options.sort),
     user: null,
-    where: createListingWhere(options),
+    where: await createListingWhere(payload, options),
   })
 
   return {
@@ -117,7 +125,7 @@ async function findPublicContentUncached(
 }
 
 const findPublicContentCached = cachePublicData(
-  'public-content-listing',
+  'public-content-listing-v2',
   findPublicContentUncached,
   {
     revalidate: 300,
@@ -136,6 +144,7 @@ export async function findPublicContent(
   const { page, pageSize } = normalizeListingWindow(options)
   return findPublicContentCached({
     conditions,
+    eventTimeScope: options.eventTimeScope,
     manualItems: options.manualItems,
     page,
     pageSize,
@@ -181,9 +190,9 @@ async function findManualPublicContent(
     const itemsByReference = new Map(
       result.docs.map((item) => [`${item.source}:${String(item.sourceDocumentId)}`, item]),
     )
-    selectedItems = references.flatMap(({ contextLabel, id, source }) => {
+    selectedItems = references.flatMap(({ contextLabel, id, partnerRoles, source }) => {
       const item = itemsByReference.get(`${source}:${String(id)}`)
-      return item ? [{ ...item, contextLabel }] : []
+      return item ? [{ ...item, contextLabel, partnerRoles }] : []
     })
   }
 
@@ -195,9 +204,12 @@ async function findManualPublicContent(
   }
 }
 
-function getManualContentReferences(
-  values: readonly ManualContentReference[] | null | undefined,
-): { contextLabel?: null | string; id: RelationshipID; source: ContentListingSource }[] {
+function getManualContentReferences(values: readonly ManualContentReference[] | null | undefined): {
+  contextLabel?: null | string
+  id: RelationshipID
+  partnerRoles?: readonly PartnerRole[]
+  source: ContentListingSource
+}[] {
   return (
     values?.flatMap((value) => {
       const id = getFormRelationshipId(value.value)
@@ -205,9 +217,9 @@ function getManualContentReferences(
         ? []
         : [
             {
-              contextLabel:
-                value.relationTo === 'member-profiles' ? value.contextLabel?.trim() || null : null,
+              contextLabel: value.contextLabel?.trim() || null,
               id,
+              partnerRoles: value.partnerRoles,
               source: value.relationTo,
             },
           ]
@@ -215,10 +227,43 @@ function getManualContentReferences(
   )
 }
 
-function createListingWhere(options: CachedFindPublicContentOptions): Where {
+async function createListingWhere(
+  payload: Payload,
+  options: CachedFindPublicContentOptions,
+): Promise<Where> {
   const conditions: Where[] = [{ source: { in: [...new Set(options.sources)].sort() } }]
-  conditions.push(...options.conditions.map(compileListingConditionWhere))
+  const now = new Date()
+  for (const condition of options.conditions) {
+    if (options.eventTimeScope !== 'eventsIndex' || condition.field !== 'eventTime') {
+      conditions.push(compileListingConditionWhere(condition))
+    } else if (condition.eventTimeValue === 'upcoming') {
+      conditions.push(await findUpcomingEventsIndexWhere(payload, now))
+    } else {
+      conditions.push(
+        createEventsIndexTimeWhere('past', now, { start: 'eventStartAt', end: 'eventEndAt' }),
+      )
+    }
+  }
   return { and: conditions }
+}
+
+async function findUpcomingEventsIndexWhere(payload: Payload, now: Date): Promise<Where> {
+  // Read the stored status before the Events afterRead hook derives the display status.
+  const { docs } = await payload.find({
+    collection: 'events',
+    context: publicRequestContext,
+    depth: 0,
+    draft: false,
+    overrideAccess: false,
+    pagination: false,
+    select: { updatedAt: true },
+    user: null,
+    where: {
+      and: [{ _status: { equals: 'published' } }, createUpcomingEventsIndexWhere(now)],
+    },
+  })
+
+  return { sourceDocumentId: { in: docs.map(({ id }) => id) } }
 }
 
 export function compileListingConditionWhere(condition: PreparedListingCondition): Where {
@@ -235,15 +280,22 @@ function createConditionPredicate(condition: PreparedListingCondition): Where {
         ? { normalizedTitle: { equals: condition.textValue } }
         : { normalizedTitle: { contains: condition.textValue } }
     case 'category':
+      if (condition.operator === 'isEmpty') return { category: { exists: false } }
       return condition.operator === 'inSubtree'
         ? { category: { in: condition.relationshipIds ?? [] } }
         : { category: { equals: condition.relationshipId } }
     case 'tag':
-      return { tagSearchIndex: { contains: `|${condition.relationshipId}|` } }
+      return condition.operator === 'isEmpty'
+        ? { tagSearchIndex: { equals: createListingTagSearchIndex([]) } }
+        : { tagSearchIndex: { contains: `|${condition.relationshipId}|` } }
     case 'parentPage':
-      return { parentPage: { equals: condition.relationshipId } }
+      return condition.operator === 'isEmpty'
+        ? { parentPage: { exists: false } }
+        : { parentPage: { equals: condition.relationshipId } }
     case 'eventCycle':
-      return { eventCycle: { equals: condition.relationshipId } }
+      return condition.operator === 'isEmpty'
+        ? { eventCycle: { exists: false } }
+        : { eventCycle: { equals: condition.relationshipId } }
     case 'eventTime': {
       const now = new Date().toISOString()
       return condition.eventTimeValue === 'upcoming'
@@ -315,7 +367,7 @@ function createSignificantDateWhere(condition: PreparedListingCondition): Where 
 
 async function prepareListingConditions(
   values: readonly ListingConditionInput[],
-  currentTarget?: ContentListingReference,
+  currentTarget?: CurrentListingTarget,
 ): Promise<PreparedListingCondition[]> {
   const conditions = await Promise.all(
     values.map((value) => prepareListingCondition(value, currentTarget)),
@@ -325,7 +377,7 @@ async function prepareListingConditions(
 
 async function prepareListingCondition(
   value: ListingConditionInput,
-  currentTarget?: ContentListingReference,
+  currentTarget?: CurrentListingTarget,
 ): Promise<PreparedListingCondition> {
   if (
     !isListingConditionField(value.field) ||
@@ -334,6 +386,8 @@ async function prepareListingCondition(
   ) {
     throw new Error('Invalid content listing condition.')
   }
+  if (value.operator === 'isEmpty') return { field: value.field, operator: value.operator }
+
   if (value.field === 'relatedTo' && !isListingRelatedTargetMode(value.relatedTargetMode)) {
     throw new Error('Invalid content listing related-target mode.')
   }
@@ -377,6 +431,23 @@ async function prepareListingCondition(
     }
   }
 
+  if (value.field === 'relatedTo' && value.relatedTargetMode === 'current' && currentTarget) {
+    if (currentTarget.relationTo === 'categories') {
+      return prepareListingCondition({
+        field: 'category',
+        operator: 'inSubtree',
+        relationshipValue: currentTarget,
+      })
+    }
+    if (currentTarget.relationTo === 'tags') {
+      return prepareListingCondition({
+        field: 'tag',
+        operator: 'contains',
+        relationshipValue: currentTarget,
+      })
+    }
+  }
+
   const condition: PreparedListingCondition = { field: value.field, operator: value.operator }
   switch (value.field) {
     case 'title':
@@ -402,11 +473,11 @@ async function prepareListingCondition(
       if (value.relatedTargetMode === 'selected' && !reference) {
         throw new Error('Invalid content listing related target.')
       }
-      const targetID = reference ? getFormRelationshipId(reference.value) : undefined
-      if (reference && (!isListingSource(reference.relationTo) || targetID === undefined)) {
-        throw new Error('Invalid content listing related target.')
-      }
       if (reference) {
+        const targetID = getFormRelationshipId(reference.value)
+        if (!isListingSource(reference.relationTo) || targetID === undefined) {
+          throw new Error('Invalid content listing related target.')
+        }
         const numericTargetID = Number(targetID)
         if (!Number.isInteger(numericTargetID) || numericTargetID < 1) {
           throw new Error('Invalid content listing related target.')

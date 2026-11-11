@@ -60,6 +60,15 @@ import * as migration_20261030_031527_listing_conditions from './20261030_031527
 import * as migration_20261031_111620_listing_sources_and_block_consolidation from './20261031_111620_listing_sources_and_block_consolidation'
 import * as migration_20261031_112000_remove_legacy_carousel_and_member_profiles_blocks from './20261031_112000_remove_legacy_carousel_and_member_profiles_blocks'
 import * as migration_20261102_114056_related_content_listing from './20261102_114056_related_content_listing'
+import * as migration_20261103_150000_page_template_permissions from './20261103_150000_page_template_permissions'
+import * as migration_20261104_020601_page_templates_collection from './20261104_020601_page_templates_collection'
+import * as migration_20261107_002214_page_template_composition from './20261107_002214_page_template_composition'
+import * as migration_20261110_172309_listing_empty_relationships from './20261110_172309_listing_empty_relationships'
+import * as migration_20261110_173806_listing_title_collation from './20261110_173806_listing_title_collation'
+import * as migration_20261110_222548_remove_member_profile_club_activities from './20261110_222548_remove_member_profile_club_activities'
+import * as migration_20261111_013820_block_text_styles from './20261111_013820_block_text_styles'
+import * as migration_20261111_125928_current_item_fields from './20261111_125928_current_item_fields'
+import * as migration_20261111_150257_spacer_block from './20261111_150257_spacer_block'
 
 export const migrations = [
   {
@@ -371,5 +380,50 @@ export const migrations = [
     up: migration_20261102_114056_related_content_listing.up,
     down: migration_20261102_114056_related_content_listing.down,
     name: '20261102_114056_related_content_listing',
+  },
+  {
+    up: migration_20261103_150000_page_template_permissions.up,
+    down: migration_20261103_150000_page_template_permissions.down,
+    name: '20261103_150000_page_template_permissions',
+  },
+  {
+    up: migration_20261104_020601_page_templates_collection.up,
+    down: migration_20261104_020601_page_templates_collection.down,
+    name: '20261104_020601_page_templates_collection',
+  },
+  {
+    up: migration_20261107_002214_page_template_composition.up,
+    down: migration_20261107_002214_page_template_composition.down,
+    name: '20261107_002214_page_template_composition',
+  },
+  {
+    up: migration_20261110_172309_listing_empty_relationships.up,
+    down: migration_20261110_172309_listing_empty_relationships.down,
+    name: '20261110_172309_listing_empty_relationships',
+  },
+  {
+    up: migration_20261110_173806_listing_title_collation.up,
+    down: migration_20261110_173806_listing_title_collation.down,
+    name: '20261110_173806_listing_title_collation',
+  },
+  {
+    up: migration_20261110_222548_remove_member_profile_club_activities.up,
+    down: migration_20261110_222548_remove_member_profile_club_activities.down,
+    name: '20261110_222548_remove_member_profile_club_activities',
+  },
+  {
+    up: migration_20261111_013820_block_text_styles.up,
+    down: migration_20261111_013820_block_text_styles.down,
+    name: '20261111_013820_block_text_styles',
+  },
+  {
+    up: migration_20261111_125928_current_item_fields.up,
+    down: migration_20261111_125928_current_item_fields.down,
+    name: '20261111_125928_current_item_fields',
+  },
+  {
+    up: migration_20261111_150257_spacer_block.up,
+    down: migration_20261111_150257_spacer_block.down,
+    name: '20261111_150257_spacer_block',
   },
 ]

@@ -4,6 +4,7 @@ import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-conf
 import { getFormRelationshipId } from '@/lib/relationships'
 import { createContentPresentationFields } from '@/modules/content/content-presentation'
 import { allListingSources, listingSourceLabels } from '@/modules/content/listing-conditions'
+import { pageTemplateRegistry } from '@/modules/page-templates/page-template-registry'
 
 import { createListingConditionsField } from './listing-condition-fields'
 import { createListingPaginationRow } from './listing-fields'
@@ -87,7 +88,7 @@ export const validateListingSources: Validate<unknown, unknown, ListingSiblingDa
   value,
   { siblingData },
 ) => {
-  if (siblingData.selectionMode === 'manual') {
+  if (siblingData.selectionMode !== 'filters') {
     return true
   }
 
@@ -103,143 +104,202 @@ export const validateListingSources: Validate<unknown, unknown, ListingSiblingDa
   return true
 }
 
-export const ListingBlock: Block = {
-  slug: 'listing',
-  admin: {
-    components: {
-      Label: '/components/admin/ContentBlockLabel#ListingBlockLabel',
-    },
-    disableBlockName: true,
-    group: 'Treści',
-    images: {
-      thumbnail: {
-        alt: 'Schematyczna ikona uporządkowanych kart i filtra',
-        url: '/assets/block-thumbnails/listing.png',
+function createListingBlock({
+  includeContextRelations,
+  interfaceName,
+}: {
+  includeContextRelations: boolean
+  interfaceName: string
+}): Block {
+  return {
+    slug: 'listing',
+    admin: {
+      components: {
+        Label: '/components/admin/ContentBlockLabel#ListingBlockLabel',
+      },
+      disableBlockName: true,
+      group: 'Treści',
+      images: {
+        thumbnail: {
+          alt: 'Schematyczna ikona uporządkowanych kart i filtra',
+          url: '/assets/block-thumbnails/listing.png',
+        },
       },
     },
-  },
-  fields: [
-    ...createContentPresentationFields({
-      leadingField: {
-        name: 'view',
-        type: 'select',
-        admin: { isClearable: false, width: '33.333%' },
-        defaultValue: 'cards',
-        label: 'Widok',
-        options: [
-          { label: 'Kafelki', value: 'tiles' },
-          { label: 'Karty', value: 'cards' },
-          { label: 'Karuzela', value: 'carousel' },
-          { label: 'Lista kompaktowa', value: 'compact' },
-          { label: 'Siatka', value: 'grid' },
-        ],
-        required: true,
-      },
-    }),
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'selectionMode',
+    fields: [
+      ...createContentPresentationFields({
+        leadingField: {
+          name: 'view',
           type: 'select',
           admin: { isClearable: false, width: '33.333%' },
-          defaultValue: 'filters',
-          label: 'Tryb wyboru',
+          defaultValue: 'cards',
+          label: 'Widok',
           options: [
-            { label: 'Ręczny', value: 'manual' },
-            { label: 'Filtry', value: 'filters' },
+            { label: 'Kafelki', value: 'tiles' },
+            { label: 'Karty', value: 'cards' },
+            { label: 'Karuzela', value: 'carousel' },
+            { label: 'Lista kompaktowa', value: 'compact' },
+            { label: 'Siatka', value: 'grid' },
           ],
           required: true,
         },
-        {
-          name: 'sources',
-          type: 'select',
-          admin: { condition: filtersCondition, isClearable: false, width: '66.667%' },
-          hasMany: true,
-          label: 'Źródła',
-          options: allListingSources.map((source) => ({
-            label: listingSourceLabels[source],
-            value: source,
-          })),
-          validate: validateListingSources,
-        },
-      ],
-    },
-    {
-      name: 'items',
-      type: 'array',
-      admin: {
-        condition: (_data, siblingData) => siblingData.selectionMode === 'manual',
-        initCollapsed: false,
-      },
-      fields: [
-        {
-          name: 'item',
-          type: 'relationship',
-          admin: {
-            components: {
-              Field: '/components/admin/ListingManualItemField#ListingManualItemField',
-            },
+      }),
+      {
+        type: 'row',
+        fields: [
+          {
+            name: 'selectionMode',
+            type: 'select',
+            admin: { isClearable: false, width: '33.333%' },
+            defaultValue: 'filters',
+            label: 'Tryb wyboru',
+            options: [
+              { label: 'Ręczny', value: 'manual' },
+              { label: 'Filtry', value: 'filters' },
+              ...(includeContextRelations
+                ? [{ label: 'Relacja bieżącego elementu', value: 'contextRelation' }]
+                : []),
+            ],
+            required: true,
           },
-          filterOptions: { _status: { equals: 'published' } },
-          label: 'Treść',
-          relationTo: [...allListingSources],
+          {
+            name: 'sources',
+            type: 'select',
+            admin: { condition: filtersCondition, isClearable: false, width: '66.667%' },
+            hasMany: true,
+            label: 'Źródła',
+            options: allListingSources.map((source) => ({
+              label: listingSourceLabels[source],
+              value: source,
+            })),
+            validate: validateListingSources,
+          },
+          ...(includeContextRelations
+            ? ([
+                {
+                  name: 'contextRelation',
+                  type: 'select',
+                  admin: {
+                    components: {
+                      Field:
+                        '/components/admin/PageTemplateFields#PageTemplateContextListingRelationSelect',
+                    },
+                    condition: (_data, siblingData) =>
+                      siblingData.selectionMode === 'contextRelation',
+                    isClearable: false,
+                    width: '66.667%',
+                  },
+                  label: 'Relacja bieżącego elementu',
+                  options: uniquePageTemplateContextListingRelations(),
+                  validate: ((value, { siblingData }) =>
+                    siblingData.selectionMode !== 'contextRelation' || value
+                      ? true
+                      : 'Wybierz relację bieżącego elementu.') satisfies Validate<
+                    unknown,
+                    unknown,
+                    ListingSiblingData
+                  >,
+                },
+              ] satisfies Block['fields'])
+            : []),
+        ],
+      },
+      {
+        name: 'items',
+        type: 'array',
+        admin: {
+          condition: (_data, siblingData) => siblingData.selectionMode === 'manual',
+          initCollapsed: false,
+        },
+        fields: [
+          {
+            name: 'item',
+            type: 'relationship',
+            admin: {
+              components: {
+                Field: '/components/admin/ListingManualItemField#ListingManualItemField',
+              },
+            },
+            filterOptions: { _status: { equals: 'published' } },
+            label: 'Treść',
+            relationTo: [...allListingSources],
+            required: true,
+          },
+          {
+            name: 'contextLabel',
+            type: 'text',
+            admin: {
+              condition: memberProfileContextCondition,
+              description: 'Opcjonalna funkcja w kontekście tej strony, np. „Prezes Zarządu”.',
+            },
+            hooks: { beforeValidate: [normalizeContextLabel] },
+            label: 'Podpis funkcji',
+            maxLength: 160,
+          },
+        ],
+        label: 'Treści',
+        labels: {
+          plural: 'Treści',
+          singular: 'Treść',
+        },
+        validate: validateManualListingItems,
+      },
+      createListingConditionsField(),
+      createListingPaginationRow({
+        contentListing: true,
+        secondaryLeadingField: {
+          name: 'sort',
+          type: 'select',
+          admin: { condition: filtersCondition, isClearable: false, width: '33.333%' },
+          defaultValue: 'newest',
+          label: 'Sortowanie',
+          options: [
+            { label: 'Najnowsze', value: 'newest' },
+            { label: 'Najstarsze', value: 'oldest' },
+            { label: 'Tytuł A–Z', value: 'titleAscending' },
+            { label: 'Tytuł Z–A', value: 'titleDescending' },
+          ],
           required: true,
         },
-        {
-          name: 'contextLabel',
-          type: 'text',
-          admin: {
-            condition: memberProfileContextCondition,
-            description: 'Opcjonalna funkcja w kontekście tej strony, np. „Prezes Zarządu”.',
-          },
-          hooks: { beforeValidate: [normalizeContextLabel] },
-          label: 'Podpis funkcji',
-          maxLength: 160,
-        },
-      ],
-      label: 'Treści',
-      labels: {
-        plural: 'Treści',
-        singular: 'Treść',
+      }),
+      {
+        name: 'hideWhenEmpty',
+        type: 'checkbox',
+        admin: createBooleanSwitchAdmin(),
+        defaultValue: false,
+        label: 'Ukryj blok, gdy brak treści',
       },
-      validate: validateManualListingItems,
-    },
-    createListingConditionsField(),
-    createListingPaginationRow({
-      contentListing: true,
-      secondaryLeadingField: {
-        name: 'sort',
-        type: 'select',
-        admin: { condition: filtersCondition, isClearable: false, width: '33.333%' },
-        defaultValue: 'newest',
-        label: 'Sortowanie',
-        options: [
-          { label: 'Najnowsze', value: 'newest' },
-          { label: 'Najstarsze', value: 'oldest' },
-          { label: 'Tytuł A–Z', value: 'titleAscending' },
-          { label: 'Tytuł Z–A', value: 'titleDescending' },
-        ],
-        required: true,
+      {
+        name: 'emptyMessage',
+        type: 'text',
+        admin: { condition: (_data, siblingData) => siblingData.hideWhenEmpty !== true },
+        label: 'Komunikat pustego listingu',
       },
-    }),
-    {
-      name: 'hideWhenEmpty',
-      type: 'checkbox',
-      admin: createBooleanSwitchAdmin(),
-      defaultValue: false,
-      label: 'Ukryj blok, gdy brak treści',
+    ],
+    interfaceName,
+    labels: {
+      plural: 'Listingi',
+      singular: 'Listing',
     },
-    {
-      name: 'emptyMessage',
-      type: 'text',
-      admin: { condition: (_data, siblingData) => siblingData.hideWhenEmpty !== true },
-      label: 'Komunikat pustego listingu',
-    },
-  ],
+  }
+}
+
+export const ListingBlock = createListingBlock({
+  includeContextRelations: false,
   interfaceName: 'ListingBlock',
-  labels: {
-    plural: 'Listingi',
-    singular: 'Listing',
-  },
+})
+
+export const PageTemplateListingBlock = createListingBlock({
+  includeContextRelations: true,
+  interfaceName: 'PageTemplateListingBlock',
+})
+
+function uniquePageTemplateContextListingRelations(): Array<{ label: string; value: string }> {
+  const relations = new Map<string, string>()
+  for (const definition of pageTemplateRegistry) {
+    for (const relation of definition.contextListingRelations ?? []) {
+      if (!relations.has(relation.key)) relations.set(relation.key, relation.label)
+    }
+  }
+  return [...relations].map(([value, label]) => ({ label, value }))
 }

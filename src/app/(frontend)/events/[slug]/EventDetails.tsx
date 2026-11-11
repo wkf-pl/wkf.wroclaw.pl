@@ -4,7 +4,10 @@ import type { ReactNode } from 'react'
 import { RasterIcon } from '@/components/RasterIcon'
 import type { Event } from '@/payload-types'
 import {
+  formatEventCapacity,
   formatEventDateParts,
+  formatEventLocationAddress,
+  getEventAudienceLabel,
   getEventStatusLabel,
   getPartnerRoleLabel,
 } from '@/modules/events/presentation'
@@ -51,7 +54,7 @@ export function EventHeroEyebrow({ eventStatus, eventType }: EventHeroEyebrowPro
 
 export function EventSummary({ event, mapURL }: EventSummaryProperties) {
   const eventDate = formatEventDateParts(event)
-  const locationAddress = formatLocationAddress(event.location)
+  const locationAddress = formatEventLocationAddress(event.location)
   const hasLocation = Boolean(event.location.venueName || locationAddress)
 
   return (
@@ -83,9 +86,9 @@ export function EventSummary({ event, mapURL }: EventSummaryProperties) {
         </EventFact>
         <div className="eventFact eventFact--combined">
           <EventFactHeading icon="users" label="Dla kogo" />
-          <dd>{event.participation === 'members' ? 'Dla klubowiczów' : 'Wydarzenie publiczne'}</dd>
+          <dd>{getEventAudienceLabel(event.participation)}</dd>
           <EventFactHeading icon="collection" label="Miejsca" />
-          <dd>{formatCapacity(event)}</dd>
+          <dd>{formatEventCapacity(event)}</dd>
         </div>
       </dl>
       <div className="eventDetailActions">
@@ -223,15 +226,4 @@ function EventFactHeading({
       <span>{label}</span>
     </dt>
   )
-}
-
-function formatCapacity(event: Pick<Event, 'capacity' | 'capacityMode'>): string {
-  if (event.capacityMode === 'unlimited') return 'Bez limitu'
-  if (!event.capacity) return 'Liczba miejsc do potwierdzenia'
-  return event.capacityMode === 'approximate' ? `Około ${event.capacity}` : String(event.capacity)
-}
-
-function formatLocationAddress(location: Event['location']): string {
-  const cityLine = [location.postalCode, location.city].filter(Boolean).join(' ')
-  return [location.streetAddress, cityLine].filter(Boolean).join(', ')
 }

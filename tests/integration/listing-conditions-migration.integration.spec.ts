@@ -19,6 +19,11 @@ import {
   down as downRelatedContent,
   up as upRelatedContent,
 } from '../../migrations/20261102_114056_related_content_listing'
+import {
+  down as downPageTemplates,
+  up as upPageTemplates,
+} from '../../migrations/20261104_020601_page_templates_collection'
+import { setPageTemplateCompositionSchema } from '../helpers/page-template-composition-migration'
 
 const fixtureId = 9_300_001
 const fixtureVersionId = 9_300_002
@@ -77,6 +82,8 @@ async function removeLegacyFixtures(): Promise<void> {
 }
 
 async function moveToBeforeListingConditions(): Promise<void> {
+  await setPageTemplateCompositionSchema(migrationArguments(), false)
+  if (await tableExists('page_templates')) await downPageTemplates(migrationArguments())
   if (await relatedContentSchemaExists()) await downRelatedContent(migrationArguments())
   if (!(await tableExists('pages_blocks_carousel'))) {
     await downLegacyBlockRemoval(migrationArguments())
@@ -102,6 +109,8 @@ async function restoreCurrentSchema(): Promise<void> {
   await upListingConsolidation(migrationArguments())
   await upLegacyBlockRemoval(migrationArguments())
   await upRelatedContent(migrationArguments())
+  await upPageTemplates(migrationArguments())
+  await setPageTemplateCompositionSchema(migrationArguments(), true)
 }
 
 beforeAll(async () => {
@@ -117,7 +126,7 @@ afterAll(async () => {
 })
 
 describe('listing conditions migration', () => {
-  it('backfills live, versioned, Listing, Carousel, and homepage data and rejects lossy rollback', async () => {
+  it('backfills conditions and guards rollback', { timeout: 20_000 }, async () => {
     await moveToBeforeListingConditions()
 
     await payload.db.drizzle.execute(

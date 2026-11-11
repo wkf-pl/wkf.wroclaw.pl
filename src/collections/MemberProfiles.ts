@@ -152,6 +152,12 @@ export const MemberProfiles: CollectionConfig = {
               label: 'O mnie',
             },
             {
+              name: 'clubFunction',
+              type: 'text',
+              label: 'Funkcje',
+              maxLength: 160,
+            },
+            {
               name: 'photo',
               type: 'upload',
               admin: {
@@ -211,22 +217,6 @@ export const MemberProfiles: CollectionConfig = {
                 singular: 'Gra',
               },
               validate: validateUniqueGames,
-            },
-          ],
-        },
-        {
-          label: 'Działalność klubowa',
-          fields: [
-            {
-              name: 'clubFunction',
-              type: 'text',
-              label: 'Funkcja',
-              maxLength: 160,
-            },
-            {
-              name: 'clubActivities',
-              type: 'richText',
-              label: 'Aktywności klubowe',
             },
           ],
         },

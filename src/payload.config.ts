@@ -22,6 +22,7 @@ import {
   MemberProfileImages,
   MemberProfiles,
   Pages,
+  PageTemplates,
   Partners,
   Posts,
   Roles,
@@ -116,6 +117,7 @@ export default buildConfig({
   },
   collections: [
     ContentListingItems,
+    PageTemplates,
     Pages,
     Posts,
     Events,

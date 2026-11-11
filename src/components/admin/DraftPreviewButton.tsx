@@ -18,6 +18,7 @@ import { useCallback, useRef, useState } from 'react'
 import {
   createDraftPreviewURL,
   createGlobalDraftPreviewURL,
+  createPageTemplateDraftPreviewURL,
   isDraftPreviewGlobal,
 } from '@/modules/content/draft-preview'
 
@@ -38,6 +39,7 @@ export function DraftPreviewButton() {
   } = useDocumentInfo()
   const { dispatchFields, getFields, setIsValid, setSubmitted, submit } = useForm()
   const slug = useFormFields<unknown>(([fields]) => fields.slug?.value)
+  const templateKey = useFormFields<unknown>(([fields]) => fields.templateKey?.value)
   const isFormProcessing = useFormProcessing()
   const { code: locale } = useLocale()
   const { getFormState } = useServerFunctions()
@@ -47,9 +49,11 @@ export function DraftPreviewButton() {
   const previewURL =
     collectionSlug === 'pages' || collectionSlug === 'posts'
       ? createDraftPreviewURL(collectionSlug, { id, slug })
-      : isDraftPreviewGlobal(globalSlug)
-        ? createGlobalDraftPreviewURL(globalSlug)
-        : null
+      : collectionSlug === 'page-templates'
+        ? createPageTemplateDraftPreviewURL(templateKey)
+        : isDraftPreviewGlobal(globalSlug)
+          ? createGlobalDraftPreviewURL(globalSlug)
+          : null
   const entitySlug = collectionSlug ?? globalSlug
 
   const saveDraftAndOpenPreview = useCallback(async () => {

@@ -17,6 +17,8 @@ const outputDirectory =
 const reportDirectory =
   process.env.PLAYWRIGHT_HTML_OUTPUT_DIR || join(tmpdir(), 'wkf-online-playwright-report')
 const shard = parseShard(process.env.PLAYWRIGHT_SHARD)
+const testPublicCache = process.env.PLAYWRIGHT_PUBLIC_CACHE === 'true'
+const publicCacheTag = /@public-cache\b/
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -30,6 +32,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Fail CI when a test succeeds only on retry. */
   failOnFlakyTests: !!process.env.CI,
+  grep: testPublicCache ? publicCacheTag : undefined,
+  grepInvert: testPublicCache ? undefined : publicCacheTag,
   /* Retry on CI only */
   retries: process.env.CI ? 1 : 0,
   /* Opt out of parallel tests on CI. */
@@ -54,7 +58,11 @@ export default defineConfig({
   ],
   webServer: {
     command: webServerCommand,
-    reuseExistingServer,
+    // Dotenv treats any non-empty override value as enabled, including "false".
+    env: testPublicCache
+      ? { DOTENV_CONFIG_OVERRIDE: '', WKF_DISABLE_PUBLIC_CACHE: 'false' }
+      : undefined,
+    reuseExistingServer: !testPublicCache && reuseExistingServer,
     timeout: 120_000,
     url: `${frontendURL}/admin/login`,
   },

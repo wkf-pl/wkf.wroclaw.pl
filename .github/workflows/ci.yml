@@ -122,9 +122,18 @@ jobs:
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Install Roboto Condensed for screenshot tests
+        run: sudo apt-get install --yes --no-install-recommends fonts-roboto-unhinted
+
       - name: Run end-to-end tests
         env:
           PLAYWRIGHT_SHARD: ${{ matrix.shard }}/4
+        run: pnpm test:e2e:ci
+
+      - name: Verify public cache invalidation
+        if: matrix.shard == 1
+        env:
+          PLAYWRIGHT_PUBLIC_CACHE: 'true'
         run: pnpm test:e2e:ci
 
       - name: Upload Playwright diagnostics

@@ -43,8 +43,8 @@
     grid-template-columns: 1fr;
   }
 
-  .eventDetails {
-    margin-top: -1.75rem;
+  .pageTemplateInformationPanel {
+    width: min(100% - 2rem, 40rem);
   }
 
   .eventFacts,

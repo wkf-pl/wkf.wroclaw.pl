@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 
 import { RasterIcon } from '@/components/RasterIcon'
 import { createContentMetadata } from '@/modules/content/content-metadata'
+import { findPageTemplateForRequest } from '@/modules/content/preview-content'
+import { shouldRenderPageTemplate } from '@/modules/content/draft-preview'
 import { extractRichTextText } from '@/modules/content/rich-text'
 import { resolveEventStatus } from '@/modules/events/event-status'
 import { buildGoogleMapsURL } from '@/modules/events/map-embed'
@@ -12,9 +14,11 @@ import { createEventStructuredData } from '@/modules/events/structured-data'
 import { resolveLink } from '@/modules/navigation/links'
 
 import { CmsPageDocument } from '../../_components/CmsPageDocument'
+import { DraftPreviewBanner } from '../../_components/DraftPreviewBanner'
 import { SmallPostList } from '../../_components/SmallPostList'
 import { StructuredData } from '../../_components/StructuredData'
 import { EventHeroEyebrow, EventSidebar, EventSummary } from './EventDetails'
+import { EventTemplateDocument } from './EventTemplateDocument'
 
 type Properties = {
   params: Promise<{ slug: string }>
@@ -28,6 +32,39 @@ export async function generateMetadata({ params }: Properties): Promise<Metadata
 export default async function EventPage({ params, searchParams }: Properties) {
   const event = await findPublishedEventBySlug((await params).slug)
   if (!event) notFound()
+  const [pageTemplate, resolvedSearchParams] = await Promise.all([
+    findPageTemplateForRequest('event-detail'),
+    searchParams,
+  ])
+
+  const renderTemplate =
+    pageTemplate.document &&
+    shouldRenderPageTemplate({
+      isDraftPreview: pageTemplate.isDraftPreview,
+      renderingMode: pageTemplate.document.renderingMode,
+      searchParams: resolvedSearchParams,
+      templateKey: 'event-detail',
+    })
+
+  if (renderTemplate && pageTemplate.document) {
+    return (
+      <>
+        {pageTemplate.isDraftPreview ? (
+          <DraftPreviewBanner
+            message="Podglądasz roboczy układ szablonu. Opublikowana strona nadal używa ostatnio opublikowanego trybu renderowania."
+            pathname={`/events/${event.slug}`}
+          />
+        ) : null}
+        <StructuredData value={createEventStructuredData(event)} />
+        <EventTemplateDocument
+          event={event}
+          searchParams={resolvedSearchParams}
+          template={pageTemplate.document}
+        />
+      </>
+    )
+  }
+
   const relatedPosts = await findPostsRelatedToEvent(event.id)
   const location = event.location
   const mapURL = buildGoogleMapsURL({
@@ -105,7 +142,7 @@ export default async function EventPage({ params, searchParams }: Properties) {
           ) : null
         }
         pathname={`/events/${event.slug}`}
-        searchParams={await searchParams}
+        searchParams={resolvedSearchParams}
         showHeroMeta={false}
       />
     </>

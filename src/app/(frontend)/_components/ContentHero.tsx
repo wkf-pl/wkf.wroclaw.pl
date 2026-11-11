@@ -2,7 +2,8 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 
 import type { PublicBreadcrumb } from '@/modules/content/public-hierarchy'
-import type { Category } from '@/payload-types'
+import type { Category, Media } from '@/payload-types'
+import { getMediaURL } from '@/modules/media/media-url'
 
 import { HierarchyBreadcrumbs } from './HierarchyBreadcrumbs'
 import { RasterIcon } from '@/components/RasterIcon'
@@ -15,14 +16,29 @@ export type ContentHeroImage = {
   width?: number
 }
 
+export function getContentHeroImage(
+  media: Pick<Media, 'alt' | 'height' | 'url' | 'width'> | number | null | undefined,
+): ContentHeroImage | undefined {
+  const src = getMediaURL(media)
+  if (!src || !media || typeof media !== 'object') return undefined
+
+  return {
+    alt: media.alt,
+    height: media.height || undefined,
+    src,
+    width: media.width || undefined,
+  }
+}
+
 type ContentHeroProperties = {
   breadcrumbs: PublicBreadcrumb[]
   children?: ReactNode
+  customCopy?: ReactNode
   description?: null | string
-  eyebrow: ReactNode
+  eyebrow?: ReactNode
   image?: ContentHeroImage
   media?: ReactNode
-  title: string
+  title?: string
 }
 
 type ContentHeroMetaProperties = {
@@ -37,6 +53,7 @@ type ContentHeroMetaProperties = {
 export function ContentHero({
   breadcrumbs,
   children,
+  customCopy,
   description,
   eyebrow,
   image,
@@ -61,10 +78,14 @@ export function ContentHero({
           <div className="contentHeroBreadcrumbSlot">
             <HierarchyBreadcrumbs breadcrumbs={intermediateBreadcrumbs} />
           </div>
-          <p className="eyebrow contentHeroEyebrow">{eyebrow}</p>
-          <h1>{title}</h1>
-          {description ? <p className="contentHeroDescription">{description}</p> : null}
-          {children}
+          {customCopy ?? (
+            <>
+              <p className="eyebrow contentHeroEyebrow">{eyebrow}</p>
+              {title ? <h1>{title}</h1> : null}
+              {description ? <p className="contentHeroDescription">{description}</p> : null}
+              {children}
+            </>
+          )}
         </div>
 
         {media !== undefined ? (

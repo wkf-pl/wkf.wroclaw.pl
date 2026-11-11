@@ -210,6 +210,83 @@ describe('content listing and pagination', () => {
     }
   })
 
+  it('stores empty relationship filters without values and finds pages with missing relationships', async () => {
+    const containerPage = await fixture.payload.create({
+      collection: 'pages',
+      data: {
+        _status: 'draft',
+        author: fixture.author.id,
+        layout: [
+          {
+            blockType: 'listing',
+            conditions: [
+              { field: 'parentPage', operator: 'isEmpty' },
+              { field: 'category', operator: 'isEmpty' },
+              {
+                field: 'tag',
+                operator: 'isEmpty',
+                relationshipValue: { relationTo: 'tags', value: fixture.tag.id },
+              },
+              { field: 'eventCycle', operator: 'isEmpty' },
+            ],
+            pageSize: 12,
+            selectionMode: 'filters',
+            sources: ['pages', 'events'],
+            view: 'cards',
+          },
+        ],
+        slug: `${fixture.slugs.lifecyclePage}-empty-filters`,
+        title: 'Integration empty filters container',
+      },
+      overrideAccess: true,
+    })
+
+    try {
+      const storedPage = await fixture.payload.findByID({
+        collection: 'pages',
+        depth: 0,
+        id: containerPage.id,
+        overrideAccess: true,
+      })
+      const listing = storedPage.layout?.find((block) => block.blockType === 'listing')
+      expect(
+        listing?.conditions?.map(({ field, operator, relationshipValue }) => ({
+          field,
+          operator,
+          relationshipValue: relationshipValue ?? null,
+        })),
+      ).toEqual([
+        { field: 'parentPage', operator: 'isEmpty', relationshipValue: null },
+        { field: 'category', operator: 'isEmpty', relationshipValue: null },
+        { field: 'tag', operator: 'isEmpty', relationshipValue: null },
+        { field: 'eventCycle', operator: 'isEmpty', relationshipValue: null },
+      ])
+
+      const cases = [
+        ['parentPage', fixture.page.id],
+        ['category', fixture.childPage.id],
+        ['tag', fixture.childPage.id],
+      ] as const
+      for (const [field, matchingPageID] of cases) {
+        const result = await findPublicContent({
+          conditions: [{ field, operator: 'isEmpty' }],
+          page: 1,
+          pageSize: 12,
+          pagination: false,
+          sort: 'titleAscending',
+          sources: ['pages'],
+        })
+        expect(result.items.map((item) => item.document.id)).toEqual([matchingPageID])
+      }
+    } finally {
+      await fixture.payload.delete({
+        collection: 'pages',
+        id: containerPage.id,
+        overrideAccess: true,
+      })
+    }
+  })
+
   it('matches normalized titles with contains and exact operators', async () => {
     const containsResult = await findPublicContent({
       conditions: [{ field: 'title', operator: 'contains', textValue: '  TAXONOMY  ' }],
@@ -279,6 +356,60 @@ describe('content listing and pagination', () => {
     ).toEqual([['pages', fixture.childPage.title]])
     expect(result.totalDocs).toBe(3)
     expect(result.totalPages).toBe(2)
+  })
+
+  it('preserves event roles and the contribution label for a contextual Partner listing', async () => {
+    const partner = await fixture.payload.create({
+      collection: 'partners',
+      data: {
+        _status: 'published',
+        author: fixture.author.id,
+        excerpt: 'Partner contextual listing excerpt.',
+        layout: [
+          {
+            blockType: 'richText',
+            content: createLexicalDocument('Partner contextual listing content.'),
+          },
+        ],
+        name: 'Contextual listing partner',
+        slug: 'integration-contextual-listing-partner',
+      },
+      draft: false,
+      overrideAccess: true,
+    })
+
+    try {
+      const result = await findPublicContent({
+        manualItems: [
+          {
+            contextLabel: 'Partner strategiczny',
+            partnerRoles: ['sponsor', 'support'],
+            relationTo: 'partners',
+            value: partner.id,
+          },
+        ],
+        page: 1,
+        pageSize: 12,
+        pagination: false,
+        selectionMode: 'manual',
+        sort: 'titleAscending',
+        sources: [],
+      })
+
+      expect(result.items).toHaveLength(1)
+      expect(result.items[0]).toMatchObject({
+        contextLabel: 'Partner strategiczny',
+        kind: 'partners',
+        partnerRoles: ['sponsor', 'support'],
+      })
+      expect(getContentListingPresentation(result.items[0]!, 'cards')).toMatchObject({
+        contextLabel: 'Partner strategiczny',
+        kindLabel: 'Partner',
+        title: partner.name,
+      })
+    } finally {
+      await fixture.payload.delete({ collection: 'partners', id: partner.id, overrideAccess: true })
+    }
   })
 
   it('filters dated content by age while passing through sources without that field', async () => {

@@ -17,9 +17,11 @@ type ContentPresentationProperties = {
 }
 
 export function ContentHeading({
+  as,
   appearance = 'default',
   heading,
 }: {
+  as?: 'h1'
   appearance?: 'default' | 'homeSection'
   heading: ResolvedContentHeading
 }) {
@@ -27,7 +29,7 @@ export function ContentHeading({
     return null
   }
 
-  const HeadingElement = `h${heading.level}` as ElementType
+  const HeadingElement = as ?? (`h${heading.level}` as ElementType)
 
   if (appearance === 'homeSection') {
     return (

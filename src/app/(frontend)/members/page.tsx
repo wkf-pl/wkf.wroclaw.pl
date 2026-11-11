@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 
+import { findRenderablePageTemplateForRequest } from '@/modules/content/preview-content'
 import { findPublicMemberProfiles } from '@/modules/members/public-members'
 
+import { IndexPageTemplateDocument } from '../_components/IndexPageTemplateDocument'
 import { MemberProfileCard } from '../_components/MemberProfileCard'
 
 export const metadata: Metadata = {
@@ -9,7 +11,28 @@ export const metadata: Metadata = {
   title: 'Klubowicze',
 }
 
-export default async function MembersPage() {
+export default async function MembersPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const parameters = await searchParams
+  const { document: template, isDraftPreview } = await findRenderablePageTemplateForRequest(
+    'members-index',
+    parameters,
+  )
+  if (template) {
+    return (
+      <IndexPageTemplateDocument
+        isDraftPreview={isDraftPreview}
+        pathname="/members"
+        searchParams={parameters}
+        template={template}
+        title="Klubowicze"
+      />
+    )
+  }
+
   const profiles = await findPublicMemberProfiles()
 
   return (

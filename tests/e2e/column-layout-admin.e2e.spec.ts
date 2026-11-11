@@ -376,7 +376,8 @@ test('opens a 6+6 layout, keeps content visible while invalid and excludes neste
   await activePanel(field).locator('.blocks-field__drawer-toggler').click()
   const innerDrawer = page.locator('.drawer--is-open')
   const groupHeadings = await innerDrawer.getByRole('heading', { level: 3 }).allTextContents()
-  expect(groupHeadings).toEqual(['Treści', 'Elementy'])
+  expect(groupHeadings).toEqual(['Treści', 'Elementy', 'Układ'])
+  await expect(innerDrawer.getByText('Odstęp', { exact: true })).toBeVisible()
   await expect(innerDrawer.getByText('Układ kolumnowy', { exact: true })).toHaveCount(0)
   await page.keyboard.press('Escape')
 

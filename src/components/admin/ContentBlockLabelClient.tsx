@@ -1,6 +1,7 @@
 'use client'
 
 import { useFormFields, useRowLabel } from '@payloadcms/ui'
+import type { ReactNode } from 'react'
 
 import {
   getSelectableRasterIconLabel,
@@ -149,7 +150,7 @@ function truncateAtWordBoundary(value: string): string {
   return `${(previewWords.length ? previewWords : [words[0]]).join(' ')}…`
 }
 
-function BlockLabel({ prefix, value }: { prefix: string; value: string }) {
+export function BlockLabel({ prefix, value }: { prefix: string; value: ReactNode }) {
   return (
     <span className="wkf-content-block-label">
       <strong>{prefix}</strong>

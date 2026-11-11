@@ -12,6 +12,7 @@ import type {
 import { getRelationshipId } from '@/lib/relationships'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { extractRichTextText } from '@/modules/content/rich-text'
+import type { PartnerRole } from '@/modules/events/constants'
 
 import {
   createListingTagSearchIndex,
@@ -29,11 +30,18 @@ export type PublicContentListItem =
   | { document: Event; kind: 'events'; url: string }
   | { contextLabel?: null | string; document: MemberProfile; kind: 'member-profiles'; url: string }
   | { document: Page; kind: 'pages'; url: string }
-  | { document: Partner; kind: 'partners'; url: string }
+  | {
+      contextLabel?: null | string
+      document: Partner
+      kind: 'partners'
+      partnerRoles?: readonly PartnerRole[]
+      url: string
+    }
   | { document: Post; kind: 'posts'; url: string }
 
 export type SelectedContentListingItem = {
   contextLabel?: null | string
+  partnerRoles?: readonly PartnerRole[]
   source: ContentListingSource
   sourceDocumentId: number
   url: string
@@ -344,7 +352,15 @@ export async function hydrateContentListingItems(
       case 'pages':
         return [{ document: document as Page, kind: item.source, url: item.url }]
       case 'partners':
-        return [{ document: document as Partner, kind: item.source, url: item.url }]
+        return [
+          {
+            contextLabel: item.contextLabel,
+            document: document as Partner,
+            kind: item.source,
+            partnerRoles: item.partnerRoles,
+            url: item.url,
+          },
+        ]
       case 'posts':
         return [{ document: document as Post, kind: item.source, url: item.url }]
     }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { createContentMetadata } from '@/modules/content/content-metadata'
+import { findRenderablePageTemplateForRequest } from '@/modules/content/preview-content'
 import {
   findCyclesForPartner,
   findEventsForPartner,
@@ -10,7 +11,14 @@ import {
 import { createPartnerStructuredData } from '@/modules/events/structured-data'
 
 import { CmsPageDocument } from '../../_components/CmsPageDocument'
+import {
+  CurrentItemHeading,
+  CurrentItemList,
+  CurrentItemText,
+} from '../../_components/CurrentItemPresentation'
+import { getContentHeroImage } from '../../_components/ContentHero'
 import { EventList } from '../../_components/EventList'
+import { PageTemplateDocument } from '../../_components/PageTemplateDocument'
 import { StructuredData } from '../../_components/StructuredData'
 
 type Properties = {
@@ -25,6 +33,53 @@ export async function generateMetadata({ params }: Properties): Promise<Metadata
 export default async function PartnerPage({ params, searchParams }: Properties) {
   const partner = await findPublishedPartnerBySlug((await params).slug)
   if (!partner) notFound()
+  const pathname = `/partners/${partner.slug}`
+  const breadcrumbs = [
+    { label: 'Strona główna', url: '/' },
+    { label: partner.name, url: null },
+  ]
+  const parameters = await searchParams
+  const { document: template, isDraftPreview } = await findRenderablePageTemplateForRequest(
+    'partner-detail',
+    parameters,
+  )
+  if (template) {
+    return (
+      <>
+        <StructuredData value={createPartnerStructuredData(partner)} />
+        <PageTemplateDocument
+          breadcrumbs={breadcrumbs}
+          currentItem={{
+            document: partner,
+            target: { relationTo: 'partners', value: partner.id },
+            renderField: ({ field, variant }) => {
+              if (field === 'name')
+                return <CurrentItemHeading text={partner.name} variant={variant} />
+              if (field === 'excerpt')
+                return <CurrentItemText text={partner.excerpt} variant={variant} />
+              if (field === 'website' && partner.website) {
+                return (
+                  <CurrentItemList variant={variant}>
+                    <li>
+                      <a href={partner.website}>Strona WWW Partnera</a>
+                    </li>
+                  </CurrentItemList>
+                )
+              }
+              return null
+            },
+          }}
+          image={getContentHeroImage(partner.heroImage)}
+          fallbackTitle={partner.name}
+          isDraftPreview={isDraftPreview}
+          pathname={pathname}
+          searchParams={parameters}
+          template={template}
+        />
+      </>
+    )
+  }
+
   const [events, cycles] = await Promise.all([
     findEventsForPartner(partner.id),
     findCyclesForPartner(partner.id),
@@ -59,15 +114,12 @@ export default async function PartnerPage({ params, searchParams }: Properties) 
       <StructuredData value={createPartnerStructuredData(partner)} />
       <CmsPageDocument
         afterBlocks={related}
-        breadcrumbs={[
-          { label: 'Strona główna', url: '/' },
-          { label: partner.name, url: null },
-        ]}
+        breadcrumbs={breadcrumbs}
         collection="partners"
         document={partner}
         eyebrow="Partner"
-        pathname={`/partners/${partner.slug}`}
-        searchParams={await searchParams}
+        pathname={pathname}
+        searchParams={parameters}
       />
     </>
   )

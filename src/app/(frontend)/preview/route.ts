@@ -4,7 +4,15 @@ import { getPayload } from 'payload'
 
 import config from '@payload-config'
 
-import { parseDraftPreviewTarget } from '@/modules/content/draft-preview'
+import {
+  appendPageTemplatePreviewContext,
+  parseDraftPreviewTarget,
+} from '@/modules/content/draft-preview'
+import { publicRequestContext } from '@/modules/content/public-access'
+import {
+  getPageTemplateDefinition,
+  type PageTemplatePreviewCollection,
+} from '@/modules/page-templates/page-template-registry'
 
 export async function GET(request: Request): Promise<Response> {
   const requestURL = new URL(request.url)
@@ -29,7 +37,40 @@ export async function GET(request: Request): Promise<Response> {
     return new Response('Draft preview is not available.', { status: 403 })
   }
 
-  if ('collection' in target) {
+  let previewPath: string
+
+  if ('pageTemplate' in target) {
+    const templateResult = await payload.find({
+      collection: 'page-templates',
+      depth: 0,
+      draft: true,
+      limit: 1,
+      overrideAccess: false,
+      pagination: false,
+      user: authenticatedUser,
+      where: { templateKey: { equals: target.pageTemplate } },
+    })
+    const template = templateResult.docs[0]
+    const definition = getPageTemplateDefinition(target.pageTemplate)
+
+    if (!template || !definition?.rendererAvailable) {
+      return new Response('Page template preview is not available.', { status: 404 })
+    }
+    try {
+      const targetPath = await resolvePageTemplatePreviewPath({
+        payload,
+        previewCollection: definition.previewCollection,
+        previewTarget: template.previewTarget,
+        route: definition.route,
+      })
+      previewPath = appendPageTemplatePreviewContext(targetPath, target.pageTemplate)
+    } catch (err) {
+      if (err instanceof ResponseError) {
+        return new Response(err.message, { status: err.status })
+      }
+      throw err
+    }
+  } else if ('collection' in target) {
     const result = await payload.find({
       collection: target.collection,
       depth: 0,
@@ -44,6 +85,7 @@ export async function GET(request: Request): Promise<Response> {
     if (!result.docs[0]) {
       return new Response('Preview document was not found.', { status: 404 })
     }
+    previewPath = target.path
   } else {
     await payload.findGlobal({
       slug: target.global,
@@ -52,10 +94,76 @@ export async function GET(request: Request): Promise<Response> {
       overrideAccess: false,
       user: authenticatedUser,
     })
+    previewPath = target.path
   }
 
   const preview = await draftMode()
   preview.enable()
 
-  redirect(target.path)
+  redirect(previewPath)
+}
+
+type PayloadInstance = Awaited<ReturnType<typeof getPayload>>
+
+async function resolvePageTemplatePreviewPath({
+  payload,
+  previewCollection,
+  previewTarget,
+  route,
+}: {
+  payload: PayloadInstance
+  previewCollection: PageTemplatePreviewCollection | null
+  previewTarget: unknown
+  route: string
+}): Promise<string> {
+  if (!previewCollection) return route
+
+  if (
+    !previewTarget ||
+    typeof previewTarget !== 'object' ||
+    !('relationTo' in previewTarget) ||
+    previewTarget.relationTo !== previewCollection ||
+    !('value' in previewTarget)
+  ) {
+    throw new ResponseError('Choose an element used for page template preview.', 400)
+  }
+
+  const targetID =
+    typeof previewTarget.value === 'object' && previewTarget.value && 'id' in previewTarget.value
+      ? previewTarget.value.id
+      : previewTarget.value
+  const slug = await findPreviewTargetSlug(payload, previewCollection, targetID)
+
+  if (!slug) throw new ResponseError('Page template preview element was not found.', 404)
+  return route.replace('[slug]', slug)
+}
+
+async function findPreviewTargetSlug(
+  payload: PayloadInstance,
+  collection: PageTemplatePreviewCollection,
+  id: unknown,
+): Promise<string | null> {
+  if (typeof id !== 'string' && typeof id !== 'number') return null
+
+  const document = await payload.findByID({
+    collection,
+    context: publicRequestContext,
+    id,
+    depth: 0,
+    disableErrors: true,
+    draft: false,
+    overrideAccess: false,
+    user: null,
+  })
+
+  return document && 'slug' in document && typeof document.slug === 'string' ? document.slug : null
+}
+
+class ResponseError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message)
+  }
 }

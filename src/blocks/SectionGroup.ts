@@ -1,4 +1,4 @@
-import type { Block } from 'payload'
+import type { Block, BlocksField } from 'payload'
 
 import {
   createContentPresentationFields,
@@ -9,82 +9,101 @@ import { ColumnLayoutBlock } from './ColumnLayout'
 import { TabbedContentBlock } from './TabbedContent'
 import { contentLeafBlocks } from './contentLeafBlocks'
 
-export const SectionGroupBlock: Block = {
-  slug: 'sectionGroup',
-  admin: {
-    components: {
-      Label: '/components/admin/ContentBlockLabel#SectionGroupBlockLabel',
-    },
-    disableBlockName: true,
-    group: 'Układ',
-    images: {
-      thumbnail: {
-        alt: 'Schematyczna ikona sekcji objętych wspólną ramką',
-        url: '/assets/block-thumbnails/section-group.png',
-      },
-    },
-  },
-  fields: [
-    {
-      admin: {
-        components: {
-          Field: '/components/admin/TabbedLayoutField#SectionGroupTabsField',
-        },
-      },
-      type: 'group',
-      fields: [
-        createLayoutBlockNameField(),
-        ...createContentPresentationFields(),
-        {
-          name: 'emptyChildBehavior',
-          type: 'select',
-          admin: {
-            description:
-              'Dotyczy Listingu, Galerii mediów, Karuzeli i Załączników, również wewnątrz układu kolumnowego.',
-            isClearable: false,
-          },
-          dbName: 'empty_child',
-          defaultValue: 'show',
-          label: 'Gdy blok zasilany treścią jest pusty',
-          options: [
-            { label: 'Pokaż grupę', value: 'show' },
-            { label: 'Ukryj całą grupę', value: 'hideGroup' },
-          ],
-        },
-        {
-          name: 'sections',
-          type: 'array',
-          fields: [
-            ...createContentPresentationFields(),
-            {
-              name: 'blocks',
-              type: 'blocks',
-              admin: { initCollapsed: false },
-              blocks: [...contentLeafBlocks, ColumnLayoutBlock, TabbedContentBlock],
-              label: 'Bloki sekcji',
-              labels: {
-                plural: 'Bloki sekcji',
-                singular: 'blok sekcji',
-              },
-              minRows: 1,
-              required: true,
-            },
-          ],
-          label: 'Sekcje',
-          labels: {
-            plural: 'Sekcje',
-            singular: 'sekcję',
-          },
-          maxRows: 8,
-          minRows: 1,
-          required: true,
-        },
-      ],
-    },
-  ],
-  interfaceName: 'SectionGroupBlock',
-  labels: {
-    plural: 'Grupy sekcji',
-    singular: 'Grupa sekcji',
-  },
+type SectionGroupBlockOptions = {
+  blockSlug?: string
+  interfaceName?: string
+  layoutBlocks?: Block[]
+  leafBlocks?: Block[]
+  nestedFilterOptions?: BlocksField['filterOptions']
 }
+
+export function createSectionGroupBlock({
+  blockSlug = 'sectionGroup',
+  interfaceName = 'SectionGroupBlock',
+  layoutBlocks = [ColumnLayoutBlock, TabbedContentBlock],
+  leafBlocks = contentLeafBlocks,
+  nestedFilterOptions,
+}: SectionGroupBlockOptions = {}): Block {
+  return {
+    slug: blockSlug,
+    admin: {
+      components: {
+        Label: '/components/admin/ContentBlockLabel#SectionGroupBlockLabel',
+      },
+      disableBlockName: true,
+      group: 'Układ',
+      images: {
+        thumbnail: {
+          alt: 'Schematyczna ikona sekcji objętych wspólną ramką',
+          url: '/assets/block-thumbnails/section-group.png',
+        },
+      },
+    },
+    fields: [
+      {
+        admin: {
+          components: {
+            Field: '/components/admin/TabbedLayoutField#SectionGroupTabsField',
+          },
+        },
+        type: 'group',
+        fields: [
+          createLayoutBlockNameField(),
+          ...createContentPresentationFields(),
+          {
+            name: 'emptyChildBehavior',
+            type: 'select',
+            admin: {
+              description:
+                'Dotyczy Listingu, Galerii mediów, Karuzeli i Załączników, również wewnątrz układu kolumnowego.',
+              isClearable: false,
+            },
+            dbName: 'empty_child',
+            defaultValue: 'show',
+            label: 'Gdy blok zasilany treścią jest pusty',
+            options: [
+              { label: 'Pokaż grupę', value: 'show' },
+              { label: 'Ukryj całą grupę', value: 'hideGroup' },
+            ],
+          },
+          {
+            name: 'sections',
+            type: 'array',
+            fields: [
+              ...createContentPresentationFields(),
+              {
+                name: 'blocks',
+                type: 'blocks',
+                admin: { initCollapsed: false },
+                blocks: [...leafBlocks, ...layoutBlocks],
+                filterOptions: nestedFilterOptions,
+                label: 'Bloki sekcji',
+                labels: {
+                  plural: 'Bloki sekcji',
+                  singular: 'blok sekcji',
+                },
+                minRows: 1,
+                required: true,
+              },
+            ],
+            label: 'Sekcje',
+            labels: {
+              plural: 'Sekcje',
+              singular: 'sekcję',
+            },
+            maxRows: 8,
+            minRows: 1,
+            required: true,
+          },
+        ],
+      },
+    ],
+    interfaceName,
+    labels: {
+      plural: 'Grupy sekcji',
+      singular: 'Grupa sekcji',
+    },
+  }
+}
+
+export const SectionGroupBlock: Block = createSectionGroupBlock()

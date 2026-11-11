@@ -1,4 +1,10 @@
-import { APIError, type ArrayFieldValidation, type Block, type FieldHook } from 'payload'
+import {
+  APIError,
+  type ArrayFieldValidation,
+  type Block,
+  type BlocksField,
+  type FieldHook,
+} from 'payload'
 
 import {
   createContentPresentationFields,
@@ -69,119 +75,136 @@ const enforceColumnLayoutColumns: FieldHook = ({ value }) => {
   return value
 }
 
-export const ColumnLayoutBlock: Block = {
-  slug: 'columnLayout',
-  admin: {
-    components: {
-      Label: '/components/admin/ContentBlockLabel#ColumnLayoutBlockLabel',
-    },
-    disableBlockName: true,
-    group: 'Układ',
-    images: {
-      thumbnail: {
-        alt: 'Schematyczna ikona układu kolumnowego',
-        url: '/assets/block-thumbnails/column-layout.png',
+type ColumnLayoutBlockOptions = {
+  blockSlug?: string
+  interfaceName?: string
+  leafBlocks?: Block[]
+  nestedFilterOptions?: BlocksField['filterOptions']
+}
+
+export function createColumnLayoutBlock({
+  blockSlug = 'columnLayout',
+  interfaceName = 'ColumnLayoutBlock',
+  leafBlocks = contentLeafBlocks,
+  nestedFilterOptions,
+}: ColumnLayoutBlockOptions = {}): Block {
+  return {
+    slug: blockSlug,
+    admin: {
+      components: {
+        Label: '/components/admin/ContentBlockLabel#ColumnLayoutBlockLabel',
       },
-    },
-  },
-  fields: [
-    {
-      admin: {
-        components: {
-          Field: '/components/admin/TabbedLayoutField#ColumnLayoutTabsField',
+      disableBlockName: true,
+      group: 'Układ',
+      images: {
+        thumbnail: {
+          alt: 'Schematyczna ikona układu kolumnowego',
+          url: '/assets/block-thumbnails/column-layout.png',
         },
       },
-      type: 'group',
-      fields: [
-        createLayoutBlockNameField(),
-        ...createContentPresentationFields(),
-        {
-          type: 'row',
-          fields: [
-            {
-              name: 'verticalAlignment',
-              type: 'select',
-              admin: { isClearable: false, width: '50%' },
-              defaultValue: 'start',
-              enumName: 'column_layout_vertical_alignment',
-              label: 'Wyrównanie w pionie',
-              options: [
-                { label: 'Do początku', value: 'start' },
-                { label: 'Do środka', value: 'center' },
-                { label: 'Do końca', value: 'end' },
-              ],
-              required: true,
-            },
-            {
-              name: 'columnSeparators',
-              type: 'select',
-              admin: { isClearable: false, width: '50%' },
-              defaultValue: 'none',
-              enumName: 'column_layout_separators',
-              label: 'Separatory kolumn',
-              options: [
-                { label: 'Bez separatorów', value: 'none' },
-                { label: 'Pomiędzy kolumnami', value: 'between' },
-              ],
-              required: true,
-            },
-          ],
-        },
-        {
-          name: 'columns',
-          type: 'array',
-          defaultValue: [
-            { blocks: [], frame: 'none', surface: 'transparent', width: 6 },
-            { blocks: [], frame: 'none', surface: 'transparent', width: 6 },
-          ],
-          hooks: {
-            beforeValidate: [enforceColumnLayoutColumns],
+    },
+    fields: [
+      {
+        admin: {
+          components: {
+            Field: '/components/admin/TabbedLayoutField#ColumnLayoutTabsField',
           },
-          fields: [
-            ...createContentPresentationFields({
-              leadingField: {
-                name: 'width',
-                type: 'number',
-                admin: {
-                  className: 'wkf-column-width-field',
-                  step: 1,
-                  width: '33.333%',
-                },
-                defaultValue: 2,
-                label: 'Szerokość',
-                max: maximumColumnWidth,
-                min: minimumColumnWidth,
+        },
+        type: 'group',
+        fields: [
+          createLayoutBlockNameField(),
+          ...createContentPresentationFields(),
+          {
+            type: 'row',
+            fields: [
+              {
+                name: 'verticalAlignment',
+                type: 'select',
+                admin: { isClearable: false, width: '50%' },
+                defaultValue: 'start',
+                enumName: 'column_layout_vertical_alignment',
+                label: 'Wyrównanie w pionie',
+                options: [
+                  { label: 'Do początku', value: 'start' },
+                  { label: 'Do środka', value: 'center' },
+                  { label: 'Do końca', value: 'end' },
+                ],
                 required: true,
               },
-            }),
-            {
-              name: 'blocks',
-              type: 'blocks',
-              admin: { initCollapsed: false },
-              blocks: contentLeafBlocks,
-              label: 'Bloki w kolumnie',
-              labels: {
-                plural: 'Bloki w kolumnie',
-                singular: 'blok w kolumnie',
+              {
+                name: 'columnSeparators',
+                type: 'select',
+                admin: { isClearable: false, width: '50%' },
+                defaultValue: 'none',
+                enumName: 'column_layout_separators',
+                label: 'Separatory kolumn',
+                options: [
+                  { label: 'Bez separatorów', value: 'none' },
+                  { label: 'Pomiędzy kolumnami', value: 'between' },
+                ],
+                required: true,
               },
-            },
-          ],
-          label: 'Kolumny',
-          labels: {
-            plural: 'Kolumny',
-            singular: 'kolumnę',
+            ],
           },
-          maxRows: maximumColumnCount,
-          minRows: minimumColumnCount,
-          required: true,
-          validate: validateColumnLayoutColumns,
-        },
-      ],
+          {
+            name: 'columns',
+            type: 'array',
+            defaultValue: [
+              { blocks: [], frame: 'none', surface: 'transparent', width: 6 },
+              { blocks: [], frame: 'none', surface: 'transparent', width: 6 },
+            ],
+            hooks: {
+              beforeValidate: [enforceColumnLayoutColumns],
+            },
+            fields: [
+              ...createContentPresentationFields({
+                leadingField: {
+                  name: 'width',
+                  type: 'number',
+                  admin: {
+                    className: 'wkf-column-width-field',
+                    step: 1,
+                    width: '33.333%',
+                  },
+                  defaultValue: 2,
+                  label: 'Szerokość',
+                  max: maximumColumnWidth,
+                  min: minimumColumnWidth,
+                  required: true,
+                },
+              }),
+              {
+                name: 'blocks',
+                type: 'blocks',
+                admin: { initCollapsed: false },
+                blocks: leafBlocks,
+                filterOptions: nestedFilterOptions,
+                label: 'Bloki w kolumnie',
+                labels: {
+                  plural: 'Bloki w kolumnie',
+                  singular: 'blok w kolumnie',
+                },
+              },
+            ],
+            label: 'Kolumny',
+            labels: {
+              plural: 'Kolumny',
+              singular: 'kolumnę',
+            },
+            maxRows: maximumColumnCount,
+            minRows: minimumColumnCount,
+            required: true,
+            validate: validateColumnLayoutColumns,
+          },
+        ],
+      },
+    ],
+    interfaceName,
+    labels: {
+      plural: 'Układy kolumnowe',
+      singular: 'Układ kolumnowy',
     },
-  ],
-  interfaceName: 'ColumnLayoutBlock',
-  labels: {
-    plural: 'Układy kolumnowe',
-    singular: 'Układ kolumnowy',
-  },
+  }
 }
+
+export const ColumnLayoutBlock: Block = createColumnLayoutBlock()

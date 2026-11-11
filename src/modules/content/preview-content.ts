@@ -10,8 +10,10 @@ import {
 
 import config from '@payload-config'
 
-import type { Page, Post } from '@/payload-types'
-import type { DraftPreviewGlobal } from './draft-preview'
+import type { Page, PageTemplate, Post } from '@/payload-types'
+import { shouldRenderPageTemplate, type DraftPreviewGlobal } from './draft-preview'
+import type { PageTemplateID } from '@/modules/page-templates/page-template-registry'
+import { findPublishedPageTemplate } from '@/modules/page-templates/public-page-templates'
 import {
   findPublishedPageBySlug,
   findPublishedPostBySlug,
@@ -92,6 +94,54 @@ export const findPostForRequest = cache(
   },
 )
 
+export const findPageTemplateForRequest = cache(
+  async (templateKey: PageTemplateID): Promise<PreviewContentResult<PageTemplate>> => {
+    const { isEnabled } = await draftMode()
+
+    if (!isEnabled) {
+      return { document: await findPublishedPageTemplate(templateKey), isDraftPreview: false }
+    }
+
+    const payload = await getPayload({ config })
+    const user = await authenticatePreviewUser(payload)
+
+    if (!user) {
+      return { document: null, isDraftPreview: true }
+    }
+
+    const result = await payload.find({
+      collection: 'page-templates',
+      depth: 3,
+      disableErrors: true,
+      draft: true,
+      limit: 1,
+      overrideAccess: false,
+      pagination: false,
+      user,
+      where: { templateKey: { equals: templateKey } },
+    })
+
+    return { document: result.docs[0] ?? null, isDraftPreview: true }
+  },
+)
+
+export async function findRenderablePageTemplateForRequest(
+  templateKey: PageTemplateID,
+  searchParams: Record<string, string | string[] | undefined>,
+): Promise<PreviewContentResult<PageTemplate>> {
+  const { document, isDraftPreview } = await findPageTemplateForRequest(templateKey)
+  const shouldRender =
+    document &&
+    shouldRenderPageTemplate({
+      isDraftPreview,
+      renderingMode: document.renderingMode,
+      searchParams,
+      templateKey,
+    })
+
+  return { document: shouldRender ? document : null, isDraftPreview }
+}
+
 export const findFooterForRequest = cache(() => findGlobalForRequest('footer', getPublicFooter))
 
 export const findHomepageHeroForRequest = cache(() =>
@@ -130,12 +180,15 @@ async function findGlobalForRequest<Slug extends DraftPreviewGlobal & GlobalSlug
   const document = await payload.findGlobal({
     slug,
     depth: 2,
+    disableErrors: true,
     draft: true,
     overrideAccess: false,
     user,
   })
 
-  return { document, isDraftPreview: true }
+  return document
+    ? { document, isDraftPreview: true }
+    : { document: await findPublishedGlobal(), isDraftPreview: false }
 }
 
 const authenticatePreviewUser = cache(async (payload: Payload): Promise<null | TypedUser> => {

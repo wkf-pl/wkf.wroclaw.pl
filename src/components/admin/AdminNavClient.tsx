@@ -36,7 +36,6 @@ export function AdminNavClient({
   } = useConfig()
   const { i18n } = useTranslation()
   const hasMemberRole = userHasRole(user, 'member')
-
   return (
     <Fragment>
       {groups.map(({ entities, label }, key) => (

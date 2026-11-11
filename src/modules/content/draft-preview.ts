@@ -1,3 +1,9 @@
+import {
+  getPageTemplateDefinition,
+  isPageTemplateID,
+  type PageTemplateID,
+} from '@/modules/page-templates/page-template-registry'
+
 export const draftPreviewCollections = ['pages', 'posts'] as const
 export const draftPreviewGlobals = [
   'footer',
@@ -10,6 +16,8 @@ export const draftPreviewGlobals = [
 export type DraftPreviewCollection = (typeof draftPreviewCollections)[number]
 export type DraftPreviewGlobal = (typeof draftPreviewGlobals)[number]
 
+export const pageTemplatePreviewParameter = 'pageTemplatePreview'
+
 export type DraftPreviewTarget =
   | {
       collection: DraftPreviewCollection
@@ -19,6 +27,9 @@ export type DraftPreviewTarget =
   | {
       global: DraftPreviewGlobal
       path: '/'
+    }
+  | {
+      pageTemplate: PageTemplateID
     }
 
 type PreviewDocument = {
@@ -44,10 +55,48 @@ export function createGlobalDraftPreviewURL(global: DraftPreviewGlobal): string 
   return `/preview?${new URLSearchParams({ global }).toString()}`
 }
 
+export function createPageTemplateDraftPreviewURL(templateKey: unknown): null | string {
+  if (!isPageTemplateID(templateKey)) return null
+
+  const definition = getPageTemplateDefinition(templateKey)
+  if (!definition?.rendererAvailable) return null
+
+  return `/preview?${new URLSearchParams({ pageTemplate: templateKey }).toString()}`
+}
+
+export function appendPageTemplatePreviewContext(
+  path: string,
+  templateKey: PageTemplateID,
+): string {
+  const url = new URL(path, 'http://localhost')
+  url.searchParams.set(pageTemplatePreviewParameter, templateKey)
+  return `${url.pathname}${url.search}`
+}
+
+export function shouldRenderPageTemplate({
+  isDraftPreview,
+  renderingMode,
+  searchParams,
+  templateKey,
+}: {
+  isDraftPreview: boolean
+  renderingMode: unknown
+  searchParams: Record<string, string | string[] | undefined>
+  templateKey: PageTemplateID
+}): boolean {
+  if (!isDraftPreview) return renderingMode === 'template'
+  return searchParams[pageTemplatePreviewParameter] === templateKey
+}
+
 export function parseDraftPreviewTarget(parameters: URLSearchParams): DraftPreviewTarget | null {
   const collection = parameters.get('collection')
   const global = parameters.get('global')
+  const pageTemplate = parameters.get('pageTemplate')
   const slug = parameters.get('slug')
+
+  if (pageTemplate) {
+    return collection || global || slug || !isPageTemplateID(pageTemplate) ? null : { pageTemplate }
+  }
 
   if (collection || slug) {
     if (global || !isDraftPreviewCollection(collection) || !isValidSlug(slug)) {

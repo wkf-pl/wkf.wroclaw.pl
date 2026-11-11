@@ -56,11 +56,8 @@ describe('member profile validation', () => {
     expect(validateGame(true, { siblingData: { plays: true, runs: false } } as never)).toBe(true)
   })
 
-  it('uses Rich Text for narrative fields and plain text for interests', () => {
+  it('uses Rich Text for the bio and plain text for interests', () => {
     expect(findNamedField(MemberProfiles.fields, 'about')).toMatchObject({ type: 'richText' })
-    expect(findNamedField(MemberProfiles.fields, 'clubActivities')).toMatchObject({
-      type: 'richText',
-    })
     expect(findNamedField(MemberProfiles.fields, 'interests')).toMatchObject({ type: 'text' })
   })
 

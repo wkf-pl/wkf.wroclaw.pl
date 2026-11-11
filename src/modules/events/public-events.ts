@@ -8,28 +8,9 @@ import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-ca
 import { publicRequestContext } from '@/modules/content/public-access'
 import { findPublicContent } from '@/modules/content/content-listing'
 
-const published: Where = { _status: { equals: 'published' } }
+import { createEventsIndexTimeWhere, createUpcomingEventsIndexWhere } from './events-index-time'
 
-function startOfWarsawDay(date = new Date()): Date {
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    day: '2-digit',
-    month: '2-digit',
-    timeZone: 'Europe/Warsaw',
-    timeZoneName: 'longOffset',
-    year: 'numeric',
-  })
-  const parts = Object.fromEntries(
-    formatter.formatToParts(date).map((part) => [part.type, part.value]),
-  )
-  const offsetMatch = parts.timeZoneName?.match(/GMT([+-])(\d{2}):(\d{2})/)
-  const offsetMinutes = offsetMatch
-    ? (offsetMatch[1] === '+' ? 1 : -1) * (Number(offsetMatch[2]) * 60 + Number(offsetMatch[3]))
-    : 0
-  return new Date(
-    Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)) -
-      offsetMinutes * 60_000,
-  )
-}
+const published: Where = { _status: { equals: 'published' } }
 
 async function findPublicDocument<T extends Event | EventCycle | Partner>(
   collection: 'event-cycles' | 'events' | 'partners',
@@ -77,14 +58,7 @@ async function findCurrentAndUpcomingEventsUncached(
   beforeISOString?: string,
 ): Promise<Event[]> {
   const payload = await getPayload({ config })
-  const now = new Date()
-  const conditions: Where[] = [published, { eventStatus: { in: ['scheduled', 'rescheduled'] } }]
-  conditions.push({
-    or: [
-      { endAt: { greater_than_equal: now.toISOString() } },
-      { startAt: { greater_than_equal: startOfWarsawDay(now).toISOString() } },
-    ],
-  })
+  const conditions: Where[] = [published, createUpcomingEventsIndexWhere(new Date())]
   if (beforeISOString) conditions.push({ startAt: { less_than_equal: beforeISOString } })
   const result = await payload.find({
     collection: 'events',
@@ -135,22 +109,7 @@ const findPastEventsCached = cachePublicData(
       page,
       sort: ['-startAt', 'title'],
       user: null,
-      where: {
-        and: [
-          published,
-          {
-            or: [
-              { endAt: { less_than: new Date().toISOString() } },
-              {
-                and: [
-                  { endAt: { exists: false } },
-                  { startAt: { less_than: startOfWarsawDay().toISOString() } },
-                ],
-              },
-            ],
-          },
-        ],
-      },
+      where: { and: [published, createEventsIndexTimeWhere('past', new Date())] },
     })
   },
   { revalidate: 300, tags: [publicCacheTags.events] },

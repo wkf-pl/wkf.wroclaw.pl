@@ -31,6 +31,17 @@ export type ContentListingReference = {
   value: RelationshipID | Record<string, unknown>
 }
 
+export type CurrentListingTarget =
+  ContentListingReference | { relationTo: 'categories' | 'tags'; value: RelationshipID }
+
+export function getTaxonomyTemplateCollection(
+  templateKey: unknown,
+): 'categories' | 'tags' | undefined {
+  if (templateKey === 'category-detail') return 'categories'
+  if (templateKey === 'tag-detail') return 'tags'
+  return undefined
+}
+
 export const listingConditionFields = [
   'title',
   'category',
@@ -52,6 +63,7 @@ export const listingConditionOperators = [
   'before',
   'after',
   'between',
+  'isEmpty',
 ] as const
 
 export type ListingConditionOperator = (typeof listingConditionOperators)[number]
@@ -143,13 +155,13 @@ export const listingConditionOperatorsByField: Record<
   ListingConditionField,
   readonly ListingConditionOperator[]
 > = {
-  category: ['inSubtree', 'equals'],
-  eventCycle: ['equals'],
+  category: ['inSubtree', 'equals', 'isEmpty'],
+  eventCycle: ['equals', 'isEmpty'],
   eventTime: ['equals'],
-  parentPage: ['equals'],
+  parentPage: ['equals', 'isEmpty'],
   relatedTo: ['contains'],
   significantDate: ['notOlderThan', 'before', 'after', 'between'],
-  tag: ['contains'],
+  tag: ['contains', 'isEmpty'],
   title: ['contains', 'equals'],
 }
 
@@ -160,6 +172,7 @@ export const listingConditionOperatorLabels: Record<ListingConditionOperator, st
   contains: 'zawiera',
   equals: 'to',
   inSubtree: 'to',
+  isEmpty: 'jest puste',
   notOlderThan: 'nie jest starsza niż',
 }
 
@@ -191,8 +204,13 @@ export function getListingConditionRelationshipCollection(
 export function getApplicableListingSources(
   field: ListingConditionField,
   sources: readonly ContentListingSource[],
+  taxonomyContext = false,
 ): ContentListingSource[] {
-  const supportedSources = new Set(listingConditionSupportedSources[field])
+  const supportedSources = new Set(
+    field === 'relatedTo' && taxonomyContext
+      ? taxonomizableListingSources
+      : listingConditionSupportedSources[field],
+  )
   return sources.filter((source) => supportedSources.has(source))
 }
 

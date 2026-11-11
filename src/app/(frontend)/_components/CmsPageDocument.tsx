@@ -1,14 +1,13 @@
 import type { ReactNode } from 'react'
 
 import type { Event, EventCycle, Page, Partner, Post, User } from '@/payload-types'
-import { getMediaURL } from '@/modules/media/media-url'
 import { createPageBreadcrumbs, type PublicBreadcrumb } from '@/modules/content/public-hierarchy'
 
 import {
   ContentHero,
   ContentHeroCategory,
   ContentHeroMeta,
-  type ContentHeroImage,
+  getContentHeroImage,
 } from './ContentHero'
 import { ContentLayoutRenderer } from './ContentLayoutRenderer'
 import { TaxonomyLinks } from './TaxonomyLinks'
@@ -153,22 +152,6 @@ async function getContentBreadcrumbs(
     { label: 'Strona główna', url: '/' },
     { label: title, url: null },
   ]
-}
-
-function getContentHeroImage(
-  media: Event['heroImage'] | EventCycle['heroImage'] | Page['heroImage'],
-): ContentHeroImage | undefined {
-  const src = getMediaURL(media)
-  if (!src || !media || typeof media !== 'object') {
-    return undefined
-  }
-
-  return {
-    alt: media.alt,
-    height: media.height || undefined,
-    src,
-    width: media.width || undefined,
-  }
 }
 
 function getAuthorName(author: null | number | User): null | string {

@@ -5,6 +5,7 @@ import {
   allListingSources,
   getApplicableListingSources,
   getListingConditionRelationshipCollection,
+  getTaxonomyTemplateCollection,
   isCalendarDate,
   isListingConditionField,
   isListingConditionOperator,
@@ -29,6 +30,7 @@ const filtersCondition = (_data: unknown, siblingData: Record<string, unknown>) 
 
 const relationshipValueCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   isListingConditionField(siblingData.field) &&
+  siblingData.operator !== 'isEmpty' &&
   getListingConditionRelationshipCollection(siblingData.field) !== undefined
 
 const relatedTargetModeCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
@@ -50,9 +52,9 @@ const dateValueCondition = (_data: unknown, siblingData: Record<string, unknown>
 const endDateValueCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.field === 'significantDate' && siblingData.operator === 'between'
 
-export const validateListingConditions: ArrayFieldValidation = (value, { siblingData }) => {
+export const validateListingConditions: ArrayFieldValidation = (value, { data, siblingData }) => {
   const listingSiblingData = siblingData as ListingConditionSiblingData
-  if (listingSiblingData.selectionMode === 'manual') return true
+  if (listingSiblingData.selectionMode !== 'filters') return true
   if (value === null || value === undefined) return true
   // Payload's client-side ArrayField validator receives the row count, while server validation
   // receives the array itself.
@@ -83,7 +85,12 @@ export const validateListingConditions: ArrayFieldValidation = (value, { sibling
     ) {
       return `Wybierz poprawny operator w warunku ${position}.`
     }
-    if (getApplicableListingSources(condition.field, sources).length === 0) {
+    const taxonomyContext =
+      condition.relatedTargetMode === 'current' &&
+      Boolean(
+        getTaxonomyTemplateCollection((data as { templateKey?: unknown } | undefined)?.templateKey),
+      )
+    if (getApplicableListingSources(condition.field, sources, taxonomyContext).length === 0) {
       return `Warunek ${position} nie dotyczy żadnego wybranego źródła.`
     }
 
@@ -108,6 +115,7 @@ const normalizeListingConditions: FieldHook = ({ value }) => {
       ...condition,
       dateValue: condition.dateValue?.trim() || null,
       endDateValue: condition.endDateValue?.trim() || null,
+      ...(condition.operator === 'isEmpty' ? { relationshipValue: null } : {}),
       textValue: condition.textValue?.trim() || null,
     }
   })
@@ -283,6 +291,8 @@ export function createListingConditionsField(): ArrayField {
 }
 
 function validateConditionValue(condition: ListingConditionInput, position: number): string | null {
+  if (condition.operator === 'isEmpty') return null
+
   const relationshipCollection = getListingConditionRelationshipCollection(condition.field!)
   if (relationshipCollection) {
     if (
@@ -343,6 +353,8 @@ function validateConditionValue(condition: ListingConditionInput, position: numb
 }
 
 function getConditionSignature(condition: ListingConditionInput): string {
+  if (condition.operator === 'isEmpty') return JSON.stringify([condition.field, condition.operator])
+
   const relationshipId = condition.relationshipValue
     ? getFormRelationshipId(condition.relationshipValue.value)
     : undefined

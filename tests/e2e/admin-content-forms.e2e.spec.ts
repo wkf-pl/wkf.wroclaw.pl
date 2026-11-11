@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Locator } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
 import config from '../../src/payload.config.js'
@@ -138,6 +138,15 @@ test('shows complete search labels and concise missing-value fallbacks', async (
   await expect(row).not.toContainText('<Bez')
 })
 
+async function openListingConditionRow(row: Locator) {
+  const toggle = row.getByRole('button', { name: 'Przełącz blok' })
+  await expect(toggle).toHaveClass(/\bcollapsible__toggle--(?:open|collapsed)\b/)
+  if ((await toggle.getAttribute('class'))?.includes('collapsible__toggle--collapsed')) {
+    await toggle.click()
+  }
+  await expect(toggle).toHaveClass(/\bcollapsible__toggle--open\b/)
+}
+
 test('lays out Listing presentation fields and persists labeled relationship conditions', async ({
   page,
 }) => {
@@ -196,9 +205,7 @@ test('lays out Listing presentation fields and persists labeled relationship con
   await expect(conditionRow).toBeVisible()
   await expect(conditionsSection).toContainText('1 warunek')
   const connector = conditionRow.getByText('JEŚLI', { exact: true })
-  if ((await conditionRow.getAttribute('class'))?.includes('collapsible--collapsed')) {
-    await conditionRow.getByRole('button', { name: 'Przełącz blok' }).click()
-  }
+  await openListingConditionRow(conditionRow)
   await expect(connector).toBeVisible()
 
   await conditionRow.locator('.rs__control').first().click()
@@ -223,9 +230,7 @@ test('lays out Listing presentation fields and persists labeled relationship con
   const categoryConditionRow = conditionsField.locator('.array-field__row').nth(1)
   await expect(categoryConditionRow).toBeVisible()
   await expect(conditionsSection).toContainText('2 warunki')
-  if ((await categoryConditionRow.getAttribute('class'))?.includes('collapsible--collapsed')) {
-    await categoryConditionRow.getByRole('button', { name: 'Przełącz blok' }).click()
-  }
+  await openListingConditionRow(categoryConditionRow)
 
   await categoryConditionRow.locator('.rs__control').first().click()
   await page.locator('.rs__menu').getByText('Kategoria', { exact: true }).click()

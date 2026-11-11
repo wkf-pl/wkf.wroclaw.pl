@@ -65,7 +65,6 @@ export async function AdminNav(properties: AdminNavProperties) {
   })
   const remainingGroups = groups.filter((group) => !desiredGroupOrder.includes(group.label))
   const navPreferences = await getNavPreferences(_req)
-
   const logoutComponent = RenderServerComponent({
     clientProps: { documentSubViewType, viewType },
     Component: logout?.Button,

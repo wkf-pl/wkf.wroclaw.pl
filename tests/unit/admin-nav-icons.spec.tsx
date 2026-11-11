@@ -26,6 +26,7 @@ const additionalNavigationIcons = [
   'homepage-hero',
   'homepage-sections',
   'footer',
+  'page-templates',
   'account',
   'profile',
 ]

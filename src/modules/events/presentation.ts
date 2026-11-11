@@ -85,6 +85,21 @@ export function getEventStatusLabel(status: Event['eventStatus']): string {
   return eventStatusOptions.find((option) => option.value === status)?.label ?? status
 }
 
+export function formatEventCapacity(event: Pick<Event, 'capacity' | 'capacityMode'>): string {
+  if (event.capacityMode === 'unlimited') return 'Bez limitu'
+  if (!event.capacity) return 'Liczba miejsc do potwierdzenia'
+  return event.capacityMode === 'approximate' ? `Około ${event.capacity}` : String(event.capacity)
+}
+
+export function formatEventLocationAddress(location: Event['location']): string {
+  const cityLine = [location.postalCode, location.city].filter(Boolean).join(' ')
+  return [location.streetAddress, cityLine].filter(Boolean).join(', ')
+}
+
+export function getEventAudienceLabel(participation: Event['participation']): string {
+  return participation === 'members' ? 'Dla klubowiczów' : 'Wydarzenie publiczne'
+}
+
 export function getPartnerRoleLabel(
   role: NonNullable<Event['partners']>[number]['roles'][number],
 ): string {

@@ -1,7 +1,8 @@
 type PermissionResourceDefinition = {
   collection?: string
+  createDelete?: boolean
   global?: string
-  kind: 'collection' | 'global'
+  kind: 'collection' | 'custom' | 'global'
   label: string
   ownershipField?: string
   publishedField?: string
@@ -109,6 +110,12 @@ export const permissionResources = {
     kind: 'collection',
     label: 'Tagi',
   },
+  'page-templates': {
+    collection: 'page-templates',
+    createDelete: false,
+    kind: 'collection',
+    label: 'Szablony stron',
+  },
   navigation: {
     global: 'navigation',
     kind: 'global',
@@ -141,7 +148,12 @@ export function resourceSupportsPublishedStatus(resource: unknown): boolean {
 }
 
 export function resourceSupportsCreateAndDelete(resource: unknown): boolean {
-  return isPermissionResource(resource) && permissionResources[resource].kind === 'collection'
+  return (
+    isPermissionResource(resource) &&
+    permissionResources[resource].kind === 'collection' &&
+    (!('createDelete' in permissionResources[resource]) ||
+      permissionResources[resource].createDelete !== false)
+  )
 }
 
 export function resourceSupportsTrash(resource: unknown): boolean {

@@ -235,26 +235,46 @@ test('renders an embedded profile with its contextual label instead of the club 
   )
 })
 
-test('invalidates the cached public profile after a Payload update', async ({ page }) => {
-  await page.goto(`/members/${ownerProfile.slug}`)
-  await expect(page.getByRole('heading', { level: 1, name: ownerPublicName })).toBeVisible()
+test(
+  'invalidates the cached public profile after a Payload update',
+  { tag: '@public-cache' },
+  async ({ browser, page }) => {
+    const profilePath = `/members/${ownerProfile.slug}`
+    const originalHeading = page.getByRole('heading', { level: 1, name: ownerPublicName })
+    await page.goto(profilePath)
+    await expect(originalHeading).toBeVisible()
 
-  await login({ page, user: administratorTestUser })
-  const updateResponse = await updatePublicProfileName(
-    page,
-    ownerProfile.id,
-    'Alicja Po Aktualizacji Cache',
-  )
-  expect(updateResponse.ok, updateResponse.body).toBe(true)
+    const payload = await getPayload({ config })
+    await payload.update({
+      collection: 'member-profiles',
+      context: { skipPublicCacheInvalidation: true },
+      data: { _status: 'published', publicName: 'Alicja Bez Unieważnienia Cache' },
+      draft: false,
+      id: ownerProfile.id,
+      overrideAccess: true,
+    })
 
-  await page.goto(`/members/${ownerProfile.slug}`)
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Alicja Po Aktualizacji Cache' }),
-  ).toBeVisible()
+    await page.reload()
+    await expect(originalHeading).toBeVisible()
 
-  const restoreResponse = await updatePublicProfileName(page, ownerProfile.id, ownerPublicName)
-  expect(restoreResponse.ok, restoreResponse.body).toBe(true)
-})
+    const administratorPage = await browser.newPage({ baseURL: test.info().project.use.baseURL })
+    try {
+      const updatedName = 'Alicja Po Aktualizacji Cache'
+      await login({ page: administratorPage, user: administratorTestUser })
+      const updateResponse = await updatePublicProfileName(
+        administratorPage,
+        ownerProfile.id,
+        updatedName,
+      )
+      expect(updateResponse.ok, updateResponse.body).toBe(true)
+
+      await page.reload()
+      await expect(page.getByRole('heading', { level: 1, name: updatedName })).toBeVisible()
+    } finally {
+      await administratorPage.close()
+    }
+  },
+)
 
 async function updatePublicProfileName(
   page: import('@playwright/test').Page,
@@ -289,9 +309,11 @@ test('opens a member profile from account and publishes the automatically create
   await page.locator('.wkf-user-menu__popup').getByText('Wizytówka', { exact: true }).click()
   await expect(page).toHaveURL('/admin/profile')
   await expect(page.getByRole('button', { name: 'Podstawowe informacje' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Działalność klubowa' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Działalność klubowa' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Kontakt' })).toBeVisible()
   await expect(page.locator('#field-publicName')).toHaveValue(profileCreatorUser.displayName)
+  await expect(page.getByRole('textbox', { name: 'Funkcje' })).toBeVisible()
+  await expect(page.getByText('Aktywności klubowe', { exact: true })).toHaveCount(0)
 
   await page.locator('#field-publicName').fill('Celina E2E')
   await page.getByRole('button', { name: /^Opublikuj/ }).click()
@@ -310,6 +332,9 @@ test('shows the profile address and automatically resolved display locations in 
   await login({ page, user: profileOwnerUser })
   await page.goto('/admin/profile')
 
+  await expect(page.getByRole('textbox', { name: 'Funkcje' })).toHaveValue(
+    'Opiekunka nowych klubowiczów',
+  )
   await expect(page.locator('.wkf-profile-sidebar-field')).toContainText(
     `/members/${ownerProfile.slug}`,
   )

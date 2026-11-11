@@ -60,13 +60,13 @@ describe('listing conditions', () => {
       'significantDate',
     ])
     expect(listingConditionOperatorsByField).toEqual({
-      category: ['inSubtree', 'equals'],
-      eventCycle: ['equals'],
+      category: ['inSubtree', 'equals', 'isEmpty'],
+      eventCycle: ['equals', 'isEmpty'],
       eventTime: ['equals'],
-      parentPage: ['equals'],
+      parentPage: ['equals', 'isEmpty'],
       relatedTo: ['contains'],
       significantDate: ['notOlderThan', 'before', 'after', 'between'],
-      tag: ['contains'],
+      tag: ['contains', 'isEmpty'],
       title: ['contains', 'equals'],
     })
     expect(listingConditionSupportedSources.parentPage).toEqual(['pages'])
@@ -89,10 +89,15 @@ describe('listing conditions', () => {
     expect(getListingConditionOperatorLabel('title', 'equals')).toBe('to')
     expect(getListingConditionOperatorLabel('category', 'inSubtree')).toBe('to')
     expect(getListingConditionOperatorLabel('category', 'equals')).toBe('to dokładnie')
+    expect(getListingConditionOperatorLabel('category', 'isEmpty')).toBe('jest puste')
   })
 
   it.each<ListingConditionInput>([
     { field: 'title', operator: 'contains', textValue: 'RPG' },
+    { field: 'category', operator: 'isEmpty' },
+    { field: 'tag', operator: 'isEmpty' },
+    { field: 'parentPage', operator: 'isEmpty' },
+    { field: 'eventCycle', operator: 'isEmpty' },
     {
       field: 'category',
       operator: 'inSubtree',
@@ -158,6 +163,17 @@ describe('listing conditions', () => {
 
   it('rejects invalid pairs, values, relationship types, duplicates, and inactive conditions', () => {
     expect(validate([{ field: 'tag', operator: 'equals' }])).toBeTypeOf('string')
+    expect(validate([{ field: 'title', operator: 'isEmpty' }])).toBeTypeOf('string')
+    expect(
+      validate([
+        { field: 'tag', operator: 'isEmpty' },
+        {
+          field: 'tag',
+          operator: 'isEmpty',
+          relationshipValue: { relationTo: 'tags', value: 1 },
+        },
+      ]),
+    ).toContain('duplikatem')
     expect(validate([{ field: 'title', operator: 'contains', textValue: '  ' }])).toBeTypeOf(
       'string',
     )

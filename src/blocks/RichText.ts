@@ -1,5 +1,6 @@
 import type { Block } from 'payload'
 
+import { createStyleField, createTextStyleOptions } from '@/modules/content/text-styles'
 import { createContentPresentationFields } from '@/modules/content/content-presentation'
 
 export const RichTextBlock: Block = {
@@ -19,18 +20,12 @@ export const RichTextBlock: Block = {
   },
   fields: [
     ...createContentPresentationFields({
-      leadingField: {
+      leadingField: createStyleField({
         name: 'textStyle',
-        type: 'select',
-        admin: { isClearable: false, width: '33.333%' },
+        admin: { width: '33.333%' },
         defaultValue: 'default',
-        label: 'Skala tekstu',
-        options: [
-          { label: 'Standardowa', value: 'default' },
-          { label: 'Wprowadzenie', value: 'lead' },
-          { label: 'Notatka', value: 'note' },
-        ],
-      },
+        options: createTextStyleOptions({ basic: 'default', compact: 'note', basicFirst: true }),
+      }),
     }),
     {
       name: 'content',

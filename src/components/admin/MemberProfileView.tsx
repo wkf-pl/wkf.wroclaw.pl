@@ -7,7 +7,6 @@ import {
 } from '@payloadcms/ui'
 import { buildFormState } from '@payloadcms/ui/utilities/buildFormState'
 import { DocumentHeader } from '@payloadcms/next/rsc'
-import { DefaultTemplate } from '@payloadcms/next/templates'
 import { notFound, redirect } from 'next/navigation'
 import type { AdminViewServerProps, SanitizedCollectionPermission } from 'payload'
 import { formatAdminURL } from 'payload/shared'
@@ -17,6 +16,7 @@ import { skipPublicCacheInvalidationContextKey } from '@/modules/cache/public-da
 import { getUserIdentity } from '@/modules/membership/permission-resolution'
 import { userHasRole } from '@/modules/membership/user-roles'
 
+import { AdminViewTemplate } from './AdminViewTemplate'
 import { MemberProfilePublicationStatusSync } from './MemberProfilePublicationStatusSync'
 
 async function findOwnedProfile({
@@ -85,6 +85,7 @@ export async function MemberProfileView({
   initPageResult,
   params,
   searchParams,
+  viewActions,
 }: AdminViewServerProps) {
   const { permissions, req } = initPageResult
   const { payload, user } = req
@@ -199,24 +200,19 @@ export async function MemberProfileView({
   )
 
   return (
-    <DefaultTemplate
+    <AdminViewTemplate
       className="member-profile-account"
       collectionSlug="member-profiles"
       docID={profile.id}
       documentSubViewType="default"
-      i18n={req.i18n}
-      locale={initPageResult.locale}
+      initPageResult={initPageResult}
       params={params}
-      payload={payload}
-      permissions={permissions}
-      req={req}
       searchParams={searchParams}
       user={user}
-      viewActions={[]}
+      viewActions={viewActions}
       viewType="document"
-      visibleEntities={initPageResult.visibleEntities}
     >
       {document}
-    </DefaultTemplate>
+    </AdminViewTemplate>
   )
 }

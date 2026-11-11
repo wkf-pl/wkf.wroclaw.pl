@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import { Pages } from '@/collections/Pages'
 import { Posts } from '@/collections/Posts'
+import { PageTemplates } from '@/collections/PageTemplates'
 import {
+  appendPageTemplatePreviewContext,
+  createPageTemplateDraftPreviewURL,
   createGlobalDraftPreviewURL,
   getSafePreviewExitPath,
+  shouldRenderPageTemplate,
   parseDraftPreviewTarget,
 } from '@/modules/content/draft-preview'
 
@@ -22,11 +26,12 @@ async function generatePreviewURL(
 }
 
 describe('draft preview', () => {
-  it('uses the save-before-preview button for pages and posts', () => {
+  it('uses the save-before-preview button for page templates, pages, and posts', () => {
     const previewButton = '/components/admin/DraftPreviewButton#DraftPreviewButton'
 
     expect(Pages.admin?.components?.edit?.PreviewButton).toBe(previewButton)
     expect(Posts.admin?.components?.edit?.PreviewButton).toBe(previewButton)
+    expect(PageTemplates.admin?.components?.edit?.PreviewButton).toBe(previewButton)
   })
 
   it('configures internal preview URLs for saved pages and posts', async () => {
@@ -75,6 +80,71 @@ describe('draft preview', () => {
     expect(
       parseDraftPreviewTarget(new URLSearchParams('global=navigation&collection=pages&slug=o-nas')),
     ).toBeNull()
+  })
+
+  it('recognizes fixed page template targets and enables preview for implemented renderers', () => {
+    expect(parseDraftPreviewTarget(new URLSearchParams('pageTemplate=event-detail'))).toEqual({
+      pageTemplate: 'event-detail',
+    })
+    expect(parseDraftPreviewTarget(new URLSearchParams('pageTemplate=unknown'))).toBeNull()
+    expect(
+      parseDraftPreviewTarget(
+        new URLSearchParams('pageTemplate=event-detail&collection=events&slug=test'),
+      ),
+    ).toBeNull()
+    expect(createPageTemplateDraftPreviewURL('event-detail')).toBe(
+      '/preview?pageTemplate=event-detail',
+    )
+    expect(createPageTemplateDraftPreviewURL('events-index')).toBe(
+      '/preview?pageTemplate=events-index',
+    )
+    expect(createPageTemplateDraftPreviewURL('blog-index')).toBe('/preview?pageTemplate=blog-index')
+    expect(createPageTemplateDraftPreviewURL('members-index')).toBe(
+      '/preview?pageTemplate=members-index',
+    )
+    expect(createPageTemplateDraftPreviewURL('unknown')).toBeNull()
+  })
+
+  it('previews a draft template independently from its public rendering mode', () => {
+    const previewSearchParameters = {
+      pageTemplatePreview: 'event-detail',
+    }
+
+    expect(appendPageTemplatePreviewContext('/events/test', 'event-detail')).toBe(
+      '/events/test?pageTemplatePreview=event-detail',
+    )
+    expect(
+      shouldRenderPageTemplate({
+        isDraftPreview: true,
+        renderingMode: 'legacy',
+        searchParams: previewSearchParameters,
+        templateKey: 'event-detail',
+      }),
+    ).toBe(true)
+    expect(
+      shouldRenderPageTemplate({
+        isDraftPreview: true,
+        renderingMode: 'template',
+        searchParams: {},
+        templateKey: 'event-detail',
+      }),
+    ).toBe(false)
+    expect(
+      shouldRenderPageTemplate({
+        isDraftPreview: false,
+        renderingMode: 'template',
+        searchParams: {},
+        templateKey: 'event-detail',
+      }),
+    ).toBe(true)
+    expect(
+      shouldRenderPageTemplate({
+        isDraftPreview: false,
+        renderingMode: 'legacy',
+        searchParams: previewSearchParameters,
+        templateKey: 'event-detail',
+      }),
+    ).toBe(false)
   })
 
   it('accepts only local paths when leaving preview', () => {

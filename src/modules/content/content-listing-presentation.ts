@@ -1,7 +1,11 @@
 import type { Category, Event, EventCycle, Media, Tag } from '@/payload-types'
 import type { PublicContentListItem } from '@/modules/content/content-listing-sources'
 import { getDocumentTypeLabel } from '@/modules/documents/document-types'
-import { formatEventDate, formatEventStartDate } from '@/modules/events/presentation'
+import {
+  formatEventDate,
+  formatEventStartDate,
+  getPartnerRoleLabel,
+} from '@/modules/events/presentation'
 import { getMemberProfileImageURL } from '@/modules/members/member-profile-image'
 import { extractMemberProfileText } from '@/modules/members/rich-text'
 
@@ -166,15 +170,22 @@ export function getContentListingPresentation(
         title: item.document.title,
         url: item.url,
       }
-    case 'partners':
+    case 'partners': {
+      const rolesLabel =
+        view === 'tiles' || view === 'compact'
+          ? item.partnerRoles?.map(getPartnerRoleLabel).join(', ')
+          : undefined
+
       return {
+        contextLabel: item.contextLabel?.trim() || undefined,
         excerpt: createPlainExcerpt(item.document.excerpt),
         facts: [],
         image: createMediaImage(item.document.heroImage),
-        kindLabel: 'Partner',
+        kindLabel: rolesLabel || 'Partner',
         title: item.document.name,
         url: item.url,
       }
+    }
     case 'posts':
       return {
         category: item.document.category,
