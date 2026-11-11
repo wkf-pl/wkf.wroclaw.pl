@@ -441,7 +441,7 @@ test('previews a draft page template before enabling template rendering publicly
   await inversionSwitch.check()
   const textStyle = page.locator('#field-informationPanel__0__items__1__style')
   await textStyle.getByRole('combobox').click()
-  await page.locator('.rs__menu').getByText('Etykieta informacyjna', { exact: true }).click()
+  await page.locator('.rs__menu').getByText('Etykieta', { exact: true }).click()
 
   await page.getByRole('button', { name: 'Treść', exact: true }).click()
   const contentField = page.locator('#field-content')
@@ -482,7 +482,7 @@ test('previews a draft page template before enabling template rendering publicly
   await expect(hangingIcon).toHaveCSS('background-color', 'rgb(243, 163, 19)')
   await expect(hangingIcon.locator('.rasterIcon')).toHaveCSS('color', 'rgb(0, 13, 23)')
   const iconCaption = informationPanel.getByText('Termin wydarzenia', { exact: true })
-  await expect(iconCaption).toHaveClass(/pageTemplateFieldRowText--informationLabel/)
+  await expect(iconCaption).toHaveClass(/\bpageTemplateBadge\b/)
   await expect(iconCaption).toHaveCSS('text-transform', 'uppercase')
   await expect(informationPanel.getByText('Kiedy', { exact: true })).toHaveCount(0)
   for (const width of [1280, 390]) {

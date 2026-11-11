@@ -127,6 +127,12 @@ jobs:
           PLAYWRIGHT_SHARD: ${{ matrix.shard }}/4
         run: pnpm test:e2e:ci
 
+      - name: Verify public cache invalidation
+        if: matrix.shard == 1
+        env:
+          PLAYWRIGHT_PUBLIC_CACHE: 'true'
+        run: pnpm test:e2e:ci
+
       - name: Upload Playwright diagnostics
         if: failure()
         uses: actions/upload-artifact@v7

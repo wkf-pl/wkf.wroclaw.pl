@@ -3,11 +3,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 
 import config from '@/payload.config'
+import { down as downPageTemplateComposition } from '../../migrations/20261107_002214_page_template_composition'
 import {
-  down as downPageTemplateComposition,
-  up as upPageTemplateComposition,
-} from '../../migrations/20261107_002214_page_template_composition'
-import { pageTemplateCompositionSchemaExists } from '../helpers/page-template-composition-migration'
+  pageTemplateCompositionSchemaExists,
+  setPageTemplateCompositionSchema,
+} from '../helpers/page-template-composition-migration'
 
 const liveBlockID = 'page-template-event-actions-migration'
 const versionBlockUUID = 'page-template-event-actions-migration-version'
@@ -73,15 +73,13 @@ beforeAll(async () => {
 afterAll(async () => {
   if (!payload) return
   await removeFixtures()
-  if (!(await pageTemplateCompositionSchemaExists(payload.db.drizzle))) {
-    await upPageTemplateComposition(migrationArguments())
-  }
+  await setPageTemplateCompositionSchema(migrationArguments(), true)
 })
 
 describe('page template composition migration', () => {
   it('converts legacy event actions in live and versioned templates and blocks lossy rollback', async () => {
     await removeFixtures()
-    await downPageTemplateComposition(migrationArguments())
+    await setPageTemplateCompositionSchema(migrationArguments(), false)
 
     await payload.db.drizzle.execute(sql`
       INSERT INTO "page_templates_blocks_current_item_field"
@@ -100,7 +98,7 @@ describe('page template composition migration', () => {
       LIMIT 1
     `)
 
-    await upPageTemplateComposition(migrationArguments())
+    await setPageTemplateCompositionSchema(migrationArguments(), true)
 
     const liveActions = await payload.db.drizzle.execute(sql`
       SELECT item."_order" AS "order", item."context_action"::text AS "contextAction",
@@ -153,6 +151,22 @@ describe('page template composition migration', () => {
     })
 
     await removeFixtures()
+
+    const currentFieldOptions = await payload.db.drizzle.execute(sql`
+      SELECT enumtypid::regtype::text AS "type", enumlabel AS "value"
+      FROM pg_enum
+      WHERE enumtypid IN (
+        'enum_page_templates_blocks_current_item_field_field'::regtype,
+        'enum__page_templates_v_blocks_current_item_field_field'::regtype
+      ) AND enumlabel IN ('contactTopics', 'location.city')
+      ORDER BY "type", "value"
+    `)
+    expect(currentFieldOptions.rows).toEqual([
+      { type: 'enum__page_templates_v_blocks_current_item_field_field', value: 'contactTopics' },
+      { type: 'enum__page_templates_v_blocks_current_item_field_field', value: 'location.city' },
+      { type: 'enum_page_templates_blocks_current_item_field_field', value: 'contactTopics' },
+      { type: 'enum_page_templates_blocks_current_item_field_field', value: 'location.city' },
+    ])
   })
 
   it('preserves icons stored only in a template version when rollback is attempted', async () => {

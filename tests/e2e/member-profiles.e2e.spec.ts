@@ -235,26 +235,46 @@ test('renders an embedded profile with its contextual label instead of the club 
   )
 })
 
-test('invalidates the cached public profile after a Payload update', async ({ page }) => {
-  await page.goto(`/members/${ownerProfile.slug}`)
-  await expect(page.getByRole('heading', { level: 1, name: ownerPublicName })).toBeVisible()
+test(
+  'invalidates the cached public profile after a Payload update',
+  { tag: '@public-cache' },
+  async ({ browser, page }) => {
+    const profilePath = `/members/${ownerProfile.slug}`
+    const originalHeading = page.getByRole('heading', { level: 1, name: ownerPublicName })
+    await page.goto(profilePath)
+    await expect(originalHeading).toBeVisible()
 
-  await login({ page, user: administratorTestUser })
-  const updateResponse = await updatePublicProfileName(
-    page,
-    ownerProfile.id,
-    'Alicja Po Aktualizacji Cache',
-  )
-  expect(updateResponse.ok, updateResponse.body).toBe(true)
+    const payload = await getPayload({ config })
+    await payload.update({
+      collection: 'member-profiles',
+      context: { skipPublicCacheInvalidation: true },
+      data: { _status: 'published', publicName: 'Alicja Bez Unieważnienia Cache' },
+      draft: false,
+      id: ownerProfile.id,
+      overrideAccess: true,
+    })
 
-  await page.goto(`/members/${ownerProfile.slug}`)
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Alicja Po Aktualizacji Cache' }),
-  ).toBeVisible()
+    await page.reload()
+    await expect(originalHeading).toBeVisible()
 
-  const restoreResponse = await updatePublicProfileName(page, ownerProfile.id, ownerPublicName)
-  expect(restoreResponse.ok, restoreResponse.body).toBe(true)
-})
+    const administratorPage = await browser.newPage({ baseURL: test.info().project.use.baseURL })
+    try {
+      const updatedName = 'Alicja Po Aktualizacji Cache'
+      await login({ page: administratorPage, user: administratorTestUser })
+      const updateResponse = await updatePublicProfileName(
+        administratorPage,
+        ownerProfile.id,
+        updatedName,
+      )
+      expect(updateResponse.ok, updateResponse.body).toBe(true)
+
+      await page.reload()
+      await expect(page.getByRole('heading', { level: 1, name: updatedName })).toBeVisible()
+    } finally {
+      await administratorPage.close()
+    }
+  },
+)
 
 async function updatePublicProfileName(
   page: import('@playwright/test').Page,
