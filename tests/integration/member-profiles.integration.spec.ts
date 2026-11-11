@@ -1,5 +1,6 @@
 import sharp from 'sharp'
-import { getPayload, type Payload } from 'payload'
+import { sql } from '@payloadcms/db-postgres'
+import { createLocalReq, getPayload, type Payload } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { findMemberProfileUsages } from '@/modules/members/member-profile-usages'
@@ -10,6 +11,10 @@ import {
 import { createRichTextDocument } from '@/modules/members/rich-text'
 import type { MemberProfile, Page, Role, User } from '@/payload-types'
 import config from '@/payload.config'
+import {
+  down as restoreClubActivitiesColumn,
+  up as mergeClubActivitiesIntoAbout,
+} from '../../migrations/20261110_222548_remove_member_profile_club_activities'
 
 const testEmails = ['member-profile-owner@example.invalid', 'member-profile-other@example.invalid']
 
@@ -114,6 +119,58 @@ afterAll(async () => {
 })
 
 describe('member profiles integration', () => {
+  it('merges club activities into the bio of existing profiles and versions', async () => {
+    const about = createRichTextDocument(['Oryginalny opis'])
+    const activities = createRichTextDocument(['Opis działalności'])
+    activities.root.children[0].children[0].format = 1
+    const req = await createLocalReq({}, payload)
+
+    await expect(
+      payload.db.drizzle.transaction(async (db) => {
+        await restoreClubActivitiesColumn({ db, payload, req })
+        await db.execute(sql`
+          UPDATE "member_profiles"
+          SET "about" = ${JSON.stringify(about)}::jsonb,
+              "club_activities" = ${JSON.stringify(activities)}::jsonb,
+              "club_function" = 'Opiekunka'
+          WHERE "id" = ${profile.id};
+        `)
+        await db.execute(sql`
+          UPDATE "_member_profiles_v"
+          SET "version_about" = NULL,
+              "version_club_activities" = ${JSON.stringify(activities)}::jsonb,
+              "version_club_function" = 'Koordynatorka'
+          WHERE "parent_id" = ${profile.id};
+        `)
+
+        await mergeClubActivitiesIntoAbout({ db, payload, req })
+
+        const profiles = await db.execute(sql`
+          SELECT "about", "club_function" FROM "member_profiles" WHERE "id" = ${profile.id};
+        `)
+        expect(profiles.rows).toEqual([
+          {
+            about: {
+              root: {
+                ...about.root,
+                children: [...about.root.children, ...activities.root.children],
+              },
+            },
+            club_function: 'Opiekunka',
+          },
+        ])
+        const versions = await db.execute(sql`
+          SELECT "version_about", "version_club_function"
+          FROM "_member_profiles_v" WHERE "parent_id" = ${profile.id};
+        `)
+        expect(versions.rows).toEqual([
+          { version_about: activities, version_club_function: 'Koordynatorka' },
+        ])
+        db.rollback()
+      }),
+    ).rejects.toThrow('Rollback')
+  })
+
   it('enforces one profile per owner and scopes drafts to their owner', async () => {
     await expect(
       payload.create({

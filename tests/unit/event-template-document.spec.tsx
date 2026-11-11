@@ -164,6 +164,49 @@ const template = {
 } as PageTemplate
 
 describe('event page template document', () => {
+  it.each([
+    ['badge', 'pageTemplateBadge'],
+    ['emphasizedBadge', 'pageTemplateBadge pageTemplateBadge--emphasizedBadge'],
+  ] as const)(
+    'renders the current item description with the %s style',
+    async (variant, classes) => {
+      const rendered = await EventTemplateDocument({
+        event,
+        searchParams: {},
+        template: {
+          ...template,
+          hero: template.hero?.map((block) =>
+            block.blockType === 'currentItemField' && block.field === 'excerpt'
+              ? { ...block, variant }
+              : block,
+          ),
+        },
+      })
+      const markup = await new Response(await renderToReadableStream(rendered)).text()
+      expect(markup).toContain(
+        `<p class="pageTemplateText pageTemplateText--${variant} ${classes}">Opis wydarzenia z Hero.</p>`,
+      )
+    },
+  )
+
+  it('renders a nested field and a date outside their original presentation', async () => {
+    const rendered = await EventTemplateDocument({
+      event,
+      searchParams: {},
+      template: {
+        ...template,
+        hero: [
+          { blockType: 'currentItemField', field: 'location.city', variant: 'body' },
+          { blockType: 'currentItemField', field: 'startAt', variant: 'compact' },
+        ],
+      },
+    })
+    const markup = await new Response(await renderToReadableStream(rendered)).text()
+
+    expect(markup).toContain('<p class="pageTemplateText pageTemplateText--body">Wrocław</p>')
+    expect(markup).toContain('<time dateTime="2040-02-18T16:00:00.000Z">18 lutego 2040')
+  })
+
   it('places configured event fields in the hero, information panel, and content regions', async () => {
     const rendered = await EventTemplateDocument({
       event,

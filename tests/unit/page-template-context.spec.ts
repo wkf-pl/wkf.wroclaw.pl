@@ -132,4 +132,32 @@ describe('page template context', () => {
       },
     ])
   })
+
+  it('resolves partners from the cycle defaults with their roles and contribution labels', () => {
+    const cycleWithPartners = {
+      ...cycle,
+      eventDefaults: {
+        ...cycle.eventDefaults,
+        partners: [
+          { contribution: '  Udostępnienie sali  ', partner: partner.id, roles: ['venueHost'] },
+          { partner: { ...partner, id: 15 }, roles: ['partner'] },
+        ],
+      },
+    } satisfies EventCycle
+
+    expect(resolvePageTemplateListingItems('eventPartners', cycleWithPartners)).toEqual([
+      {
+        contextLabel: 'Udostępnienie sali',
+        partnerRoles: ['venueHost'],
+        relationTo: 'partners',
+        value: partner.id,
+      },
+      {
+        contextLabel: null,
+        partnerRoles: ['partner'],
+        relationTo: 'partners',
+        value: { ...partner, id: 15 },
+      },
+    ])
+  })
 })

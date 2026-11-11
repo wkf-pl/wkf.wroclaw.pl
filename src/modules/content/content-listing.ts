@@ -25,9 +25,10 @@ import {
   listingConditionOperatorsByField,
   listingConditionSupportedSources,
   allListingSources,
+  createListingTagSearchIndex,
   normalizeListingTitle,
   type ContentListingSource,
-  type ContentListingReference,
+  type CurrentListingTarget,
   type ListingConditionField,
   type ListingConditionInput,
   type ListingConditionOperator,
@@ -46,7 +47,7 @@ export type { ContentListingDocument, ContentListingSource, PublicContentListIte
 
 export type FindPublicContentOptions = {
   conditions?: ListingConditionInput[] | null
-  currentTarget?: ContentListingReference
+  currentTarget?: CurrentListingTarget
   eventTimeScope?: 'eventsIndex'
   manualItems?: ManualContentReference[]
   page: number
@@ -124,7 +125,7 @@ async function findPublicContentUncached(
 }
 
 const findPublicContentCached = cachePublicData(
-  'public-content-listing',
+  'public-content-listing-v2',
   findPublicContentUncached,
   {
     revalidate: 300,
@@ -279,15 +280,22 @@ function createConditionPredicate(condition: PreparedListingCondition): Where {
         ? { normalizedTitle: { equals: condition.textValue } }
         : { normalizedTitle: { contains: condition.textValue } }
     case 'category':
+      if (condition.operator === 'isEmpty') return { category: { exists: false } }
       return condition.operator === 'inSubtree'
         ? { category: { in: condition.relationshipIds ?? [] } }
         : { category: { equals: condition.relationshipId } }
     case 'tag':
-      return { tagSearchIndex: { contains: `|${condition.relationshipId}|` } }
+      return condition.operator === 'isEmpty'
+        ? { tagSearchIndex: { equals: createListingTagSearchIndex([]) } }
+        : { tagSearchIndex: { contains: `|${condition.relationshipId}|` } }
     case 'parentPage':
-      return { parentPage: { equals: condition.relationshipId } }
+      return condition.operator === 'isEmpty'
+        ? { parentPage: { exists: false } }
+        : { parentPage: { equals: condition.relationshipId } }
     case 'eventCycle':
-      return { eventCycle: { equals: condition.relationshipId } }
+      return condition.operator === 'isEmpty'
+        ? { eventCycle: { exists: false } }
+        : { eventCycle: { equals: condition.relationshipId } }
     case 'eventTime': {
       const now = new Date().toISOString()
       return condition.eventTimeValue === 'upcoming'
@@ -359,7 +367,7 @@ function createSignificantDateWhere(condition: PreparedListingCondition): Where 
 
 async function prepareListingConditions(
   values: readonly ListingConditionInput[],
-  currentTarget?: ContentListingReference,
+  currentTarget?: CurrentListingTarget,
 ): Promise<PreparedListingCondition[]> {
   const conditions = await Promise.all(
     values.map((value) => prepareListingCondition(value, currentTarget)),
@@ -369,7 +377,7 @@ async function prepareListingConditions(
 
 async function prepareListingCondition(
   value: ListingConditionInput,
-  currentTarget?: ContentListingReference,
+  currentTarget?: CurrentListingTarget,
 ): Promise<PreparedListingCondition> {
   if (
     !isListingConditionField(value.field) ||
@@ -378,6 +386,8 @@ async function prepareListingCondition(
   ) {
     throw new Error('Invalid content listing condition.')
   }
+  if (value.operator === 'isEmpty') return { field: value.field, operator: value.operator }
+
   if (value.field === 'relatedTo' && !isListingRelatedTargetMode(value.relatedTargetMode)) {
     throw new Error('Invalid content listing related-target mode.')
   }
@@ -421,6 +431,23 @@ async function prepareListingCondition(
     }
   }
 
+  if (value.field === 'relatedTo' && value.relatedTargetMode === 'current' && currentTarget) {
+    if (currentTarget.relationTo === 'categories') {
+      return prepareListingCondition({
+        field: 'category',
+        operator: 'inSubtree',
+        relationshipValue: currentTarget,
+      })
+    }
+    if (currentTarget.relationTo === 'tags') {
+      return prepareListingCondition({
+        field: 'tag',
+        operator: 'contains',
+        relationshipValue: currentTarget,
+      })
+    }
+  }
+
   const condition: PreparedListingCondition = { field: value.field, operator: value.operator }
   switch (value.field) {
     case 'title':
@@ -446,11 +473,11 @@ async function prepareListingCondition(
       if (value.relatedTargetMode === 'selected' && !reference) {
         throw new Error('Invalid content listing related target.')
       }
-      const targetID = reference ? getFormRelationshipId(reference.value) : undefined
-      if (reference && (!isListingSource(reference.relationTo) || targetID === undefined)) {
-        throw new Error('Invalid content listing related target.')
-      }
       if (reference) {
+        const targetID = getFormRelationshipId(reference.value)
+        if (!isListingSource(reference.relationTo) || targetID === undefined) {
+          throw new Error('Invalid content listing related target.')
+        }
         const numericTargetID = Number(targetID)
         if (!Number.isInteger(numericTargetID) || numericTargetID < 1) {
           throw new Error('Invalid content listing related target.')

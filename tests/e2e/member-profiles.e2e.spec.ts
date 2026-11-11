@@ -289,9 +289,11 @@ test('opens a member profile from account and publishes the automatically create
   await page.locator('.wkf-user-menu__popup').getByText('Wizytówka', { exact: true }).click()
   await expect(page).toHaveURL('/admin/profile')
   await expect(page.getByRole('button', { name: 'Podstawowe informacje' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Działalność klubowa' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Działalność klubowa' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Kontakt' })).toBeVisible()
   await expect(page.locator('#field-publicName')).toHaveValue(profileCreatorUser.displayName)
+  await expect(page.getByRole('textbox', { name: 'Funkcje' })).toBeVisible()
+  await expect(page.getByText('Aktywności klubowe', { exact: true })).toHaveCount(0)
 
   await page.locator('#field-publicName').fill('Celina E2E')
   await page.getByRole('button', { name: /^Opublikuj/ }).click()
@@ -310,6 +312,9 @@ test('shows the profile address and automatically resolved display locations in 
   await login({ page, user: profileOwnerUser })
   await page.goto('/admin/profile')
 
+  await expect(page.getByRole('textbox', { name: 'Funkcje' })).toHaveValue(
+    'Opiekunka nowych klubowiczów',
+  )
   await expect(page.locator('.wkf-profile-sidebar-field')).toContainText(
     `/members/${ownerProfile.slug}`,
   )

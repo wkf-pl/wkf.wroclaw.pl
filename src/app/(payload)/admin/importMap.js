@@ -29,6 +29,8 @@ import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997e
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { RichTextBlockLabel as RichTextBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
+import { FixedToolbarFeatureClient as FixedToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+import { FieldRowTextBlockLabel as FieldRowTextBlockLabel_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
 import { RasterIconPickerField as RasterIconPickerField_50026296e49ca6acd59e010c936d9d2a } from '../../../components/admin/RasterIconPickerField'
 import { HeadingBlockLabel as HeadingBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { PageTemplateContextActionSelect as PageTemplateContextActionSelect_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
@@ -37,14 +39,8 @@ import { ActionLinksBlockLabel as ActionLinksBlockLabel_d53c993bb109710411f82eaa
 import { CurrentItemFieldSelect as CurrentItemFieldSelect_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
 import { CurrentItemFieldVariantSelect as CurrentItemFieldVariantSelect_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
 import { CurrentItemFieldBlockLabel as CurrentItemFieldBlockLabel_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
-import { FixedToolbarFeatureClient as FixedToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
-import { FieldRowTextBlockLabel as FieldRowTextBlockLabel_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
 import { PageTemplateIconBlockLabel as PageTemplateIconBlockLabel_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
 import { CurrentItemFieldRowBlockLabel as CurrentItemFieldRowBlockLabel_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
-import { ColumnLayoutTabsField as ColumnLayoutTabsField_432a355624980b16474727ea268404c1 } from '../../../components/admin/TabbedLayoutField'
-import { ColumnLayoutBlockLabel as ColumnLayoutBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
-import { SectionGroupTabsField as SectionGroupTabsField_432a355624980b16474727ea268404c1 } from '../../../components/admin/TabbedLayoutField'
-import { SectionGroupBlockLabel as SectionGroupBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { CardBlockLabel as CardBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { PageTemplateContextListingRelationSelect as PageTemplateContextListingRelationSelect_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
 import { ListingManualItemField as ListingManualItemField_fe5fa4f24132208cb7ca80f66614d337 } from '../../../components/admin/ListingManualItemField'
@@ -63,10 +59,14 @@ import { ContentCalendarBlockLabel as ContentCalendarBlockLabel_d53c993bb1097104
 import { MediaGalleryBlockLabel as MediaGalleryBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { AttachmentsBlockLabel as AttachmentsBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { CurrentItemContentBlockLabel as CurrentItemContentBlockLabel_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
+import { ColumnLayoutTabsField as ColumnLayoutTabsField_432a355624980b16474727ea268404c1 } from '../../../components/admin/TabbedLayoutField'
+import { ColumnLayoutBlockLabel as ColumnLayoutBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { NavigationItemRowLabel as NavigationItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { TabbedContentTabRowLabel as TabbedContentTabRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { TabbedContentTabsField as TabbedContentTabsField_432a355624980b16474727ea268404c1 } from '../../../components/admin/TabbedLayoutField'
 import { TabbedContentBlockLabel as TabbedContentBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
+import { SectionGroupTabsField as SectionGroupTabsField_432a355624980b16474727ea268404c1 } from '../../../components/admin/TabbedLayoutField'
+import { SectionGroupBlockLabel as SectionGroupBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { PageTemplateDescription as PageTemplateDescription_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
 import { DraftPreviewButton as DraftPreviewButton_4de757febecdd22106568bfa9952c5dd } from '../../../components/admin/DraftPreviewButton'
 import { HierarchyPath as HierarchyPath_6311b6033928ec6e076fdd24567b1bb0 } from '../../../components/admin/HierarchyPath'
@@ -146,6 +146,8 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "/components/admin/ContentBlockLabel#RichTextBlockLabel": RichTextBlockLabel_d53c993bb109710411f82eaaf564eeff,
+  "@payloadcms/richtext-lexical/client#FixedToolbarFeatureClient": FixedToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+  "/components/admin/PageTemplateFields#FieldRowTextBlockLabel": FieldRowTextBlockLabel_f1adb3d66022274ca5caca04eb1122e1,
   "/components/admin/RasterIconPickerField#RasterIconPickerField": RasterIconPickerField_50026296e49ca6acd59e010c936d9d2a,
   "/components/admin/ContentBlockLabel#HeadingBlockLabel": HeadingBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/PageTemplateFields#PageTemplateContextActionSelect": PageTemplateContextActionSelect_f1adb3d66022274ca5caca04eb1122e1,
@@ -154,14 +156,8 @@ export const importMap = {
   "/components/admin/PageTemplateFields#CurrentItemFieldSelect": CurrentItemFieldSelect_f1adb3d66022274ca5caca04eb1122e1,
   "/components/admin/PageTemplateFields#CurrentItemFieldVariantSelect": CurrentItemFieldVariantSelect_f1adb3d66022274ca5caca04eb1122e1,
   "/components/admin/PageTemplateFields#CurrentItemFieldBlockLabel": CurrentItemFieldBlockLabel_f1adb3d66022274ca5caca04eb1122e1,
-  "@payloadcms/richtext-lexical/client#FixedToolbarFeatureClient": FixedToolbarFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
-  "/components/admin/PageTemplateFields#FieldRowTextBlockLabel": FieldRowTextBlockLabel_f1adb3d66022274ca5caca04eb1122e1,
   "/components/admin/PageTemplateFields#PageTemplateIconBlockLabel": PageTemplateIconBlockLabel_f1adb3d66022274ca5caca04eb1122e1,
   "/components/admin/PageTemplateFields#CurrentItemFieldRowBlockLabel": CurrentItemFieldRowBlockLabel_f1adb3d66022274ca5caca04eb1122e1,
-  "/components/admin/TabbedLayoutField#ColumnLayoutTabsField": ColumnLayoutTabsField_432a355624980b16474727ea268404c1,
-  "/components/admin/ContentBlockLabel#ColumnLayoutBlockLabel": ColumnLayoutBlockLabel_d53c993bb109710411f82eaaf564eeff,
-  "/components/admin/TabbedLayoutField#SectionGroupTabsField": SectionGroupTabsField_432a355624980b16474727ea268404c1,
-  "/components/admin/ContentBlockLabel#SectionGroupBlockLabel": SectionGroupBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ContentBlockLabel#CardBlockLabel": CardBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/PageTemplateFields#PageTemplateContextListingRelationSelect": PageTemplateContextListingRelationSelect_f1adb3d66022274ca5caca04eb1122e1,
   "/components/admin/ListingManualItemField#ListingManualItemField": ListingManualItemField_fe5fa4f24132208cb7ca80f66614d337,
@@ -180,10 +176,14 @@ export const importMap = {
   "/components/admin/ContentBlockLabel#MediaGalleryBlockLabel": MediaGalleryBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ContentBlockLabel#AttachmentsBlockLabel": AttachmentsBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/PageTemplateFields#CurrentItemContentBlockLabel": CurrentItemContentBlockLabel_f1adb3d66022274ca5caca04eb1122e1,
+  "/components/admin/TabbedLayoutField#ColumnLayoutTabsField": ColumnLayoutTabsField_432a355624980b16474727ea268404c1,
+  "/components/admin/ContentBlockLabel#ColumnLayoutBlockLabel": ColumnLayoutBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/DynamicRowLabel#NavigationItemRowLabel": NavigationItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/DynamicRowLabel#TabbedContentTabRowLabel": TabbedContentTabRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/TabbedLayoutField#TabbedContentTabsField": TabbedContentTabsField_432a355624980b16474727ea268404c1,
   "/components/admin/ContentBlockLabel#TabbedContentBlockLabel": TabbedContentBlockLabel_d53c993bb109710411f82eaaf564eeff,
+  "/components/admin/TabbedLayoutField#SectionGroupTabsField": SectionGroupTabsField_432a355624980b16474727ea268404c1,
+  "/components/admin/ContentBlockLabel#SectionGroupBlockLabel": SectionGroupBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/PageTemplateFields#PageTemplateDescription": PageTemplateDescription_f1adb3d66022274ca5caca04eb1122e1,
   "/components/admin/DraftPreviewButton#DraftPreviewButton": DraftPreviewButton_4de757febecdd22106568bfa9952c5dd,
   "/components/admin/HierarchyPath#HierarchyPath": HierarchyPath_6311b6033928ec6e076fdd24567b1bb0,

@@ -118,6 +118,7 @@ test('previews, publishes and reverts the events index template with legacy list
     await updateTemplate({ ...composition, _status: 'draft', renderingMode: 'legacy' }, true)
     await login({ page, user: administratorTestUser })
     await page.goto(`/admin/collections/page-templates/${originalTemplate.id}`)
+    await expect(page.getByRole('heading', { level: 1, name: 'Wydarzenia' })).toBeVisible()
     await expect(page.getByText('Element używany w podglądzie', { exact: true })).toHaveCount(0)
     const popup = page.waitForEvent('popup')
     await page.locator('#preview-button').click()

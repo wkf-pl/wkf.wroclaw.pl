@@ -351,6 +351,16 @@ describe('content listing index synchronization', () => {
   })
 
   it('clears an optional Event cycle relationship from the index', async () => {
+    const findStandaloneEvents = () =>
+      findPublicContent({
+        conditions: [{ field: 'eventCycle', operator: 'isEmpty' }],
+        page: 1,
+        pageSize: 12,
+        pagination: false,
+        sort: 'titleAscending',
+        sources: ['events'],
+      })
+
     const cycle = await fixture.payload.create({
       collection: 'event-cycles',
       data: {
@@ -412,6 +422,9 @@ describe('content listing index synchronization', () => {
         overrideAccess: true,
       })
       expect(await findListingIndex('events', event.id)).toMatchObject({ eventCycle: cycle.id })
+      expect((await findStandaloneEvents()).items.map(({ document }) => document.id)).not.toContain(
+        event.id,
+      )
 
       await fixture.payload.update({
         collection: 'events',
@@ -421,12 +434,15 @@ describe('content listing index synchronization', () => {
         overrideAccess: true,
       })
       expect(await findListingIndex('events', event.id)).toMatchObject({ eventCycle: null })
+      expect((await findStandaloneEvents()).items.map(({ document }) => document.id)).toContain(
+        event.id,
+      )
     } finally {
       await cleanupRelationshipFixtures()
     }
   })
 
-  it('projects typed related targets and filters by the current or selected element', async () => {
+  it('filters typed related targets and sorts mixed sources in Polish order before pagination', async () => {
     const partnerSlug = 'integration-related-listing-partner'
     const cycleSlug = 'integration-related-listing-cycle'
     const eventSlug = 'integration-related-listing-event'
@@ -468,7 +484,7 @@ describe('content listing index synchronization', () => {
           { blockType: 'richText', content: createLexicalDocument('Cycle related content') },
         ],
         slug: cycleSlug,
-        title: 'Related listing cycle',
+        title: 'Śpiewaj z WKF',
       },
       draft: false,
       overrideAccess: true,
@@ -493,7 +509,7 @@ describe('content listing index synchronization', () => {
         slug: eventSlug,
         startAt: '2031-09-10T16:00:00.000Z',
         timeMode: 'timed',
-        title: 'Related listing event',
+        title: 'ValHALLOWEEN v2',
       },
       draft: false,
       overrideAccess: true,
@@ -534,16 +550,26 @@ describe('content listing index synchronization', () => {
         relatedTargetSearchIndex: `|partners:${partner.id}|`,
       })
 
-      const partnerResult = await findPublicContent({
-        conditions: [{ field: 'relatedTo', operator: 'contains', relatedTargetMode: 'current' }],
-        currentTarget: { relationTo: 'partners', value: partner.id },
-        page: 1,
-        pageSize: 10,
-        pagination: false,
-        sort: 'titleAscending',
-        sources: ['events', 'event-cycles'],
-      })
-      expect(partnerResult.items.map((item) => item.kind)).toEqual(['event-cycles', 'events'])
+      const findPartnerListings = (page: number, sort: 'titleAscending' | 'titleDescending') =>
+        findPublicContent({
+          conditions: [{ field: 'relatedTo', operator: 'contains', relatedTargetMode: 'current' }],
+          currentTarget: { relationTo: 'partners', value: partner.id },
+          page,
+          pageSize: 1,
+          pagination: true,
+          sort,
+          sources: ['events', 'event-cycles'],
+        })
+      for (const [sort, firstKind, secondKind] of [
+        ['titleAscending', 'event-cycles', 'events'],
+        ['titleDescending', 'events', 'event-cycles'],
+      ] as const) {
+        const firstPage = await findPartnerListings(1, sort)
+        const secondPage = await findPartnerListings(2, sort)
+        expect(firstPage.totalPages).toBe(2)
+        expect(firstPage.items.map((item) => item.kind)).toEqual([firstKind])
+        expect(secondPage.items.map((item) => item.kind)).toEqual([secondKind])
+      }
 
       const cycleResult = await findPublicContent({
         conditions: [{ field: 'relatedTo', operator: 'contains', relatedTargetMode: 'current' }],
@@ -554,7 +580,7 @@ describe('content listing index synchronization', () => {
         sort: 'titleAscending',
         sources: ['posts', 'events'],
       })
-      expect(cycleResult.items.map((item) => item.kind)).toEqual(['events', 'posts'])
+      expect(cycleResult.items.map((item) => item.kind)).toEqual(['posts', 'events'])
 
       const selectedPageResult = await findPublicContent({
         conditions: [

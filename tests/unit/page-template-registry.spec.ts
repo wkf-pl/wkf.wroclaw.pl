@@ -6,11 +6,13 @@ import {
   resourceSupportsCreateAndDelete,
 } from '@/modules/membership/permission-resources'
 import {
+  CurrentItemFieldBlock,
   getAllowedPageTemplateBlockSlugs,
   InformationPanelColumnsBlock,
 } from '@/modules/page-templates/page-template-blocks'
 import {
   getPageTemplateDefinition,
+  getPageTemplateDynamicField,
   pageTemplateRegistry,
 } from '@/modules/page-templates/page-template-registry'
 import {
@@ -42,13 +44,77 @@ describe('page template registry', () => {
     expect(getPageTemplateDefinition('event-detail')).toMatchObject({
       currentItemLabel: 'Wydarzenie',
       heroImageRule: 'currentItem',
-      requiresCurrentItemContent: true,
     })
     expect(
       pageTemplateRegistry
         .filter(({ routeKind }) => routeKind === 'collectionIndex')
         .every(({ heroImageRule }) => heroImageRule === 'configurable'),
     ).toBe(true)
+  })
+
+  it('offers item fields in every template region while hiding editorial metadata', () => {
+    const fieldsByTemplate = {
+      'event-detail': ['title', 'startAt', 'location.city', 'externalLinks', 'eventStatus'],
+      'event-cycle-detail': [
+        'tags',
+        'eventDefaults.eventType',
+        'eventDefaults.defaultStartTime',
+        'updatedAt',
+      ],
+      'member-detail': ['photo', 'interests', 'games', 'contactTopics'],
+      'partner-detail': ['heroImage', 'layout', 'publishedAt'],
+      'category-detail': ['parent', 'fullTitle', 'relatedPages'],
+      'tag-detail': ['description', 'relatedEvents', 'updatedAt'],
+    } as const
+
+    for (const definition of pageTemplateRegistry) {
+      if (definition.routeKind !== 'collectionItem' || !(definition.id in fieldsByTemplate))
+        continue
+      const keys = fieldsByTemplate[definition.id as keyof typeof fieldsByTemplate]
+      for (const region of definition.regions) {
+        for (const key of keys) {
+          expect(getPageTemplateDynamicField(definition.id, key, region), key).toBeDefined()
+        }
+        for (const key of [
+          'slug',
+          'status',
+          '_status',
+          'createdAt',
+          'id',
+          'systemKey',
+          '_objectKey',
+          'deletedAt',
+          'seo',
+          'seo.title',
+        ]) {
+          expect(getPageTemplateDynamicField(definition.id, key, region), key).toBeUndefined()
+        }
+      }
+    }
+  })
+
+  it('uses the shared text styles for current item descriptions', () => {
+    const fields = CurrentItemFieldBlock.fields[0]
+    expect(fields?.type === 'row' && fields.fields[1]).toMatchObject({
+      name: 'variant',
+      label: 'Styl',
+    })
+    const field = getPageTemplateDynamicField('event-detail', 'excerpt', 'hero')
+    expect(field?.variants).toEqual([
+      { label: 'Tekst wprowadzający', value: 'lead' },
+      { label: 'Tekst podstawowy', value: 'body' },
+      { label: 'Tekst kompaktowy', value: 'compact' },
+      { label: 'Etykieta', value: 'badge' },
+      { label: 'Etykieta wyróżniona', value: 'emphasizedBadge' },
+    ])
+    for (const variant of ['badge', 'emphasizedBadge']) {
+      expect(() =>
+        validatePageTemplateData({
+          templateKey: 'event-detail',
+          hero: [{ blockType: 'currentItemField', field: 'excerpt', variant }],
+        }),
+      ).not.toThrow()
+    }
   })
 
   it('supports layout blocks in the information panel', () => {
@@ -58,12 +124,59 @@ describe('page template registry', () => {
     )
   })
 
+  it('offers every content block in the information panel of the same template', () => {
+    for (const { id } of pageTemplateRegistry) {
+      const content = getAllowedPageTemplateBlockSlugs(id, 'content')
+      const informationPanel = getAllowedPageTemplateBlockSlugs(id, 'informationPanel')
+      const expected = content.map((blockType) => {
+        if (blockType === 'columnLayout') return 'infoColumns'
+        if (blockType === 'sectionGroup') return 'infoGroup'
+        return blockType
+      })
+      expect([...informationPanel].sort(), id).toEqual(expected.sort())
+    }
+
+    expect(
+      getPageTemplateDynamicField('event-cycle-detail', 'organizers', 'informationPanel'),
+    ).toBeDefined()
+    expect(
+      getPageTemplateDynamicField('event-detail', 'eventTime', 'informationPanel'),
+    ).toBeDefined()
+    expect(getAllowedPageTemplateBlockSlugs('event-cycle-detail', 'hero')).not.toContain('listing')
+  })
+
+  it('accepts a published cycle template with its content and a Listing in the information panel', () => {
+    expect(() =>
+      validatePageTemplateData({
+        _status: 'published',
+        informationPanel: [{ blockType: 'currentItemContent' }, { blockType: 'listing' }],
+        renderingMode: 'template',
+        templateKey: 'event-cycle-detail',
+      }),
+    ).not.toThrow()
+  })
+
   it('supports field rows and standalone icons in every template region', () => {
     for (const region of ['hero', 'informationPanel', 'content'] as const) {
       expect(getAllowedPageTemplateBlockSlugs('event-detail', region)).toEqual(
         expect.arrayContaining(['currentItemFieldRow', 'pageTemplateIcon']),
       )
     }
+  })
+
+  it('allows spacers in every region and inside field rows', () => {
+    for (const { id, regions } of pageTemplateRegistry) {
+      for (const region of regions) {
+        expect(getAllowedPageTemplateBlockSlugs(id, region)).toContain('spacer')
+      }
+    }
+
+    expect(() =>
+      validatePageTemplateData({
+        templateKey: 'member-detail',
+        hero: [{ blockType: 'currentItemFieldRow', items: [{ blockType: 'spacer', size: '24' }] }],
+      }),
+    ).not.toThrow()
   })
 
   it('defines event-specific actions and contextual Listing relations', () => {
@@ -81,6 +194,26 @@ describe('page template registry', () => {
         },
       ],
     })
+  })
+
+  it('offers the partners of the current cycle as a contextual Listing relation', () => {
+    expect(getPageTemplateDefinition('event-cycle-detail')?.contextListingRelations).toEqual([
+      { key: 'eventPartners', label: 'Partnerzy bieżącego cyklu', source: 'partners' },
+    ])
+    expect(() =>
+      validatePageTemplateData({
+        _status: 'draft',
+        content: [
+          {
+            blockType: 'listing',
+            contextRelation: 'eventPartners',
+            selectionMode: 'contextRelation',
+          },
+        ],
+        renderingMode: 'template',
+        templateKey: 'event-cycle-detail',
+      }),
+    ).not.toThrow()
   })
 
   it('registers page templates as a normal collection without create and delete operations', () => {
@@ -121,17 +254,47 @@ describe('page template registry', () => {
     ).toThrow('nie jest dozwolony w regionie hero')
   })
 
-  it('prevents publishing through the template mode before its route renderer exists', () => {
-    expect(() =>
-      validatePageTemplateData({
-        _status: 'published',
-        renderingMode: 'template',
-        templateKey: 'members-index',
-      }),
-    ).toThrow('Nowy renderer tej trasy nie został jeszcze wdrożony')
+  it('provides a renderer for every registered template', () => {
+    expect(pageTemplateRegistry.every(({ rendererAvailable }) => rendererAvailable)).toBe(true)
   })
 
-  it('requires the accessible event title and its content when publishing the event template', () => {
+  it('publishes an event template with any number of current item content blocks', () => {
+    const currentItemContent = { blockType: 'currentItemContent' }
+    for (const content of [
+      [],
+      [currentItemContent],
+      [
+        currentItemContent,
+        { blockType: 'columnLayout', columns: [{ blocks: [currentItemContent] }] },
+      ],
+    ]) {
+      expect(() =>
+        validatePageTemplateData({
+          _status: 'published',
+          content,
+          hero: [{ blockType: 'currentItemField', field: 'title', variant: 'primaryHeading' }],
+          renderingMode: 'template',
+          templateKey: 'event-detail',
+        }),
+      ).not.toThrow()
+    }
+  })
+
+  it('rejects current item content nested in an index template', () => {
+    expect(() =>
+      validatePageTemplateData({
+        content: [
+          {
+            blockType: 'columnLayout',
+            columns: [{ blocks: [{ blockType: 'currentItemContent' }] }],
+          },
+        ],
+        templateKey: 'events-index',
+      }),
+    ).toThrow('Ten szablon nie obsługuje bloku')
+  })
+
+  it('requires the accessible event title when publishing the event template', () => {
     const publishedTemplate = {
       _status: 'published',
       content: [{ blockType: 'currentItemContent' }],
@@ -152,7 +315,7 @@ describe('page template registry', () => {
         ...publishedTemplate,
         hero: [],
       }),
-    ).toThrow('wymaga w Hero pola „Tytuł” w wyglądzie „Nagłówek główny”')
+    ).toThrow('wymaga w Hero pola „Tytuł” w stylu „Nagłówek główny”')
   })
 
   it('rejects unsupported contextual actions and Listing relations', () => {

@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import config from '@/payload.config'
 import type { Media, Page, User } from '@/payload-types'
 
+import { createLexicalDocument } from '../helpers/lexical-document'
 import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/integration-author'
 
 const pageSlug = 'integration-content-composition'
@@ -114,6 +115,70 @@ afterAll(async () => {
 })
 
 describe('content composition integration', () => {
+  it('saves and versions text blocks and rich content badge styles', async () => {
+    const styles = ['plain', 'lead', 'compact', 'badge', 'emphasizedBadge'] as const
+    const created = await payload.create({
+      collection: 'pages',
+      data: {
+        _status: 'draft',
+        author: author.id,
+        slug: invalidPageSlug,
+        title: 'Text style persistence',
+        layout: [
+          ...styles.map((style) => ({
+            blockType: 'fieldRowText' as const,
+            style,
+            text: createLexicalDocument(style),
+          })),
+          ...(['badge', 'emphasizedBadge'] as const).map((textStyle) => ({
+            ...richText('Content label'),
+            textStyle,
+          })),
+          {
+            blockType: 'columnLayout',
+            verticalAlignment: 'start',
+            columnSeparators: 'none',
+            columns: [
+              {
+                width: 6,
+                blocks: [
+                  {
+                    blockType: 'fieldRowText',
+                    style: 'compact',
+                    text: createLexicalDocument('Column text'),
+                  },
+                ],
+              },
+              { width: 6, blocks: [richText('Second column')] },
+            ],
+          },
+        ],
+      },
+      overrideAccess: true,
+    })
+    const restored = await payload.findByID({
+      collection: 'pages',
+      id: created.id,
+      overrideAccess: true,
+    })
+    expect(
+      restored.layout.slice(0, 5).map((block) => block.blockType === 'fieldRowText' && block.style),
+    ).toEqual(styles)
+    expect(
+      restored.layout.slice(5, 7).map((block) => block.blockType === 'richText' && block.textStyle),
+    ).toEqual(['badge', 'emphasizedBadge'])
+    expect(restored.layout[7]).toMatchObject({
+      columns: [{ blocks: [{ blockType: 'fieldRowText', style: 'compact' }] }, {}],
+    })
+    const versions = await payload.findVersions({
+      collection: 'pages',
+      where: { parent: { equals: created.id } },
+      overrideAccess: true,
+    })
+    expect(versions.docs[0]?.version.layout).toEqual(restored.layout)
+    await payload.delete({ collection: 'pages', id: created.id, overrideAccess: true })
+  })
+
   it('saves, expands and versions section surfaces and nested general blocks', async () => {
     page = await payload.create({
       collection: 'pages',

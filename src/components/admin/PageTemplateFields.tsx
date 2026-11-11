@@ -151,7 +151,7 @@ export function CurrentItemFieldSelect(properties: SelectFieldClientProps) {
         disabled={properties.readOnly || options.length === 0}
         inputId={path}
         isClearable={false}
-        isSearchable={false}
+        isSearchable
         onChange={handleChange}
         options={options}
         placeholder={options.length ? 'Wybierz pole' : 'Brak pól w tym regionie'}
@@ -195,7 +195,7 @@ export function CurrentItemFieldVariantSelect(properties: SelectFieldClientProps
           if (isSelectOption(option)) setValue(option.value)
         }}
         options={options}
-        placeholder={dynamicField ? 'Wybierz wygląd' : 'Najpierw wybierz pole'}
+        placeholder={dynamicField ? 'Wybierz styl' : 'Najpierw wybierz pole'}
         showError={showError}
         value={selectedOption}
       />
@@ -422,6 +422,8 @@ export function CurrentItemFieldRowBlockLabel() {
             ),
           },
         ]
+      case 'spacer':
+        return [{ key, label: 'Odstęp' }]
       case 'actionLinks':
         return [{ key, label: 'Odnośniki akcji' }]
       default:

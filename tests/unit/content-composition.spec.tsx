@@ -63,6 +63,23 @@ describe('content composition', () => {
     }
   }
 
+  it.each(['16', '24', '32', '48', '64'] as const)(
+    'renders a decorative spacer of %s pixels',
+    async (size) => {
+      const rendered = await ContentLeafBlockRenderer({
+        block: { blockType: 'spacer', size },
+        document: {} as never,
+        path: 'layout.0',
+        pathname: '/test',
+        searchParams: {},
+      })
+
+      expect(renderToStaticMarkup(rendered)).toBe(
+        `<div aria-hidden="true" class="contentSpacer" style="block-size:${size}px"></div>`,
+      )
+    },
+  )
+
   it('creates one stable surface-field contract for every consumer', () => {
     const describeFields = () =>
       createContentPresentationFields().map((field) => ({
@@ -403,14 +420,17 @@ describe('content composition', () => {
     ).toBe('Streszczenie z grupy')
   })
 
-  it('offers only default, lead and note for rich text presentation', () => {
+  it('offers text and badge styles for rich text presentation', () => {
     const styleField = findNamedField(RichTextBlock.fields, 'textStyle')
     expect(styleField).toMatchObject({
       defaultValue: 'default',
+      label: 'Styl',
       options: [
-        { label: 'Standardowa', value: 'default' },
-        { label: 'Wprowadzenie', value: 'lead' },
-        { label: 'Notatka', value: 'note' },
+        { label: 'Tekst podstawowy', value: 'default' },
+        { label: 'Tekst wprowadzający', value: 'lead' },
+        { label: 'Tekst kompaktowy', value: 'note' },
+        { label: 'Etykieta', value: 'badge' },
+        { label: 'Etykieta wyróżniona', value: 'emphasizedBadge' },
       ],
       type: 'select',
     })

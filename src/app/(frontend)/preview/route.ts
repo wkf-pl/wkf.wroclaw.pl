@@ -8,6 +8,7 @@ import {
   appendPageTemplatePreviewContext,
   parseDraftPreviewTarget,
 } from '@/modules/content/draft-preview'
+import { publicRequestContext } from '@/modules/content/public-access'
 import {
   getPageTemplateDefinition,
   type PageTemplatePreviewCollection,
@@ -61,7 +62,6 @@ export async function GET(request: Request): Promise<Response> {
         previewCollection: definition.previewCollection,
         previewTarget: template.previewTarget,
         route: definition.route,
-        user: authenticatedUser,
       })
       previewPath = appendPageTemplatePreviewContext(targetPath, target.pageTemplate)
     } catch (err) {
@@ -104,20 +104,17 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 type PayloadInstance = Awaited<ReturnType<typeof getPayload>>
-type AuthenticatedUser = NonNullable<Awaited<ReturnType<PayloadInstance['auth']>>['user']>
 
 async function resolvePageTemplatePreviewPath({
   payload,
   previewCollection,
   previewTarget,
   route,
-  user,
 }: {
   payload: PayloadInstance
   previewCollection: PageTemplatePreviewCollection | null
   previewTarget: unknown
   route: string
-  user: AuthenticatedUser
 }): Promise<string> {
   if (!previewCollection) return route
 
@@ -135,7 +132,7 @@ async function resolvePageTemplatePreviewPath({
     typeof previewTarget.value === 'object' && previewTarget.value && 'id' in previewTarget.value
       ? previewTarget.value.id
       : previewTarget.value
-  const slug = await findPreviewTargetSlug(payload, previewCollection, targetID, user)
+  const slug = await findPreviewTargetSlug(payload, previewCollection, targetID)
 
   if (!slug) throw new ResponseError('Page template preview element was not found.', 404)
   return route.replace('[slug]', slug)
@@ -145,17 +142,18 @@ async function findPreviewTargetSlug(
   payload: PayloadInstance,
   collection: PageTemplatePreviewCollection,
   id: unknown,
-  user: AuthenticatedUser,
 ): Promise<string | null> {
   if (typeof id !== 'string' && typeof id !== 'number') return null
 
   const document = await payload.findByID({
     collection,
+    context: publicRequestContext,
     id,
     depth: 0,
-    draft: true,
+    disableErrors: true,
+    draft: false,
     overrideAccess: false,
-    user,
+    user: null,
   })
 
   return document && 'slug' in document && typeof document.slug === 'string' ? document.slug : null

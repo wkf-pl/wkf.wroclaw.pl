@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import type { Category, Tag } from '@/payload-types'
 import { findChildCategories } from '@/modules/content/category-hierarchy'
 import { findPublicContent } from '@/modules/content/content-listing'
+import { findRenderablePageTemplateForRequest } from '@/modules/content/preview-content'
 import {
   createCategoryBreadcrumbs,
   type PublicBreadcrumb,
@@ -14,6 +15,7 @@ import { ContentList } from './ContentList'
 import { createPaginatedURL, getRequestedPage } from '@/modules/content/pagination'
 
 import { ContentPagination } from './ContentPagination'
+import { TaxonomyTemplateDocument } from './TaxonomyTemplateDocument'
 
 type TaxonomyContentPageProperties = {
   kind: 'category' | 'tag'
@@ -28,8 +30,37 @@ export async function TaxonomyContentPage({
 }: TaxonomyContentPageProperties) {
   const requestedPage = getRequestedPage(searchParams.page)
   const pathname = `/${kind}/${taxonomy.slug}`
-  const childCategories = kind === 'category' ? await findChildCategories(taxonomy.id) : []
   const categoryBreadcrumbs = kind === 'category' ? createCategoryBreadcrumbs(taxonomy) : []
+  const title = `${kind === 'tag' ? '#' : ''}${taxonomy.name}`
+  const taxonomyBreadcrumbs =
+    categoryBreadcrumbs.at(-1)?.label === taxonomy.name
+      ? categoryBreadcrumbs
+      : [...categoryBreadcrumbs, { label: taxonomy.name, url: null }]
+  const heroBreadcrumbs: PublicBreadcrumb[] = [
+    { label: 'Strona główna', url: '/' },
+    ...(kind === 'category' ? taxonomyBreadcrumbs : [{ label: title, url: null }]),
+  ]
+
+  const { document: template, isDraftPreview } = await findRenderablePageTemplateForRequest(
+    kind === 'category' ? 'category-detail' : 'tag-detail',
+    searchParams,
+  )
+  if (template) {
+    return (
+      <TaxonomyTemplateDocument
+        breadcrumbs={heroBreadcrumbs}
+        isDraftPreview={isDraftPreview}
+        kind={kind}
+        pathname={pathname}
+        searchParams={searchParams}
+        taxonomy={taxonomy}
+        template={template}
+        title={title}
+      />
+    )
+  }
+
+  const childCategories = kind === 'category' ? await findChildCategories(taxonomy.id) : []
   const result = await findPublicContent({
     conditions: [
       kind === 'category'
@@ -54,16 +85,6 @@ export async function TaxonomyContentPage({
   if (requestedPage > result.totalPages) {
     redirect(createPaginatedURL(pathname, searchParams, 'page', result.totalPages))
   }
-
-  const title = `${kind === 'tag' ? '#' : ''}${taxonomy.name}`
-  const taxonomyBreadcrumbs =
-    categoryBreadcrumbs.at(-1)?.label === taxonomy.name
-      ? categoryBreadcrumbs
-      : [...categoryBreadcrumbs, { label: taxonomy.name, url: null }]
-  const heroBreadcrumbs: PublicBreadcrumb[] = [
-    { label: 'Strona główna', url: '/' },
-    ...(kind === 'category' ? taxonomyBreadcrumbs : [{ label: title, url: null }]),
-  ]
 
   return (
     <main className="contentHeroPage">

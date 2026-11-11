@@ -2,14 +2,22 @@ import { expect, test, type Page } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
 import config from '../../src/payload.config.js'
-import type { MemberProfile } from '../../src/payload-types.js'
+import { createRichTextDocument } from '../../src/modules/members/rich-text'
+import type {
+  CurrentItemFieldBlock,
+  MemberProfile,
+  PageTemplate,
+  PageTemplateListingBlock,
+} from '../../src/payload-types.js'
 import { createLexicalDocument } from '../helpers/lexical-document'
-import { editorTestUser } from '../helpers/seedUser'
+import { login } from '../helpers/login'
+import { administratorTestUser, editorTestUser } from '../helpers/seedUser'
 
 const fixture = {
   categoryChildSlug: 'route-appearance-category-child-e2e',
   categorySlug: 'route-appearance-category-e2e',
   eventSlug: 'route-appearance-event-e2e',
+  memberActivities: 'Prowadzę dyżury informacyjne oraz wspieram wydarzenia otwarte.',
   memberEmail: 'route-appearance-member-e2e@example.invalid',
   memberName: 'Alicja Makietowa E2E',
   partnerSlug: 'route-appearance-partner-e2e',
@@ -86,12 +94,10 @@ test.beforeAll(async () => {
     collection: 'member-profiles',
     data: {
       _status: 'published',
-      about: createLexicalDocument(
+      about: createRichTextDocument([
         'Organizuję spotkania dla nowych osób i pomagam im poznać klubowe aktywności.',
-      ),
-      clubActivities: createLexicalDocument(
-        'Prowadzę dyżury informacyjne oraz wspieram wydarzenia otwarte.',
-      ),
+        fixture.memberActivities,
+      ]),
       clubFunction: 'Opiekunka nowych klubowiczów',
       contactChannels: [
         { type: 'email', url: fixture.memberEmail },
@@ -418,6 +424,370 @@ for (const route of routes) {
       scale: 'css',
     })
     expect(pageErrors).toEqual([])
+  })
+}
+
+const templateMarker = 'Układ szablonu E2E'
+const currentItemContent = { blockType: 'currentItemContent' } as const
+const currentItemCondition = {
+  field: 'relatedTo',
+  operator: 'contains',
+  relatedTargetMode: 'current',
+} as const
+
+function listing(
+  sources: PageTemplateListingBlock['sources'],
+  options: Partial<
+    Pick<PageTemplateListingBlock, 'conditions' | 'pageSize' | 'pagination' | 'sort'>
+  > = {},
+): PageTemplateListingBlock {
+  return {
+    blockType: 'listing',
+    pageSize: 12,
+    selectionMode: 'filters',
+    sources,
+    view: 'cards',
+    ...options,
+  }
+}
+
+function currentItemField(
+  field: CurrentItemFieldBlock['field'],
+  variant: CurrentItemFieldBlock['variant'],
+): CurrentItemFieldBlock {
+  return { blockType: 'currentItemField', field, variant }
+}
+
+type TemplateRoute = {
+  route: (typeof routes)[number]['name']
+  key: PageTemplate['templateKey']
+  target?: NonNullable<PageTemplate['previewTarget']>['relationTo']
+  hero?: PageTemplate['hero']
+  informationPanel?: PageTemplate['informationPanel']
+  content: NonNullable<PageTemplate['content']>
+  expectedLinks?: { name: string; path: () => string }[]
+  expectedText?: string[]
+}
+
+const taxonomyListing = listing(['pages', 'posts', 'events', 'event-cycles'], {
+  conditions: [currentItemCondition],
+  pagination: true,
+  sort: 'newest',
+})
+const taggedPostLink = {
+  name: 'Jak przygotować się do pierwszej sesji E2E',
+  path: () => `/blog/${fixture.postSlug}`,
+}
+
+const templateRoutes: TemplateRoute[] = [
+  {
+    route: 'members',
+    key: 'members-index',
+    content: [listing(['member-profiles'], { sort: 'titleAscending' })],
+    expectedLinks: [{ name: fixture.memberName, path: () => `/members/${memberProfile.slug}` }],
+  },
+  {
+    route: 'member',
+    key: 'member-detail',
+    target: 'member-profiles',
+    hero: [
+      currentItemField('publicName', 'primaryHeading'),
+      currentItemField('clubFunction', 'lead'),
+    ],
+    content: [currentItemContent],
+    expectedText: [fixture.memberActivities, 'Zgłoś treść'],
+  },
+  {
+    route: 'partner',
+    key: 'partner-detail',
+    target: 'partners',
+    hero: [currentItemField('name', 'primaryHeading'), currentItemField('website', 'inline')],
+    content: [
+      currentItemContent,
+      listing(['events', 'event-cycles'], { conditions: [currentItemCondition] }),
+    ],
+    expectedLinks: [
+      { name: 'Strona WWW Partnera', path: () => 'https://example.com/route-appearance-partner' },
+      { name: 'Pierwsza wyprawa E2E', path: () => `/events/${fixture.eventSlug}` },
+      { name: 'Wieczory z wyobraźnią E2E', path: () => `/events/series/${fixture.seriesSlug}` },
+    ],
+    expectedText: ['Partner zapewnia przestrzeń, wyposażenie oraz wsparcie organizacyjne.'],
+  },
+  {
+    route: 'event-series',
+    key: 'event-cycle-detail',
+    target: 'event-cycles',
+    hero: [
+      currentItemField('title', 'primaryHeading'),
+      {
+        alignment: 'start',
+        blockType: 'actionLinks',
+        layout: 'inline',
+        items: [
+          {
+            actionSource: 'contextAction',
+            appearance: 'link',
+            contextAction: 'eventCycleCalendar',
+            label: 'Subskrybuj cykl',
+          },
+        ],
+      },
+    ],
+    informationPanel: [
+      listing(['events'], {
+        conditions: [
+          currentItemCondition,
+          { eventTimeValue: 'upcoming', field: 'eventTime', operator: 'equals' },
+        ],
+        pageSize: 1,
+        sort: 'oldest',
+      }),
+      {
+        blockType: 'infoGroup',
+        sections: [
+          {
+            blocks: [
+              {
+                blockType: 'infoColumns',
+                columnSeparators: 'none',
+                verticalAlignment: 'start',
+                columns: [
+                  {
+                    width: 6,
+                    blocks: [listing(['posts'], { conditions: [currentItemCondition] })],
+                  },
+                  { width: 6, blocks: [currentItemField('excerpt', 'body')] },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        blockType: 'infoGroup',
+        emptyChildBehavior: 'hideGroup',
+        sections: [
+          {
+            blocks: [
+              {
+                blockType: 'infoColumns',
+                columnSeparators: 'none',
+                verticalAlignment: 'start',
+                columns: [
+                  {
+                    width: 6,
+                    blocks: [
+                      listing(['posts'], {
+                        conditions: [
+                          { field: 'title', operator: 'equals', textValue: 'Missing E2E post' },
+                        ],
+                      }),
+                    ],
+                  },
+                  {
+                    width: 6,
+                    blocks: [
+                      { blockType: 'heading', heading: 'Ukryta grupa E2E', headingLevel: 'h2' },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    content: [
+      currentItemContent,
+      currentItemField('organizers', 'list'),
+      { blockType: 'heading', heading: 'Partnerzy', headingLevel: 'h2' },
+      {
+        blockType: 'listing',
+        contextRelation: 'eventPartners',
+        pageSize: 12,
+        selectionMode: 'contextRelation',
+        view: 'compact',
+      },
+      listing(['events'], { conditions: [currentItemCondition] }),
+      listing(['posts'], { conditions: [currentItemCondition] }),
+    ],
+    expectedLinks: [
+      { name: 'Pierwsza wyprawa E2E', path: () => `/events/${fixture.eventSlug}` },
+      taggedPostLink,
+      { name: 'Informacje o cyklu', path: () => 'https://example.com/route-appearance-series' },
+    ],
+    expectedText: ['Organizatorzy', 'Partnerzy'],
+  },
+  {
+    route: 'tag',
+    key: 'tag-detail',
+    target: 'tags',
+    hero: [currentItemField('name', 'primaryHeading')],
+    content: [taxonomyListing],
+    expectedLinks: [taggedPostLink],
+  },
+  {
+    route: 'category',
+    key: 'category-detail',
+    target: 'categories',
+    hero: [currentItemField('name', 'primaryHeading'), currentItemField('hierarchy', 'pills')],
+    content: [taxonomyListing, listing(['pages'], { conditions: [currentItemCondition] })],
+    expectedLinks: [
+      taggedPostLink,
+      { name: 'Dla początkujących E2E', path: () => `/category/${fixture.categoryChildSlug}` },
+    ],
+  },
+]
+
+for (const scenario of templateRoutes) {
+  test(`renders configurable templates for ${scenario.route}`, async ({ browser, page }) => {
+    test.setTimeout(60_000)
+    const route = routes.find(({ name }) => name === scenario.route)!
+    const pathname = route.path()
+    const {
+      docs: [original],
+    } = await payload.find({
+      collection: 'page-templates',
+      depth: 0,
+      limit: 1,
+      where: { templateKey: { equals: scenario.key } },
+    })
+    if (!original) throw new Error(`Missing the seeded ${scenario.key} template.`)
+
+    const target = scenario.target
+    const slug = pathname.split('/').at(-1)
+    const previewRecord = target
+      ? (
+          await payload.find({
+            collection: target,
+            depth: 0,
+            limit: 1,
+            where: { slug: { equals: slug } },
+          })
+        ).docs[0]
+      : undefined
+    if (target && !previewRecord) throw new Error(`Missing the preview item for ${pathname}.`)
+
+    const composition: Partial<PageTemplate> = {
+      content: [
+        { blockType: 'heading', heading: templateMarker, headingLevel: 'h2' },
+        ...scenario.content,
+      ],
+      hero: scenario.hero ?? [],
+      informationPanel: scenario.informationPanel ?? [],
+      previewTarget:
+        target && previewRecord ? { relationTo: target, value: previewRecord.id } : null,
+    }
+    const updateTemplate = (data: Partial<PageTemplate>, draft: boolean) =>
+      payload.update({ collection: 'page-templates', data, draft, id: original.id })
+    const publicPage = await browser.newPage()
+    const expectLegacy = async () => {
+      await publicPage.goto(pathname)
+      await expect(publicPage.getByRole('heading', { level: 1, name: route.heading })).toBeVisible()
+      await expect(publicPage.locator('.pageTemplateDocument')).toHaveCount(0)
+    }
+    const expectTemplate = async (renderedPage: Page) => {
+      const document = renderedPage.locator('.pageTemplateDocument')
+      await expect(document.getByRole('heading', { level: 1, name: route.heading })).toBeVisible()
+      await expect(document.getByRole('heading', { name: templateMarker })).toBeVisible()
+      for (const { name, path } of scenario.expectedLinks ?? []) {
+        await expect(document.getByRole('link', { name, exact: true }).first()).toHaveAttribute(
+          'href',
+          path(),
+        )
+      }
+      for (const text of scenario.expectedText ?? []) {
+        await expect(document.getByText(text, { exact: true })).toBeVisible()
+      }
+      if (scenario.route === 'event-series') {
+        const content = document.locator('.pageTemplateContent')
+        const partnerListing = content.locator('.listingBlock').filter({
+          has: renderedPage.getByRole('link', { name: 'Przystań Wyobraźni E2E', exact: true }),
+        })
+        await expect(partnerListing.getByText('Udostępnienie sali i wyposażenia')).toBeVisible()
+        await expect(
+          partnerListing.getByRole('link', { name: 'Przystań Wyobraźni E2E' }),
+        ).toHaveAttribute('href', `/partners/${fixture.partnerSlug}`)
+        await expect(
+          content
+            .locator('.listingBlock')
+            .getByRole('link', {
+              name: taggedPostLink.name,
+              exact: true,
+            })
+            .first(),
+        ).toHaveAttribute('href', taggedPostLink.path())
+        const panel = document.getByRole('region', { name: 'Panel informacyjny' })
+        await expect(panel.getByRole('heading', { name: 'Ukryta grupa E2E' })).toHaveCount(0)
+        const upcoming = panel.locator('.listingBlock').first()
+        await expect(upcoming.locator('article')).toHaveCount(1)
+        await expect(
+          upcoming.getByRole('link', { name: 'Pierwsza wyprawa E2E', exact: true }).first(),
+        ).toHaveAttribute('href', `/events/${fixture.eventSlug}`)
+        await expect(upcoming.locator('time')).toBeVisible()
+        await expect(
+          panel
+            .locator('.columnLayout')
+            .getByRole('link', {
+              name: taggedPostLink.name,
+              exact: true,
+            })
+            .first(),
+        ).toHaveAttribute('href', taggedPostLink.path())
+        await expect(document.getByRole('link', { name: 'Subskrybuj cykl' })).toHaveAttribute(
+          'href',
+          /^\/events\/calendar\.ics\?series=.+/,
+        )
+      }
+      if (target === 'tags' || target === 'categories') {
+        await expect(
+          document
+            .locator('.listingBlock article')
+            .filter({ has: renderedPage.locator('a[href^="/blog/"]') }),
+        ).toHaveCount(1)
+      }
+    }
+
+    try {
+      await expectLegacy()
+      await updateTemplate({ ...composition, _status: 'draft', renderingMode: 'legacy' }, true)
+      await login({ page, user: administratorTestUser })
+      if (scenario.route === 'event-series') {
+        await page.goto(`/admin/collections/page-templates/${original.id}`)
+        await expect(
+          page.getByRole('heading', { level: 1, name: 'Szczegóły cyklu wydarzeń' }),
+        ).toBeVisible()
+        await page.getByRole('button', { name: 'Treść', exact: true }).click()
+        await expect(
+          page.locator('#field-content').getByText('Partnerzy bieżącego cyklu', { exact: true }),
+        ).toBeVisible()
+        await page.getByRole('button', { name: 'Panel informacyjny', exact: true }).click()
+        await page.locator('#field-informationPanel > .blocks-field__drawer-toggler').click()
+        const drawer = page.locator('.drawer--is-open .blocks-drawer__block-groups')
+        for (const label of ['Listing', 'Karta', 'Kalendarz', 'Zakładki']) {
+          await expect(drawer.getByText(label, { exact: true })).toBeVisible()
+        }
+      }
+      const response = await page.goto(`/preview?pageTemplate=${scenario.key}`)
+      expect(response?.status()).toBe(200)
+      expect(new URL(page.url()).pathname).toBe(pathname)
+      await expect(page.getByRole('status')).toContainText('Podglądasz roboczy układ szablonu.')
+      await expectTemplate(page)
+      await expectLegacy()
+
+      await updateTemplate(
+        { ...composition, _status: 'published', renderingMode: 'template' },
+        false,
+      )
+      await publicPage.goto(pathname)
+      await expectTemplate(publicPage)
+
+      await updateTemplate({ _status: 'published', renderingMode: 'legacy' }, false)
+      await expectLegacy()
+    } finally {
+      await updateTemplate(original, false)
+      await publicPage.close()
+    }
   })
 }
 

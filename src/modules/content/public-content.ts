@@ -197,6 +197,20 @@ const findCategoryBySlugCached = cachePublicData(
 
 export const findCategoryBySlug = cache(findCategoryBySlugCached)
 
+export const findPublicCategoryByID = cache(async (id: number): Promise<Category | null> => {
+  const payload = await getPayload({ config })
+  return payload.findByID({
+    collection: 'categories',
+    context: publicRequestContext,
+    depth: 0,
+    disableErrors: true,
+    id,
+    joins: false,
+    overrideAccess: false,
+    user: null,
+  })
+})
+
 const findTagBySlugCached = cachePublicData(
   'tag-by-slug',
   async (slug: string): Promise<null | Tag> => {

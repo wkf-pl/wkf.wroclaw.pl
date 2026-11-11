@@ -1,9 +1,9 @@
 import { sql } from '@payloadcms/db-postgres'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, onTestFinished } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
-import type { Role, User } from '@/payload-types'
+import type { PageTemplate, Role, User } from '@/payload-types'
 import { pageTemplateIDs } from '@/modules/page-templates/page-template-registry'
 import { createLexicalDocument } from '../helpers/lexical-document'
 
@@ -73,20 +73,24 @@ afterAll(async () => {
     overrideAccess: true,
   })
 
+  await resetTemplateVersions(template.id)
+})
+
+async function resetTemplateVersions(templateID: number): Promise<void> {
   await payload.db.drizzle.execute(sql`
     DELETE FROM "_page_templates_v"
-    WHERE "parent_id" = ${template.id}
+    WHERE "parent_id" = ${templateID}
       AND "id" <> (
         SELECT min("id") FROM "_page_templates_v"
-        WHERE "parent_id" = ${template.id}
+        WHERE "parent_id" = ${templateID}
       )
   `)
   await payload.db.drizzle.execute(sql`
     UPDATE "_page_templates_v"
     SET "latest" = true
-    WHERE "parent_id" = ${template.id}
+    WHERE "parent_id" = ${templateID}
   `)
-})
+}
 
 describe('page templates integration', () => {
   it('initializes the closed set as published legacy templates with version history', async () => {
@@ -166,6 +170,65 @@ describe('page templates integration', () => {
     ).rejects.toMatchObject({ status: 403 })
   })
 
+  it('saves member fields and a spacer inside a column and loads the draft for preview', async () => {
+    const administrator = createAuthenticatedUser(-107, administratorRole)
+    const where = { templateKey: { equals: 'member-detail' } }
+    const readOptions = {
+      collection: 'page-templates',
+      depth: 0,
+      limit: 1,
+      overrideAccess: false,
+      user: administrator,
+      where,
+    } as const
+    const {
+      docs: [published],
+    } = await payload.find(readOptions)
+    if (!published) throw new Error('Missing migrated member page template.')
+    onTestFinished(() => resetTemplateVersions(published.id))
+
+    const content = [
+      {
+        blockType: 'columnLayout',
+        columnSeparators: 'none',
+        verticalAlignment: 'start',
+        columns: [
+          {
+            width: 6,
+            blocks: [
+              { blockType: 'currentItemField', field: 'contactTopics', variant: 'body' },
+              { blockType: 'spacer', size: '48' },
+              { blockType: 'currentItemField', field: 'photo', variant: 'plain' },
+              { blockType: 'currentItemField', field: 'interests', variant: 'body' },
+              { blockType: 'currentItemField', field: 'games', variant: 'list' },
+              { blockType: 'currentItemField', field: 'updatedAt', variant: 'body' },
+            ],
+          },
+          { width: 6, blocks: [{ blockType: 'currentItemContent' }] },
+        ],
+      },
+    ] satisfies NonNullable<PageTemplate['content']>
+
+    const saved = await payload.update({
+      collection: 'page-templates',
+      data: { content, renderingMode: 'template' },
+      draft: true,
+      id: published.id,
+      overrideAccess: false,
+      user: administrator,
+    })
+
+    const {
+      docs: [preview],
+    } = await payload.find({ ...readOptions, draft: true })
+    expect(saved._status).toBe('draft')
+    expect(preview?.content).toMatchObject(content)
+    const {
+      docs: [stillPublished],
+    } = await payload.find(readOptions)
+    expect(stillPublished?.content).toEqual(published.content)
+  })
+
   it('lets an administrator publish the implemented event template without changing its identity', async () => {
     const administrator = createAuthenticatedUser(-104, administratorRole)
     const result = await payload.find({
@@ -184,7 +247,10 @@ describe('page templates integration', () => {
       collection: 'page-templates',
       data: {
         _status: 'published',
-        content: [{ blockType: 'currentItemContent' }],
+        content: [
+          { blockType: 'currentItemContent' },
+          { blockType: 'currentItemField', field: 'location.city', variant: 'body' },
+        ],
         hero: [
           {
             blockType: 'currentItemField',
@@ -202,6 +268,10 @@ describe('page templates integration', () => {
 
     expect(updatedTemplate).toMatchObject({
       _status: 'published',
+      content: [
+        { blockType: 'currentItemContent' },
+        { blockType: 'currentItemField', field: 'location.city', variant: 'body' },
+      ],
       renderingMode: 'template',
       templateKey: 'event-detail',
     })

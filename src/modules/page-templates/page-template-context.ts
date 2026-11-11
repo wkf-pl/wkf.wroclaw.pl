@@ -1,4 +1,4 @@
-import type { Event } from '@/payload-types'
+import type { Event, EventCycle } from '@/payload-types'
 import type { ManualContentReference } from '@/modules/content/content-listing'
 import { buildGoogleMapsURL } from '@/modules/events/map-embed'
 import {
@@ -29,7 +29,7 @@ export function resolvePageTemplateActionLinks(
       return resolved ? [resolved] : []
     }
 
-    const action = resolveEventAction(item.contextAction, document)
+    const action = resolveContextAction(item.contextAction, document)
     if (!action) return []
 
     const target = toCustomTarget(action.href)
@@ -55,9 +55,14 @@ export function resolvePageTemplateListingItems(
   relation: null | string | undefined,
   document: unknown,
 ): ManualContentReference[] {
-  if (relation !== 'eventPartners' || !isEvent(document)) return []
+  // Keep the stored relation key shared by event and cycle templates.
+  if (relation !== 'eventPartners') return []
 
-  return (document.partners ?? []).flatMap((item) => {
+  let partners: Event['partners']
+  if (isEvent(document)) partners = document.partners
+  else if (isEventCycle(document)) partners = document.eventDefaults.partners
+
+  return (partners ?? []).flatMap((item) => {
     if (!item.partner) return []
     return [
       {
@@ -70,10 +75,27 @@ export function resolvePageTemplateListingItems(
   })
 }
 
-function resolveEventAction(
+function resolveContextAction(
   action: null | string | undefined,
   document: unknown,
 ): { href: string; label: string } | null {
+  if (action === 'eventCycleCalendar') {
+    const cycle = isEvent(document) ? document.cycle : document
+    if (
+      !cycle ||
+      typeof cycle !== 'object' ||
+      !('calendarFeedKey' in cycle) ||
+      typeof cycle.calendarFeedKey !== 'string' ||
+      !cycle.calendarFeedKey
+    )
+      return null
+
+    return {
+      href: `/events/calendar.ics?${new URLSearchParams({ series: cycle.calendarFeedKey })}`,
+      label: 'Subskrybuj cykl',
+    }
+  }
+
   if (!isEvent(document)) return null
 
   if (action === 'eventCalendar') {
@@ -93,17 +115,6 @@ function resolveEventAction(
         streetAddress: document.location.streetAddress,
       }),
       label: 'Otwórz w Mapach',
-    }
-  }
-
-  if (action === 'eventCycleCalendar') {
-    const cycle = document.cycle && typeof document.cycle === 'object' ? document.cycle : null
-    if (!cycle?.calendarFeedKey) return null
-    return {
-      href: `/events/calendar.ics?${new URLSearchParams({
-        series: cycle.calendarFeedKey,
-      }).toString()}`,
-      label: 'Subskrybuj cykl',
     }
   }
 
@@ -147,6 +158,16 @@ function isEvent(value: unknown): value is Event {
     'location' in value &&
     value.location &&
     typeof value.location === 'object',
+  )
+}
+
+function isEventCycle(value: unknown): value is EventCycle {
+  return Boolean(
+    value &&
+    typeof value === 'object' &&
+    'eventDefaults' in value &&
+    value.eventDefaults &&
+    typeof value.eventDefaults === 'object',
   )
 }
 

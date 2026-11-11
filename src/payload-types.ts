@@ -13,7 +13,7 @@
 export type ListingCondition =
   | {
       field: 'title' | 'category' | 'tag' | 'parentPage' | 'eventCycle' | 'eventTime' | 'relatedTo' | 'significantDate';
-      operator: 'contains' | 'equals' | 'inSubtree' | 'notOlderThan' | 'before' | 'after' | 'between';
+      operator: 'contains' | 'equals' | 'inSubtree' | 'notOlderThan' | 'before' | 'after' | 'between' | 'isEmpty';
       relationshipValue?:
         | ({
             relationTo: 'categories';
@@ -314,6 +314,7 @@ export interface Page {
   listingExcerpt?: string | null;
   layout: (
     | RichTextBlock
+    | FieldRowTextBlock
     | HeadingBlock
     | ActionLinksBlock
     | CardBlock
@@ -321,6 +322,7 @@ export interface Page {
     | ContentCalendarBlock
     | MediaGalleryBlock
     | AttachmentsBlock
+    | SpacerBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
     | TabbedContentBlock
@@ -487,6 +489,7 @@ export interface Post {
     | null;
   layout: (
     | RichTextBlock
+    | FieldRowTextBlock
     | HeadingBlock
     | ActionLinksBlock
     | CardBlock
@@ -494,6 +497,7 @@ export interface Post {
     | ContentCalendarBlock
     | MediaGalleryBlock
     | AttachmentsBlock
+    | SpacerBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
     | TabbedContentBlock
@@ -552,6 +556,7 @@ export interface Event {
   };
   layout: (
     | RichTextBlock
+    | FieldRowTextBlock
     | HeadingBlock
     | ActionLinksBlock
     | CardBlock
@@ -559,6 +564,7 @@ export interface Event {
     | ContentCalendarBlock
     | MediaGalleryBlock
     | AttachmentsBlock
+    | SpacerBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
     | TabbedContentBlock
@@ -679,6 +685,7 @@ export interface EventCycle {
   };
   layout: (
     | RichTextBlock
+    | FieldRowTextBlock
     | HeadingBlock
     | ActionLinksBlock
     | CardBlock
@@ -686,6 +693,7 @@ export interface EventCycle {
     | ContentCalendarBlock
     | MediaGalleryBlock
     | AttachmentsBlock
+    | SpacerBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
     | TabbedContentBlock
@@ -722,6 +730,7 @@ export interface EventCycle {
     } | null;
     layout: (
       | RichTextBlock
+      | FieldRowTextBlock
       | HeadingBlock
       | ActionLinksBlock
       | CardBlock
@@ -729,6 +738,7 @@ export interface EventCycle {
       | ContentCalendarBlock
       | MediaGalleryBlock
       | AttachmentsBlock
+      | SpacerBlock
       | ColumnLayoutBlock
       | SectionGroupBlock
       | TabbedContentBlock
@@ -820,7 +830,7 @@ export interface EventCycle {
  * via the `definition` "RichTextBlock".
  */
 export interface RichTextBlock {
-  textStyle?: ('default' | 'lead' | 'note') | null;
+  textStyle?: ('default' | 'lead' | 'note' | 'badge' | 'emphasizedBadge') | null;
   frame?: ('none' | 'outline') | null;
   surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
   /**
@@ -847,6 +857,31 @@ export interface RichTextBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'richText';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FieldRowTextBlock".
+ */
+export interface FieldRowTextBlock {
+  style?: ('lead' | 'plain' | 'compact' | 'badge' | 'emphasizedBadge') | null;
+  text: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'fieldRowText';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1294,6 +1329,7 @@ export interface Partner {
   website?: string | null;
   layout: (
     | RichTextBlock
+    | FieldRowTextBlock
     | HeadingBlock
     | ActionLinksBlock
     | CardBlock
@@ -1301,6 +1337,7 @@ export interface Partner {
     | ContentCalendarBlock
     | MediaGalleryBlock
     | AttachmentsBlock
+    | SpacerBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
     | TabbedContentBlock
@@ -1562,6 +1599,7 @@ export interface MemberProfile {
     };
     [k: string]: unknown;
   } | null;
+  clubFunction?: string | null;
   /**
    * JPEG, PNG, WebP lub AVIF, maksymalnie 5 MiB. Nowy plik zastępuje poprzedni.
    */
@@ -1578,22 +1616,6 @@ export interface MemberProfile {
         id?: string | null;
       }[]
     | null;
-  clubFunction?: string | null;
-  clubActivities?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
   contactTopics?: string | null;
   /**
    * Podane adresy będą dostępne publicznie bez logowania.
@@ -1753,6 +1775,16 @@ export interface AttachmentsBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "SpacerBlock".
+ */
+export interface SpacerBlock {
+  size: '16' | '24' | '32' | '48' | '64';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'spacer';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ColumnLayoutBlock".
  */
 export interface ColumnLayoutBlock {
@@ -1780,6 +1812,7 @@ export interface ColumnLayoutBlock {
     blocks?:
       | (
           | RichTextBlock
+          | FieldRowTextBlock
           | HeadingBlock
           | ActionLinksBlock
           | CardBlock
@@ -1787,6 +1820,7 @@ export interface ColumnLayoutBlock {
           | ContentCalendarBlock
           | MediaGalleryBlock
           | AttachmentsBlock
+          | SpacerBlock
         )[]
       | null;
     id?: string | null;
@@ -1824,6 +1858,7 @@ export interface SectionGroupBlock {
     surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
     blocks: (
       | RichTextBlock
+      | FieldRowTextBlock
       | HeadingBlock
       | ActionLinksBlock
       | CardBlock
@@ -1831,6 +1866,7 @@ export interface SectionGroupBlock {
       | ContentCalendarBlock
       | MediaGalleryBlock
       | AttachmentsBlock
+      | SpacerBlock
       | ColumnLayoutBlock
       | TabbedContentBlock
     )[];
@@ -2242,6 +2278,7 @@ export interface TabbedContentBlock {
     blocks?:
       | (
           | RichTextBlock
+          | FieldRowTextBlock
           | HeadingBlock
           | ActionLinksBlock
           | CardBlock
@@ -2249,6 +2286,7 @@ export interface TabbedContentBlock {
           | ContentCalendarBlock
           | MediaGalleryBlock
           | AttachmentsBlock
+          | SpacerBlock
           | ColumnLayoutBlock
         )[]
       | null;
@@ -2416,28 +2454,19 @@ export interface PageTemplate {
   hero?:
     | (
         | RichTextBlock
+        | FieldRowTextBlock
         | HeadingBlock
         | PageTemplateActionLinksBlock
         | CurrentItemFieldBlock
         | CurrentItemFieldRowBlock
         | PageTemplateIconBlock
+        | SpacerBlock
       )[]
     | null;
   informationPanel?:
     | (
         | RichTextBlock
-        | HeadingBlock
-        | PageTemplateActionLinksBlock
-        | CurrentItemFieldBlock
-        | CurrentItemFieldRowBlock
-        | PageTemplateIconBlock
-        | InformationPanelColumnsBlock
-        | InformationPanelGroupBlock
-      )[]
-    | null;
-  content?:
-    | (
-        | RichTextBlock
+        | FieldRowTextBlock
         | HeadingBlock
         | PageTemplateActionLinksBlock
         | CardBlock
@@ -2449,6 +2478,28 @@ export interface PageTemplate {
         | CurrentItemFieldRowBlock
         | CurrentItemContentBlock
         | PageTemplateIconBlock
+        | SpacerBlock
+        | InformationPanelColumnsBlock
+        | InformationPanelGroupBlock
+        | PageTemplateTabbedContentBlock
+      )[]
+    | null;
+  content?:
+    | (
+        | RichTextBlock
+        | FieldRowTextBlock
+        | HeadingBlock
+        | PageTemplateActionLinksBlock
+        | CardBlock
+        | PageTemplateListingBlock
+        | ContentCalendarBlock
+        | MediaGalleryBlock
+        | AttachmentsBlock
+        | CurrentItemFieldBlock
+        | CurrentItemFieldRowBlock
+        | CurrentItemContentBlock
+        | PageTemplateIconBlock
+        | SpacerBlock
         | PageTemplateColumnLayoutBlock
         | PageTemplateSectionGroupBlock
         | PageTemplateTabbedContentBlock
@@ -2627,7 +2678,72 @@ export interface CurrentItemFieldBlock {
     | 'publicName'
     | 'clubFunction'
     | 'about'
-    | 'contactChannels';
+    | 'contactChannels'
+    | 'relatedPages'
+    | 'relatedPosts'
+    | 'relatedEvents'
+    | 'relatedEventCycles'
+    | 'relatedDocuments'
+    | 'updatedAt'
+    | 'parent'
+    | 'fullTitle'
+    | 'breadcrumbs'
+    | 'heroImage'
+    | 'layout'
+    | 'author'
+    | 'publishedAt'
+    | 'category'
+    | 'timeMode'
+    | 'startAt'
+    | 'endAt'
+    | 'location.venueName'
+    | 'location.venueWebsite'
+    | 'location.streetAddress'
+    | 'location.postalCode'
+    | 'location.city'
+    | 'location.mapEmbedURL'
+    | 'location.country'
+    | 'participation'
+    | 'capacityMode'
+    | 'capacity'
+    | 'externalLinks'
+    | 'defaultsAppliedCycle'
+    | 'previousStartAt'
+    | 'publishedStartAt'
+    | 'calendarUID'
+    | 'calendarRevision'
+    | 'calendarFingerprint'
+    | 'calendarFeedKey'
+    | 'eventDefaults.title'
+    | 'eventDefaults.eventType'
+    | 'eventDefaults.heroImage'
+    | 'eventDefaults.excerpt'
+    | 'eventDefaults.layout'
+    | 'eventDefaults.category'
+    | 'eventDefaults.tags'
+    | 'eventDefaults.recurrenceType'
+    | 'eventDefaults.weekInterval'
+    | 'eventDefaults.monthDay'
+    | 'eventDefaults.weekOfMonth'
+    | 'eventDefaults.recurrenceWeekday'
+    | 'eventDefaults.defaultDayCount'
+    | 'eventDefaults.defaultStartTime'
+    | 'eventDefaults.defaultEndTime'
+    | 'eventDefaults.location.venueName'
+    | 'eventDefaults.location.venueWebsite'
+    | 'eventDefaults.location.streetAddress'
+    | 'eventDefaults.location.postalCode'
+    | 'eventDefaults.location.city'
+    | 'eventDefaults.location.mapEmbedURL'
+    | 'eventDefaults.location.country'
+    | 'eventDefaults.participation'
+    | 'eventDefaults.capacityMode'
+    | 'eventDefaults.capacity'
+    | 'eventDefaults.externalLinks'
+    | 'photo'
+    | 'interests'
+    | 'games'
+    | 'contactTopics';
   variant:
     | 'primaryHeading'
     | 'sectionHeading'
@@ -2651,35 +2767,12 @@ export interface CurrentItemFieldBlock {
  * via the `definition` "CurrentItemFieldRowBlock".
  */
 export interface CurrentItemFieldRowBlock {
-  items: (CurrentItemFieldBlock | FieldRowTextBlock | PageTemplateIconBlock | PageTemplateActionLinksBlock)[];
+  items: (
+    CurrentItemFieldBlock | FieldRowTextBlock | PageTemplateIconBlock | PageTemplateActionLinksBlock | SpacerBlock
+  )[];
   id?: string | null;
   blockName?: string | null;
   blockType: 'currentItemFieldRow';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "FieldRowTextBlock".
- */
-export interface FieldRowTextBlock {
-  style?: ('plain' | 'badge' | 'emphasizedBadge' | 'informationLabel') | null;
-  text: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'fieldRowText';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2787,90 +2880,6 @@ export interface PageTemplateIconBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "InformationPanelColumnsBlock".
- */
-export interface InformationPanelColumnsBlock {
-  name?: string | null;
-  frame?: ('none' | 'outline') | null;
-  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
-  /**
-   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
-   */
-  surfaceImage?: (number | null) | Media;
-  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
-  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
-  verticalAlignment: 'start' | 'center' | 'end';
-  columnSeparators: 'none' | 'between';
-  columns: {
-    width: number;
-    frame?: ('none' | 'outline') | null;
-    surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
-    /**
-     * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
-     */
-    surfaceImage?: (number | null) | Media;
-    surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
-    surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
-    blocks?:
-      | (
-          | RichTextBlock
-          | HeadingBlock
-          | PageTemplateActionLinksBlock
-          | CurrentItemFieldBlock
-          | CurrentItemFieldRowBlock
-          | PageTemplateIconBlock
-        )[]
-      | null;
-    id?: string | null;
-  }[];
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'infoColumns';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "InformationPanelGroupBlock".
- */
-export interface InformationPanelGroupBlock {
-  name?: string | null;
-  frame?: ('none' | 'outline') | null;
-  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
-  /**
-   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
-   */
-  surfaceImage?: (number | null) | Media;
-  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
-  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
-  /**
-   * Dotyczy Listingu, Galerii mediów, Karuzeli i Załączników, również wewnątrz układu kolumnowego.
-   */
-  emptyChildBehavior?: ('show' | 'hideGroup') | null;
-  sections: {
-    frame?: ('none' | 'outline') | null;
-    surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
-    /**
-     * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
-     */
-    surfaceImage?: (number | null) | Media;
-    surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
-    surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
-    blocks: (
-      | RichTextBlock
-      | HeadingBlock
-      | PageTemplateActionLinksBlock
-      | CurrentItemFieldBlock
-      | CurrentItemFieldRowBlock
-      | PageTemplateIconBlock
-      | InformationPanelColumnsBlock
-    )[];
-    id?: string | null;
-  }[];
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'infoGroup';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "PageTemplateListingBlock".
  */
 export interface PageTemplateListingBlock {
@@ -2945,9 +2954,9 @@ export interface CurrentItemContentBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "PageTemplateColumnLayoutBlock".
+ * via the `definition` "InformationPanelColumnsBlock".
  */
-export interface PageTemplateColumnLayoutBlock {
+export interface InformationPanelColumnsBlock {
   name?: string | null;
   frame?: ('none' | 'outline') | null;
   surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
@@ -2972,6 +2981,7 @@ export interface PageTemplateColumnLayoutBlock {
     blocks?:
       | (
           | RichTextBlock
+          | FieldRowTextBlock
           | HeadingBlock
           | PageTemplateActionLinksBlock
           | CardBlock
@@ -2983,19 +2993,20 @@ export interface PageTemplateColumnLayoutBlock {
           | CurrentItemFieldRowBlock
           | CurrentItemContentBlock
           | PageTemplateIconBlock
+          | SpacerBlock
         )[]
       | null;
     id?: string | null;
   }[];
   id?: string | null;
   blockName?: string | null;
-  blockType: 'columnLayout';
+  blockType: 'infoColumns';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "PageTemplateSectionGroupBlock".
+ * via the `definition` "InformationPanelGroupBlock".
  */
-export interface PageTemplateSectionGroupBlock {
+export interface InformationPanelGroupBlock {
   name?: string | null;
   frame?: ('none' | 'outline') | null;
   surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
@@ -3020,6 +3031,7 @@ export interface PageTemplateSectionGroupBlock {
     surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
     blocks: (
       | RichTextBlock
+      | FieldRowTextBlock
       | HeadingBlock
       | PageTemplateActionLinksBlock
       | CardBlock
@@ -3031,14 +3043,15 @@ export interface PageTemplateSectionGroupBlock {
       | CurrentItemFieldRowBlock
       | CurrentItemContentBlock
       | PageTemplateIconBlock
-      | PageTemplateColumnLayoutBlock
+      | SpacerBlock
+      | InformationPanelColumnsBlock
       | PageTemplateTabbedContentBlock
     )[];
     id?: string | null;
   }[];
   id?: string | null;
   blockName?: string | null;
-  blockType: 'sectionGroup';
+  blockType: 'infoGroup';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3442,6 +3455,7 @@ export interface PageTemplateTabbedContentBlock {
     blocks?:
       | (
           | RichTextBlock
+          | FieldRowTextBlock
           | HeadingBlock
           | PageTemplateActionLinksBlock
           | CardBlock
@@ -3453,6 +3467,7 @@ export interface PageTemplateTabbedContentBlock {
           | CurrentItemFieldRowBlock
           | CurrentItemContentBlock
           | PageTemplateIconBlock
+          | SpacerBlock
           | PageTemplateColumnLayoutBlock
         )[]
       | null;
@@ -3461,6 +3476,107 @@ export interface PageTemplateTabbedContentBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'tabs';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateColumnLayoutBlock".
+ */
+export interface PageTemplateColumnLayoutBlock {
+  name?: string | null;
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  verticalAlignment: 'start' | 'center' | 'end';
+  columnSeparators: 'none' | 'between';
+  columns: {
+    width: number;
+    frame?: ('none' | 'outline') | null;
+    surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+    /**
+     * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+     */
+    surfaceImage?: (number | null) | Media;
+    surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+    surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+    blocks?:
+      | (
+          | RichTextBlock
+          | FieldRowTextBlock
+          | HeadingBlock
+          | PageTemplateActionLinksBlock
+          | CardBlock
+          | PageTemplateListingBlock
+          | ContentCalendarBlock
+          | MediaGalleryBlock
+          | AttachmentsBlock
+          | CurrentItemFieldBlock
+          | CurrentItemFieldRowBlock
+          | CurrentItemContentBlock
+          | PageTemplateIconBlock
+          | SpacerBlock
+        )[]
+      | null;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'columnLayout';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateSectionGroupBlock".
+ */
+export interface PageTemplateSectionGroupBlock {
+  name?: string | null;
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  /**
+   * Dotyczy Listingu, Galerii mediów, Karuzeli i Załączników, również wewnątrz układu kolumnowego.
+   */
+  emptyChildBehavior?: ('show' | 'hideGroup') | null;
+  sections: {
+    frame?: ('none' | 'outline') | null;
+    surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+    /**
+     * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+     */
+    surfaceImage?: (number | null) | Media;
+    surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+    surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+    blocks: (
+      | RichTextBlock
+      | FieldRowTextBlock
+      | HeadingBlock
+      | PageTemplateActionLinksBlock
+      | CardBlock
+      | PageTemplateListingBlock
+      | ContentCalendarBlock
+      | MediaGalleryBlock
+      | AttachmentsBlock
+      | CurrentItemFieldBlock
+      | CurrentItemFieldRowBlock
+      | CurrentItemContentBlock
+      | PageTemplateIconBlock
+      | SpacerBlock
+      | PageTemplateColumnLayoutBlock
+      | PageTemplateTabbedContentBlock
+    )[];
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'sectionGroup';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3826,28 +3942,19 @@ export interface PageTemplatesSelect<T extends boolean = true> {
     | T
     | {
         richText?: T | RichTextBlockSelect<T>;
+        fieldRowText?: T | FieldRowTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
         currentItemField?: T | CurrentItemFieldBlockSelect<T>;
         currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
         pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
+        spacer?: T | SpacerBlockSelect<T>;
       };
   informationPanel?:
     | T
     | {
         richText?: T | RichTextBlockSelect<T>;
-        heading?: T | HeadingBlockSelect<T>;
-        actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
-        currentItemField?: T | CurrentItemFieldBlockSelect<T>;
-        currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
-        pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
-        infoColumns?: T | InformationPanelColumnsBlockSelect<T>;
-        infoGroup?: T | InformationPanelGroupBlockSelect<T>;
-      };
-  content?:
-    | T
-    | {
-        richText?: T | RichTextBlockSelect<T>;
+        fieldRowText?: T | FieldRowTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
@@ -3859,6 +3966,28 @@ export interface PageTemplatesSelect<T extends boolean = true> {
         currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
         currentItemContent?: T | CurrentItemContentBlockSelect<T>;
         pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
+        spacer?: T | SpacerBlockSelect<T>;
+        infoColumns?: T | InformationPanelColumnsBlockSelect<T>;
+        infoGroup?: T | InformationPanelGroupBlockSelect<T>;
+        tabs?: T | PageTemplateTabbedContentBlockSelect<T>;
+      };
+  content?:
+    | T
+    | {
+        richText?: T | RichTextBlockSelect<T>;
+        fieldRowText?: T | FieldRowTextBlockSelect<T>;
+        heading?: T | HeadingBlockSelect<T>;
+        actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
+        card?: T | CardBlockSelect<T>;
+        listing?: T | PageTemplateListingBlockSelect<T>;
+        contentCalendar?: T | ContentCalendarBlockSelect<T>;
+        mediaGallery?: T | MediaGalleryBlockSelect<T>;
+        attachments?: T | AttachmentsBlockSelect<T>;
+        currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+        currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
+        currentItemContent?: T | CurrentItemContentBlockSelect<T>;
+        pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
+        spacer?: T | SpacerBlockSelect<T>;
         columnLayout?: T | PageTemplateColumnLayoutBlockSelect<T>;
         sectionGroup?: T | PageTemplateSectionGroupBlockSelect<T>;
         tabs?: T | PageTemplateTabbedContentBlockSelect<T>;
@@ -3879,6 +4008,16 @@ export interface RichTextBlockSelect<T extends boolean = true> {
   surfaceHorizontalPosition?: T;
   surfaceVerticalPosition?: T;
   content?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FieldRowTextBlock_select".
+ */
+export interface FieldRowTextBlockSelect<T extends boolean = true> {
+  style?: T;
+  text?: T;
   id?: T;
   blockName?: T;
 }
@@ -3950,17 +4089,8 @@ export interface CurrentItemFieldRowBlockSelect<T extends boolean = true> {
         fieldRowText?: T | FieldRowTextBlockSelect<T>;
         pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
         actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
+        spacer?: T | SpacerBlockSelect<T>;
       };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "FieldRowTextBlock_select".
- */
-export interface FieldRowTextBlockSelect<T extends boolean = true> {
-  style?: T;
-  text?: T;
   id?: T;
   blockName?: T;
 }
@@ -3977,74 +4107,10 @@ export interface PageTemplateIconBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "InformationPanelColumnsBlock_select".
+ * via the `definition` "SpacerBlock_select".
  */
-export interface InformationPanelColumnsBlockSelect<T extends boolean = true> {
-  name?: T;
-  frame?: T;
-  surface?: T;
-  surfaceImage?: T;
-  surfaceHorizontalPosition?: T;
-  surfaceVerticalPosition?: T;
-  verticalAlignment?: T;
-  columnSeparators?: T;
-  columns?:
-    | T
-    | {
-        width?: T;
-        frame?: T;
-        surface?: T;
-        surfaceImage?: T;
-        surfaceHorizontalPosition?: T;
-        surfaceVerticalPosition?: T;
-        blocks?:
-          | T
-          | {
-              richText?: T | RichTextBlockSelect<T>;
-              heading?: T | HeadingBlockSelect<T>;
-              actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
-              currentItemField?: T | CurrentItemFieldBlockSelect<T>;
-              currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
-              pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
-            };
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "InformationPanelGroupBlock_select".
- */
-export interface InformationPanelGroupBlockSelect<T extends boolean = true> {
-  name?: T;
-  frame?: T;
-  surface?: T;
-  surfaceImage?: T;
-  surfaceHorizontalPosition?: T;
-  surfaceVerticalPosition?: T;
-  emptyChildBehavior?: T;
-  sections?:
-    | T
-    | {
-        frame?: T;
-        surface?: T;
-        surfaceImage?: T;
-        surfaceHorizontalPosition?: T;
-        surfaceVerticalPosition?: T;
-        blocks?:
-          | T
-          | {
-              richText?: T | RichTextBlockSelect<T>;
-              heading?: T | HeadingBlockSelect<T>;
-              actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
-              currentItemField?: T | CurrentItemFieldBlockSelect<T>;
-              currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
-              pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
-              infoColumns?: T | InformationPanelColumnsBlockSelect<T>;
-            };
-        id?: T;
-      };
+export interface SpacerBlockSelect<T extends boolean = true> {
+  size?: T;
   id?: T;
   blockName?: T;
 }
@@ -4209,9 +4275,9 @@ export interface CurrentItemContentBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "PageTemplateColumnLayoutBlock_select".
+ * via the `definition` "InformationPanelColumnsBlock_select".
  */
-export interface PageTemplateColumnLayoutBlockSelect<T extends boolean = true> {
+export interface InformationPanelColumnsBlockSelect<T extends boolean = true> {
   name?: T;
   frame?: T;
   surface?: T;
@@ -4233,6 +4299,7 @@ export interface PageTemplateColumnLayoutBlockSelect<T extends boolean = true> {
           | T
           | {
               richText?: T | RichTextBlockSelect<T>;
+              fieldRowText?: T | FieldRowTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
               actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
@@ -4244,6 +4311,7 @@ export interface PageTemplateColumnLayoutBlockSelect<T extends boolean = true> {
               currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
               currentItemContent?: T | CurrentItemContentBlockSelect<T>;
               pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
+              spacer?: T | SpacerBlockSelect<T>;
             };
         id?: T;
       };
@@ -4252,9 +4320,9 @@ export interface PageTemplateColumnLayoutBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "PageTemplateSectionGroupBlock_select".
+ * via the `definition` "InformationPanelGroupBlock_select".
  */
-export interface PageTemplateSectionGroupBlockSelect<T extends boolean = true> {
+export interface InformationPanelGroupBlockSelect<T extends boolean = true> {
   name?: T;
   frame?: T;
   surface?: T;
@@ -4274,6 +4342,7 @@ export interface PageTemplateSectionGroupBlockSelect<T extends boolean = true> {
           | T
           | {
               richText?: T | RichTextBlockSelect<T>;
+              fieldRowText?: T | FieldRowTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
               actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
@@ -4285,7 +4354,8 @@ export interface PageTemplateSectionGroupBlockSelect<T extends boolean = true> {
               currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
               currentItemContent?: T | CurrentItemContentBlockSelect<T>;
               pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
-              columnLayout?: T | PageTemplateColumnLayoutBlockSelect<T>;
+              spacer?: T | SpacerBlockSelect<T>;
+              infoColumns?: T | InformationPanelColumnsBlockSelect<T>;
               tabs?: T | PageTemplateTabbedContentBlockSelect<T>;
             };
         id?: T;
@@ -4374,6 +4444,7 @@ export interface PageTemplateTabbedContentBlockSelect<T extends boolean = true> 
           | T
           | {
               richText?: T | RichTextBlockSelect<T>;
+              fieldRowText?: T | FieldRowTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
               actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
@@ -4385,7 +4456,98 @@ export interface PageTemplateTabbedContentBlockSelect<T extends boolean = true> 
               currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
               currentItemContent?: T | CurrentItemContentBlockSelect<T>;
               pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
+              spacer?: T | SpacerBlockSelect<T>;
               columnLayout?: T | PageTemplateColumnLayoutBlockSelect<T>;
+            };
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateColumnLayoutBlock_select".
+ */
+export interface PageTemplateColumnLayoutBlockSelect<T extends boolean = true> {
+  name?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
+  verticalAlignment?: T;
+  columnSeparators?: T;
+  columns?:
+    | T
+    | {
+        width?: T;
+        frame?: T;
+        surface?: T;
+        surfaceImage?: T;
+        surfaceHorizontalPosition?: T;
+        surfaceVerticalPosition?: T;
+        blocks?:
+          | T
+          | {
+              richText?: T | RichTextBlockSelect<T>;
+              fieldRowText?: T | FieldRowTextBlockSelect<T>;
+              heading?: T | HeadingBlockSelect<T>;
+              actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
+              card?: T | CardBlockSelect<T>;
+              listing?: T | PageTemplateListingBlockSelect<T>;
+              contentCalendar?: T | ContentCalendarBlockSelect<T>;
+              mediaGallery?: T | MediaGalleryBlockSelect<T>;
+              attachments?: T | AttachmentsBlockSelect<T>;
+              currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+              currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
+              currentItemContent?: T | CurrentItemContentBlockSelect<T>;
+              pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
+              spacer?: T | SpacerBlockSelect<T>;
+            };
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PageTemplateSectionGroupBlock_select".
+ */
+export interface PageTemplateSectionGroupBlockSelect<T extends boolean = true> {
+  name?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
+  emptyChildBehavior?: T;
+  sections?:
+    | T
+    | {
+        frame?: T;
+        surface?: T;
+        surfaceImage?: T;
+        surfaceHorizontalPosition?: T;
+        surfaceVerticalPosition?: T;
+        blocks?:
+          | T
+          | {
+              richText?: T | RichTextBlockSelect<T>;
+              fieldRowText?: T | FieldRowTextBlockSelect<T>;
+              heading?: T | HeadingBlockSelect<T>;
+              actionLinks?: T | PageTemplateActionLinksBlockSelect<T>;
+              card?: T | CardBlockSelect<T>;
+              listing?: T | PageTemplateListingBlockSelect<T>;
+              contentCalendar?: T | ContentCalendarBlockSelect<T>;
+              mediaGallery?: T | MediaGalleryBlockSelect<T>;
+              attachments?: T | AttachmentsBlockSelect<T>;
+              currentItemField?: T | CurrentItemFieldBlockSelect<T>;
+              currentItemFieldRow?: T | CurrentItemFieldRowBlockSelect<T>;
+              currentItemContent?: T | CurrentItemContentBlockSelect<T>;
+              pageTemplateIcon?: T | PageTemplateIconBlockSelect<T>;
+              spacer?: T | SpacerBlockSelect<T>;
+              columnLayout?: T | PageTemplateColumnLayoutBlockSelect<T>;
+              tabs?: T | PageTemplateTabbedContentBlockSelect<T>;
             };
         id?: T;
       };
@@ -4406,6 +4568,7 @@ export interface PagesSelect<T extends boolean = true> {
     | T
     | {
         richText?: T | RichTextBlockSelect<T>;
+        fieldRowText?: T | FieldRowTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
@@ -4413,6 +4576,7 @@ export interface PagesSelect<T extends boolean = true> {
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
+        spacer?: T | SpacerBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;
@@ -4530,6 +4694,7 @@ export interface ColumnLayoutBlockSelect<T extends boolean = true> {
           | T
           | {
               richText?: T | RichTextBlockSelect<T>;
+              fieldRowText?: T | FieldRowTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
               actionLinks?: T | ActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
@@ -4537,6 +4702,7 @@ export interface ColumnLayoutBlockSelect<T extends boolean = true> {
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
+              spacer?: T | SpacerBlockSelect<T>;
             };
         id?: T;
       };
@@ -4567,6 +4733,7 @@ export interface SectionGroupBlockSelect<T extends boolean = true> {
           | T
           | {
               richText?: T | RichTextBlockSelect<T>;
+              fieldRowText?: T | FieldRowTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
               actionLinks?: T | ActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
@@ -4574,6 +4741,7 @@ export interface SectionGroupBlockSelect<T extends boolean = true> {
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
+              spacer?: T | SpacerBlockSelect<T>;
               columnLayout?: T | ColumnLayoutBlockSelect<T>;
               tabs?: T | TabbedContentBlockSelect<T>;
             };
@@ -4663,6 +4831,7 @@ export interface TabbedContentBlockSelect<T extends boolean = true> {
           | T
           | {
               richText?: T | RichTextBlockSelect<T>;
+              fieldRowText?: T | FieldRowTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
               actionLinks?: T | ActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
@@ -4670,6 +4839,7 @@ export interface TabbedContentBlockSelect<T extends boolean = true> {
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
+              spacer?: T | SpacerBlockSelect<T>;
               columnLayout?: T | ColumnLayoutBlockSelect<T>;
             };
         id?: T;
@@ -4690,6 +4860,7 @@ export interface PostsSelect<T extends boolean = true> {
     | T
     | {
         richText?: T | RichTextBlockSelect<T>;
+        fieldRowText?: T | FieldRowTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
@@ -4697,6 +4868,7 @@ export interface PostsSelect<T extends boolean = true> {
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
+        spacer?: T | SpacerBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;
@@ -4732,6 +4904,7 @@ export interface EventsSelect<T extends boolean = true> {
     | T
     | {
         richText?: T | RichTextBlockSelect<T>;
+        fieldRowText?: T | FieldRowTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
@@ -4739,6 +4912,7 @@ export interface EventsSelect<T extends boolean = true> {
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
+        spacer?: T | SpacerBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;
@@ -4832,6 +5006,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
     | T
     | {
         richText?: T | RichTextBlockSelect<T>;
+        fieldRowText?: T | FieldRowTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
@@ -4839,6 +5014,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
+        spacer?: T | SpacerBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;
@@ -4861,6 +5037,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
           | T
           | {
               richText?: T | RichTextBlockSelect<T>;
+              fieldRowText?: T | FieldRowTextBlockSelect<T>;
               heading?: T | HeadingBlockSelect<T>;
               actionLinks?: T | ActionLinksBlockSelect<T>;
               card?: T | CardBlockSelect<T>;
@@ -4868,6 +5045,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
               contentCalendar?: T | ContentCalendarBlockSelect<T>;
               mediaGallery?: T | MediaGalleryBlockSelect<T>;
               attachments?: T | AttachmentsBlockSelect<T>;
+              spacer?: T | SpacerBlockSelect<T>;
               columnLayout?: T | ColumnLayoutBlockSelect<T>;
               sectionGroup?: T | SectionGroupBlockSelect<T>;
               tabs?: T | TabbedContentBlockSelect<T>;
@@ -5073,6 +5251,7 @@ export interface MemberProfilesSelect<T extends boolean = true> {
   owner?: T;
   publicName?: T;
   about?: T;
+  clubFunction?: T;
   photo?: T;
   interests?: T;
   games?:
@@ -5083,8 +5262,6 @@ export interface MemberProfilesSelect<T extends boolean = true> {
         runs?: T;
         id?: T;
       };
-  clubFunction?: T;
-  clubActivities?: T;
   contactTopics?: T;
   contactChannels?:
     | T
@@ -5170,6 +5347,7 @@ export interface PartnersSelect<T extends boolean = true> {
     | T
     | {
         richText?: T | RichTextBlockSelect<T>;
+        fieldRowText?: T | FieldRowTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
@@ -5177,6 +5355,7 @@ export interface PartnersSelect<T extends boolean = true> {
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
+        spacer?: T | SpacerBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;
@@ -5648,6 +5827,7 @@ export interface HomepageSection {
   id: number;
   layout: (
     | RichTextBlock
+    | FieldRowTextBlock
     | HeadingBlock
     | ActionLinksBlock
     | CardBlock
@@ -5655,6 +5835,7 @@ export interface HomepageSection {
     | ContentCalendarBlock
     | MediaGalleryBlock
     | AttachmentsBlock
+    | SpacerBlock
     | ColumnLayoutBlock
     | SectionGroupBlock
     | TabbedContentBlock
@@ -6047,6 +6228,7 @@ export interface HomepageSectionsSelect<T extends boolean = true> {
     | T
     | {
         richText?: T | RichTextBlockSelect<T>;
+        fieldRowText?: T | FieldRowTextBlockSelect<T>;
         heading?: T | HeadingBlockSelect<T>;
         actionLinks?: T | ActionLinksBlockSelect<T>;
         card?: T | CardBlockSelect<T>;
@@ -6054,6 +6236,7 @@ export interface HomepageSectionsSelect<T extends boolean = true> {
         contentCalendar?: T | ContentCalendarBlockSelect<T>;
         mediaGallery?: T | MediaGalleryBlockSelect<T>;
         attachments?: T | AttachmentsBlockSelect<T>;
+        spacer?: T | SpacerBlockSelect<T>;
         columnLayout?: T | ColumnLayoutBlockSelect<T>;
         sectionGroup?: T | SectionGroupBlockSelect<T>;
         tabs?: T | TabbedContentBlockSelect<T>;

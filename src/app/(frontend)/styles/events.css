@@ -726,6 +726,25 @@ body:has(> .draftPreviewBanner ~ .pageTemplatePage) {
   text-transform: uppercase;
 }
 
+.pageTemplateCurrentList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pageTemplateCurrentList.pageTemplateList--list {
+  flex-direction: column;
+}
+
+.pageTemplateCurrentList.pageTemplateList--pills > li {
+  padding: 0.25rem 0.65rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+}
+
 .pageTemplateFieldRow {
   min-inline-size: 0;
   overflow-x: auto;
@@ -744,6 +763,14 @@ body:has(> .draftPreviewBanner ~ .pageTemplatePage) {
 
 .pageTemplateFieldRow > .pageBlocks > :not(.pageTemplateIcon) {
   width: auto;
+}
+
+.pageTemplateFieldRow > .pageBlocks:has(> .contentSpacer) {
+  flex-wrap: wrap;
+}
+
+.pageTemplateFieldRow > .pageBlocks > .contentSpacer {
+  flex-basis: 100%;
 }
 
 .pageTemplateFieldRow .actionLinks {
@@ -920,8 +947,7 @@ body:has(> .draftPreviewBanner ~ .pageTemplatePage) {
   color: var(--ivory);
 }
 
-.eventDetails dt,
-.pageTemplateFieldRowText--informationLabel {
+.eventDetails dt {
   color: var(--gold-light);
   font-size: 0.82rem;
   font-weight: 700;

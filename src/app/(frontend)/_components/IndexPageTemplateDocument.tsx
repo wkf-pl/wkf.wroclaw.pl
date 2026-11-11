@@ -1,7 +1,6 @@
 import type { PageTemplate } from '@/payload-types'
 
 import { getContentHeroImage } from './ContentHero'
-import { DraftPreviewBanner } from './DraftPreviewBanner'
 import { PageTemplateDocument } from './PageTemplateDocument'
 
 type IndexPageTemplateDocumentProperties = {
@@ -20,24 +19,17 @@ export function IndexPageTemplateDocument({
   title,
 }: IndexPageTemplateDocumentProperties) {
   return (
-    <>
-      {isDraftPreview ? (
-        <DraftPreviewBanner
-          message="Podglądasz roboczy układ szablonu. Opublikowana strona nadal używa ostatnio opublikowanego trybu renderowania."
-          pathname={pathname}
-        />
-      ) : null}
-      <PageTemplateDocument
-        breadcrumbs={[
-          { label: 'Strona główna', url: '/' },
-          { label: title, url: null },
-        ]}
-        image={getContentHeroImage(template.heroImage)}
-        indexTitle={title}
-        pathname={pathname}
-        searchParams={searchParams}
-        template={template}
-      />
-    </>
+    <PageTemplateDocument
+      breadcrumbs={[
+        { label: 'Strona główna', url: '/' },
+        { label: title, url: null },
+      ]}
+      image={getContentHeroImage(template.heroImage)}
+      fallbackTitle={title}
+      isDraftPreview={isDraftPreview}
+      pathname={pathname}
+      searchParams={searchParams}
+      template={template}
+    />
   )
 }

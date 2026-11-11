@@ -8,7 +8,7 @@ import {
   type ContentListingSource,
 } from '@/modules/content/content-listing'
 import type { ListingConditionInput } from '@/modules/content/listing-conditions'
-import type { ContentListingReference } from '@/modules/content/listing-conditions'
+import type { CurrentListingTarget } from '@/modules/content/listing-conditions'
 import { isFilteredEventsListing } from '@/modules/page-templates/events-index-listings'
 import { resolvePageTemplateListingItems } from '@/modules/page-templates/page-template-context'
 
@@ -20,7 +20,7 @@ type ListingBlockSectionProperties = {
   block: ListingBlock | PageTemplateListingBlock
   blockPath: string
   document: ContentLayoutDocument
-  currentTarget?: ContentListingReference
+  currentTarget?: CurrentListingTarget
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
 }

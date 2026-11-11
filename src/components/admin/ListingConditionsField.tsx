@@ -30,6 +30,7 @@ import { Fragment, useMemo } from 'react'
 import { getFormRelationshipId } from '@/lib/relationships'
 import {
   getApplicableListingSources,
+  getTaxonomyTemplateCollection,
   formatPolishListingConditionCount,
   getListingConditionOperatorLabel,
   getListingConditionRelationshipCollection,
@@ -157,6 +158,9 @@ export function ListingConditionFieldSelect(properties: SelectFieldClientProps) 
     potentiallyStalePath: properties.path,
   })
   const sources = useListingSources(properties.path)
+  const taxonomyContext = useFormFields(([fields]) =>
+    Boolean(getTaxonomyTemplateCollection(fields.templateKey?.value)),
+  )
   const operator = useField<string>({ path: siblingPath(properties.path, 'operator') })
   const relationshipValue = useField<unknown>({
     path: siblingPath(properties.path, 'relationshipValue'),
@@ -178,7 +182,7 @@ export function ListingConditionFieldSelect(properties: SelectFieldClientProps) 
   const availableOptions = fieldOptions.filter(
     (option) =>
       option.value === selectedField ||
-      getApplicableListingSources(option.value, sources).length > 0,
+      getApplicableListingSources(option.value, sources, taxonomyContext).length > 0,
   )
   const selectedOption = availableOptions.find((option) => option.value === selectedField)
   const styles = useMemo(() => mergeFieldStyles(properties.field), [properties.field])
@@ -404,9 +408,16 @@ export function ListingConditionScope(properties: UIFieldClientProps) {
   const relatedTargetModeValue = useFormFields(
     ([fields]) => fields[siblingPath(properties.path, 'relatedTargetMode')]?.value,
   )
+  const taxonomyContext = useFormFields(([fields]) =>
+    Boolean(getTaxonomyTemplateCollection(fields.templateKey?.value)),
+  )
   if (!conditionField) return null
 
-  const applicableSources = getApplicableListingSources(conditionField, sources)
+  const applicableSources = getApplicableListingSources(
+    conditionField,
+    sources,
+    taxonomyContext && relatedTargetModeValue === 'current',
+  )
   const inactive = applicableSources.length === 0
   const allSources = applicableSources.length === sources.length
   const sourceLabels = formatPolishList(
@@ -564,6 +575,7 @@ function getConditionValueLabel(
   condition: ListingConditionInput,
   relationshipLabel?: string,
 ): string {
+  if (condition.operator === 'isEmpty') return ''
   if (condition.field === 'title') return `„${condition.textValue?.trim() || '…'}”`
   if (condition.field === 'eventTime') {
     if (condition.eventTimeValue === 'past') return 'minione'
@@ -631,6 +643,8 @@ function getConditionRelationshipIdentity(condition: ListingConditionInput): {
   id: number | string
   value: unknown
 } | null {
+  if (condition.operator === 'isEmpty') return null
+
   const relationshipValue =
     condition.field === 'relatedTo' ? condition.relatedTargetValue : condition.relationshipValue
   if (!relationshipValue || !(relationshipValue.relationTo in relationshipTitleFields)) return null

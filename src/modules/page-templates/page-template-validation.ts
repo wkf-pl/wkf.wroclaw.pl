@@ -45,17 +45,8 @@ export function validatePageTemplateData(data: PageTemplateData): void {
   validateHeroImage(data, definition)
   validatePreviewTarget(data.previewTarget, definition)
 
-  const currentItemContentCount = (['hero', 'informationPanel', 'content'] as const).reduce(
-    (count, region) =>
-      count + validateRegion(data[region], data.templateKey as PageTemplateID, region, definition),
-    0,
-  )
-
-  if (!definition.requiresCurrentItemContent && currentItemContentCount > 0) {
-    throw new APIError('Ten szablon nie obsługuje bloku „Treści bieżącego elementu”.', 400)
-  }
-  if (currentItemContentCount > 1) {
-    throw new APIError('Blok „Treści bieżącego elementu” może wystąpić tylko raz.', 400)
+  for (const region of ['hero', 'informationPanel', 'content'] as const) {
+    validateRegion(data[region], definition.id, region, definition)
   }
 
   const isPublishedTemplate = data._status === 'published' && data.renderingMode === 'template'
@@ -64,15 +55,9 @@ export function validatePageTemplateData(data: PageTemplateData): void {
   if (!definition.rendererAvailable) {
     throw new APIError('Nowy renderer tej trasy nie został jeszcze wdrożony.', 400)
   }
-  if (definition.requiresCurrentItemContent && currentItemContentCount !== 1) {
-    throw new APIError(
-      'Opublikowany szablon wymaga dokładnie jednego bloku „Treści bieżącego elementu”.',
-      400,
-    )
-  }
   if (data.templateKey === 'event-detail' && !hasEventHeroTitle(data.hero)) {
     throw new APIError(
-      'Opublikowany szablon wydarzenia wymaga w Hero pola „Tytuł” w wyglądzie „Nagłówek główny”.',
+      'Opublikowany szablon wydarzenia wymaga w Hero pola „Tytuł” w stylu „Nagłówek główny”.',
       400,
     )
   }
@@ -113,23 +98,27 @@ function validateRegion(
   templateID: PageTemplateID,
   region: PageTemplateRegion,
   definition: PageTemplateDefinition,
-): number {
-  if (value === undefined || value === null) return 0
+): void {
+  if (value === undefined || value === null) return
   if (!Array.isArray(value)) throw new APIError(`Region ${region} ma nieprawidłowy format.`, 400)
 
-  const allowedTopLevelBlocks = new Set(getAllowedPageTemplateBlockSlugs(templateID, region))
+  const allowedRegionBlocks = new Set(getAllowedPageTemplateBlockSlugs(templateID, region))
   for (const block of value) {
     if (!isRecord(block) || typeof block.blockType !== 'string') {
       throw new APIError(`Region ${region} zawiera nieprawidłowy blok.`, 400)
     }
-    if (!allowedTopLevelBlocks.has(block.blockType)) {
+    if (!allowedRegionBlocks.has(block.blockType)) {
       throw new APIError(`Blok ${block.blockType} nie jest dozwolony w regionie ${region}.`, 400)
     }
   }
 
-  let currentItemContentCount = 0
   walkValue(value, (candidate) => {
-    if (candidate.blockType === 'currentItemContent') currentItemContentCount += 1
+    if (
+      candidate.blockType === 'currentItemContent' &&
+      !allowedRegionBlocks.has(candidate.blockType)
+    ) {
+      throw new APIError('Ten szablon nie obsługuje bloku „Treści bieżącego elementu”.', 400)
+    }
     if (candidate.blockType === 'currentItemField') {
       validateCurrentItemField(candidate, templateID, region)
     }
@@ -153,8 +142,6 @@ function validateRegion(
       )
     }
   })
-
-  return currentItemContentCount
 }
 
 function validateCurrentItemFieldRow(
@@ -169,7 +156,7 @@ function validateCurrentItemFieldRow(
   for (const item of block.items) {
     if (
       !isRecord(item) ||
-      !['currentItemField', 'fieldRowText', 'pageTemplateIcon', 'actionLinks'].includes(
+      !['currentItemField', 'fieldRowText', 'pageTemplateIcon', 'actionLinks', 'spacer'].includes(
         String(item.blockType),
       )
     ) {
@@ -232,7 +219,7 @@ function validateCurrentItemField(
     typeof block.variant !== 'string' ||
     !dynamicField.variants.some(({ value }) => value === block.variant)
   ) {
-    throw new APIError(`Wybrany wygląd pola ${dynamicField.label} nie jest obsługiwany.`, 400)
+    throw new APIError(`Wybrany styl pola ${dynamicField.label} nie jest obsługiwany.`, 400)
   }
 }
 

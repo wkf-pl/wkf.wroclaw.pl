@@ -210,6 +210,83 @@ describe('content listing and pagination', () => {
     }
   })
 
+  it('stores empty relationship filters without values and finds pages with missing relationships', async () => {
+    const containerPage = await fixture.payload.create({
+      collection: 'pages',
+      data: {
+        _status: 'draft',
+        author: fixture.author.id,
+        layout: [
+          {
+            blockType: 'listing',
+            conditions: [
+              { field: 'parentPage', operator: 'isEmpty' },
+              { field: 'category', operator: 'isEmpty' },
+              {
+                field: 'tag',
+                operator: 'isEmpty',
+                relationshipValue: { relationTo: 'tags', value: fixture.tag.id },
+              },
+              { field: 'eventCycle', operator: 'isEmpty' },
+            ],
+            pageSize: 12,
+            selectionMode: 'filters',
+            sources: ['pages', 'events'],
+            view: 'cards',
+          },
+        ],
+        slug: `${fixture.slugs.lifecyclePage}-empty-filters`,
+        title: 'Integration empty filters container',
+      },
+      overrideAccess: true,
+    })
+
+    try {
+      const storedPage = await fixture.payload.findByID({
+        collection: 'pages',
+        depth: 0,
+        id: containerPage.id,
+        overrideAccess: true,
+      })
+      const listing = storedPage.layout?.find((block) => block.blockType === 'listing')
+      expect(
+        listing?.conditions?.map(({ field, operator, relationshipValue }) => ({
+          field,
+          operator,
+          relationshipValue: relationshipValue ?? null,
+        })),
+      ).toEqual([
+        { field: 'parentPage', operator: 'isEmpty', relationshipValue: null },
+        { field: 'category', operator: 'isEmpty', relationshipValue: null },
+        { field: 'tag', operator: 'isEmpty', relationshipValue: null },
+        { field: 'eventCycle', operator: 'isEmpty', relationshipValue: null },
+      ])
+
+      const cases = [
+        ['parentPage', fixture.page.id],
+        ['category', fixture.childPage.id],
+        ['tag', fixture.childPage.id],
+      ] as const
+      for (const [field, matchingPageID] of cases) {
+        const result = await findPublicContent({
+          conditions: [{ field, operator: 'isEmpty' }],
+          page: 1,
+          pageSize: 12,
+          pagination: false,
+          sort: 'titleAscending',
+          sources: ['pages'],
+        })
+        expect(result.items.map((item) => item.document.id)).toEqual([matchingPageID])
+      }
+    } finally {
+      await fixture.payload.delete({
+        collection: 'pages',
+        id: containerPage.id,
+        overrideAccess: true,
+      })
+    }
+  })
+
   it('matches normalized titles with contains and exact operators', async () => {
     const containsResult = await findPublicContent({
       conditions: [{ field: 'title', operator: 'contains', textValue: '  TAXONOMY  ' }],

@@ -1,4 +1,3 @@
-import { RichText, type JSXConvertersFunction } from '@payloadcms/richtext-lexical/react'
 import type { ReactNode } from 'react'
 
 import { RasterIcon } from '@/components/RasterIcon'
@@ -10,9 +9,10 @@ import type {
 } from '@/payload-types'
 import { normalizeContentHeading } from '@/modules/content/content-presentation'
 import { getPublicSiteSettings } from '@/modules/content/public-content'
-import type { ContentListingReference } from '@/modules/content/listing-conditions'
+import type { CurrentListingTarget } from '@/modules/content/listing-conditions'
 import type { PublicBreadcrumb } from '@/modules/content/public-hierarchy'
 import { isSelectableRasterIconName } from '@/modules/icons/icon-registry'
+import { getPageTemplateDynamicField } from '@/modules/page-templates/page-template-registry'
 import { resolvePageTemplateActionLinks } from '@/modules/page-templates/page-template-context'
 
 import {
@@ -25,37 +25,24 @@ import {
 import { ActionLinksList } from './ActionLinksList'
 import { ContentHeading } from './ContentPresentation'
 import { ContentHero, type ContentHeroImage } from './ContentHero'
-
-const fieldRowTextConverters: JSXConvertersFunction = ({ defaultConverters }) => ({
-  text: defaultConverters.text,
-  paragraph: ({ childIndex, node, nodesToJSX }) => (
-    <>
-      {childIndex > 0 ? ' ' : null}
-      {nodesToJSX({ nodes: node.children })}
-    </>
-  ),
-  linebreak: () => ' ',
-})
-
-const fieldRowTextStyleClasses = {
-  badge: ' pageTemplateBadge',
-  emphasizedBadge: ' pageTemplateBadge pageTemplateBadge--emphasizedBadge',
-  informationLabel: ' pageTemplateFieldRowText--informationLabel',
-  plain: '',
-}
+import { CurrentItemValue } from './CurrentItemValue'
+import { PageTemplatePreviewBanner } from './PageTemplatePreviewBanner'
 
 type PageTemplateDocumentProperties = {
   breadcrumbs: PublicBreadcrumb[]
   currentItem?: {
     document: Exclude<ContentLayoutDocument, PageTemplate>
-    target: ContentListingReference
+    target: CurrentListingTarget
+    content?: ReactNode
+    afterContent?: ReactNode
     renderField: (
       block: CurrentItemFieldBlock,
       region: 'content' | 'hero' | 'informationPanel',
     ) => ReactNode
   }
   image?: ContentHeroImage
-  indexTitle?: string
+  fallbackTitle?: string
+  isDraftPreview?: boolean
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
   template: PageTemplate
@@ -65,18 +52,23 @@ export async function PageTemplateDocument({
   breadcrumbs,
   currentItem,
   image,
-  indexTitle,
+  fallbackTitle,
+  isDraftPreview,
   pathname,
   searchParams,
   template,
 }: PageTemplateDocumentProperties) {
   const document = currentItem?.document ?? template
   const currentTarget = currentItem?.target
-  const heroTitleIndex = indexTitle
-    ? (template.hero?.findIndex(
-        (block) => block.blockType === 'heading' && block.heading?.trim(),
-      ) ?? -1)
-    : -1
+  const hasCurrentItemHeading = template.hero?.some(
+    (block) => block.blockType === 'currentItemField' && block.variant === 'primaryHeading',
+  )
+  const heroTitleIndex =
+    fallbackTitle && !hasCurrentItemHeading
+      ? (template.hero?.findIndex(
+          (block) => block.blockType === 'heading' && block.heading?.trim(),
+        ) ?? -1)
+      : -1
 
   const renderCustomBlock = async (
     properties: ContentLayoutCustomBlockProperties,
@@ -90,21 +82,40 @@ export async function PageTemplateDocument({
     if (properties.block.blockType === 'currentItemField') {
       const region = getRegionFromPath(properties.path)
       if (!currentItem || !region) return { content: null }
+      const block = properties.block as CurrentItemFieldBlock
+      const field = getPageTemplateDynamicField(template.templateKey, block.field, region)
+      if (!field) return { content: null }
+
       return {
-        content: currentItem.renderField(properties.block as CurrentItemFieldBlock, region),
+        content: field.source ? (
+          <CurrentItemValue
+            currentTarget={currentTarget}
+            document={document}
+            fieldKey={field.key}
+            pathname={pathname}
+            searchParams={searchParams}
+            source={field.source}
+            variant={block.variant}
+          />
+        ) : (
+          currentItem.renderField(block, region)
+        ),
       }
     }
 
     if (properties.block.blockType === 'currentItemContent') {
       if (!currentItem) return { content: null }
       return {
-        content: (
-          <ContentLayoutRenderer
-            currentTarget={currentTarget}
-            document={document}
-            pathname={pathname}
-            searchParams={searchParams}
-          />
+        content: currentItem.content ?? (
+          <>
+            <ContentLayoutRenderer
+              currentTarget={currentTarget}
+              document={document}
+              pathname={pathname}
+              searchParams={searchParams}
+            />
+            {currentItem.afterContent}
+          </>
         ),
       }
     }
@@ -136,17 +147,6 @@ export async function PageTemplateDocument({
               searchParams={searchParams}
             />
           </div>
-        ),
-      }
-    }
-
-    if (properties.block.blockType === 'fieldRowText') {
-      const { style, text } = properties.block
-      return {
-        content: (
-          <span className={`pageTemplateFieldRowText${fieldRowTextStyleClasses[style ?? 'plain']}`}>
-            <RichText converters={fieldRowTextConverters} data={text} disableContainer />
-          </span>
         ),
       }
     }
@@ -225,54 +225,59 @@ export async function PageTemplateDocument({
   const hasInformationPanel = Boolean(template.informationPanel?.length)
 
   return (
-    <main className="contentHeroPage pageTemplatePage">
-      <article className="cmsDocument cmsPageDocument pageTemplateDocument">
-        <ContentHero
-          breadcrumbs={breadcrumbs}
-          customCopy={
-            <>
-              {indexTitle && heroTitleIndex === -1 ? <h1>{indexTitle}</h1> : null}
+    <>
+      {isDraftPreview ? <PageTemplatePreviewBanner pathname={pathname} /> : null}
+      <main className="contentHeroPage pageTemplatePage">
+        <article className="cmsDocument cmsPageDocument pageTemplateDocument">
+          <ContentHero
+            breadcrumbs={breadcrumbs}
+            customCopy={
+              <>
+                {fallbackTitle && !hasCurrentItemHeading && heroTitleIndex === -1 ? (
+                  <h1>{fallbackTitle}</h1>
+                ) : null}
+                <ContentLayoutRenderer
+                  currentTarget={currentTarget}
+                  customBlockRenderer={renderCustomBlock}
+                  document={document}
+                  layout={toContentLayoutBlocks(template.hero)}
+                  layoutPath="hero"
+                  pathname={pathname}
+                  searchParams={searchParams}
+                />
+              </>
+            }
+            image={image}
+          />
+
+          {hasInformationPanel ? (
+            <section aria-label="Panel informacyjny" className="pageTemplateInformationPanel">
               <ContentLayoutRenderer
                 currentTarget={currentTarget}
                 customBlockRenderer={renderCustomBlock}
                 document={document}
-                layout={toContentLayoutBlocks(template.hero)}
-                layoutPath="hero"
+                layout={toContentLayoutBlocks(template.informationPanel)}
+                layoutPath="informationPanel"
                 pathname={pathname}
                 searchParams={searchParams}
               />
-            </>
-          }
-          image={image}
-        />
+            </section>
+          ) : null}
 
-        {hasInformationPanel ? (
-          <section aria-label="Panel informacyjny" className="pageTemplateInformationPanel">
+          <div className="contentShell contentPageBody pageTemplateContent">
             <ContentLayoutRenderer
               currentTarget={currentTarget}
               customBlockRenderer={renderCustomBlock}
               document={document}
-              layout={toContentLayoutBlocks(template.informationPanel)}
-              layoutPath="informationPanel"
+              layout={toContentLayoutBlocks(template.content)}
+              layoutPath="content"
               pathname={pathname}
               searchParams={searchParams}
             />
-          </section>
-        ) : null}
-
-        <div className="contentShell contentPageBody pageTemplateContent">
-          <ContentLayoutRenderer
-            currentTarget={currentTarget}
-            customBlockRenderer={renderCustomBlock}
-            document={document}
-            layout={toContentLayoutBlocks(template.content)}
-            layoutPath="content"
-            pathname={pathname}
-            searchParams={searchParams}
-          />
-        </div>
-      </article>
-    </main>
+          </div>
+        </article>
+      </main>
+    </>
   )
 }
 

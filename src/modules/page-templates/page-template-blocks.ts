@@ -1,16 +1,7 @@
-import {
-  BoldFeature,
-  FixedToolbarFeature,
-  ItalicFeature,
-  lexicalEditor,
-  ParagraphFeature,
-  SubscriptFeature,
-  SuperscriptFeature,
-  UnderlineFeature,
-} from '@payloadcms/richtext-lexical'
 import type { Block, BlocksField } from 'payload'
 
 import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
+import { createStyleField } from '@/modules/content/text-styles'
 import { createRasterIconField } from '@/modules/icons/fields'
 
 import {
@@ -22,6 +13,8 @@ import {
   PageTemplateActionLinksBlock,
   PageTemplateListingBlock,
   RichTextBlock,
+  FieldRowTextBlock,
+  SpacerBlock,
   createColumnLayoutBlock,
   createSectionGroupBlock,
   createTabbedContentBlock,
@@ -35,15 +28,23 @@ import {
   type PageTemplateRegion,
 } from './page-template-registry'
 
+const orderedDynamicFields = pageTemplateRegistry.flatMap(({ dynamicFields }) => dynamicFields)
+const legacyDynamicFields = orderedDynamicFields.filter(({ source }) => !source)
 const dynamicFieldOptions = uniqueOptions(
-  pageTemplateRegistry.flatMap(({ dynamicFields }) =>
-    dynamicFields.map(({ key, label }) => ({ label, value: key })),
-  ),
+  [...legacyDynamicFields, ...orderedDynamicFields].map(({ key, label }) => ({
+    label,
+    value: key,
+  })),
 )
 
 const dynamicFieldVariantOptions = uniqueOptions(
-  pageTemplateRegistry.flatMap(({ dynamicFields }) =>
-    dynamicFields.flatMap(({ variants }) => variants),
+  [...legacyDynamicFields, ...orderedDynamicFields].flatMap(({ variants }) =>
+    // Keep the existing PostgreSQL enum order for badges shared by multiple fields.
+    variants === pageTemplateBadgeVariants
+      ? variants
+      : variants.filter(
+          ({ value }) => !pageTemplateBadgeVariants.some((badge) => badge.value === value),
+        ),
   ),
 )
 
@@ -80,20 +81,17 @@ export const CurrentItemFieldBlock: Block = {
           options: dynamicFieldOptions,
           required: true,
         },
-        {
+        createStyleField({
           name: 'variant',
-          type: 'select',
           admin: {
             components: {
               Field: '/components/admin/PageTemplateFields#CurrentItemFieldVariantSelect',
             },
-            isClearable: false,
             width: '33.333%',
           },
-          label: 'Wygląd',
           options: dynamicFieldVariantOptions,
           required: true,
-        },
+        }),
       ],
     },
   ],
@@ -125,56 +123,6 @@ export const CurrentItemContentBlock: Block = {
     plural: 'Treści bieżącego elementu',
     singular: 'Treści bieżącego elementu',
   },
-}
-
-const FieldRowTextBlock: Block = {
-  slug: 'fieldRowText',
-  admin: {
-    components: {
-      Label: '/components/admin/PageTemplateFields#FieldRowTextBlockLabel',
-    },
-    disableBlockName: true,
-    group: 'Elementy',
-    images: {
-      thumbnail: {
-        alt: 'Krótki tekst',
-        url: '/assets/block-thumbnails/rich-text.png',
-      },
-    },
-  },
-  fields: [
-    {
-      name: 'style',
-      type: 'select',
-      admin: { isClearable: false },
-      defaultValue: 'plain',
-      label: 'Styl',
-      options: [
-        { label: 'Zwykły tekst', value: 'plain' },
-        ...pageTemplateBadgeVariants,
-        { label: 'Etykieta informacyjna', value: 'informationLabel' },
-      ],
-    },
-    {
-      name: 'text',
-      type: 'richText',
-      editor: lexicalEditor({
-        features: () => [
-          ParagraphFeature(),
-          BoldFeature(),
-          ItalicFeature(),
-          UnderlineFeature(),
-          SuperscriptFeature(),
-          SubscriptFeature(),
-          FixedToolbarFeature(),
-        ],
-      }),
-      label: 'Tekst',
-      required: true,
-    },
-  ],
-  interfaceName: 'FieldRowTextBlock',
-  labels: { plural: 'Teksty', singular: 'Tekst' },
 }
 
 const PageTemplateIconBlock: Block = {
@@ -247,6 +195,7 @@ export const CurrentItemFieldRowBlock: Block = {
         FieldRowTextBlock,
         PageTemplateIconBlock,
         PageTemplateActionLinksBlock,
+        SpacerBlock,
       ],
       label: 'Elementy wiersza',
       labels: { plural: 'Elementy wiersza', singular: 'element wiersza' },
@@ -261,16 +210,9 @@ export const CurrentItemFieldRowBlock: Block = {
   },
 }
 
-const informationLeafBlocks = [
-  RichTextBlock,
-  HeadingBlock,
-  PageTemplateActionLinksBlock,
-  CurrentItemFieldBlock,
-  CurrentItemFieldRowBlock,
-  PageTemplateIconBlock,
-]
 const contentLeafBlocks = [
   RichTextBlock,
+  FieldRowTextBlock,
   HeadingBlock,
   PageTemplateActionLinksBlock,
   CardBlock,
@@ -282,27 +224,17 @@ const contentLeafBlocks = [
   CurrentItemFieldRowBlock,
   CurrentItemContentBlock,
   PageTemplateIconBlock,
+  SpacerBlock,
 ]
 
-const informationLeafFilter = createNestedBlockFilter('informationPanel', informationLeafBlocks)
+const informationLeafFilter = createNestedBlockFilter('informationPanel', contentLeafBlocks)
 const contentLeafFilter = createNestedBlockFilter('content', contentLeafBlocks)
 
 export const InformationPanelColumnsBlock = createColumnLayoutBlock({
   blockSlug: 'infoColumns',
   interfaceName: 'InformationPanelColumnsBlock',
-  leafBlocks: informationLeafBlocks,
+  leafBlocks: contentLeafBlocks,
   nestedFilterOptions: informationLeafFilter,
-})
-
-export const InformationPanelGroupBlock = createSectionGroupBlock({
-  blockSlug: 'infoGroup',
-  interfaceName: 'InformationPanelGroupBlock',
-  layoutBlocks: [InformationPanelColumnsBlock],
-  leafBlocks: informationLeafBlocks,
-  nestedFilterOptions: createNestedBlockFilter('informationPanel', [
-    ...informationLeafBlocks,
-    InformationPanelColumnsBlock,
-  ]),
 })
 
 export const PageTemplateColumnLayoutBlock = createColumnLayoutBlock({
@@ -318,6 +250,18 @@ export const PageTemplateTabbedContentBlock = createTabbedContentBlock({
   nestedFilterOptions: createNestedBlockFilter('content', [
     ...contentLeafBlocks,
     PageTemplateColumnLayoutBlock,
+  ]),
+})
+
+export const InformationPanelGroupBlock = createSectionGroupBlock({
+  blockSlug: 'infoGroup',
+  interfaceName: 'InformationPanelGroupBlock',
+  layoutBlocks: [InformationPanelColumnsBlock, PageTemplateTabbedContentBlock],
+  leafBlocks: contentLeafBlocks,
+  nestedFilterOptions: createNestedBlockFilter('informationPanel', [
+    ...contentLeafBlocks,
+    InformationPanelColumnsBlock,
+    PageTemplateTabbedContentBlock,
   ]),
 })
 
@@ -341,16 +285,19 @@ const regionBlocks: Record<PageTemplateRegion, Block[]> = {
   ],
   hero: [
     RichTextBlock,
+    FieldRowTextBlock,
     HeadingBlock,
     PageTemplateActionLinksBlock,
     CurrentItemFieldBlock,
     CurrentItemFieldRowBlock,
     PageTemplateIconBlock,
+    SpacerBlock,
   ],
   informationPanel: [
-    ...informationLeafBlocks,
+    ...contentLeafBlocks,
     InformationPanelColumnsBlock,
     InformationPanelGroupBlock,
+    PageTemplateTabbedContentBlock,
   ],
 }
 

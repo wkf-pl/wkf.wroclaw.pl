@@ -1,6 +1,10 @@
 import { sql, type MigrateDownArgs, type MigrateUpArgs } from '@payloadcms/db-postgres'
 
 import { down, up } from '../../migrations/20261107_002214_page_template_composition'
+import {
+  down as downListingEmptyRelationships,
+  up as upListingEmptyRelationships,
+} from '../../migrations/20261110_172309_listing_empty_relationships'
 
 export async function pageTemplateCompositionSchemaExists(
   database: Pick<MigrateUpArgs['db'], 'execute'>,
@@ -21,6 +25,12 @@ export async function setPageTemplateCompositionSchema(
   enabled: boolean,
 ): Promise<void> {
   const exists = await pageTemplateCompositionSchemaExists(migrationArguments.db)
-  if (enabled && !exists) await up(migrationArguments)
-  if (!enabled && exists) await down(migrationArguments)
+  if (enabled && !exists) {
+    await up(migrationArguments)
+    await upListingEmptyRelationships(migrationArguments)
+  }
+  if (!enabled && exists) {
+    await downListingEmptyRelationships(migrationArguments)
+    await down(migrationArguments)
+  }
 }

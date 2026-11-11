@@ -14,6 +14,7 @@ import type { CurrentItemFieldBlock, Event, PageTemplate } from '@/payload-types
 
 import { PageTemplateDocument } from '../../_components/PageTemplateDocument'
 import { getContentHeroImage } from '../../_components/ContentHero'
+import { CurrentItemText } from '../../_components/CurrentItemPresentation'
 import { TaxonomyLinks } from '../../_components/TaxonomyLinks'
 
 type EventTemplateDocumentProperties = {
@@ -56,7 +57,7 @@ function EventCurrentItemField({ block, event }: { block: CurrentItemFieldBlock;
     case 'title':
       return <EventTitleField event={event} variant={block.variant} />
     case 'excerpt':
-      return <EventExcerptField event={event} variant={block.variant} />
+      return <CurrentItemText text={extractRichTextText(event.excerpt)} variant={block.variant} />
     case 'eventCycle':
       return <EventCycleField event={event} variant={block.variant} />
     case 'tags':
@@ -100,13 +101,6 @@ function EventTitleField({ event, variant }: { event: Event; variant: string }) 
     return <h2 className="pageTemplateCurrentHeading">{event.title}</h2>
   }
   return <h1>{event.title}</h1>
-}
-
-function EventExcerptField({ event, variant }: { event: Event; variant: string }) {
-  const excerpt = extractRichTextText(event.excerpt)
-  if (!excerpt) return null
-
-  return <p className={`pageTemplateText pageTemplateText--${variant}`}>{excerpt}</p>
 }
 
 function EventCycleField({ event, variant }: { event: Event; variant: string }) {

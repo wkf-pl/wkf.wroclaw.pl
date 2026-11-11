@@ -1,3 +1,6 @@
+import { currentItemFieldSources, type CurrentItemFieldSource } from './current-item-fields'
+import { contentBadgeVariants, createTextStyleOptions } from '@/modules/content/text-styles'
+
 export type PageTemplateRegion = 'content' | 'hero' | 'informationPanel'
 
 export type PageTemplateRouteKind = 'collectionIndex' | 'collectionItem'
@@ -21,6 +24,7 @@ export type PageTemplateDynamicField = {
   key: string
   label: string
   regions: readonly PageTemplateRegion[]
+  source?: CurrentItemFieldSource
   variants: readonly PageTemplateFieldVariant[]
 }
 
@@ -54,7 +58,6 @@ export type PageTemplateDefinition = {
   previewCollection: PageTemplatePreviewCollection | null
   regions: readonly PageTemplateRegion[]
   rendererAvailable: boolean
-  requiresCurrentItemContent: boolean
   route: string
   routeKind: PageTemplateRouteKind
 }
@@ -71,6 +74,7 @@ export type PageTemplateID =
   | 'tag-detail'
 
 const pageTemplateRegions = ['hero', 'informationPanel', 'content'] as const
+const contentRegions = ['informationPanel', 'content'] as const
 
 const headingVariants = [
   { label: 'Nagłówek główny', value: 'primaryHeading' },
@@ -78,16 +82,9 @@ const headingVariants = [
   { label: 'Nadtytuł', value: 'eyebrow' },
 ] as const
 
-const textVariants = [
-  { label: 'Tekst wprowadzający', value: 'lead' },
-  { label: 'Tekst podstawowy', value: 'body' },
-  { label: 'Tekst kompaktowy', value: 'compact' },
-] as const
+const textVariants = createTextStyleOptions({ basic: 'body', compact: 'compact' })
 
-export const pageTemplateBadgeVariants = [
-  { label: 'Etykieta', value: 'badge' },
-  { label: 'Etykieta wyróżniona', value: 'emphasizedBadge' },
-] as const
+export const pageTemplateBadgeVariants = contentBadgeVariants
 
 const listVariants = [
   { label: 'W jednym wierszu', value: 'inline' },
@@ -103,7 +100,9 @@ const informationVariants = [
 
 const standardContentBlocks: readonly PageTemplateBlockCapability[] = [
   { blockType: 'heading', label: 'Nagłówek', regions: ['hero', 'informationPanel', 'content'] },
-  { blockType: 'richText', label: 'Tekst', regions: ['hero', 'informationPanel', 'content'] },
+  { blockType: 'spacer', label: 'Odstęp', regions: pageTemplateRegions },
+  { blockType: 'fieldRowText', label: 'Tekst', regions: pageTemplateRegions },
+  { blockType: 'richText', label: 'Treść', regions: ['hero', 'informationPanel', 'content'] },
   {
     blockType: 'actionLinks',
     label: 'Odnośniki akcji',
@@ -118,30 +117,30 @@ const standardContentBlocks: readonly PageTemplateBlockCapability[] = [
   {
     blockType: 'listing',
     label: 'Listing',
-    regions: ['content'],
+    regions: contentRegions,
     variants: ['tiles', 'cards', 'carousel', 'compact', 'grid'],
   },
-  { blockType: 'card', label: 'Karta', regions: ['content'] },
-  { blockType: 'contentCalendar', label: 'Kalendarz treści', regions: ['content'] },
-  { blockType: 'mediaGallery', label: 'Galeria', regions: ['content'] },
-  { blockType: 'attachments', label: 'Załączniki', regions: ['content'] },
+  { blockType: 'card', label: 'Karta', regions: contentRegions },
+  { blockType: 'contentCalendar', label: 'Kalendarz treści', regions: contentRegions },
+  { blockType: 'mediaGallery', label: 'Galeria', regions: contentRegions },
+  { blockType: 'attachments', label: 'Załączniki', regions: contentRegions },
   {
     blockType: 'columnLayout',
     label: 'Kolumny',
-    regions: ['informationPanel', 'content'],
+    regions: contentRegions,
   },
   {
     blockType: 'sectionGroup',
     label: 'Grupa sekcji',
-    regions: ['informationPanel', 'content'],
+    regions: contentRegions,
   },
-  { blockType: 'tabs', label: 'Zakładki', regions: ['content'] },
+  { blockType: 'tabs', label: 'Zakładki', regions: contentRegions },
 ]
 
 const itemContentBlock: PageTemplateBlockCapability = {
   blockType: 'currentItemContent',
   label: 'Treści bieżącego elementu',
-  regions: ['content'],
+  regions: contentRegions,
 }
 
 const eventInformationFields: readonly PageTemplateDynamicField[] = [
@@ -163,24 +162,23 @@ const eventInformationFields: readonly PageTemplateDynamicField[] = [
   ),
 ]
 
-export const pageTemplateRegistry: readonly PageTemplateDefinition[] = [
-  createIndexTemplate('blog-index', 'Blog', '/blog', true),
-  createIndexTemplate('events-index', 'Wydarzenia', '/events', true),
+const basePageTemplateRegistry: readonly PageTemplateDefinition[] = [
+  createIndexTemplate('blog-index', 'Blog', '/blog'),
+  createIndexTemplate('events-index', 'Wydarzenia', '/events'),
   createIndexTemplate('members-index', 'Klubowicze', '/members'),
   {
     allowedBlocks: standardContentBlocks,
     currentItemLabel: 'Tag',
     dynamicFields: [
-      createDynamicField('name', 'Nazwa', ['hero', 'content'], headingVariants),
-      createDynamicField('description', 'Opis', ['hero', 'content'], textVariants),
+      createDynamicField('name', 'Nazwa', pageTemplateRegions, headingVariants),
+      createDynamicField('description', 'Opis', pageTemplateRegions, textVariants),
     ],
     heroImageRule: 'none',
     id: 'tag-detail',
     label: 'Wpisy z tagiem',
     previewCollection: 'tags',
     regions: pageTemplateRegions,
-    rendererAvailable: false,
-    requiresCurrentItemContent: false,
+    rendererAvailable: true,
     route: '/tag/[slug]',
     routeKind: 'collectionItem',
   },
@@ -188,17 +186,16 @@ export const pageTemplateRegistry: readonly PageTemplateDefinition[] = [
     allowedBlocks: standardContentBlocks,
     currentItemLabel: 'Kategoria',
     dynamicFields: [
-      createDynamicField('name', 'Nazwa', ['hero', 'content'], headingVariants),
-      createDynamicField('description', 'Opis', ['hero', 'content'], textVariants),
-      createDynamicField('hierarchy', 'Hierarchia kategorii', ['hero', 'content'], listVariants),
+      createDynamicField('name', 'Nazwa', pageTemplateRegions, headingVariants),
+      createDynamicField('description', 'Opis', pageTemplateRegions, textVariants),
+      createDynamicField('hierarchy', 'Hierarchia kategorii', pageTemplateRegions, listVariants),
     ],
     heroImageRule: 'none',
     id: 'category-detail',
     label: 'Wpisy z kategorii',
     previewCollection: 'categories',
     regions: pageTemplateRegions,
-    rendererAvailable: false,
-    requiresCurrentItemContent: false,
+    rendererAvailable: true,
     route: '/category/[slug]',
     routeKind: 'collectionItem',
   },
@@ -227,11 +224,11 @@ export const pageTemplateRegistry: readonly PageTemplateDefinition[] = [
         true,
       ),
       createDynamicField('title', 'Tytuł', ['hero'], headingVariants),
-      createDynamicField('excerpt', 'Opis', ['hero', 'content'], textVariants),
-      createDynamicField('eventCycle', 'Cykl', ['hero', 'content'], listVariants, true),
-      createDynamicField('tags', 'Tagi', ['hero', 'content'], listVariants, true),
+      createDynamicField('excerpt', 'Opis', pageTemplateRegions, textVariants),
+      createDynamicField('eventCycle', 'Cykl', pageTemplateRegions, listVariants, true),
+      createDynamicField('tags', 'Tagi', pageTemplateRegions, listVariants, true),
       ...eventInformationFields,
-      createDynamicField('partners', 'Partnerzy', ['content'], listVariants),
+      createDynamicField('partners', 'Partnerzy', contentRegions, listVariants),
     ],
     heroImageRule: 'currentItem',
     id: 'event-detail',
@@ -239,26 +236,28 @@ export const pageTemplateRegistry: readonly PageTemplateDefinition[] = [
     previewCollection: 'events',
     regions: pageTemplateRegions,
     rendererAvailable: true,
-    requiresCurrentItemContent: true,
     route: '/events/[slug]',
     routeKind: 'collectionItem',
   },
   {
     allowedBlocks: [...standardContentBlocks, itemContentBlock],
+    contextActions: [{ key: 'eventCycleCalendar', label: 'Subskrybuj cykl' }],
+    contextListingRelations: [
+      { key: 'eventPartners', label: 'Partnerzy bieżącego cyklu', source: 'partners' },
+    ],
     currentItemLabel: 'Cykl wydarzeń',
     dynamicFields: [
       createDynamicField('title', 'Tytuł', ['hero'], headingVariants),
-      createDynamicField('excerpt', 'Opis', ['hero', 'content'], textVariants),
-      createDynamicField('organizers', 'Organizatorzy', ['content'], listVariants),
-      createDynamicField('partners', 'Partnerzy', ['content'], listVariants),
+      createDynamicField('excerpt', 'Opis', pageTemplateRegions, textVariants),
+      createDynamicField('organizers', 'Organizatorzy', contentRegions, listVariants),
+      createDynamicField('partners', 'Partnerzy', contentRegions, listVariants),
     ],
     heroImageRule: 'currentItem',
     id: 'event-cycle-detail',
     label: 'Szczegóły cyklu wydarzeń',
     previewCollection: 'event-cycles',
     regions: pageTemplateRegions,
-    rendererAvailable: false,
-    requiresCurrentItemContent: true,
+    rendererAvailable: true,
     route: '/events/series/[slug]',
     routeKind: 'collectionItem',
   },
@@ -267,16 +266,15 @@ export const pageTemplateRegistry: readonly PageTemplateDefinition[] = [
     currentItemLabel: 'Partner',
     dynamicFields: [
       createDynamicField('name', 'Nazwa', ['hero'], headingVariants),
-      createDynamicField('excerpt', 'Opis', ['hero', 'content'], textVariants),
-      createDynamicField('website', 'Strona internetowa', ['hero', 'content'], listVariants),
+      createDynamicField('excerpt', 'Opis', pageTemplateRegions, textVariants),
+      createDynamicField('website', 'Strona internetowa', pageTemplateRegions, listVariants),
     ],
     heroImageRule: 'currentItem',
     id: 'partner-detail',
     label: 'Szczegóły partnera',
     previewCollection: 'partners',
     regions: pageTemplateRegions,
-    rendererAvailable: false,
-    requiresCurrentItemContent: true,
+    rendererAvailable: true,
     route: '/partners/[slug]',
     routeKind: 'collectionItem',
   },
@@ -285,21 +283,52 @@ export const pageTemplateRegistry: readonly PageTemplateDefinition[] = [
     currentItemLabel: 'Wizytówka',
     dynamicFields: [
       createDynamicField('publicName', 'Nazwa publiczna', ['hero'], headingVariants),
-      createDynamicField('clubFunction', 'Funkcja w klubie', ['hero', 'content'], textVariants),
-      createDynamicField('about', 'O mnie', ['content'], textVariants),
-      createDynamicField('contactChannels', 'Kanały kontaktu', ['content'], listVariants),
+      createDynamicField('clubFunction', 'Funkcja w klubie', pageTemplateRegions, textVariants),
+      createDynamicField('about', 'O mnie', contentRegions, textVariants),
+      createDynamicField('contactChannels', 'Kanały kontaktu', contentRegions, listVariants),
     ],
     heroImageRule: 'currentItem',
     id: 'member-detail',
     label: 'Profil klubowicza',
     previewCollection: 'member-profiles',
     regions: pageTemplateRegions,
-    rendererAvailable: false,
-    requiresCurrentItemContent: true,
+    rendererAvailable: true,
     route: '/members/[slug]',
     routeKind: 'collectionItem',
   },
 ] as const
+
+export const pageTemplateRegistry = basePageTemplateRegistry.map((definition) => {
+  if (!definition.previewCollection) return definition
+
+  const fields = currentItemFieldSources[definition.previewCollection]
+  return {
+    ...definition,
+    dynamicFields: [
+      ...definition.dynamicFields.map((field) => ({ ...field, regions: definition.regions })),
+      ...fields.map(({ key, label, source }) => {
+        const isList = ['tags', 'join', 'breadcrumbs', 'games', 'organizers', 'links'].includes(
+          source.kind,
+        )
+        const inline = !isList && !['image', 'photo', 'layout', 'richText'].includes(source.kind)
+        return {
+          ...createDynamicField(
+            key,
+            label,
+            definition.regions,
+            isList
+              ? listVariants
+              : inline || source.kind === 'richText'
+                ? textVariants
+                : informationVariants,
+            inline,
+          ),
+          source,
+        }
+      }),
+    ],
+  }
+})
 
 export const pageTemplateIDs = pageTemplateRegistry.map(({ id }) => id)
 
@@ -362,7 +391,6 @@ function createIndexTemplate(
   id: Extract<PageTemplateID, `${string}-index`>,
   label: string,
   route: string,
-  rendererAvailable = false,
 ): PageTemplateDefinition {
   return {
     allowedBlocks: standardContentBlocks,
@@ -373,8 +401,7 @@ function createIndexTemplate(
     label,
     previewCollection: null,
     regions: pageTemplateRegions,
-    rendererAvailable,
-    requiresCurrentItemContent: false,
+    rendererAvailable: true,
     route,
     routeKind: 'collectionIndex',
   }
