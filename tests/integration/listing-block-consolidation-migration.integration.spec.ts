@@ -61,6 +61,23 @@ async function runMigrationInTransaction(
   }
 }
 
+async function upConsolidationAtOriginalSchema(args: MigrateUpArgs): Promise<void> {
+  // Hide the field introduced by the later related-content migration.
+  await args.db.execute(sql`
+    ALTER TABLE "content_listing_items"
+      RENAME COLUMN "related_target_search_index" TO "future_related_target_search_index";
+    ALTER TABLE "content_listing_items"
+      ALTER COLUMN "future_related_target_search_index" SET DEFAULT '|';
+  `)
+  await upConsolidation(args)
+  await args.db.execute(sql`
+    ALTER TABLE "content_listing_items"
+      ALTER COLUMN "future_related_target_search_index" DROP DEFAULT;
+    ALTER TABLE "content_listing_items"
+      RENAME COLUMN "future_related_target_search_index" TO "related_target_search_index";
+  `)
+}
+
 async function tableExists(table: string): Promise<boolean> {
   const result = await payload.db.drizzle.execute(
     sql`SELECT to_regclass(${`public.${table}`}) IS NOT NULL AS "exists"`,
@@ -77,7 +94,7 @@ async function moveToLegacySchema(): Promise<void> {
 
 async function moveToCurrentSchema(): Promise<void> {
   if (!(await tableExists('_listing_block_migration_provenance'))) {
-    await upConsolidation(migrationArguments())
+    await runMigrationInTransaction(upConsolidationAtOriginalSchema)
   }
   if (await tableExists('pages_blocks_carousel')) await upRemoval(migrationArguments())
 }
@@ -205,8 +222,21 @@ describe('Listing block consolidation migration', () => {
     await removeFixtures()
     await insertLegacyFixtures()
 
-    await runMigrationInTransaction(upConsolidation)
+    await runMigrationInTransaction(upConsolidationAtOriginalSchema)
     await runMigrationInTransaction(upRemoval)
+
+    const indexedProfile = await payload.db.drizzle.execute(sql`
+      SELECT "title", "normalized_title" AS "normalizedTitle", "url"
+      FROM "content_listing_items"
+      WHERE "source" = 'member-profiles' AND "source_document_id" = ${memberProfileID}
+    `)
+    expect(indexedProfile.rows).toEqual([
+      {
+        title: 'Alicja Migracyjna',
+        normalizedTitle: 'alicja migracyjna',
+        url: '/members/alicja-migracyjna',
+      },
+    ])
 
     const convertedLiveBlocks = await payload.db.drizzle.execute(sql`
       SELECT "id", "view"::text AS "view", "page_size"::int AS "pageSize",
@@ -328,7 +358,7 @@ describe('Listing block consolidation migration', () => {
     `)
     expect(removedNewSourceIndexItems.rows).toEqual([{ count: 0 }])
 
-    await runMigrationInTransaction(upConsolidation)
+    await runMigrationInTransaction(upConsolidationAtOriginalSchema)
     await runMigrationInTransaction(upRemoval)
 
     expect(await tableExists('pages_blocks_carousel')).toBe(false)

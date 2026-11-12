@@ -1,6 +1,7 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
-import { syncContentListingItem } from '../src/modules/content/content-listing-index'
+import { normalizeListingTitle } from '../src/modules/content/listing-conditions'
+import { extractRichTextText } from '../src/modules/content/rich-text'
 import {
   consolidateLegacyContentBlocks,
   restoreLegacyContentBlocks,
@@ -84,44 +85,62 @@ async function recreateListingSourceEnums(db: MigrateUpArgs['db']): Promise<void
   await db.execute(sql.raw(statements.join('\n')))
 }
 
-async function findPublishedDocumentIDs(
-  db: MigrateUpArgs['db'],
-  collection: 'member-profiles' | 'partners',
-  lastDocumentID: number,
-): Promise<number[]> {
-  const query =
-    collection === 'partners'
-      ? sql`SELECT "id" FROM "partners" WHERE "id" > ${lastDocumentID} AND "_status" = 'published' ORDER BY "id" LIMIT ${backfillBatchSize}`
-      : sql`SELECT "id" FROM "member_profiles" WHERE "id" > ${lastDocumentID} AND "_status" = 'published' ORDER BY "id" LIMIT ${backfillBatchSize}`
-  const result = await db.execute(query)
-
-  return result.rows.map((row) => (row as { id: number }).id)
+type ListingSourceRow = {
+  id: number
+  title: string
+  slug: string
+  updated_at: string
+  hero_image_id: number | null
+  excerpt: unknown
 }
 
-async function backfillNewListingSources(
-  db: MigrateUpArgs['db'],
-  req: MigrateUpArgs['req'],
-): Promise<void> {
-  req.context = {
-    ...req.context,
-    skipContentListingSync: true,
-    skipPublicCacheInvalidation: true,
-  }
-
-  for (const collection of ['partners', 'member-profiles'] as const) {
+async function backfillNewListingSources(db: MigrateUpArgs['db']): Promise<void> {
+  // The runtime indexer reads columns introduced by later migrations.
+  for (const source of ['partners', 'member-profiles'] as const) {
+    const isPartner = source === 'partners'
+    const urlPrefix = isPartner ? '/partners/' : '/members/'
     let lastDocumentID = 0
     while (true) {
-      const documentIDs = await findPublishedDocumentIDs(db, collection, lastDocumentID)
-      for (const documentID of documentIDs) {
-        lastDocumentID = documentID
-        await syncContentListingItem(req, collection, documentID)
+      const { rows } = await db.execute<ListingSourceRow>(
+        isPartner
+          ? sql`SELECT id, name AS title, slug, updated_at, hero_image_id, excerpt
+              FROM partners WHERE id > ${lastDocumentID} AND "_status" = 'published' AND deleted_at IS NULL
+              ORDER BY id LIMIT ${backfillBatchSize}`
+          : sql`SELECT id, public_name AS title, slug, updated_at, NULL AS hero_image_id, about AS excerpt
+              FROM member_profiles WHERE id > ${lastDocumentID} AND "_status" = 'published' AND deleted_at IS NULL
+              ORDER BY id LIMIT ${backfillBatchSize}`,
+      )
+      for (const row of rows) {
+        lastDocumentID = row.id
+        const excerpt =
+          isPartner && typeof row.excerpt === 'string'
+            ? row.excerpt.trim()
+            : extractRichTextText(row.excerpt)
+        await db.execute(sql`
+          INSERT INTO content_listing_items (
+            source, source_document_id, source_updated_at, title, normalized_title,
+            tag_search_index, url, excerpt, hero_image_id, has_significant_date
+          ) VALUES (
+            ${source}, ${row.id}, ${row.updated_at}, ${row.title}, ${normalizeListingTitle(row.title)},
+            '||', ${urlPrefix + row.slug}, ${excerpt || null}, ${row.hero_image_id}, false
+          )
+          ON CONFLICT (source, source_document_id) DO UPDATE SET
+            source_updated_at = EXCLUDED.source_updated_at,
+            title = EXCLUDED.title,
+            normalized_title = EXCLUDED.normalized_title,
+            tag_search_index = EXCLUDED.tag_search_index,
+            url = EXCLUDED.url,
+            excerpt = EXCLUDED.excerpt,
+            hero_image_id = EXCLUDED.hero_image_id,
+            has_significant_date = EXCLUDED.has_significant_date;
+        `)
       }
-      if (documentIDs.length < backfillBatchSize) break
+      if (rows.length < backfillBatchSize) break
     }
   }
 }
 
-export async function up({ db, payload: _payload, req }: MigrateUpArgs): Promise<void> {
+export async function up({ db }: MigrateUpArgs): Promise<void> {
   await recreateListingSourceEnums(db)
   await db.execute(sql`
    ALTER TABLE "pages_blocks_listing" ALTER COLUMN "view" SET DATA TYPE text;
@@ -294,7 +313,7 @@ export async function up({ db, payload: _payload, req }: MigrateUpArgs): Promise
   CREATE INDEX "_homepage_sections_v_rels_member_profiles_id_idx" ON "_homepage_sections_v_rels" USING btree ("member_profiles_id");`)
 
   await consolidateLegacyContentBlocks(db)
-  await backfillNewListingSources(db, req)
+  await backfillNewListingSources(db)
 }
 
 export async function down({ db, payload: _payload, req: _req }: MigrateDownArgs): Promise<void> {

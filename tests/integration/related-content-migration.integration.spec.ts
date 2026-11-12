@@ -201,7 +201,26 @@ describe('related content migration', () => {
       { path: 'version.relatedEvents' },
     ])
 
-    await upRelatedContent(migrationArguments())
+    // The related target must be indexable before this later layout table exists.
+    await fixture.payload.db.drizzle.execute(sql`
+      ALTER TABLE "events_blocks_field_row_text" RENAME TO "future_events_blocks_field_row_text"
+    `)
+    try {
+      await upRelatedContent(migrationArguments())
+    } finally {
+      await fixture.payload.db.drizzle.execute(sql`
+        ALTER TABLE "future_events_blocks_field_row_text" RENAME TO "events_blocks_field_row_text"
+      `)
+    }
+    const indexedPost = await fixture.payload.db.drizzle.execute(sql`
+      SELECT "related_target_search_index" AS "relatedTargetSearchIndex"
+      FROM "content_listing_items"
+      WHERE "source" = 'posts' AND "source_document_id" = ${post.id}
+    `)
+    expect(indexedPost.rows).toEqual([
+      { relatedTargetSearchIndex: `|events:${event.id}|event-cycles:${cycle.id}|` },
+    ])
+
     const migratedPost = await fixture.payload.findByID({
       collection: 'posts',
       depth: 0,
