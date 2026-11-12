@@ -1,6 +1,10 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
+import type { Where } from 'payload'
 
-import { syncContentListingItem } from '../src/modules/content/content-listing-index'
+import {
+  createContentListingIndexData,
+  findPublishedContentListingDocument,
+} from '../src/modules/content/content-listing-sources'
 import { allListingSources } from '../src/modules/content/listing-conditions'
 
 const relationPathMigrations = [
@@ -134,10 +138,6 @@ async function rebuildContentListingIndex({
     skipContentListingSync: true,
     skipPublicCacheInvalidation: true,
   }
-  await db.execute(sql`
-    UPDATE "content_listing_items"
-    SET "source_updated_at" = '1970-01-01T00:00:00.000Z';
-  `)
   const publishedDocuments = await db.execute(sql`
     SELECT 'pages' AS "source", "id" AS "source_document_id"
       FROM "pages" WHERE "_status" = 'published' AND "deleted_at" IS NULL
@@ -166,7 +166,32 @@ async function rebuildContentListingIndex({
   for (const row of publishedDocuments.rows) {
     const item = row as { source: string; source_document_id: number }
     const source = allListingSources.find((candidate) => candidate === item.source)
-    if (source) await syncContentListingItem(req, source, item.source_document_id)
+    if (!source) continue
+
+    const document = await findPublishedContentListingDocument(req, source, item.source_document_id)
+    const where: Where = {
+      and: [
+        { source: { equals: source } },
+        { sourceDocumentId: { equals: item.source_document_id } },
+      ],
+    }
+    if (document) {
+      // The collection API validates related targets by reading their current layout schema.
+      await req.payload.db.upsert({
+        collection: 'content-listing-items',
+        data: createContentListingIndexData(source, document),
+        req,
+        returning: false,
+        where,
+      })
+    } else {
+      await req.payload.db.deleteOne({
+        collection: 'content-listing-items',
+        req,
+        returning: false,
+        where,
+      })
+    }
   }
   await db.execute(sql`
     ALTER TABLE "content_listing_items"
