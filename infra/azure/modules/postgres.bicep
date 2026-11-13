@@ -146,6 +146,24 @@ resource pgAuditLog 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@20
   ]
 }
 
+resource databaseActivityMetrics 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = if (enableAudit) {
+  parent: server
+  name: 'metrics.collector_database_activity'
+  properties: {
+    source: 'user-override'
+    value: 'on'
+  }
+}
+
+resource logLockWaits 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = if (enableAudit) {
+  parent: server
+  name: 'log_lock_waits'
+  properties: {
+    source: 'user-override'
+    value: 'on'
+  }
+}
+
 resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (enableAudit && logAnalyticsWorkspaceId != '') {
   name: '${serverName}-diagnostics'
   scope: server

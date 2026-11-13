@@ -169,6 +169,42 @@ resource postgresMetricAlerts 'Microsoft.Insights/metricAlerts@2018-03-01' = [fo
   }
 }]
 
+resource postgresUnavailableAlert 'Microsoft.Insights/activityLogAlerts@2020-10-01' = if (environmentName == 'prod') {
+  name: '${postgresServerName}-resource-unavailable'
+  location: 'global'
+  tags: tags
+  properties: {
+    enabled: true
+    description: 'PostgreSQL production resource is unavailable according to Azure Resource Health.'
+    scopes: [
+      postgresServerId
+    ]
+    condition: {
+      allOf: [
+        {
+          field: 'category'
+          equals: 'ResourceHealth'
+        }
+        {
+          field: 'status'
+          equals: 'Active'
+        }
+        {
+          field: 'properties.currentHealthStatus'
+          equals: 'Unavailable'
+        }
+      ]
+    }
+    actions: {
+      actionGroups: [
+        {
+          actionGroupId: actionGroup.id
+        }
+      ]
+    }
+  }
+}
+
 resource monthlyBudget 'Microsoft.Consumption/budgets@2023-11-01' = {
   name: '${resourcePrefix}-${environmentName}-monthly'
   properties: {
