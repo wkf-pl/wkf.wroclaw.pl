@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ['localhost', '127.0.0.1', '[::1]'],
   distDir: process.env.NEXT_DIST_DIR || '.next',
   experimental: {
+    globalNotFound: true,
     useTypeScriptCli: false,
   },
   poweredByHeader: false,

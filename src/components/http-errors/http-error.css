@@ -1,0 +1,186 @@
+@font-face {
+  font-family: 'WKF Roboto Slab';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(/assets/fonts/roboto-slab-latin-ext.woff2) format('woff2');
+  unicode-range:
+    u+0100-02ba, u+02bd-02c5, u+02c7-02cc, u+02ce-02d7, u+02dd-02ff, u+0304, u+0308, u+0329,
+    u+1d00-1dbf, u+1e00-1e9f, u+1ef2-1eff, u+2020, u+20a0-20ab, u+20ad-20c4, u+2113, u+2c60-2c7f,
+    u+a720-a7ff;
+}
+
+@font-face {
+  font-family: 'WKF Roboto Slab';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(/assets/fonts/roboto-slab-latin.woff2) format('woff2');
+  unicode-range:
+    u+00??, u+0131, u+0152-0153, u+02bb-02bc, u+02c6, u+02da, u+02dc, u+0304, u+0308, u+0329,
+    u+2000-206f, u+20ac, u+2122, u+2191, u+2193, u+2212, u+2215, u+feff, u+fffd;
+}
+
+.httpErrorDocument {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  background: #000d17;
+}
+
+.httpError {
+  min-height: 65vh;
+  background:
+    radial-gradient(circle at 50% 45%, rgb(17 65 91 / 22%), transparent 40rem),
+    linear-gradient(180deg, #001321, #001827 55%, #00111d);
+  color: #f4efe5;
+  font-family: 'Arial Narrow', 'Roboto Condensed', Arial, sans-serif;
+  text-align: center;
+}
+
+.httpErrorDocument .httpError {
+  flex: 1;
+}
+
+.httpErrorHero {
+  position: relative;
+  display: grid;
+  box-sizing: border-box;
+  min-height: clamp(16rem, 35vw, 29rem);
+  padding: 2rem 1.5rem;
+  place-items: center;
+  background:
+    linear-gradient(90deg, rgb(0 13 23 / 50%), transparent 44%),
+    url('/assets/home/wro2.webp') center top / cover no-repeat,
+    #000d17;
+}
+
+body:has(> .httpError) > .siteHeaderShell,
+.httpErrorHeader {
+  position: absolute;
+  z-index: 10;
+  inset: 0 0 auto;
+}
+
+body:has(> .httpError) > .siteHeaderShell > .siteHeader {
+  border-bottom: 0;
+}
+
+body:has(> .siteHeaderShell) > .httpError .httpErrorHero,
+.httpErrorHeader + .httpError .httpErrorHero {
+  min-height: clamp(22rem, 35vw, 29rem);
+  padding-top: 8.5rem;
+}
+
+.httpErrorHero::before {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgb(243 163 19 / 20%),
+    #f3a313 20%,
+    #f3a313 80%,
+    rgb(243 163 19 / 20%)
+  );
+  content: '';
+}
+
+.httpErrorHero::after {
+  position: absolute;
+  bottom: -30px;
+  left: 10%;
+  width: 80%;
+  height: 30px;
+  background: radial-gradient(ellipse at top, rgb(243 163 19 / 30%), transparent 60%);
+  content: '';
+  pointer-events: none;
+}
+
+.httpErrorContent {
+  display: grid;
+  gap: 1.5rem;
+  justify-items: center;
+  padding: clamp(2.5rem, 6vw, 5rem) 1.25rem;
+}
+
+.httpErrorHeader {
+  box-sizing: border-box;
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  width: min(76rem, calc(100% - 3rem));
+  min-height: 7.75rem;
+  margin-inline: auto;
+  color: #f4efe5;
+}
+
+.httpErrorHeader img {
+  width: 4.9rem;
+  height: 4.9rem;
+  object-fit: contain;
+}
+
+.httpErrorHeader span {
+  max-width: 11rem;
+  font-family: 'WKF Roboto Slab', Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.1rem, 2vw, 1.55rem);
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.httpError h1,
+.httpErrorCode {
+  font-family: var(--font-roboto-slab, 'WKF Roboto Slab'), Georgia, 'Times New Roman', serif;
+}
+
+.httpError h1 {
+  margin: 0;
+  color: inherit;
+  font-size: clamp(1.5rem, 4vw, 2.8rem);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.httpErrorCode {
+  color: #ffbd38;
+  font-size: clamp(5rem, 14vw, 9rem);
+  font-weight: 700;
+  line-height: 1;
+  text-shadow:
+    0 2px 5px #000d17,
+    0 6px 28px #000d17;
+}
+
+.httpErrorActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.httpErrorActions a {
+  padding-block: 0.5rem;
+  color: #ffbd38;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.httpErrorActions button {
+  padding: 0.6rem 1rem;
+  border: 1px solid #ffbd38;
+  border-radius: 0.4rem;
+  background: #ffbd38;
+  color: #052033;
+  cursor: pointer;
+  font: inherit;
+}
+
+.httpErrorActions :focus-visible {
+  outline: 2px solid #f4efe5;
+  outline-offset: 4px;
+}
