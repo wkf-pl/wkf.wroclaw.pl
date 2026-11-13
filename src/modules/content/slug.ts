@@ -56,7 +56,11 @@ export function validatePageSlug(value: null | string | undefined): string | tru
     return true
   }
 
-  if (['admin', 'api', 'category', 'health', 'members', 'preview', 'tag'].includes(value)) {
+  if (
+    ['admin', 'api', 'blog', 'category', 'events', 'health', 'members', 'preview', 'tag'].includes(
+      value,
+    )
+  ) {
     return 'Ten adres jest zarezerwowany przez aplikację.'
   }
 

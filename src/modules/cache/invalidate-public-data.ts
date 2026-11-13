@@ -122,7 +122,10 @@ const listingInvalidators = createCollectionCacheInvalidators([
 export const invalidateListingsAfterChange = listingInvalidators.afterChange
 export const invalidateListingsAfterDelete = listingInvalidators.afterDelete
 
-const pageTemplateInvalidators = createCollectionCacheInvalidators([publicCacheTags.pageTemplates])
+const pageTemplateInvalidators = createCollectionCacheInvalidators([
+  publicCacheTags.pageTemplates,
+  publicCacheTags.sitemap,
+])
 export const invalidatePageTemplatesAfterChange = pageTemplateInvalidators.afterChange
 export const invalidatePageTemplatesAfterDelete = pageTemplateInvalidators.afterDelete
 

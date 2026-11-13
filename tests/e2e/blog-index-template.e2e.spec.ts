@@ -70,7 +70,7 @@ test('previews the blog template and switches the public blog on publication', a
 
     await publicPage.goto('/blog?pageTemplatePreview=blog-index')
     await expect(publicPage.getByRole('heading', { level: 1, name: 'Blog' })).toBeVisible()
-    await expect(publicPage.locator('.pageTemplateDocument')).toHaveCount(0)
+    await expect(publicPage.getByRole('heading', { name: templateTitle })).toHaveCount(0)
     await preview.getByRole('link', { name: 'Wyłącz podgląd' }).click()
     await expect(preview.getByRole('heading', { level: 1, name: 'Blog' })).toBeVisible()
 

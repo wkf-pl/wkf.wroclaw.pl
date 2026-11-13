@@ -5,17 +5,14 @@ import { createPublicSitemap } from '@/modules/content/sitemap'
 const updatedAt = '2026-08-21T10:00:00.000Z'
 
 describe('public sitemap', () => {
-  it('includes every public CMS route and excludes system page duplicates', () => {
+  it('includes every public CMS route using the published blog template', () => {
     const sitemap = createPublicSitemap({
+      blogTemplateUpdatedAt: updatedAt,
       categories: [{ slug: 'fantastyka', updatedAt }],
       cycles: [{ slug: 'erpegowe-wtorki', updatedAt }],
       events: [{ slug: 'sesja', updatedAt }],
       memberProfiles: [{ slug: 'anna', updatedAt }],
-      pages: [
-        { slug: 'blog', systemKey: 'blog', updatedAt },
-        { slug: 'events', systemKey: 'events', updatedAt },
-        { slug: 'o-nas', updatedAt },
-      ],
+      pages: [{ slug: 'o-nas', updatedAt }],
       partners: [{ slug: 'biblioteka', updatedAt }],
       posts: [{ slug: 'nowosci', updatedAt }],
       tags: [{ slug: 'rpg', updatedAt }],
@@ -37,7 +34,7 @@ describe('public sitemap', () => {
     ])
   })
 
-  it('does not advertise the blog route before its system page is published', () => {
+  it('does not advertise the blog route without a published template', () => {
     const sitemap = createPublicSitemap({
       categories: [],
       cycles: [],

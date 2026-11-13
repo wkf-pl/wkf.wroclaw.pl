@@ -355,7 +355,6 @@ export interface Page {
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
   author: number | User;
-  systemKey?: string | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -2508,6 +2507,17 @@ export interface PageTemplate {
         | PageTemplateTabbedContentBlock
       )[]
     | null;
+  seo?: {
+    /**
+     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
+     */
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
+     */
+    image?: (number | null) | Media;
+  };
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -4025,6 +4035,13 @@ export interface PageTemplatesSelect<T extends boolean = true> {
         sectionGroup?: T | PageTemplateSectionGroupBlockSelect<T>;
         tabs?: T | PageTemplateTabbedContentBlockSelect<T>;
       };
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -4633,7 +4650,6 @@ export interface PagesSelect<T extends boolean = true> {
   category?: T;
   tags?: T;
   author?: T;
-  systemKey?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;

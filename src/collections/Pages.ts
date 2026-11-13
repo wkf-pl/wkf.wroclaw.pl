@@ -1,4 +1,4 @@
-import type { Access, AccessResult, CollectionConfig, Field, Where } from 'payload'
+import type { CollectionConfig, Field } from 'payload'
 
 import {
   createEditorialFields,
@@ -24,10 +24,8 @@ import {
   validateHierarchy,
 } from '@/modules/content/hierarchy'
 import { createDraftPreviewURL } from '@/modules/content/draft-preview'
-import { validatePageStructure } from '@/modules/content/page-validation'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
-import { combineAccessWithConstraint } from '@/modules/membership/permission-resolution'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import { validatePageAliasCollision } from '@/modules/url-aliases/url-aliases'
 
@@ -49,19 +47,7 @@ const updatePages = createTrashUpdateAccess(
   createRolePermissionAccess({ operation: 'restore', resource: 'pages' }),
 )
 
-function combineWithNonSystemPageConstraint(result: AccessResult): AccessResult {
-  const nonSystemPage: Where = {
-    or: [{ systemKey: { exists: false } }, { systemKey: { not_in: ['blog', 'events'] } }],
-  }
-
-  return combineAccessWithConstraint(result, nonSystemPage)
-}
-
-const deletePages: Access = createTrashDeleteAccess(
-  async (arguments_) => combineWithNonSystemPageConstraint(await deletePagesByRole(arguments_)),
-  async (arguments_) =>
-    combineWithNonSystemPageConstraint(await permanentlyDeletePagesByRole(arguments_)),
-)
+const deletePages = createTrashDeleteAccess(deletePagesByRole, permanentlyDeletePagesByRole)
 
 const editorialFields = createEditorialFields({
   includeContent: false,
@@ -152,15 +138,6 @@ export const Pages: CollectionConfig = {
     getEditorialField(editorialFields, 'category'),
     getEditorialField(editorialFields, 'tags'),
     getEditorialField(editorialFields, 'author'),
-    {
-      name: 'systemKey',
-      type: 'text',
-      admin: {
-        hidden: true,
-      },
-      index: true,
-      unique: true,
-    },
     getEditorialField(editorialFields, 'publishedAt'),
   ],
   hooks: {
@@ -168,12 +145,7 @@ export const Pages: CollectionConfig = {
     afterDelete: [removeContentListingAfterDelete],
     beforeChange: [populateHierarchyFullTitle, populateListingExcerptOnPublish, setPublishedAt],
     beforeOperation: [markTrashMutation],
-    beforeValidate: [
-      validatePageAliasCollision,
-      validateMediaBlocks,
-      validatePageStructure,
-      validateHierarchy,
-    ],
+    beforeValidate: [validatePageAliasCollision, validateMediaBlocks, validateHierarchy],
   },
   labels: {
     plural: 'Strony',

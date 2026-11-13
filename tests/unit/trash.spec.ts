@@ -116,16 +116,14 @@ describe('trash access', () => {
     await expect(checkAccess(deleteAccess, request, { id: 1 })).resolves.toBe(false)
   })
 
-  it('keeps system pages protected from permanent deletion', async () => {
+  it('allows permanent deletion of pages with the explicit permission', async () => {
     const deleteAccess = Pages.access?.delete
     const permanentDeleteRequest = createRoleRequest([
       { permanentDeleteAllowed: true, resource: 'pages' },
     ])
 
     expect(deleteAccess).toBeTypeOf('function')
-    await expect(checkAccess(deleteAccess as Access, permanentDeleteRequest)).resolves.toEqual({
-      or: [{ systemKey: { exists: false } }, { systemKey: { not_in: ['blog', 'events'] } }],
-    })
+    await expect(checkAccess(deleteAccess as Access, permanentDeleteRequest)).resolves.toBe(true)
   })
 
   it('does not broaden read access', async () => {

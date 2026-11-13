@@ -29,7 +29,6 @@ import {
   preventDeletingCategoryWithChildren,
   validateHierarchy,
 } from '@/modules/content/hierarchy'
-import { validatePageStructure } from '@/modules/content/page-validation'
 
 function findField(fields: typeof Categories.fields, name: string) {
   const field = flattenFields(fields).find(
@@ -684,25 +683,6 @@ describe('page configuration', () => {
         } as never,
       ),
     ).toBeTypeOf('string')
-  })
-
-  it('keeps the system Blog slug and key immutable', async () => {
-    const data = await validatePageStructure({
-      data: { slug: 'zmieniony', systemKey: null },
-      originalDoc: { id: 1, systemKey: 'blog' },
-      req: { context: {}, payload: {} },
-    } as never)
-
-    expect(data).toMatchObject({ slug: 'blog', systemKey: 'blog' })
-  })
-
-  it('rejects an attempt to create the system Blog outside migration or seed', async () => {
-    await expect(
-      validatePageStructure({
-        data: { slug: 'blog', systemKey: 'blog' },
-        req: { context: {}, payload: {} },
-      } as never),
-    ).rejects.toMatchObject({ status: 400 })
   })
 
   it('rejects a cycle in page parents', async () => {

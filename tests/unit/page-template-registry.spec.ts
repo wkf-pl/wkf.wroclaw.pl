@@ -81,7 +81,6 @@ describe('page template registry', () => {
           '_status',
           'createdAt',
           'id',
-          'systemKey',
           '_objectKey',
           'deletedAt',
           'seo',

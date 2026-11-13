@@ -514,65 +514,8 @@ async function ensureJoinPage(author: User): Promise<Page> {
   })
 }
 
-async function ensureBlogPage(author: User): Promise<Page> {
-  const existingPages = await payload.find({
-    collection: 'pages',
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-    pagination: false,
-    where: {
-      or: [{ systemKey: { equals: 'blog' } }, { slug: { equals: 'blog' } }],
-    },
-  })
-  const existingPage = existingPages.docs[0]
-
-  if (existingPage) {
-    if (existingPage.systemKey === 'blog') {
-      return existingPage
-    }
-
-    return payload.update({
-      collection: 'pages',
-      context: { allowSystemPageMutation: true },
-      id: existingPage.id,
-      data: { systemKey: 'blog' },
-      overrideAccess: true,
-    })
-  }
-
-  return payload.create({
-    collection: 'pages',
-    context: { allowSystemPageMutation: true },
-    data: {
-      _status: 'published',
-      author: author.id,
-      layout: [
-        createRichTextBlock([
-          'Artykuły, aktualności i relacje z życia Wrocławskiego Klubu Fantastyki.',
-        ]),
-        {
-          blockType: 'listing',
-          pageSize: 12,
-          pagination: true,
-          selectionMode: 'filters',
-          sort: 'newest',
-          sources: ['posts'],
-          view: 'cards',
-        },
-      ],
-      publishedAt: new Date().toISOString(),
-      slug: 'blog',
-      systemKey: 'blog',
-      title: 'Blog',
-    },
-    overrideAccess: true,
-  })
-}
-
 async function ensureNavigation(
   aboutPage: Page,
-  blogPage: Page,
   joinPage: Page,
   logo: Media,
   author: User,
@@ -587,8 +530,9 @@ async function ensureNavigation(
     {
       appearance: 'link',
       label: 'Aktualności',
-      page: blogPage.id,
-      targetType: 'page',
+      customAddress: 'blog',
+      customScheme: 'path',
+      targetType: 'custom',
     },
     {
       appearance: 'link',
@@ -699,10 +643,9 @@ try {
   }
 
   const aboutPage = await ensureAboutPage(author)
-  const blogPage = await ensureBlogPage(author)
   const joinPage = await ensureJoinPage(author)
   const siteLogo = await findOrCreateSiteLogo(author)
-  await ensureNavigation(aboutPage, blogPage, joinPage, siteLogo, author)
+  await ensureNavigation(aboutPage, joinPage, siteLogo, author)
   await ensureHomepageContent(author, rpgBackgroundImage)
 
   await payload.updateGlobal({
