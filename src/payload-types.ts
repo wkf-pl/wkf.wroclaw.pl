@@ -149,6 +149,7 @@ export interface Config {
     'club-sections': ClubSection;
     users: User;
     roles: Role;
+    'content-audit-log': ContentAuditLog;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -190,6 +191,7 @@ export interface Config {
     'club-sections': ClubSectionsSelect<false> | ClubSectionsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     roles: RolesSelect<false> | RolesSelect<true>;
+    'content-audit-log': ContentAuditLogSelect<false> | ContentAuditLogSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -1258,7 +1260,8 @@ export interface Role {
           | 'tags'
           | 'page-templates'
           | 'navigation'
-          | 'site-settings';
+          | 'site-settings'
+          | 'content-audit-log';
         readAllowed?: boolean | null;
         readOwn?: boolean | null;
         readPublished?: boolean | null;
@@ -3768,6 +3771,36 @@ export interface ClubSection {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "content-audit-log".
+ */
+export interface ContentAuditLog {
+  id: number;
+  occurredAt: string;
+  actor: string;
+  actorId?: string | null;
+  action: 'create' | 'update' | 'trash' | 'restore' | 'restore-version' | 'delete';
+  saveMode?: ('draft' | 'publish') | null;
+  target:
+    | 'pages'
+    | 'posts'
+    | 'events'
+    | 'event-cycles'
+    | 'event-types'
+    | 'categories'
+    | 'tags'
+    | 'media'
+    | 'partners'
+    | 'member-profiles'
+    | 'site-settings'
+    | 'navigation'
+    | 'homepage-hero'
+    | 'homepage-sections'
+    | 'footer';
+  targetId?: string | null;
+  title: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -5468,6 +5501,20 @@ export interface RolesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "content-audit-log_select".
+ */
+export interface ContentAuditLogSelect<T extends boolean = true> {
+  occurredAt?: T;
+  actor?: T;
+  actorId?: T;
+  action?: T;
+  saveMode?: T;
+  target?: T;
+  targetId?: T;
+  title?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -5515,7 +5562,6 @@ export interface SiteSetting {
   siteName: string;
   siteDescription?: string | null;
   contactEmail?: string | null;
-  _status?: ('draft' | 'published') | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -6148,7 +6194,6 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   siteName?: T;
   siteDescription?: T;
   contactEmail?: T;
-  _status?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

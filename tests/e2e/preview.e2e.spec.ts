@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page, type Request } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
@@ -10,7 +10,6 @@ import { editorTestUser } from '../helpers/seedUser'
 const draftSlug = 'e2e-draft-preview'
 const invalidDraftSlug = 'e2e-invalid-draft-preview'
 const globalDraftPreviewSlugs = [
-  'site-settings',
   'navigation',
   'homepage-hero',
   'homepage-sections',
@@ -29,12 +28,6 @@ let draftPageID: number | string
 let draftPostID: number | string
 let payload: Payload
 let pageTemplateID: number | string
-let publishedSiteSettings: {
-  contactEmail?: null | string
-  siteDescription?: null | string
-  siteName: string
-}
-
 test.beforeAll(async () => {
   payload = await getPayload({ config })
   await cleanupPageTemplateEditor()
@@ -209,18 +202,6 @@ test.beforeAll(async () => {
     overrideAccess: true,
   })
 
-  const siteSettings = await payload.findGlobal({
-    slug: 'site-settings',
-    depth: 0,
-    draft: false,
-    overrideAccess: true,
-  })
-  publishedSiteSettings = {
-    contactEmail: siteSettings.contactEmail,
-    siteDescription: siteSettings.siteDescription,
-    siteName: siteSettings.siteName,
-  }
-
   const draftPage = await payload.create({
     collection: 'pages',
     data: {
@@ -317,22 +298,14 @@ test.afterAll(async () => {
       overrideAccess: true,
       where: { slug: { equals: pageTemplatePreviewEventSlug } },
     })
-    if (publishedSiteSettings) {
-      await payload.updateGlobal({
-        slug: 'site-settings',
-        data: publishedSiteSettings,
-        draft: false,
-        overrideAccess: true,
-      })
-    }
     await cleanupPageTemplateEditor()
   }
 })
 
 test('rejects anonymous draft preview access', async ({ request }) => {
   const response = await request.get(`/preview?collection=pages&slug=${draftSlug}`)
-  const globalResponse = await request.get('/preview?global=site-settings')
-  const globalDraftAPIResponse = await request.get('/api/globals/site-settings?draft=true')
+  const globalResponse = await request.get('/preview?global=homepage-hero')
+  const globalDraftAPIResponse = await request.get('/api/globals/homepage-hero?draft=true')
 
   expect(response.status()).toBe(403)
   expect(response.headers()['set-cookie']).toBeUndefined()
@@ -598,47 +571,58 @@ test('saves a draft before opening it from the admin preview button and can leav
   ).toBeVisible()
 })
 
-test('previews a saved global draft without exposing it after leaving preview mode', async ({
-  page,
-}) => {
-  const draftSiteName = 'WKF — globalny szkic E2E'
-
+test('allows a manual Hero checkpoint after saving an autosave for preview', async ({ page }) => {
   await login({ page, user: editorTestUser })
-  await page.goto('/admin/globals/site-settings')
+  await page.clock.install()
+  await page.goto('/admin/globals/homepage-hero')
 
   const previewButton = page.locator('#preview-button')
-  await expect(page.getByRole('link', { name: /Wersje/ })).toBeVisible()
-  await expect(previewButton).toHaveText('Podgląd')
-  await page.getByRole('textbox', { name: 'Nazwa strony *' }).fill(draftSiteName)
+  const saveDraftButton = page.locator('#action-save-draft')
+  const title = page.locator('[data-field-path="title"] [contenteditable="true"]')
+  const backgroundSaves: string[] = []
+  const trackBackgroundSaves = (request: Request) => {
+    const url = new URL(request.url())
+    if (url.pathname === '/api/globals/homepage-hero' && url.searchParams.has('autosave')) {
+      backgroundSaves.push(url.pathname)
+    }
+  }
+  page.on('request', trackBackgroundSaves)
+  await expect(previewButton).toBeVisible()
+  await title.press('End')
+  await page.keyboard.insertText('!')
+  await expect(saveDraftButton).toBeEnabled()
+  // Advance beyond Payload's default autosave delay before explicitly requesting preview.
+  await page.clock.runFor(2500)
+  expect(backgroundSaves).toEqual([])
+  await expect(saveDraftButton).toBeEnabled()
+  page.off('request', trackBackgroundSaves)
 
-  const saveDraftResponsePromise = page.waitForResponse(
-    (response) =>
-      response.request().method() === 'POST' &&
-      response.url().includes('/api/globals/site-settings') &&
-      response.url().includes('draft=true'),
-  )
   const previewPagePromise = page.waitForEvent('popup')
   await previewButton.click()
   const previewPage = await previewPagePromise
-  const saveDraftResponse = await saveDraftResponsePromise
-
-  expect(saveDraftResponse.status(), await saveDraftResponse.text()).toBe(200)
-  await expect(previewPage).toHaveURL(/\/$/, { timeout: navigationTimeout })
-  await expect(
-    previewPage.getByRole('link', { name: `${draftSiteName} — strona główna` }),
-  ).toBeVisible()
   await expect(previewPage.getByRole('status')).toContainText('Wyświetlasz zapisany szkic.')
+  await previewPage.close()
 
-  await previewPage.getByRole('link', { name: 'Wyłącz podgląd' }).click()
-  await expect(previewPage).toHaveURL(/\/$/, { timeout: navigationTimeout })
-  await expect(
-    previewPage.getByRole('link', { name: `${draftSiteName} — strona główna` }),
-  ).toHaveCount(0)
-  await expect(
-    previewPage.getByRole('link', {
-      name: `${publishedSiteSettings.siteName} — strona główna`,
-    }),
-  ).toBeVisible()
+  await expect(saveDraftButton).toBeEnabled()
+  const checkpoint = page.waitForResponse((response) => {
+    const url = new URL(response.url())
+    return (
+      url.pathname === '/api/globals/homepage-hero' &&
+      response.request().method() === 'POST' &&
+      url.searchParams.get('draft') === 'true' &&
+      !url.searchParams.has('autosave')
+    )
+  })
+  await saveDraftButton.click()
+  expect((await checkpoint).ok()).toBe(true)
+  await expect(saveDraftButton).toBeDisabled()
+})
+
+test('shows only the direct save action for Podstawowe', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto('/admin/globals/site-settings')
+  await expect(page.locator('#action-save')).toBeVisible()
+  await expect(page.locator('#preview-button, #action-save-draft')).toHaveCount(0)
 })
 
 test('validates required manual Listing targets before opening draft preview', async ({ page }) => {

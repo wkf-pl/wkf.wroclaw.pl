@@ -30,6 +30,8 @@ import {
   Users,
   UrlAliases,
 } from './collections'
+import { ContentAuditLog } from './collections/ContentAuditLog'
+import { contentAuditPlugin } from './modules/content-audit/plugin'
 import { createEmailAdapter } from './email/create-email-adapter'
 import { Footer, HomepageHero, HomepageSections, Navigation, SiteSettings } from './globals'
 import {
@@ -135,6 +137,7 @@ export default buildConfig({
     ClubSections,
     Users,
     Roles,
+    ContentAuditLog,
   ],
   globals: [SiteSettings, Navigation, HomepageHero, HomepageSections, Footer],
   cors: [...trustedOrigins],
@@ -178,6 +181,7 @@ export default buildConfig({
       parentFieldSlug: 'parent',
     }),
     ...createStoragePlugins(),
+    contentAuditPlugin,
   ],
 })
 

@@ -9,6 +9,8 @@ if [[ "${WKF_ALLOW_NEXT_DEV:-}" != "1" ]]; then
   exit 2
 fi
 
+node scripts/patch-payload-ui-client.mjs
+
 distribution_directory="${NEXT_DIST_DIR:-.next-host}"
 
 exec ./node_modules/.bin/cross-env \

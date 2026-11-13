@@ -30,6 +30,7 @@ export const HomepageHero: GlobalConfig = {
     update: updateHomepageHero,
   },
   admin: {
+    custom: { wkfPreviewAutosaveOnly: true },
     components: {
       elements: {
         PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
@@ -78,5 +79,5 @@ export const HomepageHero: GlobalConfig = {
   ],
   hooks: { afterChange: [invalidateNavigationAfterChange] },
   label: 'Hero',
-  versions: { drafts: true, max: 50 },
+  versions: { drafts: { autosave: { showSaveDraftButton: true } }, max: 50 },
 }

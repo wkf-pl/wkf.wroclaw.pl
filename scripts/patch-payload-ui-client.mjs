@@ -1,4 +1,4 @@
-// Patches Payload's pre-bundled clipboard helpers without adding imports or module-level overrides.
+// Patches Payload's pre-bundled clipboard helpers and draft controls.
 
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -93,8 +93,97 @@ clientBundle = replaceExactBundleText({
   source: clientBundle,
 })
 
+// Keep server-side autosave support for preview without mounting the background timer.
+clientBundle = replaceExactBundleText({
+  alreadyPatchedMarker: '!((N||j)?.admin?.custom?.wkfPreviewAutosaveOnly)',
+  expectedOriginal: 'oe&&!Ee&&!p&&st("li"',
+  replacement: 'oe&&!Ee&&!p&&!((N||j)?.admin?.custom?.wkfPreviewAutosaveOnly)&&st("li"',
+  source: clientBundle,
+})
+
+// A preview autosave clears modified, but is still eligible for a manual checkpoint.
+clientBundle = replaceExactBundleText({
+  alreadyPatchedMarker: '!l&&!latestIsAutosaved',
+  expectedOriginal:
+    'setUnpublishedVersionCount:s,uploadStatus:i}=Se(),l=Kt(),{code:a}=Ce(),c=rq(null),u=at(),{t:d}=E(),{submit:f}=Ve(),p=Sr()==="update"&&!l||i==="uploading"',
+  replacement:
+    'setUnpublishedVersionCount:s,uploadStatus:i,mostRecentVersionIsAutosaved:latestIsAutosaved,setMostRecentVersionIsAutosaved:setLatestIsAutosaved}=Se(),l=Kt(),{code:a}=Ce(),c=rq(null),u=at(),{t:d}=E(),{submit:f}=Ve(),p=Sr()==="update"&&!l&&!latestIsAutosaved||i==="uploading"',
+  source: clientBundle,
+})
+clientBundle = replaceExactBundleText({
+  alreadyPatchedMarker: 'setLatestIsAutosaved(!1),s(y=>y+1)',
+  expectedOriginal:
+    'await f({action:b,method:C,overrides:{_status:"draft"},skipValidation:!0}),s(y=>y+1)},[f,n,r,e,a,o,p,s]',
+  replacement:
+    '(await f({action:b,method:C,overrides:{_status:"draft"},skipValidation:!0}))?.res.ok&&(setLatestIsAutosaved(!1),s(y=>y+1))},[f,n,r,e,a,o,p,s,setLatestIsAutosaved]',
+  source: clientBundle,
+})
+
 if (clientBundle !== originalClientBundle) {
   writeFileSync(clientBundlePath, clientBundle)
+}
+
+// Payload also exposes unbundled editor components through package subpaths.
+const documentControlsPath = resolve(
+  'node_modules/@payloadcms/ui/dist/elements/DocumentControls/index.js',
+)
+const saveDraftButtonPath = resolve(
+  'node_modules/@payloadcms/ui/dist/elements/SaveDraftButton/index.js',
+)
+
+patchModule(documentControlsPath, [
+  [
+    'const autosaveEnabled = collectionAutosaveEnabled || globalAutosaveEnabled;',
+    'const autosaveEnabled = collectionAutosaveEnabled || globalAutosaveEnabled;\n  const previewAutosaveOnly = (collectionConfig ?? globalConfig)?.admin?.custom?.wkfPreviewAutosaveOnly === true;',
+  ],
+  [
+    'hasSavePermission && autosaveEnabled && !unsavedDraftWithValidations',
+    'hasSavePermission && autosaveEnabled && !previewAutosaveOnly && !unsavedDraftWithValidations',
+  ],
+])
+
+patchModule(saveDraftButtonPath, [
+  [
+    '    setUnpublishedVersionCount,',
+    '    mostRecentVersionIsAutosaved,\n    setMostRecentVersionIsAutosaved,\n    setUnpublishedVersionCount,',
+  ],
+  [
+    "operation === 'update' && !modified",
+    "operation === 'update' && !modified && !mostRecentVersionIsAutosaved",
+  ],
+  ['    await submit({', '    const result = await submit({'],
+  [
+    '    setUnpublishedVersionCount(count => count + 1);',
+    '    if (result?.res.ok) {\n      setMostRecentVersionIsAutosaved(false);\n      setUnpublishedVersionCount(count => count + 1);\n    }',
+  ],
+  [
+    'id, disabled, setUnpublishedVersionCount]',
+    'id, disabled, setMostRecentVersionIsAutosaved, setUnpublishedVersionCount]',
+  ],
+])
+
+// Keep the create form unsaved until the editor explicitly submits it.
+const documentViewPath = resolve('node_modules/@payloadcms/next/dist/views/Document/index.js')
+patchModule(documentViewPath, [
+  [
+    'const shouldAutosave = hasSavePermission && hasAutosaveEnabled(collectionConfig || globalConfig);',
+    'const shouldAutosave = hasSavePermission && hasAutosaveEnabled(collectionConfig || globalConfig) && !collectionConfig?.admin?.custom?.wkfPreviewAutosaveOnly;',
+  ],
+])
+
+function patchModule(path, replacements) {
+  const original = readFileSync(path, 'utf8')
+  const updated = replacements.reduce(
+    (source, [expectedOriginal, replacement]) =>
+      replaceExactBundleText({
+        alreadyPatchedMarker: replacement,
+        expectedOriginal,
+        replacement,
+        source,
+      }),
+    original,
+  )
+  if (updated !== original) writeFileSync(path, updated)
 }
 
 function replaceBundleSegment({

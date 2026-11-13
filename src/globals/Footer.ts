@@ -32,6 +32,7 @@ export const Footer: GlobalConfig = {
     update: updateFooter,
   },
   admin: {
+    custom: { wkfPreviewAutosaveOnly: true },
     components: {
       elements: {
         PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
@@ -152,5 +153,5 @@ export const Footer: GlobalConfig = {
   ],
   hooks: { afterChange: [invalidateNavigationAfterChange] },
   label: 'Stopka',
-  versions: { drafts: true, max: 50 },
+  versions: { drafts: { autosave: { showSaveDraftButton: true } }, max: 50 },
 }

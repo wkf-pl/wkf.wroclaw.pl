@@ -29,6 +29,7 @@ export const Navigation: GlobalConfig = {
     update: updateNavigation,
   },
   admin: {
+    custom: { wkfPreviewAutosaveOnly: true },
     components: {
       elements: {
         PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
@@ -64,5 +65,5 @@ export const Navigation: GlobalConfig = {
   ],
   hooks: { afterChange: [invalidateNavigationAfterChange] },
   label: 'Nagłówek',
-  versions: { drafts: true, max: 50 },
+  versions: { drafts: { autosave: { showSaveDraftButton: true } }, max: 50 },
 }

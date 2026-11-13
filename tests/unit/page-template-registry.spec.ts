@@ -218,7 +218,10 @@ describe('page template registry', () => {
 
   it('registers page templates as a normal collection without create and delete operations', () => {
     expect(PageTemplates.slug).toBe('page-templates')
-    expect(PageTemplates.versions).toMatchObject({ drafts: true, maxPerDoc: 50 })
+    expect(PageTemplates.versions).toMatchObject({
+      drafts: { autosave: { showSaveDraftButton: true } },
+      maxPerDoc: 50,
+    })
     expect(PageTemplates.disableDuplicate).toBe(true)
     expect(permissionResources['page-templates']).toMatchObject({
       collection: 'page-templates',

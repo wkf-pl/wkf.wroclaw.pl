@@ -52,6 +52,7 @@ export const Posts: CollectionConfig = {
     update: updatePosts,
   },
   admin: {
+    custom: { wkfPreviewAutosaveOnly: true },
     components: {
       edit: {
         PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
@@ -114,7 +115,7 @@ export const Posts: CollectionConfig = {
     singular: 'Wpis',
   },
   versions: {
-    drafts: true,
+    drafts: { autosave: { showSaveDraftButton: true } },
     maxPerDoc: 50,
   },
 }

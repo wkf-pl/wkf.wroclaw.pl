@@ -10,7 +10,6 @@ export const draftPreviewGlobals = [
   'homepage-hero',
   'homepage-sections',
   'navigation',
-  'site-settings',
 ] as const
 
 export type DraftPreviewCollection = (typeof draftPreviewCollections)[number]

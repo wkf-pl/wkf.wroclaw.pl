@@ -43,6 +43,25 @@ function findNamedField(fields: Field[], name: string): Field | undefined {
 }
 
 describe('Payload row clipboard compatibility', () => {
+  it('uses on-demand autosave and allows a manual checkpoint after preview', () => {
+    const clientBundle = readFileSync(
+      'node_modules/@payloadcms/ui/dist/exports/client/index.js',
+      'utf8',
+    )
+    expect(clientBundle).toContain('!((N||j)?.admin?.custom?.wkfPreviewAutosaveOnly)')
+    expect(clientBundle).toContain('!l&&!latestIsAutosaved')
+    const controls = readFileSync(
+      'node_modules/@payloadcms/ui/dist/elements/DocumentControls/index.js',
+      'utf8',
+    )
+    const saveDraft = readFileSync(
+      'node_modules/@payloadcms/ui/dist/elements/SaveDraftButton/index.js',
+      'utf8',
+    )
+    expect(controls.includes('!previewAutosaveOnly && !unsavedDraftWithValidations')).toBe(true)
+    expect(saveDraft.includes('!mostRecentVersionIsAutosaved')).toBe(true)
+  })
+
   it('keeps clipboard overrides inside the existing Payload client bundle', () => {
     const payloadClientBundle = readFileSync(
       'node_modules/@payloadcms/ui/dist/exports/client/index.js',

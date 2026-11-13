@@ -69,6 +69,7 @@ import * as migration_20261110_222548_remove_member_profile_club_activities from
 import * as migration_20261111_013820_block_text_styles from './20261111_013820_block_text_styles'
 import * as migration_20261111_125928_current_item_fields from './20261111_125928_current_item_fields'
 import * as migration_20261111_150257_spacer_block from './20261111_150257_spacer_block'
+import * as migration_20261113_112823_content_audit_log from './20261113_112823_content_audit_log'
 
 export const migrations = [
   {
@@ -425,5 +426,10 @@ export const migrations = [
     up: migration_20261111_150257_spacer_block.up,
     down: migration_20261111_150257_spacer_block.down,
     name: '20261111_150257_spacer_block',
+  },
+  {
+    up: migration_20261113_112823_content_audit_log.up,
+    down: migration_20261113_112823_content_audit_log.down,
+    name: '20261113_112823_content_audit_log',
   },
 ]

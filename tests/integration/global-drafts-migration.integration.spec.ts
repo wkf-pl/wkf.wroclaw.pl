@@ -27,6 +27,11 @@ import {
   down as downPageTemplates,
   up as upPageTemplates,
 } from '../../migrations/20261104_020601_page_templates_collection'
+import {
+  down as downContentAudit,
+  up as upContentAudit,
+} from '../../migrations/20261113_112823_content_audit_log'
+import { down as downSpacer, up as upSpacer } from '../../migrations/20261111_150257_spacer_block'
 import { setPageTemplateCompositionSchema } from '../helpers/page-template-composition-migration'
 
 const globalTables = [
@@ -88,6 +93,8 @@ async function relatedContentSchemaExists(): Promise<boolean> {
 }
 
 async function moveToBeforeGlobalDrafts(): Promise<void> {
+  if (await tableExists('content_audit_log')) await downContentAudit(migrationArguments())
+  if (await tableExists('page_templates_blocks_spacer')) await downSpacer(migrationArguments())
   await setPageTemplateCompositionSchema(migrationArguments(), false)
   if (await tableExists('page_templates')) await downPageTemplates(migrationArguments())
   if (await relatedContentSchemaExists()) await downRelatedContent(migrationArguments())
@@ -103,6 +110,7 @@ async function moveToBeforeGlobalDrafts(): Promise<void> {
 }
 
 async function restoreCurrentSchema(): Promise<void> {
+  if (await tableExists('content_audit_log')) return
   if (!(await statusColumnExists())) await upGlobalDrafts(migrationArguments())
   if (!(await listingConditionsSchemaExists())) await upListingConditions(migrationArguments())
   if (!(await tableExists('_listing_block_migration_provenance'))) {
@@ -114,6 +122,8 @@ async function restoreCurrentSchema(): Promise<void> {
   if (!(await relatedContentSchemaExists())) await upRelatedContent(migrationArguments())
   if (!(await tableExists('page_templates'))) await upPageTemplates(migrationArguments())
   await setPageTemplateCompositionSchema(migrationArguments(), true)
+  if (!(await tableExists('page_templates_blocks_spacer'))) await upSpacer(migrationArguments())
+  await upContentAudit(migrationArguments())
 }
 
 async function readGlobalRows(table: (typeof globalTables)[number]): Promise<unknown[]> {

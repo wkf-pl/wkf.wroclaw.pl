@@ -4,6 +4,7 @@ import { adminOnly } from '@/access/adminOnly'
 import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import {
   permissionResourceOptions,
+  resourceIsReadOnly,
   resourceSupportsCreateAndDelete,
   resourceSupportsOwnership,
   resourceSupportsPublishedStatus,
@@ -51,7 +52,8 @@ function createPermissionScopeFields(prefix: 'read' | 'update' | 'delete') {
         admin: createBooleanSwitchAdmin({
           condition: (_data: unknown, siblingData: Record<string, unknown>) =>
             Boolean(siblingData.resource) &&
-            (prefix === 'read' || Boolean(siblingData.readAllowed)),
+            (prefix === 'read' ||
+              (Boolean(siblingData.readAllowed) && !resourceIsReadOnly(siblingData.resource))),
           width: '34%',
         }),
         defaultValue: false,
@@ -248,7 +250,7 @@ export const Roles: CollectionConfig = {
         }
 
         for (const permission of data.permissions ?? []) {
-          if (!permission.readAllowed) {
+          if (!permission.readAllowed || resourceIsReadOnly(permission.resource)) {
             permission.canCreate = false
             permission.updateAllowed = false
             permission.updateOwn = false

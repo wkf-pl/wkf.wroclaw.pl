@@ -4,6 +4,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const formModifiedMock = vi.hoisted(() => vi.fn())
 const submitMock = vi.hoisted(() => vi.fn())
 const getFormStateMock = vi.hoisted(() => vi.fn())
 const dispatchFieldsMock = vi.hoisted(() => vi.fn())
@@ -16,6 +17,8 @@ const documentInfoMock = vi.hoisted(() => ({
   getDocPreferences: vi.fn().mockResolvedValue({ fields: {} }),
   globalSlug: undefined as string | undefined,
   id: 123 as number | undefined,
+  mostRecentVersionIsAutosaved: false,
+  setMostRecentVersionIsAutosaved: vi.fn(),
   setUnpublishedVersionCount: vi.fn(),
   uploadStatus: undefined,
 }))
@@ -47,8 +50,10 @@ vi.mock('@payloadcms/ui', () => ({
     setSubmitted: setSubmittedMock,
     submit: submitMock,
   }),
+  useFormBackgroundProcessing: () => false,
   useFormFields: (selector: (state: [{ slug: { value: string } }]) => unknown) =>
     selector([{ slug: { value: 'strona-testowa' } }]),
+  useFormModified: formModifiedMock,
   useFormProcessing: () => false,
   useLocale: () => ({ code: 'pl' }),
   useServerFunctions: () => ({ getFormState: getFormStateMock }),
@@ -85,6 +90,7 @@ describe('DraftPreviewButton', () => {
     getFormStateMock.mockResolvedValue({ state: { title: { valid: true } } })
     setIsValidMock.mockReset()
     setSubmittedMock.mockReset()
+    formModifiedMock.mockReturnValue(true)
     submitMock.mockReset()
     submitMock.mockResolvedValue({ res: { ok: true } })
     toastErrorMock.mockReset()
@@ -119,11 +125,24 @@ describe('DraftPreviewButton', () => {
     )
     expect(submitMock).toHaveBeenCalledOnce()
     expect(submitMock.mock.calls[0]?.[0]).toMatchObject({
-      action: '/api/pages/123?locale=pl&depth=0&fallback-locale=null&draft=true',
+      action: '/api/pages/123?locale=pl&depth=0&fallback-locale=null&draft=true&autosave=true',
       method: 'PATCH',
       overrides: { _status: 'draft' },
     })
     expect(submitMock.mock.calls[0]?.[0]).not.toHaveProperty('skipValidation')
+  })
+
+  it('opens the saved version without submitting an unchanged form', async () => {
+    formModifiedMock.mockReturnValue(false)
+    await act(async () => root.render(<DraftPreviewButton />))
+
+    const button = container.querySelector<HTMLButtonElement>('#preview-button')
+    if (!button) throw new Error('Missing preview button')
+    await act(async () => button.click())
+
+    expect(submitMock).not.toHaveBeenCalled()
+    expect(getFormStateMock).not.toHaveBeenCalled()
+    expect(previewWindow.location.href).toContain('/preview?')
   })
 
   it('shows server validation errors without saving or opening the preview', async () => {
@@ -182,7 +201,8 @@ describe('DraftPreviewButton', () => {
     )
     expect(submitMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: '/api/globals/homepage-hero?locale=pl&depth=0&fallback-locale=null&draft=true',
+        action:
+          '/api/globals/homepage-hero?locale=pl&depth=0&fallback-locale=null&draft=true&autosave=true',
         method: 'POST',
         overrides: { _status: 'draft' },
       }),
