@@ -40,6 +40,7 @@ export const PageTemplates: CollectionConfig = {
     update: updatePageTemplates,
   },
   admin: {
+    custom: { wkfPreviewAutosaveOnly: true },
     components: {
       Description: '/components/admin/PageTemplateFields#PageTemplateDescription',
       edit: {
@@ -161,7 +162,7 @@ export const PageTemplates: CollectionConfig = {
     singular: 'Szablon strony',
   },
   versions: {
-    drafts: true,
+    drafts: { autosave: { showSaveDraftButton: true } },
     maxPerDoc: 50,
   },
 }

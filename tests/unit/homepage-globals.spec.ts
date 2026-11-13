@@ -46,8 +46,11 @@ describe('homepage globals', () => {
   it('keeps drafts and the latest 50 versions with authenticated history access', () => {
     const previewButton = '/components/admin/DraftPreviewButton#DraftPreviewButton'
 
-    for (const global of homepageGlobals) {
-      expect(global.versions).toEqual({ drafts: true, max: 50 })
+    for (const global of homepageGlobals.filter(({ slug }) => slug !== SiteSettings.slug)) {
+      expect(global.versions).toEqual({
+        drafts: { autosave: { showSaveDraftButton: true } },
+        max: 50,
+      })
       expect(global.access?.readVersions).toBeTypeOf('function')
       expect(global.admin?.components?.elements?.PreviewButton).toBe(previewButton)
       expect(global.admin?.preview).toBeTypeOf('function')
@@ -55,7 +58,7 @@ describe('homepage globals', () => {
   })
 
   it('does not expose saved global drafts to anonymous API requests', async () => {
-    for (const global of homepageGlobals) {
+    for (const global of homepageGlobals.filter(({ slug }) => slug !== SiteSettings.slug)) {
       const readAccess = global.access?.read
       expect(readAccess).toBeTypeOf('function')
 
@@ -64,6 +67,12 @@ describe('homepage globals', () => {
       ).resolves.toBe(false)
       await expect(readAccess?.({ req: { query: {}, user: null } } as never)).resolves.toBe(true)
     }
+  })
+
+  it('saves Podstawowe directly without drafts or preview', () => {
+    expect(SiteSettings.versions).toBeFalsy()
+    expect(SiteSettings.access?.readVersions).toBeUndefined()
+    expect(SiteSettings.admin?.preview).toBeUndefined()
   })
 
   it('keeps only general and SEO fields in Podstawowe', () => {

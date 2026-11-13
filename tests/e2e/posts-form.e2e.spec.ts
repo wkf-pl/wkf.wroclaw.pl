@@ -58,6 +58,8 @@ test('starts page and post forms with an expanded content block', async ({ page 
   for (const collection of ['pages', 'posts']) {
     await page.goto(`/admin/collections/${collection}/create`)
 
+    await expect(page).toHaveURL(new RegExp(`/admin/collections/${collection}/create$`))
+
     const layoutField = page.locator('#field-layout')
     const block = layoutField.locator('.blocks-field__row').first()
 

@@ -3,11 +3,8 @@ import { Roboto_Slab } from 'next/font/google'
 import type { ReactNode } from 'react'
 
 import { PrivacyConsentProvider } from '@/components/privacy/PrivacyConsent'
-import {
-  findFooterForRequest,
-  findNavigationForRequest,
-  findSiteSettingsForRequest,
-} from '@/modules/content/preview-content'
+import { findFooterForRequest, findNavigationForRequest } from '@/modules/content/preview-content'
+import { getPublicSiteSettings } from '@/modules/content/public-content'
 
 import { SiteFooter } from './_components/SiteFooter'
 import { SiteHeader } from './_components/SiteHeader'
@@ -31,7 +28,7 @@ const icons: Metadata['icons'] = {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { document: siteSettings } = await findSiteSettingsForRequest()
+  const siteSettings = await getPublicSiteSettings()
 
   return {
     description: siteSettings.siteDescription || undefined,
@@ -48,14 +45,13 @@ type FrontendLayoutProperties = {
 }
 
 export default async function FrontendLayout({ children }: FrontendLayoutProperties) {
-  const [footerResult, navigationResult, siteSettingsResult] = await Promise.all([
+  const [footerResult, navigationResult, siteSettings] = await Promise.all([
     findFooterForRequest(),
     findNavigationForRequest(),
-    findSiteSettingsForRequest(),
+    getPublicSiteSettings(),
   ])
   const footer = footerResult.document
   const navigation = navigationResult.document
-  const siteSettings = siteSettingsResult.document
 
   return (
     <html lang="pl">

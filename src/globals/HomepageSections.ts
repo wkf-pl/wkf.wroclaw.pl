@@ -28,6 +28,7 @@ export const HomepageSections: GlobalConfig = {
     update: updateHomepageSections,
   },
   admin: {
+    custom: { wkfPreviewAutosaveOnly: true },
     components: {
       elements: {
         PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
@@ -39,5 +40,5 @@ export const HomepageSections: GlobalConfig = {
   fields: [createContentLayoutField('Treści')],
   hooks: { afterChange: [invalidateSiteSettingsAfterChange] },
   label: 'Treści',
-  versions: { drafts: true, max: 50 },
+  versions: { drafts: { autosave: { showSaveDraftButton: true } }, max: 50 },
 }

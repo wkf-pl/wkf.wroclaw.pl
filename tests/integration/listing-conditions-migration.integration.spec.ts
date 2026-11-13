@@ -110,6 +110,9 @@ async function restoreCurrentSchema(): Promise<void> {
   await upLegacyBlockRemoval(migrationArguments())
   await upRelatedContent(migrationArguments())
   await upPageTemplates(migrationArguments())
+  await migrationArguments().db.execute(
+    sql`ALTER TABLE "_page_templates_v" ADD COLUMN "autosave" boolean; CREATE INDEX "_page_templates_v_autosave_idx" ON "_page_templates_v" ("autosave");`,
+  )
   await setPageTemplateCompositionSchema(migrationArguments(), true)
 }
 

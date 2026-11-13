@@ -21,7 +21,6 @@ import {
   getPublicHomepageHero,
   getPublicHomepageSections,
   getPublicNavigation,
-  getPublicSiteSettings,
 } from './public-content'
 
 export type PreviewContentResult<Document> = {
@@ -154,10 +153,6 @@ export const findHomepageSectionsForRequest = cache(() =>
 
 export const findNavigationForRequest = cache(() =>
   findGlobalForRequest('navigation', getPublicNavigation),
-)
-
-export const findSiteSettingsForRequest = cache(() =>
-  findGlobalForRequest('site-settings', getPublicSiteSettings),
 )
 
 async function findGlobalForRequest<Slug extends DraftPreviewGlobal & GlobalSlug>(

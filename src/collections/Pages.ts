@@ -89,6 +89,7 @@ export const Pages: CollectionConfig = {
     update: updatePages,
   },
   admin: {
+    custom: { wkfPreviewAutosaveOnly: true },
     components: {
       edit: {
         beforeDocumentControls: ['/components/admin/PageCreateLabel#PageCreateLabel'],
@@ -179,7 +180,7 @@ export const Pages: CollectionConfig = {
     singular: 'Strona',
   },
   versions: {
-    drafts: true,
+    drafts: { autosave: { showSaveDraftButton: true } },
     maxPerDoc: 50,
   },
 }

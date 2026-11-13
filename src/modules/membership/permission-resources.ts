@@ -5,6 +5,7 @@ type PermissionResourceDefinition = {
   kind: 'collection' | 'custom' | 'global'
   label: string
   ownershipField?: string
+  readOnly?: boolean
   publishedField?: string
   trash?: boolean
 }
@@ -126,6 +127,11 @@ export const permissionResources = {
     kind: 'global',
     label: 'Strona główna',
   },
+  'content-audit-log': {
+    kind: 'custom',
+    label: 'Rejestr zmian treści',
+    readOnly: true,
+  },
 } as const satisfies Record<string, PermissionResourceDefinition>
 
 export type PermissionResource = keyof typeof permissionResources
@@ -170,4 +176,8 @@ export function getCollectionPermissionResources(collection: string): Permission
       'collection' in permissionResources[resource] &&
       permissionResources[resource].collection === collection,
   )
+}
+
+export function resourceIsReadOnly(resource: unknown): boolean {
+  return isPermissionResource(resource) && 'readOnly' in permissionResources[resource]
 }

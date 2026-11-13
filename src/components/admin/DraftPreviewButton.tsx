@@ -6,7 +6,9 @@ import {
   useConfig,
   useDocumentInfo,
   useForm,
+  useFormBackgroundProcessing,
   useFormFields,
+  useFormModified,
   useFormProcessing,
   useLocale,
   useServerFunctions,
@@ -34,13 +36,17 @@ export function DraftPreviewButton() {
     getDocPreferences,
     globalSlug,
     id,
+    mostRecentVersionIsAutosaved,
+    setMostRecentVersionIsAutosaved,
     setUnpublishedVersionCount,
     uploadStatus,
   } = useDocumentInfo()
   const { dispatchFields, getFields, setIsValid, setSubmitted, submit } = useForm()
   const slug = useFormFields<unknown>(([fields]) => fields.slug?.value)
   const templateKey = useFormFields<unknown>(([fields]) => fields.templateKey?.value)
+  const isModified = useFormModified()
   const isFormProcessing = useFormProcessing()
+  const isBackgroundProcessing = useFormBackgroundProcessing()
   const { code: locale } = useLocale()
   const { getFormState } = useServerFunctions()
   const { t } = useTranslation()
@@ -62,8 +68,15 @@ export function DraftPreviewButton() {
     }
 
     const previewWindow = window.open('about:blank', '_blank')
-    if (previewWindow) {
-      previewWindow.opener = null
+    if (!previewWindow) {
+      toast.error('Przeglądarka zablokowała otwarcie podglądu w nowej karcie.')
+      return
+    }
+
+    previewWindow.opener = null
+    if (!isModified) {
+      previewWindow.location.href = previewURL
+      return
     }
 
     setIsSaving(true)
@@ -108,7 +121,7 @@ export function DraftPreviewButton() {
       const actionPath: `/${string}` = collectionSlug
         ? `/${collectionSlug}/${id}`
         : `/globals/${globalSlug}`
-      const actionPathWithQuery: `/${string}` = `${actionPath}?locale=${locale}&depth=0&fallback-locale=null&draft=true`
+      const actionPathWithQuery: `/${string}` = `${actionPath}?locale=${locale}&depth=0&fallback-locale=null&draft=true&autosave=true`
       const action = formatAdminURL({
         apiRoute: api,
         path: actionPathWithQuery,
@@ -124,13 +137,11 @@ export function DraftPreviewButton() {
         return
       }
 
-      setUnpublishedVersionCount((count) => count + 1)
-
-      if (previewWindow) {
-        previewWindow.location.href = previewURL
-      } else {
-        toast.error('Przeglądarka zablokowała otwarcie podglądu w nowej karcie.')
+      if (!mostRecentVersionIsAutosaved) {
+        setMostRecentVersionIsAutosaved(true)
+        setUnpublishedVersionCount((count) => count + 1)
       }
+      previewWindow.location.href = previewURL
     } finally {
       setIsSaving(false)
     }
@@ -146,11 +157,14 @@ export function DraftPreviewButton() {
     globalSlug,
     id,
     isSaving,
+    isModified,
     locale,
     previewURL,
     previousFormState,
     setIsValid,
     setSubmitted,
+    mostRecentVersionIsAutosaved,
+    setMostRecentVersionIsAutosaved,
     setUnpublishedVersionCount,
     submit,
     t,
@@ -164,7 +178,9 @@ export function DraftPreviewButton() {
     <Button
       aria-label="Podgląd"
       buttonStyle="secondary"
-      disabled={isFormProcessing || isSaving || uploadStatus === 'uploading'}
+      disabled={
+        isFormProcessing || isBackgroundProcessing || isSaving || uploadStatus === 'uploading'
+      }
       id="preview-button"
       margin={false}
       onClick={() => void saveDraftAndOpenPreview()}

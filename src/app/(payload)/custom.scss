@@ -870,8 +870,17 @@
   }
 }
 
-:is(.wkf-action-save, #action-save, #action-save-draft, .save-draft) {
+:is(.wkf-action-save, #action-save) {
   @include wkf-action-color(#73d216, #4e9a06);
+}
+
+:is(#preview-button, #action-save-draft).btn--style-secondary:is(:disabled, .btn--disabled) {
+  // Use the secondary button hover palette for disabled preview and draft actions.
+  --color: var(--theme-elevation-600);
+  --btn-border: 1px solid var(--theme-elevation-400);
+  --hover-color: var(--color);
+  --hover-btn-border: var(--btn-border);
+  --hover-bg: var(--bg-color);
 }
 
 :is(
