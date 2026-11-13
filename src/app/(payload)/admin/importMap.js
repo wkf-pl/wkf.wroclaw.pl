@@ -98,13 +98,13 @@ import { MemberProfileAddress as MemberProfileAddress_de328f7eecba388f3fa482158a
 import { MemberProfileUsage as MemberProfileUsage_7f4f33cdfc96cc183475e8f31eee11fc } from '../../../components/admin/MemberProfileUsage'
 import { UrlAliasTargetField as UrlAliasTargetField_544f35e4f1b9c371b5f2d23b4105f4b2 } from '../../../components/admin/UrlAliasTargetField'
 import { PartnerCreateLabel as PartnerCreateLabel_9321488c4e8960e8bd87c29c2a32b741 } from '../../../components/admin/CollectionLabels'
-import { FooterColumnItemRowLabel as FooterColumnItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { UserDisplayNameCell as UserDisplayNameCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
 import { UserEmailCell as UserEmailCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
 import { PermissionResourceField as PermissionResourceField_67f510ca66240b59a1f7becaf5b326c0 } from '../../../components/admin/PermissionResourceField'
 import { PermissionRowLabel as PermissionRowLabel_2aad346eb5e12c6ee690c795b76ce94c } from '../../../components/admin/PermissionRowLabel'
 import { AuditTitleCell as AuditTitleCell_f2a5bb28e4bfb1508910df77f2cb1f29 } from '../../../components/admin/AuditTitleCell'
 import { SocialItemRowLabel as SocialItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
+import { FooterColumnItemRowLabel as FooterColumnItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { FooterColumnRowLabel as FooterColumnRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { AdminNav as AdminNav_231477f0faa4368be46fd47ffb9da4d9 } from '../../../components/admin/AdminNav'
 import { AdminLogo as AdminLogo_27eed1898e8caadb2fd2266b54bb4509 } from '../../../components/admin/AdminLogo'
@@ -216,13 +216,13 @@ export const importMap = {
   "/components/admin/MemberProfileUsage#MemberProfileUsage": MemberProfileUsage_7f4f33cdfc96cc183475e8f31eee11fc,
   "/components/admin/UrlAliasTargetField#UrlAliasTargetField": UrlAliasTargetField_544f35e4f1b9c371b5f2d23b4105f4b2,
   "/components/admin/CollectionLabels#PartnerCreateLabel": PartnerCreateLabel_9321488c4e8960e8bd87c29c2a32b741,
-  "/components/admin/DynamicRowLabel#FooterColumnItemRowLabel": FooterColumnItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/UserIdentity#UserDisplayNameCell": UserDisplayNameCell_0af2ec3c6a63521c7b2eedb66024da53,
   "/components/admin/UserIdentity#UserEmailCell": UserEmailCell_0af2ec3c6a63521c7b2eedb66024da53,
   "/components/admin/PermissionResourceField#PermissionResourceField": PermissionResourceField_67f510ca66240b59a1f7becaf5b326c0,
   "/components/admin/PermissionRowLabel#PermissionRowLabel": PermissionRowLabel_2aad346eb5e12c6ee690c795b76ce94c,
   "/components/admin/AuditTitleCell#AuditTitleCell": AuditTitleCell_f2a5bb28e4bfb1508910df77f2cb1f29,
   "/components/admin/DynamicRowLabel#SocialItemRowLabel": SocialItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
+  "/components/admin/DynamicRowLabel#FooterColumnItemRowLabel": FooterColumnItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/DynamicRowLabel#FooterColumnRowLabel": FooterColumnRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/AdminNav#AdminNav": AdminNav_231477f0faa4368be46fd47ffb9da4d9,
   "/components/admin/AdminLogo#AdminLogo": AdminLogo_27eed1898e8caadb2fd2266b54bb4509,

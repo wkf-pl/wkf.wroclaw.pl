@@ -8,7 +8,6 @@ import {
 } from '@/components/admin/boolean-switch-config'
 import {
   Categories,
-  ClubSections,
   ContentListingItems,
   DocumentFiles,
   Documents,
@@ -44,7 +43,6 @@ const collections: CollectionConfig[] = [
   Documents,
   Roles,
   Users,
-  ClubSections,
 ]
 
 const globals: GlobalConfig[] = [HomepageHero, HomepageSections, Navigation, Footer, SiteSettings]

@@ -71,6 +71,7 @@ import * as migration_20261111_125928_current_item_fields from './20261111_12592
 import * as migration_20261111_150257_spacer_block from './20261111_150257_spacer_block'
 import * as migration_20261113_112823_content_audit_log from './20261113_112823_content_audit_log'
 import * as migration_20261113_213205_retire_system_route_pages from './20261113_213205_retire_system_route_pages'
+import * as migration_20261113_220423_remove_club_sections from './20261113_220423_remove_club_sections'
 
 export const migrations = [
   {
@@ -437,5 +438,10 @@ export const migrations = [
     up: migration_20261113_213205_retire_system_route_pages.up,
     down: migration_20261113_213205_retire_system_route_pages.down,
     name: '20261113_213205_retire_system_route_pages',
+  },
+  {
+    up: migration_20261113_220423_remove_club_sections.up,
+    down: migration_20261113_220423_remove_club_sections.down,
+    name: '20261113_220423_remove_club_sections',
   },
 ]

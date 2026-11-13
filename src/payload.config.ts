@@ -11,7 +11,6 @@ import { migrations } from '../migrations'
 
 import {
   Categories,
-  ClubSections,
   ContentListingItems,
   DocumentFiles,
   Documents,
@@ -134,7 +133,6 @@ export default buildConfig({
     Documents,
     UrlAliases,
     Partners,
-    ClubSections,
     Users,
     Roles,
     ContentAuditLog,

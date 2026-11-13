@@ -94,13 +94,6 @@ export const permissionResources = {
     kind: 'collection',
     label: 'Aliasy adresów',
   },
-  'club-sections': {
-    collection: 'club-sections',
-    kind: 'collection',
-    label: 'Sekcje klubowe',
-    publishedField: '_status',
-    trash: true,
-  },
   categories: {
     collection: 'categories',
     kind: 'collection',

@@ -146,7 +146,6 @@ export interface Config {
     documents: Document;
     'url-aliases': UrlAlias;
     partners: Partner;
-    'club-sections': ClubSection;
     users: User;
     roles: Role;
     'content-audit-log': ContentAuditLog;
@@ -188,7 +187,6 @@ export interface Config {
     documents: DocumentsSelect<false> | DocumentsSelect<true>;
     'url-aliases': UrlAliasesSelect<false> | UrlAliasesSelect<true>;
     partners: PartnersSelect<false> | PartnersSelect<true>;
-    'club-sections': ClubSectionsSelect<false> | ClubSectionsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     roles: RolesSelect<false> | RolesSelect<true>;
     'content-audit-log': ContentAuditLogSelect<false> | ContentAuditLogSelect<true>;
@@ -1254,7 +1252,6 @@ export interface Role {
           | 'partners'
           | 'documents'
           | 'url-aliases'
-          | 'club-sections'
           | 'categories'
           | 'tags'
           | 'page-templates'
@@ -3640,147 +3637,6 @@ export interface UrlAlias {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "club-sections".
- */
-export interface ClubSection {
-  id: number;
-  name: string;
-  backgroundImage?: (number | null) | Media;
-  destinationPage?: (number | null) | Page;
-  menuItems?:
-    | {
-        /**
-         * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
-         */
-        label?: string | null;
-        appearance: 'link' | 'primaryButton' | 'secondaryButton';
-        iconName?:
-          | (
-              | 'camera'
-              | 'astronaut'
-              | 'ticket'
-              | 'bluesky'
-              | 'mace'
-              | 'bottle-mana'
-              | 'cthulhu'
-              | 'time'
-              | 'skull'
-              | 'dnd5'
-              | 'discord'
-              | 'document'
-              | 'pumpkin-halloween'
-              | 'mail'
-              | 'facebook'
-              | 'guitar'
-              | 'globe'
-              | 'board-game'
-              | 'star'
-              | 'instagram'
-              | 'calendar'
-              | 'hat'
-              | 'gun'
-              | 'cards'
-              | 'playing-cards'
-              | 'collection'
-              | 'compass'
-              | 'confetti'
-              | 'dice'
-              | 'd10'
-              | 'd12'
-              | 'd20'
-              | 'd4'
-              | 'd6'
-              | 'd8'
-              | 'water-drop'
-              | 'crystal-ball'
-              | 'book'
-              | 'fireball'
-              | 'larp'
-              | 'external-link'
-              | 'linkedin'
-              | 'location'
-              | 'bow'
-              | 'mage'
-              | 'pirate-map'
-              | 'vendetta'
-              | 'messenger'
-              | 'sword'
-              | 'potion'
-              | 'music'
-              | 'image'
-              | 'announcement'
-              | 'eye'
-              | 'partner'
-              | 'pdf'
-              | 'seal'
-              | 'pawn'
-              | 'quill'
-              | 'flame'
-              | 'download'
-              | 'review'
-              | 'wand'
-              | 'sf'
-              | 'seance'
-              | 'arrows'
-              | 'slack'
-              | 'users'
-              | 'star-trek'
-              | 'star-wars-empire'
-              | 'star-wars-rebel-alliance'
-              | 'steampunk'
-              | 'home'
-              | 'arrow'
-              | 'arrow-left'
-              | 'arrow-right'
-              | 'superhero'
-              | 'stormtrooper'
-              | 'soundtrack'
-              | 'tag'
-              | 'shield'
-              | 'axe'
-              | 'twitch'
-              | 'shuttle'
-              | 'fighter'
-              | 'event'
-              | 'filled-star'
-              | 'youtube'
-              | 'scroll'
-            )
-          | null;
-        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
-        eventCycle?: (number | null) | EventCycle;
-        document?: (number | null) | Document;
-        category?: (number | null) | Category;
-        partner?: (number | null) | Partner;
-        page?: (number | null) | Page;
-        tag?: (number | null) | Tag;
-        post?: (number | null) | Post;
-        event?: (number | null) | Event;
-        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
-        /**
-         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
-         */
-        customAddress?: string | null;
-        openInNewTab?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * Identyfikator techniczny tworzony automatycznie z nazwy.
-   */
-  slug: string;
-  /**
-   * Niższa liczba oznacza wcześniejszą pozycję.
-   */
-  displayOrder: number;
-  publishedAt?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  deletedAt?: string | null;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "content-audit-log".
  */
 export interface ContentAuditLog {
@@ -3892,10 +3748,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'partners';
         value: number | Partner;
-      } | null)
-    | ({
-        relationTo: 'club-sections';
-        value: number | ClubSection;
       } | null)
     | ({
         relationTo: 'users';
@@ -5418,42 +5270,6 @@ export interface PartnersSelect<T extends boolean = true> {
       };
   slug?: T;
   author?: T;
-  publishedAt?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  deletedAt?: T;
-  _status?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "club-sections_select".
- */
-export interface ClubSectionsSelect<T extends boolean = true> {
-  name?: T;
-  backgroundImage?: T;
-  destinationPage?: T;
-  menuItems?:
-    | T
-    | {
-        label?: T;
-        appearance?: T;
-        iconName?: T;
-        targetType?: T;
-        eventCycle?: T;
-        document?: T;
-        category?: T;
-        partner?: T;
-        page?: T;
-        tag?: T;
-        post?: T;
-        event?: T;
-        customScheme?: T;
-        customAddress?: T;
-        openInNewTab?: T;
-        id?: T;
-      };
-  slug?: T;
-  displayOrder?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;

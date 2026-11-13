@@ -4,7 +4,6 @@ import type { RasterIconName } from '@/modules/icons/icon-registry'
 const adminIconNames: Record<string, RasterIconName> = {
   account: 'profile',
   categories: 'category',
-  'club-sections': 'collection',
   documents: 'document',
   'event-cycles': 'calendar',
   'event-types': 'event',

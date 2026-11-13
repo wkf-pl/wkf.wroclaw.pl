@@ -1,7 +1,6 @@
 import type { Access, PayloadRequest } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ClubSections } from '@/collections/ClubSections'
 import { DocumentFiles } from '@/collections/DocumentFiles'
 import { Documents } from '@/collections/Documents'
 import { EventCycles } from '@/collections/EventCycles'
@@ -52,7 +51,6 @@ describe('trash configuration', () => {
     ['event-cycles', EventCycles],
     ['documents', Documents],
     ['partners', Partners],
-    ['club-sections', ClubSections],
     ['member-profiles', MemberProfiles],
   ])('enables trash for %s', (_slug, collection) => {
     expect(collection.trash).toBe(true)

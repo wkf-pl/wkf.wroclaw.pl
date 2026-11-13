@@ -9,6 +9,7 @@ let payload: Payload
 let administratorRole: Role
 let editorRole: Role
 let userRole: Role
+let editorAccount: User
 
 function createAuthenticatedUser(id: number, role: Role): User {
   return {
@@ -47,6 +48,15 @@ beforeAll(async () => {
     findRole('editor'),
     findRole('user'),
   ])
+  editorAccount = await payload.create({
+    collection: 'users',
+    data: {
+      displayName: 'Role access integration editor',
+      email: 'role-access-integration-editor@example.invalid',
+      password: 'integration-test-only',
+      roles: [editorRole.id],
+    },
+  })
 })
 
 afterAll(async () => {
@@ -55,10 +65,12 @@ afterAll(async () => {
   }
 
   await payload.delete({
-    collection: 'club-sections',
+    collection: 'posts',
     overrideAccess: true,
+    trash: true,
     where: { slug: { in: ['integration-published', 'integration-draft'] } },
   })
+  if (editorAccount) await payload.delete({ collection: 'users', id: editorAccount.id })
 })
 
 describe('role access integration', () => {
@@ -122,41 +134,45 @@ describe('role access integration', () => {
     ).rejects.toMatchObject({ status: 400 })
   })
 
-  it('shows only published club sections to anonymous readers', async () => {
+  it('shows only published posts to anonymous readers', async () => {
     for (const slug of ['integration-published', 'integration-draft']) {
       await payload.delete({
-        collection: 'club-sections',
+        collection: 'posts',
         overrideAccess: true,
         where: { slug: { equals: slug } },
       })
     }
 
     await payload.create({
-      collection: 'club-sections',
+      collection: 'posts',
       data: {
         _status: 'published',
-        displayOrder: 1,
-        name: 'Integration Published',
+        author: editorAccount.id,
+        excerpt: 'Role access integration fixture',
+        layout: [{ blockType: 'spacer', size: '24' }],
+        title: 'Integration Published',
         slug: 'integration-published',
       },
       overrideAccess: false,
-      user: createAuthenticatedUser(-6, editorRole),
+      user: { ...editorAccount, collection: 'users' },
     })
     await payload.create({
-      collection: 'club-sections',
+      collection: 'posts',
       data: {
         _status: 'draft',
-        displayOrder: 2,
-        name: 'Integration Draft',
+        author: editorAccount.id,
+        excerpt: 'Role access integration fixture',
+        layout: [{ blockType: 'spacer', size: '24' }],
+        title: 'Integration Draft',
         slug: 'integration-draft',
       },
       draft: true,
       overrideAccess: false,
-      user: createAuthenticatedUser(-6, editorRole),
+      user: { ...editorAccount, collection: 'users' },
     })
 
     const result = await payload.find({
-      collection: 'club-sections',
+      collection: 'posts',
       context: publicRequestContext,
       overrideAccess: false,
       user: null,
@@ -166,15 +182,15 @@ describe('role access integration', () => {
     expect(result.docs.map(({ slug }) => slug)).toEqual(['integration-published'])
   })
 
-  it('denies club section creation to a role without permission', async () => {
+  it('denies post creation to a role without permission', async () => {
     await expect(
       payload.create({
-        collection: 'club-sections',
+        collection: 'posts',
         data: {
-          displayOrder: 3,
-          name: 'Denied Section',
+          title: 'Denied Post',
           slug: 'integration-denied',
         },
+        draft: true,
         overrideAccess: false,
         user: createAuthenticatedUser(-7, userRole),
       }),

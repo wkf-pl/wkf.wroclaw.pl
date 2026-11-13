@@ -1,5 +1,4 @@
 export { Categories } from './Categories'
-export { ClubSections } from './ClubSections'
 export { ContentListingItems } from './ContentListingItems'
 export { DocumentFiles } from './DocumentFiles'
 export { Documents } from './Documents'
