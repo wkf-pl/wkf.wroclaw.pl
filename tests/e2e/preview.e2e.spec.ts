@@ -398,10 +398,27 @@ test('previews a draft page template before enabling template rendering publicly
 
   const textEditor = heroField.locator('.rich-text-lexical [contenteditable="true"]')
   await expect(textEditor).toHaveText('—')
-  await textEditor.press('Control+a')
-  await textEditor.press('Control+b')
-  await textEditor.press('End')
-  await textEditor.press('Shift+Enter')
+  await textEditor.selectText()
+  await page.keyboard.press('Control+b')
+  await expect(textEditor.locator('strong')).toHaveText('—')
+  await page.keyboard.press('ArrowRight')
+  await expect
+    .poll(() =>
+      textEditor.evaluate((editor) => {
+        const selection = window.getSelection()
+        if (!selection?.isCollapsed || !selection.anchorNode) return false
+        if (!editor.contains(selection.anchorNode)) return false
+
+        const beforeCaret = document.createRange()
+        beforeCaret.selectNodeContents(editor)
+        beforeCaret.setEnd(selection.anchorNode, selection.anchorOffset)
+        return beforeCaret.toString() === '—'
+      }),
+    )
+    .toBe(true)
+  await page.keyboard.press('Shift+Enter')
+  await expect(textEditor.locator('br')).not.toHaveCount(0)
+  await expect(textEditor.locator('strong')).toHaveText('—')
 
   await page.getByRole('button', { name: 'Panel informacyjny', exact: true }).click()
   await expect(
