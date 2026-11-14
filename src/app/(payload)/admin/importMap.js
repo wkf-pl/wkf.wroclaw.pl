@@ -92,6 +92,7 @@ import { URLCell as URLCell_fd0f0ca32d7a45be5929fc2ef04497f8 } from '../../../co
 import { FileSizeCell as FileSizeCell_fd0f0ca32d7a45be5929fc2ef04497f8 } from '../../../components/admin/MediaTableCells'
 import { NumberCell as NumberCell_fd0f0ca32d7a45be5929fc2ef04497f8 } from '../../../components/admin/MediaTableCells'
 import { MediaCategoryTabs as MediaCategoryTabs_158a37410aa04bfbc52e5611f03912c1 } from '../../../components/admin/MediaCategoryTabs'
+import { MemberProfilePhotoField as MemberProfilePhotoField_05cae418863b5a2d9b7b63a6b25260ae } from '../../../components/admin/MemberProfilePhotoField'
 import { GameRowLabel as GameRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { ContactChannelRowLabel as ContactChannelRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { MemberProfileAddress as MemberProfileAddress_de328f7eecba388f3fa482158aaa97b1 } from '../../../components/admin/MemberProfileAddress'
@@ -210,6 +211,7 @@ export const importMap = {
   "/components/admin/MediaTableCells#FileSizeCell": FileSizeCell_fd0f0ca32d7a45be5929fc2ef04497f8,
   "/components/admin/MediaTableCells#NumberCell": NumberCell_fd0f0ca32d7a45be5929fc2ef04497f8,
   "/components/admin/MediaCategoryTabs#MediaCategoryTabs": MediaCategoryTabs_158a37410aa04bfbc52e5611f03912c1,
+  "/components/admin/MemberProfilePhotoField#MemberProfilePhotoField": MemberProfilePhotoField_05cae418863b5a2d9b7b63a6b25260ae,
   "/components/admin/DynamicRowLabel#GameRowLabel": GameRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/DynamicRowLabel#ContactChannelRowLabel": ContactChannelRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/MemberProfileAddress#MemberProfileAddress": MemberProfileAddress_de328f7eecba388f3fa482158aaa97b1,

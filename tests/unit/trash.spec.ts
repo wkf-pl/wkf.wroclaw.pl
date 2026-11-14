@@ -6,7 +6,6 @@ import { Documents } from '@/collections/Documents'
 import { EventCycles } from '@/collections/EventCycles'
 import { Events } from '@/collections/Events'
 import { Media } from '@/collections/Media'
-import { MemberProfileImages } from '@/collections/MemberProfileImages'
 import { MemberProfiles } from '@/collections/MemberProfiles'
 import { Pages } from '@/collections/Pages'
 import { Partners } from '@/collections/Partners'
@@ -59,7 +58,6 @@ describe('trash configuration', () => {
   it.each([
     ['media', Media],
     ['document-files', DocumentFiles],
-    ['member-profile-images', MemberProfileImages],
   ])('does not enable trash for blob-backed %s', (_slug, collection) => {
     expect(collection.trash).not.toBe(true)
   })

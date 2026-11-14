@@ -117,18 +117,6 @@ test.beforeAll(async () => {
   })
     .avif()
     .toBuffer()
-  const photo = await payload.create({
-    collection: 'member-profile-images',
-    data: { owner: photoOwner.id },
-    file: {
-      data: avif,
-      mimetype: 'image/avif',
-      name: 'member-profile-e2e.avif',
-      size: avif.length,
-    },
-    overrideAccess: false,
-    user: photoOwner,
-  })
   await payload.create({
     collection: 'member-profiles',
     data: {
@@ -138,7 +126,7 @@ test.beforeAll(async () => {
       ]),
       games: [{ runs: true, title: 'Alien RPG' }],
       owner: photoOwner.id,
-      photo: photo.id,
+      photoChange: { data: avif.toString('base64') },
       publicName: 'Borys AVIF',
       slug: 'generated-by-hook',
     },
@@ -199,7 +187,7 @@ test('renders the catalogue, rich profile, default avatar, AVIF derivative, and 
     'src',
     '/assets/member-profile-placeholder.webp',
   )
-  await expect(borysCard.locator('img')).toHaveAttribute('src', /\.webp\?prefix=member-profiles/)
+  await expect(borysCard.locator('img')).toHaveAttribute('src', /\/photo\/.*-card\.webp$/)
 
   await page.goto(`/members/${ownerProfile.slug}`)
   await expect(page.getByRole('heading', { level: 1, name: ownerPublicName })).toBeVisible()
@@ -315,6 +303,18 @@ test('opens a member profile from account and publishes the automatically create
   await expect(page.getByRole('textbox', { name: 'Funkcje' })).toBeVisible()
   await expect(page.getByText('Aktywności klubowe', { exact: true })).toHaveCount(0)
 
+  const photo = await sharp({
+    create: { background: '#315f48', channels: 4, height: 640, width: 640 },
+  })
+    .png()
+    .toBuffer()
+  await page.getByLabel('Zdjęcie', { exact: true }).setInputFiles({
+    buffer: photo,
+    mimeType: 'image/png',
+    name: 'wizytowka.png',
+  })
+  await expect(page.getByAltText('Zdjęcie wizytówki')).toHaveAttribute('src', /^data:image\/png/)
+
   await page.locator('#field-publicName').fill('Celina E2E')
   await page.getByRole('button', { name: /^Opublikuj/ }).click()
   await expect(
@@ -323,6 +323,10 @@ test('opens a member profile from account and publishes the automatically create
 
   await page.goto('/members/codex-member-profile-creator-e2e')
   await expect(page.getByRole('heading', { level: 1, name: 'Celina E2E' })).toBeVisible()
+  const publishedPhoto = page.locator('img[src*="/photo/"]').first()
+  await expect(publishedPhoto).toBeVisible()
+  const photoURL = await publishedPhoto.getAttribute('src')
+  expect((await page.request.get(photoURL!)).ok()).toBe(true)
 })
 
 test('shows the profile address and automatically resolved display locations in the sidebar', async ({

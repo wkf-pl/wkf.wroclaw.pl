@@ -30,12 +30,6 @@ export const permissionResources = {
     ownershipField: 'owner',
     trash: true,
   },
-  'member-profile-images': {
-    collection: 'member-profile-images',
-    kind: 'collection',
-    label: 'Zdjęcia wizytówek',
-    ownershipField: 'owner',
-  },
   pages: {
     collection: 'pages',
     kind: 'collection',

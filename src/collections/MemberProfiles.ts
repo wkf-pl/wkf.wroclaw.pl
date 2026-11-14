@@ -1,4 +1,4 @@
-import type { Access, CollectionConfig, FieldAccess, Where } from 'payload'
+import type { Access, CollectionConfig, FieldAccess, JSONField, Where } from 'payload'
 
 import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import {
@@ -13,11 +13,16 @@ import {
   validateGame,
   validateUniqueGames,
 } from '@/modules/members/member-profile'
+import { prepareMemberProfile } from '@/modules/members/member-profile-lifecycle'
 import {
-  deleteMemberProfileImage,
-  prepareMemberProfile,
-  reconcileMemberProfileImages,
-} from '@/modules/members/member-profile-lifecycle'
+  collectMemberProfilePhotosForDeletion,
+  deleteMemberProfilePhotos,
+  getMemberProfilePhotoEndpoint,
+  markMemberProfilePhotoRestore,
+  readMemberProfileDraftPhoto,
+  saveMemberProfilePhoto,
+} from '@/modules/members/member-profile-photo'
+import { memberProfilePhotoSizeLimit } from '@/modules/members/member-profile-photo-options'
 import {
   combineAccessResults,
   clientUserHasUnrestrictedResourcePermission,
@@ -94,9 +99,30 @@ const readProfileVersions: Access = async (arguments_) => {
 const readOwnedProfileField: FieldAccess = ({ doc, req, siblingData }) =>
   getRelationshipId(doc?.owner ?? siblingData?.owner) === getUserIdentity(req.user)
 
+const photoVariantSchema = {
+  type: 'object',
+  properties: { filename: { type: 'string' } },
+  required: ['filename'],
+} satisfies NonNullable<JSONField['jsonSchema']>['schema']
+
+const storedPhotoSchema = {
+  type: 'object',
+  properties: {
+    prefix: { type: 'string' },
+    filename: { type: 'string' },
+    objectKey: { type: 'string' },
+    sizes: {
+      type: 'object',
+      properties: { card: photoVariantSchema, profile: photoVariantSchema },
+    },
+  },
+  required: ['prefix'],
+} satisfies NonNullable<JSONField['jsonSchema']>['schema']
+
 export const MemberProfiles: CollectionConfig = {
   slug: 'member-profiles',
   trash: true,
+  endpoints: [getMemberProfilePhotoEndpoint],
   access: {
     create: createProfiles,
     delete: deleteProfiles,
@@ -158,15 +184,54 @@ export const MemberProfiles: CollectionConfig = {
               maxLength: 160,
             },
             {
-              name: 'photo',
-              type: 'upload',
+              name: 'photoChange',
+              type: 'json',
+              virtual: true,
               admin: {
-                description:
-                  'JPEG, PNG, WebP lub AVIF, maksymalnie 5 MiB. Nowy plik zastępuje poprzedni.',
+                components: {
+                  Field: '/components/admin/MemberProfilePhotoField#MemberProfilePhotoField',
+                },
               },
-              displayPreview: true,
               label: 'Zdjęcie',
-              relationTo: 'member-profile-images',
+              typescriptSchema: [
+                ({ jsonSchema }) => ({
+                  ...jsonSchema,
+                  type: 'object',
+                  properties: {
+                    data: {
+                      type: 'string',
+                      maxLength: Math.ceil(memberProfilePhotoSizeLimit / 3) * 4,
+                    },
+                    mimeType: { type: 'string' },
+                    remove: { type: 'boolean' },
+                  },
+                }),
+              ],
+            },
+            {
+              name: 'photo',
+              type: 'json',
+              admin: { readOnly: true, components: { Field: false } },
+              typescriptSchema: [() => ({ oneOf: [storedPhotoSchema, { type: 'null' }] })],
+            },
+            {
+              name: 'draftPhoto',
+              type: 'json',
+              access: { read: readMemberProfileDraftPhoto },
+              admin: { readOnly: true, components: { Field: false } },
+              typescriptSchema: [
+                () => ({
+                  oneOf: [
+                    storedPhotoSchema,
+                    {
+                      type: 'object',
+                      properties: { removed: { type: 'boolean', enum: [true] } },
+                      required: ['removed'],
+                    },
+                    { type: 'null' },
+                  ],
+                }),
+              ],
             },
             {
               name: 'interests',
@@ -336,17 +401,15 @@ export const MemberProfiles: CollectionConfig = {
     },
   ],
   hooks: {
-    afterChange: [
-      reconcileMemberProfileImages,
-      syncContentListingAfterChange,
-      invalidateMemberProfilesAfterChange,
-    ],
+    afterChange: [syncContentListingAfterChange, invalidateMemberProfilesAfterChange],
     afterDelete: [
-      deleteMemberProfileImage,
       removeContentListingAfterDelete,
       invalidateMemberProfilesAfterDelete,
+      deleteMemberProfilePhotos,
     ],
-    beforeOperation: [markTrashMutation],
+    beforeChange: [saveMemberProfilePhoto],
+    beforeDelete: [collectMemberProfilePhotosForDeletion],
+    beforeOperation: [markTrashMutation, markMemberProfilePhotoRestore],
     beforeValidate: [prepareMemberProfile],
   },
   labels: {

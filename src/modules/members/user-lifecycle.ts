@@ -45,12 +45,6 @@ export const deleteUserMemberData: CollectionBeforeDeleteHook = async ({ id, req
     req,
     where: { owner: { equals: id } },
   })
-  await req.payload.delete({
-    collection: 'member-profile-images',
-    overrideAccess: true,
-    req,
-    where: { owner: { equals: id } },
-  })
 }
 
 export const assignDefaultUserRole: CollectionBeforeValidateHook = async ({

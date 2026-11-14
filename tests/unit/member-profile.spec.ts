@@ -3,7 +3,6 @@ import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { MemberProfileImages } from '@/collections/MemberProfileImages'
 import { MemberProfiles } from '@/collections/MemberProfiles'
 import {
   createBaseProfileSlug,
@@ -12,6 +11,7 @@ import {
   validateGame,
   validateUniqueGames,
 } from '@/modules/members/member-profile'
+import { memberProfilePhotoMimeTypes } from '@/modules/members/member-profile-photo-options'
 import { getMemberProfileImageURL } from '@/modules/members/member-profile-image'
 import { createRichTextDocument, extractMemberProfileText } from '@/modules/members/rich-text'
 
@@ -96,18 +96,13 @@ describe('member profile validation', () => {
   })
 
   it('accepts AVIF but excludes SVG and animated image formats', () => {
-    const mimeTypes =
-      typeof MemberProfileImages.upload === 'object'
-        ? MemberProfileImages.upload.mimeTypes
-        : undefined
-
-    expect(mimeTypes).toContain('image/avif')
-    expect(mimeTypes).not.toContain('image/svg+xml')
-    expect(mimeTypes).not.toContain('image/gif')
+    expect(memberProfilePhotoMimeTypes).toContain('image/avif')
+    expect(memberProfilePhotoMimeTypes).not.toContain('image/svg+xml')
+    expect(memberProfilePhotoMimeTypes).not.toContain('image/gif')
   })
 
   it('uses the WebP placeholder when a profile has no photo', () => {
-    expect(getMemberProfileImageURL({ photo: null } as never, 'card')).toBe(
+    expect(getMemberProfileImageURL({ id: 1, photo: null }, 'card')).toBe(
       '/assets/member-profile-placeholder.webp',
     )
     expect(

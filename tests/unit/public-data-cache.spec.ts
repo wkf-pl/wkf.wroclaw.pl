@@ -5,17 +5,13 @@ import {
   createPublicCacheInvalidator,
   getContentSourceCacheTags,
   getMemberProfileCacheTags,
-  getMemberProfileImageCacheTags,
   getPartnerCacheTags,
-  invalidateMemberProfileImagesAfterChange,
-  invalidateMemberProfileImagesAfterDelete,
   invalidateMemberProfilesAfterChange,
   invalidateMemberProfilesAfterDelete,
   invalidatePartnersAfterChange,
   invalidatePartnersAfterDelete,
 } from '@/modules/cache/invalidate-public-data'
 import { normalizePublicMediaOptions } from '@/modules/media/media-listing'
-import { MemberProfileImages } from '@/collections/MemberProfileImages'
 import { MemberProfiles } from '@/collections/MemberProfiles'
 import { Partners } from '@/collections/Partners'
 
@@ -96,9 +92,6 @@ describe('public data cache', () => {
       publicCacheTags.contentListings,
       publicCacheTags.sitemap,
     ])
-    expect(getMemberProfileImageCacheTags()).toEqual(
-      getMemberProfileCacheTags().filter((tag) => tag !== publicCacheTags.sitemap),
-    )
   })
 
   it('uses matching invalidators for create, update and delete hooks', () => {
@@ -106,12 +99,6 @@ describe('public data cache', () => {
     expect(Partners.hooks?.afterDelete).toContain(invalidatePartnersAfterDelete)
     expect(MemberProfiles.hooks?.afterChange).toContain(invalidateMemberProfilesAfterChange)
     expect(MemberProfiles.hooks?.afterDelete).toContain(invalidateMemberProfilesAfterDelete)
-    expect(MemberProfileImages.hooks?.afterChange).toContain(
-      invalidateMemberProfileImagesAfterChange,
-    )
-    expect(MemberProfileImages.hooks?.afterDelete).toContain(
-      invalidateMemberProfileImagesAfterDelete,
-    )
   })
 
   it('normalizes every filtered media cache-key dimension', () => {

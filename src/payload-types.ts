@@ -140,7 +140,6 @@ export interface Config {
     categories: Category;
     tags: Tag;
     media: Media;
-    'member-profile-images': MemberProfileImage;
     'member-profiles': MemberProfile;
     'document-files': DocumentFile;
     documents: Document;
@@ -181,7 +180,6 @@ export interface Config {
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
-    'member-profile-images': MemberProfileImagesSelect<false> | MemberProfileImagesSelect<true>;
     'member-profiles': MemberProfilesSelect<false> | MemberProfilesSelect<true>;
     'document-files': DocumentFilesSelect<false> | DocumentFilesSelect<true>;
     documents: DocumentsSelect<false> | DocumentsSelect<true>;
@@ -1243,7 +1241,6 @@ export interface Role {
           | 'users'
           | 'media'
           | 'member-profiles'
-          | 'member-profile-images'
           | 'pages'
           | 'posts'
           | 'events'
@@ -1599,10 +1596,52 @@ export interface MemberProfile {
     [k: string]: unknown;
   } | null;
   clubFunction?: string | null;
-  /**
-   * JPEG, PNG, WebP lub AVIF, maksymalnie 5 MiB. Nowy plik zastępuje poprzedni.
-   */
-  photo?: (number | null) | MemberProfileImage;
+  photoChange?: {
+    data?: string;
+    mimeType?: string;
+    remove?: boolean;
+    [k: string]: unknown;
+  };
+  photo?: {
+    prefix: string;
+    filename?: string;
+    objectKey?: string;
+    sizes?: {
+      card?: {
+        filename: string;
+        [k: string]: unknown;
+      };
+      profile?: {
+        filename: string;
+        [k: string]: unknown;
+      };
+      [k: string]: unknown;
+    };
+    [k: string]: unknown;
+  } | null;
+  draftPhoto?:
+    | {
+        prefix: string;
+        filename?: string;
+        objectKey?: string;
+        sizes?: {
+          card?: {
+            filename: string;
+            [k: string]: unknown;
+          };
+          profile?: {
+            filename: string;
+            [k: string]: unknown;
+          };
+          [k: string]: unknown;
+        };
+        [k: string]: unknown;
+      }
+    | {
+        removed: true;
+        [k: string]: unknown;
+      }
+    | null;
   interests?: string | null;
   /**
    * Pole opcjonalne — wizytówka nie musi dotyczyć grania.
@@ -1648,46 +1687,6 @@ export interface MemberProfile {
   createdAt: string;
   deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "member-profile-images".
- */
-export interface MemberProfileImage {
-  id: number;
-  owner: number | User;
-  isPubliclyUsed?: boolean | null;
-  prefix?: string | null;
-  _objectKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-  sizes?: {
-    card?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    profile?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3726,10 +3725,6 @@ export interface PayloadLockedDocument {
         value: number | Media;
       } | null)
     | ({
-        relationTo: 'member-profile-images';
-        value: number | MemberProfileImage;
-      } | null)
-    | ({
         relationTo: 'member-profiles';
         value: number | MemberProfile;
       } | null)
@@ -5101,51 +5096,6 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "member-profile-images_select".
- */
-export interface MemberProfileImagesSelect<T extends boolean = true> {
-  owner?: T;
-  isPubliclyUsed?: T;
-  prefix?: T;
-  _objectKey?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
-  sizes?:
-    | T
-    | {
-        card?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-        profile?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-      };
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "member-profiles_select".
  */
 export interface MemberProfilesSelect<T extends boolean = true> {
@@ -5153,7 +5103,9 @@ export interface MemberProfilesSelect<T extends boolean = true> {
   publicName?: T;
   about?: T;
   clubFunction?: T;
+  photoChange?: T;
   photo?: T;
+  draftPhoto?: T;
   interests?: T;
   games?:
     | T
