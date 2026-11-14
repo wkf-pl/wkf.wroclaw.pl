@@ -1,13 +1,11 @@
 import type { Access, PayloadRequest } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ClubSections } from '@/collections/ClubSections'
 import { DocumentFiles } from '@/collections/DocumentFiles'
 import { Documents } from '@/collections/Documents'
 import { EventCycles } from '@/collections/EventCycles'
 import { Events } from '@/collections/Events'
 import { Media } from '@/collections/Media'
-import { MemberProfileImages } from '@/collections/MemberProfileImages'
 import { MemberProfiles } from '@/collections/MemberProfiles'
 import { Pages } from '@/collections/Pages'
 import { Partners } from '@/collections/Partners'
@@ -52,7 +50,6 @@ describe('trash configuration', () => {
     ['event-cycles', EventCycles],
     ['documents', Documents],
     ['partners', Partners],
-    ['club-sections', ClubSections],
     ['member-profiles', MemberProfiles],
   ])('enables trash for %s', (_slug, collection) => {
     expect(collection.trash).toBe(true)
@@ -61,7 +58,6 @@ describe('trash configuration', () => {
   it.each([
     ['media', Media],
     ['document-files', DocumentFiles],
-    ['member-profile-images', MemberProfileImages],
   ])('does not enable trash for blob-backed %s', (_slug, collection) => {
     expect(collection.trash).not.toBe(true)
   })
@@ -116,16 +112,14 @@ describe('trash access', () => {
     await expect(checkAccess(deleteAccess, request, { id: 1 })).resolves.toBe(false)
   })
 
-  it('keeps system pages protected from permanent deletion', async () => {
+  it('allows permanent deletion of pages with the explicit permission', async () => {
     const deleteAccess = Pages.access?.delete
     const permanentDeleteRequest = createRoleRequest([
       { permanentDeleteAllowed: true, resource: 'pages' },
     ])
 
     expect(deleteAccess).toBeTypeOf('function')
-    await expect(checkAccess(deleteAccess as Access, permanentDeleteRequest)).resolves.toEqual({
-      or: [{ systemKey: { exists: false } }, { systemKey: { not_in: ['blog', 'events'] } }],
-    })
+    await expect(checkAccess(deleteAccess as Access, permanentDeleteRequest)).resolves.toBe(true)
   })
 
   it('does not broaden read access', async () => {

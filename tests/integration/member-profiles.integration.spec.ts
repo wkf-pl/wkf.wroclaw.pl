@@ -1,8 +1,9 @@
 import sharp from 'sharp'
 import { sql } from '@payloadcms/db-postgres'
-import { createLocalReq, getPayload, type Payload } from 'payload'
+import { createLocalReq, getPayload, handleEndpoints, type Payload } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { getMemberProfileImageURL } from '@/modules/members/member-profile-image'
 import { findMemberProfileUsages } from '@/modules/members/member-profile-usages'
 import {
   findPublicMemberProfileBySlug,
@@ -11,6 +12,7 @@ import {
 import { createRichTextDocument } from '@/modules/members/rich-text'
 import type { MemberProfile, Page, Role, User } from '@/payload-types'
 import config from '@/payload.config'
+import { getStorageContainerClient } from '@/storage/get-storage-container-client'
 import {
   down as restoreClubActivitiesColumn,
   up as mergeClubActivitiesIntoAbout,
@@ -251,7 +253,7 @@ describe('member profiles integration', () => {
       collection: 'pages',
       data: {
         _status: 'published',
-        author: owner.id,
+        author: { relationTo: 'users', value: owner.id },
         layout: [
           {
             blockType: 'columnLayout',
@@ -324,87 +326,120 @@ describe('member profiles integration', () => {
     expect(publicResult.docs).toHaveLength(1)
   })
 
-  it('stores one AVIF photo record and generates WebP display sizes', async () => {
-    const firstAVIF = await sharp({
-      create: { background: '#5a376e', channels: 4, height: 640, width: 640 },
-    })
-      .avif()
-      .toBuffer()
-    let image = await payload.create({
-      collection: 'member-profile-images',
-      data: { owner: owner.id },
-      file: {
-        data: firstAVIF,
-        mimetype: 'image/avif',
-        name: 'integration-member-profile.avif',
-        size: firstAVIF.length,
-      },
-      overrideAccess: false,
-      user: owner,
-    })
+  it('preserves the public photo until a replacement draft is published', async () => {
+    const savePhoto = async (color: string, draft: boolean) => {
+      const image = await sharp({
+        create: { background: color, channels: 4, height: 640, width: 640 },
+      })
+        .avif()
+        .toBuffer()
+      const form = new FormData()
+      form.set('file', new File([new Uint8Array(image)], 'photo.avif', { type: 'image/avif' }))
+      form.set('_payload', JSON.stringify({ _status: draft ? 'draft' : 'published' }))
+      const response = await handleEndpoints({
+        config,
+        request: new Request(`http://localhost/api/member-profiles/${profile.id}?draft=${draft}`, {
+          body: form,
+          headers: { Authorization: `JWT ${token}` },
+          method: 'PATCH',
+        }),
+      })
+      const result = (await response.json()) as { doc: MemberProfile }
+      expect(response.status, JSON.stringify(result)).toBe(200)
+      return result.doc
+    }
 
-    const replacementAVIF = await sharp({
-      create: { background: '#315f48', channels: 4, height: 720, width: 720 },
-    })
-      .avif()
-      .toBuffer()
-    image = await payload.update({
-      collection: 'member-profile-images',
-      id: image.id,
-      data: { owner: owner.id },
-      file: {
-        data: replacementAVIF,
-        mimetype: 'image/avif',
-        name: 'integration-member-profile-replacement.avif',
-        size: replacementAVIF.length,
-      },
-      overrideAccess: false,
-      user: owner,
-    })
+    const fetchPhoto = (photo: MemberProfile['photo'], token?: string) =>
+      handleEndpoints({
+        config,
+        request: new Request(
+          `http://localhost${getMemberProfileImageURL({ id: profile.id, photo }, 'card')}`,
+          {
+            headers: token ? { Authorization: `JWT ${token}` } : undefined,
+          },
+        ),
+      })
 
-    profile = await publishProfile({ photo: image.id })
-
-    const ownerImages = await payload.find({
-      collection: 'member-profile-images',
-      overrideAccess: false,
-      user: owner,
+    const { token } = await payload.login({
+      collection: 'users',
+      data: { email: owner.email, password: 'integration-test-password' },
     })
 
-    expect(ownerImages.docs).toHaveLength(1)
-    expect(image.filename).toBe('integration-member-profile-replacement.avif')
-    expect(ownerImages.docs[0]?.mimeType).toBe('image/avif')
-    expect(ownerImages.docs[0]?.sizes?.card?.mimeType).toBe('image/webp')
-    expect(ownerImages.docs[0]?.sizes?.profile?.mimeType).toBe('image/webp')
-    expect(ownerImages.docs[0]?.isPubliclyUsed).toBe(true)
-  })
+    const published = await savePhoto('#5a376e', false)
+    const draft = await savePhoto('#315f48', true)
+    expect(draft.photo).toEqual(published.photo)
+    expect(draft.draftPhoto).toBeTruthy()
+    expect(draft.draftPhoto).not.toEqual(published.photo)
 
-  it('keeps the published photo available while a newer text draft is edited', async () => {
-    profile = await payload.update({
+    const publicProfile = await payload.findByID({
       collection: 'member-profiles',
       id: profile.id,
-      data: { clubFunction: 'Funkcja zapisana tylko w szkicu' },
+      overrideAccess: false,
+      user: null,
+    })
+    expect(publicProfile.photo).toEqual(published.photo)
+    expect(publicProfile.draftPhoto).toBeFalsy()
+
+    const draftPhoto =
+      draft.draftPhoto && !('removed' in draft.draftPhoto) ? draft.draftPhoto : null
+    const currentResponse = await fetchPhoto(published.photo)
+    const draftResponse = await fetchPhoto(draftPhoto, token)
+    expect(currentResponse.status).toBe(200)
+    expect(draftResponse.status).toBe(200)
+    expect(currentResponse.headers.get('content-type')).toBe('image/webp')
+    expect(draftResponse.headers.get('cache-control')).toBe('private, no-store')
+    const currentBytes = Buffer.from(await currentResponse.arrayBuffer())
+    const draftBytes = Buffer.from(await draftResponse.arrayBuffer())
+    expect(await sharp(draftBytes).metadata()).toMatchObject({ width: 192, height: 192 })
+    expect(draftBytes.equals(currentBytes)).toBe(false)
+    expect((await fetchPhoto(draftPhoto)).status).toBe(404)
+
+    profile = await publishProfile()
+    expect(profile.photo).toEqual(draft.draftPhoto)
+    expect(profile.draftPhoto).toBeNull()
+    const { docs: versions } = await payload.findVersions({
+      collection: 'member-profiles',
+      overrideAccess: false,
+      user: owner,
+      where: { parent: { equals: profile.id } },
+    })
+    const originalVersion = versions.find(
+      ({ version }) =>
+        version.photo?.sizes?.card?.filename === published.photo?.sizes?.card?.filename &&
+        version._status === 'published',
+    )
+    expect(originalVersion).toBeDefined()
+    const restoredResponse = await handleEndpoints({
+      config,
+      request: new Request(
+        `http://localhost/api/member-profiles/versions/${originalVersion!.id}?draft=true`,
+        { method: 'POST', headers: { Authorization: `JWT ${token}` } },
+      ),
+    })
+    const restoredDraft = (await restoredResponse.json()) as MemberProfile
+    expect(restoredResponse.status, JSON.stringify(restoredDraft)).toBe(200)
+    expect(restoredDraft.photo).toEqual(profile.photo)
+    expect(restoredDraft.draftPhoto).toEqual(published.photo)
+    profile = await publishProfile()
+    expect(profile.photo).toEqual(published.photo)
+  })
+
+  it('keeps the public photo when removal is saved as a draft', async () => {
+    const previousPhoto = profile.photo
+    const draft = await payload.update({
+      collection: 'member-profiles',
+      id: profile.id,
+      data: { photoChange: { remove: true } },
       draft: true,
       overrideAccess: false,
       user: owner,
     })
 
-    const [ownerImages, publicProfiles] = await Promise.all([
-      payload.find({
-        collection: 'member-profile-images',
-        overrideAccess: true,
-        where: { owner: { equals: owner.id } },
-      }),
-      payload.find({
-        collection: 'member-profiles',
-        overrideAccess: false,
-        user: null,
-        where: { id: { equals: profile.id } },
-      }),
-    ])
-
-    expect(profile._status).toBe('draft')
-    expect(ownerImages.docs[0]?.isPubliclyUsed).toBe(true)
-    expect(publicProfiles.docs).toHaveLength(1)
+    expect(draft.photo).toEqual(previousPhoto)
+    expect(draft.draftPhoto).toEqual({ removed: true })
+    profile = await publishProfile()
+    expect(profile.photo).toBeNull()
+    expect(profile.draftPhoto).toBeNull()
   })
 
   it('withdraws publication without deleting the draft', async () => {
@@ -457,14 +492,21 @@ describe('member profiles integration', () => {
       user: null,
       where: { id: { equals: profile.id } },
     })
-    const ownerImages = await payload.find({
-      collection: 'member-profile-images',
-      overrideAccess: true,
-      where: { owner: { equals: owner.id } },
-    })
-
     expect(storedProfile._status).toBe('draft')
     expect(publicResult.docs).toHaveLength(0)
-    expect(ownerImages.docs[0]?.isPubliclyUsed).toBe(false)
+  })
+  it('deletes stored photos from profile history on permanent deletion', async () => {
+    const { docs: versions } = await payload.findVersions({
+      collection: 'member-profiles',
+      where: { parent: { equals: profile.id } },
+    })
+    const image = versions.find(({ version }) => version.photo)?.version.photo
+    const blob = getStorageContainerClient().getBlobClient(
+      `${image?.prefix}/${image?.sizes?.card?.filename}`,
+    )
+    expect(await blob.exists()).toBe(true)
+
+    await payload.delete({ collection: 'member-profiles', id: profile.id })
+    expect(await blob.exists()).toBe(false)
   })
 })

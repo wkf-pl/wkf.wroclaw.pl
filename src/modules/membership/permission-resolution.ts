@@ -1,5 +1,6 @@
 import type { AccessResult, Where } from 'payload'
 
+import { isGroupAuthoredCollection } from '@/modules/content/content-author'
 import { getRelationshipId, type RelationshipReference } from '@/lib/relationships'
 import {
   getCollectionPermissionResources,
@@ -138,10 +139,25 @@ function combineWithAnd(...conditions: (true | Where)[]): true | Where {
   return filters.length === 1 ? filters[0] : { and: filters }
 }
 
+export function buildContentAuthorScope(
+  userId: number | string,
+  groupIds: readonly number[],
+  path = 'author',
+): Where {
+  return {
+    or: [
+      { [path]: { equals: { relationTo: 'users', value: userId } } },
+      ...groupIds.map((value) => ({ [path]: { equals: { relationTo: 'user-groups', value } } })),
+    ],
+  }
+}
+
 function buildScope(
   resource: PermissionResource,
   grant: PermissionGrant,
   userId: number | string,
+  groupIds: readonly number[],
+  versions: boolean,
 ): true | Where {
   const definition = permissionResources[resource]
   const conditions: (true | Where)[] = []
@@ -149,11 +165,18 @@ function buildScope(
   const publishedField = 'publishedField' in definition ? definition.publishedField : undefined
 
   if (grant.own && ownershipField) {
-    conditions.push({ [ownershipField]: { equals: userId } })
+    conditions.push(
+      isGroupAuthoredCollection(resource)
+        ? buildContentAuthorScope(userId, groupIds, versions ? 'parent.author' : ownershipField)
+        : { [ownershipField]: { equals: userId } },
+    )
   }
 
   if (grant.published && publishedField) {
-    conditions.push({ [publishedField]: { equals: 'published' } })
+    conditions.push({
+      [versions ? `version.${publishedField}` : publishedField]: { equals: 'published' },
+    })
+    if (versions) conditions.push({ [`parent.${publishedField}`]: { equals: 'published' } })
   }
 
   return combineWithAnd(...conditions)
@@ -164,6 +187,8 @@ export function resolveRolePermission(
   resource: PermissionResource,
   operation: PermissionOperation,
   userId: number | string,
+  groupIds: readonly number[] = [],
+  versions = false,
 ): AccessResult {
   const scopes: Where[] = []
 
@@ -175,7 +200,7 @@ export function resolveRolePermission(
       if (!grant.allowed) continue
       if (operation === 'create') return true
 
-      const scope = buildScope(resource, grant, userId)
+      const scope = buildScope(resource, grant, userId, groupIds, versions)
       if (scope === true) return true
       scopes.push(scope)
     }
@@ -190,10 +215,11 @@ export function resolveCollectionRolePermission(
   collection: string,
   operation: PermissionOperation,
   userId: number | string,
+  groupIds: readonly number[] = [],
 ): AccessResult {
   return combineAccessResults(
     ...getCollectionPermissionResources(collection).map((resource) =>
-      resolveRolePermission(roles, resource, operation, userId),
+      resolveRolePermission(roles, resource, operation, userId, groupIds),
     ),
   )
 }

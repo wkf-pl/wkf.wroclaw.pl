@@ -140,14 +140,13 @@ export interface Config {
     categories: Category;
     tags: Tag;
     media: Media;
-    'member-profile-images': MemberProfileImage;
     'member-profiles': MemberProfile;
     'document-files': DocumentFile;
     documents: Document;
     'url-aliases': UrlAlias;
     partners: Partner;
-    'club-sections': ClubSection;
     users: User;
+    'user-groups': UserGroup;
     roles: Role;
     'content-audit-log': ContentAuditLog;
     'payload-kv': PayloadKv;
@@ -182,14 +181,13 @@ export interface Config {
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
-    'member-profile-images': MemberProfileImagesSelect<false> | MemberProfileImagesSelect<true>;
     'member-profiles': MemberProfilesSelect<false> | MemberProfilesSelect<true>;
     'document-files': DocumentFilesSelect<false> | DocumentFilesSelect<true>;
     documents: DocumentsSelect<false> | DocumentsSelect<true>;
     'url-aliases': UrlAliasesSelect<false> | UrlAliasesSelect<true>;
     partners: PartnersSelect<false> | PartnersSelect<true>;
-    'club-sections': ClubSectionsSelect<false> | ClubSectionsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    'user-groups': UserGroupsSelect<false> | UserGroupsSelect<true>;
     roles: RolesSelect<false> | RolesSelect<true>;
     'content-audit-log': ContentAuditLogSelect<false> | ContentAuditLogSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -354,8 +352,15 @@ export interface Page {
     | null;
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
-  author: number | User;
-  systemKey?: string | null;
+  author:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      };
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -378,6 +383,15 @@ export interface Media {
   description?: string | null;
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
+  author?:
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null)
+    | ({
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      } | null);
   uploadedBy?: (number | null) | User;
   _objectKey?: string | null;
   updatedAt: string;
@@ -521,7 +535,15 @@ export interface Post {
   slug: string;
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
-  author: number | User;
+  author:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      };
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -646,7 +668,15 @@ export interface Event {
   slug: string;
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
-  author: number | User;
+  author:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      };
   defaultsAppliedCycle?: (number | null) | EventCycle;
   previousStartAt?: string | null;
   publishedStartAt?: string | null;
@@ -712,6 +742,7 @@ export interface EventCycle {
     image?: (number | null) | Media;
   };
   eventDefaults: {
+    authorGroup?: (number | null) | UserGroup;
     title?: string | null;
     eventType: number | EventType;
     heroImage?: (number | null) | Media;
@@ -816,7 +847,15 @@ export interface EventCycle {
   slug: string;
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
-  author: number | User;
+  author:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      };
   calendarFeedKey?: string | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
@@ -1244,9 +1283,9 @@ export interface Role {
     | {
         resource:
           | 'users'
+          | 'user-groups'
           | 'media'
           | 'member-profiles'
-          | 'member-profile-images'
           | 'pages'
           | 'posts'
           | 'events'
@@ -1255,7 +1294,6 @@ export interface Role {
           | 'partners'
           | 'documents'
           | 'url-aliases'
-          | 'club-sections'
           | 'categories'
           | 'tags'
           | 'page-templates'
@@ -1360,7 +1398,15 @@ export interface Partner {
    * Adres jest tworzony automatycznie z nazwy, ale można go zmienić.
    */
   slug: string;
-  author: number | User;
+  author:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      };
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -1603,10 +1649,52 @@ export interface MemberProfile {
     [k: string]: unknown;
   } | null;
   clubFunction?: string | null;
-  /**
-   * JPEG, PNG, WebP lub AVIF, maksymalnie 5 MiB. Nowy plik zastępuje poprzedni.
-   */
-  photo?: (number | null) | MemberProfileImage;
+  photoChange?: {
+    data?: string;
+    mimeType?: string;
+    remove?: boolean;
+    [k: string]: unknown;
+  };
+  photo?: {
+    prefix: string;
+    filename?: string;
+    objectKey?: string;
+    sizes?: {
+      card?: {
+        filename: string;
+        [k: string]: unknown;
+      };
+      profile?: {
+        filename: string;
+        [k: string]: unknown;
+      };
+      [k: string]: unknown;
+    };
+    [k: string]: unknown;
+  } | null;
+  draftPhoto?:
+    | {
+        prefix: string;
+        filename?: string;
+        objectKey?: string;
+        sizes?: {
+          card?: {
+            filename: string;
+            [k: string]: unknown;
+          };
+          profile?: {
+            filename: string;
+            [k: string]: unknown;
+          };
+          [k: string]: unknown;
+        };
+        [k: string]: unknown;
+      }
+    | {
+        removed: true;
+        [k: string]: unknown;
+      }
+    | null;
   interests?: string | null;
   /**
    * Pole opcjonalne — wizytówka nie musi dotyczyć grania.
@@ -1652,46 +1740,6 @@ export interface MemberProfile {
   createdAt: string;
   deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "member-profile-images".
- */
-export interface MemberProfileImage {
-  id: number;
-  owner: number | User;
-  isPubliclyUsed?: boolean | null;
-  prefix?: string | null;
-  _objectKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-  sizes?: {
-    card?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    profile?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2301,6 +2349,17 @@ export interface TabbedContentBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "user-groups".
+ */
+export interface UserGroup {
+  id: number;
+  name: string;
+  members?: (number | User)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "event-types".
  */
 export interface EventType {
@@ -2508,6 +2567,17 @@ export interface PageTemplate {
         | PageTemplateTabbedContentBlock
       )[]
     | null;
+  seo?: {
+    /**
+     * Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.
+     */
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.
+     */
+    image?: (number | null) | Media;
+  };
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -3630,147 +3700,6 @@ export interface UrlAlias {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "club-sections".
- */
-export interface ClubSection {
-  id: number;
-  name: string;
-  backgroundImage?: (number | null) | Media;
-  destinationPage?: (number | null) | Page;
-  menuItems?:
-    | {
-        /**
-         * Pozostaw puste tylko wtedy, gdy odnośnik ma być samą ikoną. Nazwa dostępna zostanie utworzona z celu odnośnika.
-         */
-        label?: string | null;
-        appearance: 'link' | 'primaryButton' | 'secondaryButton';
-        iconName?:
-          | (
-              | 'camera'
-              | 'astronaut'
-              | 'ticket'
-              | 'bluesky'
-              | 'mace'
-              | 'bottle-mana'
-              | 'cthulhu'
-              | 'time'
-              | 'skull'
-              | 'dnd5'
-              | 'discord'
-              | 'document'
-              | 'pumpkin-halloween'
-              | 'mail'
-              | 'facebook'
-              | 'guitar'
-              | 'globe'
-              | 'board-game'
-              | 'star'
-              | 'instagram'
-              | 'calendar'
-              | 'hat'
-              | 'gun'
-              | 'cards'
-              | 'playing-cards'
-              | 'collection'
-              | 'compass'
-              | 'confetti'
-              | 'dice'
-              | 'd10'
-              | 'd12'
-              | 'd20'
-              | 'd4'
-              | 'd6'
-              | 'd8'
-              | 'water-drop'
-              | 'crystal-ball'
-              | 'book'
-              | 'fireball'
-              | 'larp'
-              | 'external-link'
-              | 'linkedin'
-              | 'location'
-              | 'bow'
-              | 'mage'
-              | 'pirate-map'
-              | 'vendetta'
-              | 'messenger'
-              | 'sword'
-              | 'potion'
-              | 'music'
-              | 'image'
-              | 'announcement'
-              | 'eye'
-              | 'partner'
-              | 'pdf'
-              | 'seal'
-              | 'pawn'
-              | 'quill'
-              | 'flame'
-              | 'download'
-              | 'review'
-              | 'wand'
-              | 'sf'
-              | 'seance'
-              | 'arrows'
-              | 'slack'
-              | 'users'
-              | 'star-trek'
-              | 'star-wars-empire'
-              | 'star-wars-rebel-alliance'
-              | 'steampunk'
-              | 'home'
-              | 'arrow'
-              | 'arrow-left'
-              | 'arrow-right'
-              | 'superhero'
-              | 'stormtrooper'
-              | 'soundtrack'
-              | 'tag'
-              | 'shield'
-              | 'axe'
-              | 'twitch'
-              | 'shuttle'
-              | 'fighter'
-              | 'event'
-              | 'filled-star'
-              | 'youtube'
-              | 'scroll'
-            )
-          | null;
-        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
-        eventCycle?: (number | null) | EventCycle;
-        document?: (number | null) | Document;
-        category?: (number | null) | Category;
-        partner?: (number | null) | Partner;
-        page?: (number | null) | Page;
-        tag?: (number | null) | Tag;
-        post?: (number | null) | Post;
-        event?: (number | null) | Event;
-        customScheme?: ('https' | 'http' | 'mailto' | 'tel' | 'path' | 'anchor') | null;
-        /**
-         * Możesz wkleić pełny adres — schemat zostanie rozpoznany automatycznie.
-         */
-        customAddress?: string | null;
-        openInNewTab?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * Identyfikator techniczny tworzony automatycznie z nazwy.
-   */
-  slug: string;
-  /**
-   * Niższa liczba oznacza wcześniejszą pozycję.
-   */
-  displayOrder: number;
-  publishedAt?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  deletedAt?: string | null;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "content-audit-log".
  */
 export interface ContentAuditLog {
@@ -3860,10 +3789,6 @@ export interface PayloadLockedDocument {
         value: number | Media;
       } | null)
     | ({
-        relationTo: 'member-profile-images';
-        value: number | MemberProfileImage;
-      } | null)
-    | ({
         relationTo: 'member-profiles';
         value: number | MemberProfile;
       } | null)
@@ -3884,12 +3809,12 @@ export interface PayloadLockedDocument {
         value: number | Partner;
       } | null)
     | ({
-        relationTo: 'club-sections';
-        value: number | ClubSection;
-      } | null)
-    | ({
         relationTo: 'users';
         value: number | User;
+      } | null)
+    | ({
+        relationTo: 'user-groups';
+        value: number | UserGroup;
       } | null)
     | ({
         relationTo: 'roles';
@@ -4024,6 +3949,13 @@ export interface PageTemplatesSelect<T extends boolean = true> {
         columnLayout?: T | PageTemplateColumnLayoutBlockSelect<T>;
         sectionGroup?: T | PageTemplateSectionGroupBlockSelect<T>;
         tabs?: T | PageTemplateTabbedContentBlockSelect<T>;
+      };
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -4633,7 +4565,6 @@ export interface PagesSelect<T extends boolean = true> {
   category?: T;
   tags?: T;
   author?: T;
-  systemKey?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -5062,6 +4993,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
   eventDefaults?:
     | T
     | {
+        authorGroup?: T;
         title?: T;
         eventType?: T;
         heroImage?: T;
@@ -5217,6 +5149,7 @@ export interface MediaSelect<T extends boolean = true> {
   description?: T;
   category?: T;
   tags?: T;
+  author?: T;
   uploadedBy?: T;
   _objectKey?: T;
   updatedAt?: T;
@@ -5233,51 +5166,6 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "member-profile-images_select".
- */
-export interface MemberProfileImagesSelect<T extends boolean = true> {
-  owner?: T;
-  isPubliclyUsed?: T;
-  prefix?: T;
-  _objectKey?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
-  sizes?:
-    | T
-    | {
-        card?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-        profile?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-      };
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "member-profiles_select".
  */
 export interface MemberProfilesSelect<T extends boolean = true> {
@@ -5285,7 +5173,9 @@ export interface MemberProfilesSelect<T extends boolean = true> {
   publicName?: T;
   about?: T;
   clubFunction?: T;
+  photoChange?: T;
   photo?: T;
+  draftPhoto?: T;
   interests?: T;
   games?:
     | T
@@ -5410,42 +5300,6 @@ export interface PartnersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "club-sections_select".
- */
-export interface ClubSectionsSelect<T extends boolean = true> {
-  name?: T;
-  backgroundImage?: T;
-  destinationPage?: T;
-  menuItems?:
-    | T
-    | {
-        label?: T;
-        appearance?: T;
-        iconName?: T;
-        targetType?: T;
-        eventCycle?: T;
-        document?: T;
-        category?: T;
-        partner?: T;
-        page?: T;
-        tag?: T;
-        post?: T;
-        event?: T;
-        customScheme?: T;
-        customAddress?: T;
-        openInNewTab?: T;
-        id?: T;
-      };
-  slug?: T;
-  displayOrder?: T;
-  publishedAt?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  deletedAt?: T;
-  _status?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
@@ -5468,6 +5322,16 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "user-groups_select".
+ */
+export interface UserGroupsSelect<T extends boolean = true> {
+  name?: T;
+  members?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { ClubSections } from '@/collections/ClubSections'
 import { Footer, HomepageHero, HomepageSections, Navigation, SiteSettings } from '@/globals'
 
 const homepageGlobals = [SiteSettings, Navigation, HomepageHero, HomepageSections, Footer]
@@ -102,7 +101,6 @@ describe('homepage globals', () => {
       (field) => 'name' in field && field.name === 'layout',
     )
     expect(layout).toMatchObject({ label: 'Treści', type: 'blocks' })
-    expect(ClubSections.admin?.hidden).toBe(true)
   })
 
   it('uses the requested footer tabs and fields', () => {

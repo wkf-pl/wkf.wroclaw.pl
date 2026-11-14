@@ -1,7 +1,7 @@
 // Patches Payload's pre-bundled clipboard helpers and draft controls.
 
-import { readFileSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 
 const clientBundlePath = resolve('node_modules/@payloadcms/ui/dist/exports/client/index.js')
 
@@ -170,6 +170,42 @@ patchModule(documentViewPath, [
     'const shouldAutosave = hasSavePermission && hasAutosaveEnabled(collectionConfig || globalConfig) && !collectionConfig?.admin?.custom?.wkfPreviewAutosaveOnly;',
   ],
 ])
+
+// Debounced field changes must not abort the link drawer's submit validation.
+const lexicalClientDirectory = resolve(
+  'node_modules/@payloadcms/richtext-lexical/dist/exports/client',
+)
+const drawerSubmitOriginal = 'beforeSubmit:[E],disableValidationOnSubmit'
+const drawerSubmitPatched = 'beforeSubmit:[m=>E(m,!0)],disableValidationOnSubmit'
+const lexicalDrawerBundle = readdirSync(lexicalClientDirectory)
+  .filter((name) => name.endsWith('.js'))
+  .map((name) => join(lexicalClientDirectory, name))
+  .find((path) => {
+    const source = readFileSync(path, 'utf8')
+    return source.includes(drawerSubmitOriginal) || source.includes(drawerSubmitPatched)
+  })
+if (!lexicalDrawerBundle) throw new Error('Cannot locate the Payload Lexical drawer bundle')
+patchModule(lexicalDrawerBundle, [
+  [
+    'let E=tt(async({formState:m})=>{O(a.current);let D=new AbortController;a.current=D;',
+    'let E=tt(async({formState:m},submit=!1)=>{O(a.current);let D=new AbortController;if(!submit)a.current=D;',
+  ],
+  [drawerSubmitOriginal, drawerSubmitPatched],
+])
+patchModule(
+  resolve('node_modules/@payloadcms/richtext-lexical/dist/utilities/fieldsDrawer/DrawerContent.js'),
+  [
+    [
+      '  }) => {\n    abortAndIgnore(onChangeAbortControllerRef.current);',
+      '  }, submit = false) => {\n    abortAndIgnore(onChangeAbortControllerRef.current);',
+    ],
+    [
+      '    onChangeAbortControllerRef.current = controller_1;',
+      '    if (!submit) onChangeAbortControllerRef.current = controller_1;',
+    ],
+    ['    beforeSubmit: [onChange],', '    beforeSubmit: [args => onChange(args, true)],'],
+  ],
+)
 
 function patchModule(path, replacements) {
   const original = readFileSync(path, 'utf8')

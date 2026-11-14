@@ -53,7 +53,17 @@ const editorialFields = createEditorialFields({ includeContent: false, includeTa
 export const Events: CollectionConfig = {
   slug: 'events',
   trash: true,
-  access: { create: createEvents, delete: deleteEvents, read: readEvents, update: updateEvents },
+  access: {
+    create: createEvents,
+    delete: deleteEvents,
+    readVersions: createRolePermissionAccess({
+      operation: 'read',
+      resource: 'events',
+      versions: true,
+    }),
+    read: readEvents,
+    update: updateEvents,
+  },
   admin: {
     components: {
       edit: {

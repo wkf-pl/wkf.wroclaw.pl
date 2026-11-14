@@ -68,7 +68,7 @@ function findField(
 function createPage(overrides: Partial<Page> = {}): Page {
   return {
     _status: 'published',
-    author: 1,
+    author: { relationTo: 'users', value: 1 },
     createdAt: new Date(0).toISOString(),
     id: 1,
     layout: [],

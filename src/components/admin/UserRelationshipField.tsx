@@ -11,7 +11,7 @@ import {
 import type { RelationshipFieldClientProps } from 'payload'
 import { formatAdminURL } from 'payload/shared'
 import type { FocusEvent, MouseEvent } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { getFormRelationshipId } from '@/lib/relationships'
 
@@ -31,19 +31,45 @@ const userLabelSelector = [
   '.rs__option',
 ].join(', ')
 
-export function UserRelationshipField(properties: RelationshipFieldClientProps) {
+export function UserRelationshipField({
+  defaultToCurrentUser = false,
+  ...properties
+}: RelationshipFieldClientProps & { defaultToCurrentUser?: boolean }) {
   const [hoveredUser, setHoveredUser] = useState<{
     displayName: string
     id?: number | string
   } | null>(null)
   const { user: authenticatedUser } = useAuth()
-  const { setValue, value } = useField<unknown>({ potentiallyStalePath: properties.path })
-  const selectedUserID = getFormRelationshipId(value)
+  const { formInitializing, setValue, value } = useField<unknown>({
+    potentiallyStalePath: properties.path,
+  })
+  const shouldInitializeAuthor = useRef(defaultToCurrentUser)
+  const isPolymorphic = Array.isArray(properties.field.relationTo)
+  const selectedUserID =
+    !isPolymorphic || (isRecord(value) && value.relationTo === 'users')
+      ? getFormRelationshipId(value)
+      : undefined
   useEffect(() => {
-    if (selectedUserID === undefined && value === null && authenticatedUser?.id !== undefined) {
+    if (
+      !formInitializing &&
+      shouldInitializeAuthor.current &&
+      authenticatedUser?.id !== undefined
+    ) {
+      shouldInitializeAuthor.current = false
+      if (value == null) {
+        setValue({ relationTo: 'users', value: authenticatedUser.id }, true)
+      }
+      return
+    }
+    if (
+      !isPolymorphic &&
+      selectedUserID === undefined &&
+      value === null &&
+      authenticatedUser?.id !== undefined
+    ) {
       setValue(authenticatedUser.id)
     }
-  }, [authenticatedUser?.id, selectedUserID, setValue, value])
+  }, [authenticatedUser?.id, formInitializing, isPolymorphic, selectedUserID, setValue, value])
 
   const {
     config: {
@@ -52,33 +78,35 @@ export function UserRelationshipField(properties: RelationshipFieldClientProps) 
     },
   } = useConfig()
   const usersURL = formatAdminURL({ apiRoute, path: '/users', serverURL })
-  const lookupConstraint =
-    hoveredUser?.id !== undefined
-      ? { id: { equals: hoveredUser.id } }
-      : hoveredUser?.displayName
-        ? { displayName: { equals: hoveredUser.displayName } }
-        : selectedUserID !== undefined
-          ? { id: { equals: selectedUserID } }
-          : { id: { equals: -1 } }
-  const [{ data }] = usePayloadAPI(usersURL, {
-    initialParams: {
-      depth: 0,
-      limit: 1,
-      select: { displayName: true, email: true },
-      where: lookupConstraint,
-    },
-  })
+  const lookupID = hoveredUser?.id
+  const lookupName = hoveredUser?.displayName
+  const [{ data }, { setParams }] = usePayloadAPI(hoveredUser ? usersURL : '')
   const lookedUpUser = useMemo(() => {
     const response = isRecord(data) ? (data as UsersResponse) : null
     return Array.isArray(response?.docs) ? response.docs[0] : undefined
   }, [data])
   const authenticatedUserID = getFormRelationshipId(authenticatedUser)
+  const emailMatches =
+    lookupID === undefined
+      ? lookedUpUser?.displayName === lookupName
+      : String(lookedUpUser?.id) === String(lookupID)
   const hoveredEmail =
-    hoveredUser &&
-    hoveredUser.id !== undefined &&
-    String(hoveredUser.id) === String(authenticatedUserID)
+    lookupID !== undefined && String(lookupID) === String(authenticatedUserID)
       ? getStringProperty(authenticatedUser, 'email')
-      : (lookedUpUser?.email ?? null)
+      : hoveredUser && emailMatches
+        ? lookedUpUser?.email
+        : null
+
+  function lookupUser(displayName: string | undefined, id: number | string | undefined) {
+    setHoveredUser(displayName ? { displayName, id } : null)
+    if (!displayName) return
+    setParams({
+      depth: 0,
+      limit: 1,
+      select: { displayName: true, email: true, id: true },
+      where: id === undefined ? { displayName: { equals: displayName } } : { id: { equals: id } },
+    })
+  }
 
   function applyEmailTooltip(event: FocusEvent<HTMLDivElement> | MouseEvent<HTMLDivElement>) {
     const eventTarget = event.target
@@ -88,21 +116,29 @@ export function UserRelationshipField(properties: RelationshipFieldClientProps) 
       eventTarget.closest<HTMLElement>(userLabelSelector) ??
       event.currentTarget.querySelector<HTMLElement>('.relationship--single-value__text')
     if (!labelElement || !event.currentTarget.contains(labelElement)) return
+    if (
+      isPolymorphic &&
+      (!labelElement.matches('.relationship--single-value__text') || selectedUserID === undefined)
+    ) {
+      setHoveredUser(null)
+      return
+    }
 
     const displayName = labelElement.textContent?.trim()
     const userID = labelElement.matches('.relationship--single-value__text')
       ? selectedUserID
       : undefined
-    setHoveredUser(displayName ? { displayName, id: userID } : null)
+    lookupUser(displayName, userID)
     if (hoveredEmail) labelElement.title = hoveredEmail
   }
 
   function selectCurrentUser(event: MouseEvent<HTMLDivElement>) {
+    if (isPolymorphic && selectedUserID === undefined) return
     const labelElement = event.currentTarget.querySelector<HTMLElement>(
       '.relationship--single-value__text',
     )
     const displayName = labelElement?.textContent?.trim()
-    setHoveredUser(displayName ? { displayName, id: selectedUserID } : null)
+    lookupUser(displayName, selectedUserID)
     if (labelElement && hoveredEmail) labelElement.title = hoveredEmail
   }
 

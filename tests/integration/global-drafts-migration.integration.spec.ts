@@ -1,37 +1,21 @@
 import { sql, type MigrateDownArgs, type MigrateUpArgs } from '@payloadcms/db-postgres'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { createLocalReq, getPayload, initTransaction, killTransaction, type Payload } from 'payload'
 
 import config from '@/payload.config'
 import {
   down as downGlobalDrafts,
   up as upGlobalDrafts,
 } from '../../migrations/20261026_192840_global_drafts_and_content_trash'
-import {
-  down as downListingConditions,
-  up as upListingConditions,
-} from '../../migrations/20261030_031527_listing_conditions'
-import {
-  down as downListingConsolidation,
-  up as upListingConsolidation,
-} from '../../migrations/20261031_111620_listing_sources_and_block_consolidation'
-import {
-  down as downLegacyBlockRemoval,
-  up as upLegacyBlockRemoval,
-} from '../../migrations/20261031_112000_remove_legacy_carousel_and_member_profiles_blocks'
-import {
-  down as downRelatedContent,
-  up as upRelatedContent,
-} from '../../migrations/20261102_114056_related_content_listing'
-import {
-  down as downPageTemplates,
-  up as upPageTemplates,
-} from '../../migrations/20261104_020601_page_templates_collection'
-import {
-  down as downContentAudit,
-  up as upContentAudit,
-} from '../../migrations/20261113_112823_content_audit_log'
-import { down as downSpacer, up as upSpacer } from '../../migrations/20261111_150257_spacer_block'
+import { down as downListingConditions } from '../../migrations/20261030_031527_listing_conditions'
+import { down as downListingConsolidation } from '../../migrations/20261031_111620_listing_sources_and_block_consolidation'
+import { down as downLegacyBlockRemoval } from '../../migrations/20261031_112000_remove_legacy_carousel_and_member_profiles_blocks'
+import { down as downRelatedContent } from '../../migrations/20261102_114056_related_content_listing'
+import { down as downPageTemplates } from '../../migrations/20261104_020601_page_templates_collection'
+import { down as downContentAudit } from '../../migrations/20261113_112823_content_audit_log'
+import { down as downSpacer } from '../../migrations/20261111_150257_spacer_block'
+import { down as downUserGroups } from '../../migrations/20261114_015429_user_groups'
+import { down as restoreClubSections } from '../../migrations/20261113_220423_remove_club_sections'
 import { setPageTemplateCompositionSchema } from '../helpers/page-template-composition-migration'
 
 const globalTables = [
@@ -43,45 +27,22 @@ const globalTables = [
 ] as const
 
 let payload: Payload
-let migrationRequest: PayloadRequest
-
-function migrationArguments(): MigrateDownArgs & MigrateUpArgs {
-  return {
-    db: payload.db.drizzle,
-    payload,
-    req: migrationRequest,
-  } as MigrateDownArgs & MigrateUpArgs
-}
-
-async function statusColumnExists(): Promise<boolean> {
-  const result = await payload.db.drizzle.execute(sql`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'site_settings'
-        AND column_name = '_status'
-    ) AS "exists"
-  `)
-  return result.rows[0]?.exists === true
-}
-
-async function listingConditionsSchemaExists(): Promise<boolean> {
-  const result = await payload.db.drizzle.execute(
+async function listingConditionsSchemaExists(db: MigrateUpArgs['db']): Promise<boolean> {
+  const result = await db.execute(
     sql`SELECT to_regclass('public.homepage_sections_blocks_listing_conditions') IS NOT NULL AS "exists"`,
   )
   return result.rows[0]?.exists === true
 }
 
-async function tableExists(table: string): Promise<boolean> {
-  const result = await payload.db.drizzle.execute(
+async function tableExists(db: MigrateUpArgs['db'], table: string): Promise<boolean> {
+  const result = await db.execute(
     sql`SELECT to_regclass(${`public.${table}`}) IS NOT NULL AS "exists"`,
   )
   return result.rows[0]?.exists === true
 }
 
-async function relatedContentSchemaExists(): Promise<boolean> {
-  const result = await payload.db.drizzle.execute(sql`
+async function relatedContentSchemaExists(db: MigrateUpArgs['db']): Promise<boolean> {
+  const result = await db.execute(sql`
     SELECT EXISTS (
       SELECT 1 FROM information_schema.columns
       WHERE table_schema = 'public'
@@ -92,42 +53,27 @@ async function relatedContentSchemaExists(): Promise<boolean> {
   return result.rows[0]?.exists === true
 }
 
-async function moveToBeforeGlobalDrafts(): Promise<void> {
-  if (await tableExists('content_audit_log')) await downContentAudit(migrationArguments())
-  if (await tableExists('page_templates_blocks_spacer')) await downSpacer(migrationArguments())
-  await setPageTemplateCompositionSchema(migrationArguments(), false)
-  if (await tableExists('page_templates')) await downPageTemplates(migrationArguments())
-  if (await relatedContentSchemaExists()) await downRelatedContent(migrationArguments())
-  if (!(await tableExists('pages_blocks_carousel'))) {
-    await downLegacyBlockRemoval(migrationArguments())
+async function moveToBeforeGlobalDrafts(args: MigrateUpArgs & MigrateDownArgs): Promise<void> {
+  const { db } = args
+  await downUserGroups(args)
+  await restoreClubSections(args)
+  await downContentAudit(args)
+  if (await tableExists(db, 'page_templates_blocks_spacer')) await downSpacer(args)
+  await setPageTemplateCompositionSchema(args, false)
+  if (await tableExists(db, 'page_templates')) await downPageTemplates(args)
+  if (await relatedContentSchemaExists(db)) await downRelatedContent(args)
+  if (!(await tableExists(db, 'pages_blocks_carousel'))) await downLegacyBlockRemoval(args)
+  if (await tableExists(db, '_listing_block_migration_provenance')) {
+    await downListingConsolidation(args)
   }
-  if (await tableExists('_listing_block_migration_provenance')) {
-    await downListingConsolidation(migrationArguments())
-  }
-  if (await listingConditionsSchemaExists()) {
-    await downListingConditions(migrationArguments())
-  }
+  if (await listingConditionsSchemaExists(db)) await downListingConditions(args)
 }
 
-async function restoreCurrentSchema(): Promise<void> {
-  if (await tableExists('content_audit_log')) return
-  if (!(await statusColumnExists())) await upGlobalDrafts(migrationArguments())
-  if (!(await listingConditionsSchemaExists())) await upListingConditions(migrationArguments())
-  if (!(await tableExists('_listing_block_migration_provenance'))) {
-    await upListingConsolidation(migrationArguments())
-  }
-  if (await tableExists('pages_blocks_carousel')) {
-    await upLegacyBlockRemoval(migrationArguments())
-  }
-  if (!(await relatedContentSchemaExists())) await upRelatedContent(migrationArguments())
-  if (!(await tableExists('page_templates'))) await upPageTemplates(migrationArguments())
-  await setPageTemplateCompositionSchema(migrationArguments(), true)
-  if (!(await tableExists('page_templates_blocks_spacer'))) await upSpacer(migrationArguments())
-  await upContentAudit(migrationArguments())
-}
-
-async function readGlobalRows(table: (typeof globalTables)[number]): Promise<unknown[]> {
-  const result = await payload.db.drizzle.execute(
+async function readGlobalRows(
+  db: MigrateUpArgs['db'],
+  table: (typeof globalTables)[number],
+): Promise<unknown[]> {
+  const result = await db.execute(
     sql.raw(
       `SELECT to_jsonb("global_row") - '_status' AS "data" FROM "${table}" AS "global_row" ORDER BY "id"`,
     ),
@@ -137,42 +83,39 @@ async function readGlobalRows(table: (typeof globalTables)[number]): Promise<unk
 
 beforeAll(async () => {
   payload = await getPayload({ config })
-  migrationRequest = await createLocalReq(
-    { context: { skipContentListingSync: true, skipPublicCacheInvalidation: true } },
-    payload,
-  )
-})
-
-afterAll(async () => {
-  if (!payload) return
-  await restoreCurrentSchema()
 })
 
 describe('global drafts migration', () => {
   it('preserves current global content and marks every row as published', async () => {
-    await moveToBeforeGlobalDrafts()
-    await downGlobalDrafts(migrationArguments())
+    const req = await createLocalReq(
+      { context: { skipContentListingSync: true, skipPublicCacheInvalidation: true } },
+      payload,
+    )
+    await initTransaction(req)
+    try {
+      const transactionId = await req.transactionID
+      const db = transactionId == null ? undefined : payload.db.sessions?.[transactionId]?.db
+      if (!db) throw new Error('Payload migration transaction was not initialized')
+      const args = { db, payload, req } as MigrateUpArgs & MigrateDownArgs
 
-    const contentBeforeMigration = new Map<string, unknown[]>()
-    for (const table of globalTables) {
-      contentBeforeMigration.set(table, await readGlobalRows(table))
-    }
+      await moveToBeforeGlobalDrafts(args)
+      await downGlobalDrafts(args)
+      const contentBeforeMigration = new Map<string, unknown[]>()
+      for (const table of globalTables) {
+        contentBeforeMigration.set(table, await readGlobalRows(args.db, table))
+      }
 
-    await upGlobalDrafts(migrationArguments())
-    await upListingConditions(migrationArguments())
-    await upListingConsolidation(migrationArguments())
-    await upLegacyBlockRemoval(migrationArguments())
-    await upRelatedContent(migrationArguments())
-    await upPageTemplates(migrationArguments())
-    await setPageTemplateCompositionSchema(migrationArguments(), true)
+      await upGlobalDrafts(args)
+      for (const table of globalTables) {
+        expect(await readGlobalRows(args.db, table)).toEqual(contentBeforeMigration.get(table))
 
-    for (const table of globalTables) {
-      expect(await readGlobalRows(table)).toEqual(contentBeforeMigration.get(table))
-
-      const statuses = await payload.db.drizzle.execute(
-        sql.raw(`SELECT "_status"::text AS "status" FROM "${table}" ORDER BY "id"`),
-      )
-      expect(statuses.rows.every((row) => row.status === 'published')).toBe(true)
+        const statuses = await args.db.execute(
+          sql.raw(`SELECT "_status"::text AS "status" FROM "${table}" ORDER BY "id"`),
+        )
+        expect(statuses.rows.every((row) => row.status === 'published')).toBe(true)
+      }
+    } finally {
+      await killTransaction(req)
     }
   }, 20_000)
 })

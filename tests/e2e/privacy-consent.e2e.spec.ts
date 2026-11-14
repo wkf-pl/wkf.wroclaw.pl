@@ -29,7 +29,7 @@ test.beforeAll(async () => {
     collection: 'events',
     data: {
       _status: 'published',
-      author: author.id,
+      author: { relationTo: 'users', value: author.id },
       calendarRevision: 0,
       capacityMode: 'unlimited',
       eventStatus: 'scheduled',

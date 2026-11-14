@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import type { Event, EventCycle, Media, Page, Partner, Post } from '@/payload-types'
+import type { Event, EventCycle, Media, Page, PageTemplate, Partner, Post } from '@/payload-types'
 import { extractRichTextText } from '@/modules/content/rich-text'
 
 function getMedia(value: Media | number | null | undefined): Media | null {
@@ -33,6 +33,25 @@ export function createContentMetadata(
             ? `/blog/${document.slug}`
             : `/${document.slug}`
 
+  return createMetadata(canonical, title, description, socialImage, 'excerpt' in document)
+}
+
+export function createBlogTemplateMetadata(template: PageTemplate | null): Metadata {
+  return createMetadata(
+    '/blog',
+    template?.seo?.title || 'Blog',
+    template?.seo?.description,
+    getMedia(template?.seo?.image) ?? getMedia(template?.heroImage),
+  )
+}
+
+function createMetadata(
+  canonical: string,
+  title: string,
+  description: string | null | undefined,
+  socialImage: Media | null,
+  isArticle = false,
+): Metadata {
   return {
     alternates: { canonical },
     description: description || undefined,
@@ -49,7 +68,7 @@ export function createContentMetadata(
           ]
         : undefined,
       title,
-      type: 'excerpt' in document ? 'article' : 'website',
+      type: isArticle ? 'article' : 'website',
     },
     title,
   }

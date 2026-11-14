@@ -12,7 +12,6 @@ export function createStoragePlugins(): Plugin[] {
       baseURL: getRequiredEnvironmentVariable('AZURE_STORAGE_ACCOUNT_BASE_URL'),
       collections: {
         'document-files': { prefix: 'documents' },
-        'member-profile-images': { prefix: 'member-profiles' },
         media: true,
       },
       containerName: getRequiredEnvironmentVariable('AZURE_STORAGE_CONTAINER_NAME'),

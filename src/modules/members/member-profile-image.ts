@@ -1,13 +1,11 @@
-import type { MemberProfile, MemberProfileImage } from '@/payload-types'
-import { getMediaURL } from '@/modules/media/media-url'
+import type { MemberProfile } from '@/payload-types'
 
-export function getMemberProfileImage(profile: MemberProfile): MemberProfileImage | null {
-  return profile.photo && typeof profile.photo === 'object' ? profile.photo : null
-}
-
-export function getMemberProfileImageURL(profile: MemberProfile, size: 'card' | 'profile'): string {
-  const image = getMemberProfileImage(profile)
-  return (
-    image?.sizes?.[size]?.url || getMediaURL(image) || '/assets/member-profile-placeholder.webp'
-  )
+export function getMemberProfileImageURL(
+  profile: Pick<MemberProfile, 'id' | 'photo'>,
+  size: 'card' | 'profile',
+): string {
+  const filename = profile.photo?.sizes?.[size]?.filename ?? profile.photo?.filename
+  return filename
+    ? `/api/member-profiles/${profile.id}/photo/${encodeURIComponent(filename)}`
+    : '/assets/member-profile-placeholder.webp'
 }

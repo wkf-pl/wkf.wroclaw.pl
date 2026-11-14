@@ -7,7 +7,7 @@ import type { MemberProfile } from '@/payload-types'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import { publicRequestContext } from '@/modules/content/public-access'
 
-export { getMemberProfileImage, getMemberProfileImageURL } from './member-profile-image'
+export { getMemberProfileImageURL } from './member-profile-image'
 
 const publicProfileConditions: Where[] = [{ _status: { equals: 'published' } }]
 const publicProfileWhere: Where = { and: publicProfileConditions }

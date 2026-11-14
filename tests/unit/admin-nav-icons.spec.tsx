@@ -7,7 +7,6 @@ import { AdminNavIcon } from '@/components/admin/AdminNavIcon'
 
 const visibleCollectionSlugs = [
   'categories',
-  'club-sections',
   'documents',
   'event-cycles',
   'events',

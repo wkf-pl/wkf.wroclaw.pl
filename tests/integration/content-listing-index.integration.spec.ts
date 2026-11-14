@@ -81,7 +81,7 @@ describe('content listing index synchronization', () => {
       collection: 'pages',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         layout: [{ blockType: 'richText', content: createLexicalDocument('Lifecycle excerpt') }],
         slug: fixture.slugs.lifecyclePage,
         title: 'Published lifecycle page',
@@ -142,7 +142,7 @@ describe('content listing index synchronization', () => {
       collection: 'partners',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         excerpt: 'Publiczne streszczenie partnera.',
         layout: [
           { blockType: 'richText', content: createLexicalDocument('Treść partnera indeksu') },
@@ -365,7 +365,7 @@ describe('content listing index synchronization', () => {
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         eventDefaults: {
           capacityMode: 'unlimited',
           eventType: 1,
@@ -398,7 +398,7 @@ describe('content listing index synchronization', () => {
         collection: 'events',
         data: {
           _status: 'published',
-          author: fixture.author.id,
+          author: { relationTo: 'users', value: fixture.author.id },
           calendarRevision: 0,
           capacityMode: 'unlimited',
           cycle: cycle.id,
@@ -453,7 +453,7 @@ describe('content listing index synchronization', () => {
       collection: 'partners',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         excerpt: 'Partner related listing excerpt',
         layout: [
           { blockType: 'richText', content: createLexicalDocument('Partner related content') },
@@ -468,7 +468,7 @@ describe('content listing index synchronization', () => {
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         eventDefaults: {
           capacityMode: 'unlimited',
           eventType: 1,
@@ -493,7 +493,7 @@ describe('content listing index synchronization', () => {
       collection: 'events',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         calendarRevision: 0,
         capacityMode: 'unlimited',
         cycle: cycle.id,
@@ -518,7 +518,7 @@ describe('content listing index synchronization', () => {
       collection: 'posts',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         excerpt: 'Related listing post excerpt',
         layout: [{ blockType: 'richText', content: createLexicalDocument('Post related content') }],
         publishedAt: '2031-09-11T16:00:00.000Z',

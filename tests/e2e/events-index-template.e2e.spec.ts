@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Locator } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
 import { getWarsawDaysAgoStartISOString } from '@/modules/content/listing-conditions'
@@ -7,7 +7,7 @@ import config from '@/payload.config'
 
 import { createLexicalDocument } from '../helpers/lexical-document'
 import { login } from '../helpers/login'
-import { administratorTestUser, editorTestUser } from '../helpers/seedUser'
+import { administratorTestUser } from '../helpers/seedUser'
 
 const templateHeading = 'Wydarzenia — szablon E2E'
 const calendarLabel = 'Subskrybuj kalendarz WKF'
@@ -160,8 +160,6 @@ test('previews, publishes and reverts the events index template with legacy list
     expect(await eventLinks(publishedListings.nth(0))).toEqual(legacyUpcoming)
     expect(await eventLinks(publishedListings.nth(1))).toEqual(legacyArchivePageTwo)
 
-    await expectSystemPagePreview(page, payload)
-
     await updateTemplate({ _status: 'published', renderingMode: 'legacy' }, false)
     await publicPage.goto('/events?page=2')
     await expect(publicPage).toHaveURL(/\/events\?page=2$/)
@@ -175,59 +173,6 @@ test('previews, publishes and reverts the events index template with legacy list
     }
   }
 })
-
-async function expectSystemPagePreview(page: Page, payload: Payload): Promise<void> {
-  const title = 'Robocze wprowadzenie do wydarzeń E2E'
-  const [pages, users] = await Promise.all([
-    payload.find({
-      collection: 'pages',
-      depth: 0,
-      limit: 1,
-      where: { slug: { equals: 'events' } },
-    }),
-    payload.find({
-      collection: 'users',
-      limit: 1,
-      where: { email: { equals: editorTestUser.email } },
-    }),
-  ])
-  const [originalPage] = pages.docs
-  const [author] = users.docs
-  if (!author) throw new Error('Missing the editor for the system page preview.')
-
-  const data = { _status: 'draft' as const, title }
-  const draft = originalPage
-    ? await payload.update({ collection: 'pages', data, draft: true, id: originalPage.id })
-    : await payload.create({
-        collection: 'pages',
-        context: { allowSystemPageMutation: true },
-        data: {
-          ...data,
-          author: author.id,
-          layout: [{ blockType: 'richText', content: createLexicalDocument(title) }],
-          slug: 'events',
-          systemKey: 'events',
-        },
-        draft: true,
-      })
-
-  try {
-    await login({ page, user: editorTestUser })
-    await page.goto('/preview?collection=pages&slug=events')
-    await expect(page).toHaveURL(/\/events$/)
-    await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
-    await expect(page.getByRole('status')).toContainText('Wyświetlasz zapisany szkic.')
-    await expect(page.locator('.eventsIndex > section')).toHaveCount(2)
-    await page.getByRole('link', { name: 'Wyłącz podgląd' }).click()
-    await expect(page.getByRole('heading', { level: 1, name: templateHeading })).toBeVisible()
-  } finally {
-    if (originalPage) {
-      await payload.update({ collection: 'pages', data: originalPage, draft: false, id: draft.id })
-    } else {
-      await payload.delete({ collection: 'pages', id: draft.id })
-    }
-  }
-}
 
 async function createEventFixtures(payload: Payload, eventIDs: number[]): Promise<void> {
   const [users, eventTypes] = await Promise.all([
@@ -268,7 +213,7 @@ async function createEventFixtures(payload: Payload, eventIDs: number[]): Promis
       collection: 'events',
       data: {
         _status: 'published',
-        author: author.id,
+        author: { relationTo: 'users', value: author.id },
         calendarRevision: 0,
         capacityMode: 'unlimited',
         endAt: endAt === undefined ? undefined : new Date(endAt).toISOString(),

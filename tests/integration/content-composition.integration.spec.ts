@@ -121,7 +121,7 @@ describe('content composition integration', () => {
       collection: 'pages',
       data: {
         _status: 'draft',
-        author: author.id,
+        author: { relationTo: 'users', value: author.id },
         slug: invalidPageSlug,
         title: 'Text style persistence',
         layout: [
@@ -184,7 +184,7 @@ describe('content composition integration', () => {
       collection: 'pages',
       data: {
         _status: 'published',
-        author: author.id,
+        author: { relationTo: 'users', value: author.id },
         layout: [
           {
             blockType: 'sectionGroup',
@@ -331,7 +331,7 @@ describe('content composition integration', () => {
         collection: 'pages',
         data: {
           _status: 'draft',
-          author: author.id,
+          author: { relationTo: 'users', value: author.id },
           layout: [
             {
               blockType: 'sectionGroup',

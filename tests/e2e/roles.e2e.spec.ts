@@ -16,7 +16,6 @@ test('shows administration resources but no CMS to an administrator', async ({ p
   await expect(page.locator(collectionNavigationLink('pages'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('documents'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('url-aliases'))).toHaveCount(0)
-  await expect(page.locator(collectionNavigationLink('club-sections'))).toHaveCount(0)
   await expect(page.locator(globalNavigationLink('site-settings'))).toHaveCount(0)
 })
 
@@ -76,7 +75,6 @@ test('shows CMS resources but no administration collections to an editor', async
   await expect(page.locator(collectionNavigationLink('posts'))).toBeVisible()
   await expect(page.locator(collectionNavigationLink('pages'))).toBeVisible()
   await expect(page.locator(collectionNavigationLink('media'))).toBeVisible()
-  await expect(page.locator(collectionNavigationLink('club-sections'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('documents'))).toBeVisible()
   await expect(page.locator(collectionNavigationLink('url-aliases'))).toBeVisible()
   await expect(page.locator(globalNavigationLink('navigation'))).toBeVisible()
@@ -145,7 +143,6 @@ test('shows a readable collection without its create action', async ({ page }) =
   await expect(page.locator(collectionNavigationLink('posts'))).toBeVisible()
   await expect(page.locator('a[href="/admin/collections/posts/create"]')).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('pages'))).toHaveCount(0)
-  await expect(page.locator(collectionNavigationLink('club-sections'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('documents'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('url-aliases'))).toHaveCount(0)
 

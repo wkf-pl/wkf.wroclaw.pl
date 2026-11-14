@@ -2,6 +2,7 @@ import { getPayload } from 'payload'
 
 import config from '@payload-config'
 
+import { findPublishedPageTemplate } from '@/modules/page-templates/public-page-templates'
 import { collectPayloadPages } from '@/lib/payload-pagination'
 
 import { publicRequestContext } from './public-access'
@@ -12,8 +13,9 @@ const sitemapDocumentSelect = { slug: true, updatedAt: true } as const
 
 export async function loadPublicSitemap() {
   const payload = await getPayload({ config })
-  const [pages, posts, categories, tags, events, cycles, partners, memberProfiles] =
+  const [blogTemplate, pages, posts, categories, tags, events, cycles, partners, memberProfiles] =
     await Promise.all([
+      findPublishedPageTemplate('blog-index'),
       collectPayloadPages((page) =>
         payload.find({
           collection: 'pages',
@@ -23,7 +25,7 @@ export async function loadPublicSitemap() {
           limit: 100,
           overrideAccess: false,
           page,
-          select: { ...sitemapDocumentSelect, systemKey: true },
+          select: sitemapDocumentSelect,
           user: null,
           where: publicContentWhere,
         }),
@@ -125,6 +127,8 @@ export async function loadPublicSitemap() {
     ])
 
   return createPublicSitemap({
+    blogTemplateUpdatedAt:
+      blogTemplate?.renderingMode === 'template' ? blogTemplate.updatedAt : undefined,
     categories,
     cycles,
     events,

@@ -122,7 +122,10 @@ const listingInvalidators = createCollectionCacheInvalidators([
 export const invalidateListingsAfterChange = listingInvalidators.afterChange
 export const invalidateListingsAfterDelete = listingInvalidators.afterDelete
 
-const pageTemplateInvalidators = createCollectionCacheInvalidators([publicCacheTags.pageTemplates])
+const pageTemplateInvalidators = createCollectionCacheInvalidators([
+  publicCacheTags.pageTemplates,
+  publicCacheTags.sitemap,
+])
 export const invalidatePageTemplatesAfterChange = pageTemplateInvalidators.afterChange
 export const invalidatePageTemplatesAfterDelete = pageTemplateInvalidators.afterDelete
 
@@ -166,20 +169,12 @@ const eventTypeCacheTags = [
 
 const memberProfileCacheTags = tagsBySource['member-profiles']
 
-const memberProfileImageCacheTags = memberProfileCacheTags.filter(
-  (tag) => tag !== publicCacheTags.sitemap,
-)
-
 export function getPartnerCacheTags(): string[] {
   return [...partnerCacheTags]
 }
 
 export function getMemberProfileCacheTags(): string[] {
   return [...memberProfileCacheTags]
-}
-
-export function getMemberProfileImageCacheTags(): string[] {
-  return [...memberProfileImageCacheTags]
 }
 
 export function getEventTypeCacheTags(): string[] {
@@ -197,9 +192,3 @@ export const invalidatePartnersAfterDelete = partnerInvalidators.afterDelete
 const memberProfileInvalidators = createCollectionCacheInvalidators(memberProfileCacheTags)
 export const invalidateMemberProfilesAfterChange = memberProfileInvalidators.afterChange
 export const invalidateMemberProfilesAfterDelete = memberProfileInvalidators.afterDelete
-
-const memberProfileImageInvalidators = createCollectionCacheInvalidators(
-  memberProfileImageCacheTags,
-)
-export const invalidateMemberProfileImagesAfterChange = memberProfileImageInvalidators.afterChange
-export const invalidateMemberProfileImagesAfterDelete = memberProfileImageInvalidators.afterDelete

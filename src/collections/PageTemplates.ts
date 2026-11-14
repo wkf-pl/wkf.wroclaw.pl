@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { clientUserHasUnrestrictedResourcePermission } from '@/modules/membership/permission-resolution'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
+import { createSeoField } from '@/modules/content/editorial-fields'
 import { createPageTemplateDraftPreviewURL } from '@/modules/content/draft-preview'
 import {
   invalidatePageTemplatesAfterChange,
@@ -142,6 +143,11 @@ export const PageTemplates: CollectionConfig = {
           fields: [createPageTemplateRegionField('informationPanel', 'Panel informacyjny')],
         },
         { label: 'Treść', fields: [createPageTemplateRegionField('content', 'Treść')] },
+        {
+          label: 'SEO',
+          admin: { condition: (data) => data.templateKey === 'blog-index' },
+          fields: [createSeoField()],
+        },
       ],
     },
   ],

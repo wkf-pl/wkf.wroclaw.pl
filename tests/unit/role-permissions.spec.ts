@@ -38,7 +38,10 @@ describe('role permissions', () => {
     ])
 
     expect(resolveRolePermission([role], 'posts', 'read', 10)).toEqual({
-      and: [{ author: { equals: 10 } }, { _status: { equals: 'published' } }],
+      and: [
+        { or: [{ author: { equals: { relationTo: 'users', value: 10 } } }] },
+        { _status: { equals: 'published' } },
+      ],
     })
   })
 
@@ -49,15 +52,22 @@ describe('role permissions', () => {
     ])
 
     expect(resolveRolePermission([ownRole, publishedRole], 'posts', 'update', 10)).toEqual({
-      or: [{ author: { equals: 10 } }, { _status: { equals: 'published' } }],
+      or: [
+        { or: [{ author: { equals: { relationTo: 'users', value: 10 } } }] },
+        { _status: { equals: 'published' } },
+      ],
     })
   })
 
-  it('maps own media access to uploadedBy', () => {
+  it('includes personal and group authors in own-media access', () => {
     const role = createRole([{ deleteAllowed: true, deleteOwn: true, resource: 'media' }])
 
-    expect(resolveRolePermission([role], 'media', 'delete', 10)).toEqual({
-      uploadedBy: { equals: 10 },
+    expect(resolveRolePermission([role], 'media', 'delete', 10, [10, 42])).toEqual({
+      or: [
+        { author: { equals: { relationTo: 'users', value: 10 } } },
+        { author: { equals: { relationTo: 'user-groups', value: 10 } } },
+        { author: { equals: { relationTo: 'user-groups', value: 42 } } },
+      ],
     })
   })
 

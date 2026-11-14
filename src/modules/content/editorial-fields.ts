@@ -1,5 +1,6 @@
 import type { Field } from 'payload'
 
+import { createContentAuthorField } from './content-author-field'
 import { populateSlug, validatePageSlug } from './slug'
 import { createTaxonomyFields } from './taxonomy-fields'
 
@@ -75,21 +76,7 @@ export function createEditorialFields({
   }
 
   fields.push(
-    {
-      name: 'author',
-      type: 'relationship',
-      defaultValue: ({ user }) => user?.id,
-      label: 'Autor',
-      relationTo: 'users',
-      required: true,
-      admin: {
-        components: {
-          Cell: '/components/admin/UserIdentity#UserRelationshipCell',
-          Field: '/components/admin/UserRelationshipField#UserRelationshipField',
-        },
-        position: 'sidebar',
-      },
-    },
+    createContentAuthorField(),
     {
       name: 'publishedAt',
       type: 'date',
@@ -105,38 +92,7 @@ export function createEditorialFields({
       index: true,
       label: 'Data publikacji',
     },
-    {
-      name: 'seo',
-      type: 'group',
-      label: 'SEO',
-      fields: [
-        {
-          name: 'title',
-          type: 'text',
-          admin: {
-            description:
-              'Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.',
-          },
-          label: 'Tytuł SEO',
-          maxLength: 70,
-        },
-        {
-          name: 'description',
-          type: 'textarea',
-          label: 'Opis SEO',
-          maxLength: 170,
-        },
-        {
-          name: 'image',
-          type: 'upload',
-          admin: {
-            description: 'Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.',
-          },
-          label: 'Obraz SEO',
-          relationTo: 'media',
-        },
-      ],
-    },
+    createSeoField(),
   )
 
   return fields
@@ -160,4 +116,38 @@ export function withFieldWidth(field: Field, width: string): Field {
       width,
     },
   } as Field
+}
+
+export function createSeoField(): Field {
+  return {
+    name: 'seo',
+    type: 'group',
+    label: 'SEO',
+    fields: [
+      {
+        name: 'title',
+        type: 'text',
+        admin: {
+          description: 'Opcjonalny tytuł wyniku wyszukiwania. Domyślnie używany jest tytuł treści.',
+        },
+        label: 'Tytuł SEO',
+        maxLength: 70,
+      },
+      {
+        name: 'description',
+        type: 'textarea',
+        label: 'Opis SEO',
+        maxLength: 170,
+      },
+      {
+        name: 'image',
+        type: 'upload',
+        admin: {
+          description: 'Opcjonalny obraz dla udostępnień. Domyślnie używany jest obraz główny.',
+        },
+        label: 'Obraz SEO',
+        relationTo: 'media',
+      },
+    ],
+  }
 }

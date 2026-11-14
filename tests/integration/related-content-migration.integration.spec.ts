@@ -1,15 +1,12 @@
 import { sql, type MigrateDownArgs, type MigrateUpArgs } from '@payloadcms/db-postgres'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createLocalReq, type PayloadRequest } from 'payload'
+import { createLocalReq, initTransaction, killTransaction, type PayloadRequest } from 'payload'
 
 import {
   down as downRelatedContent,
   up as upRelatedContent,
 } from '../../migrations/20261102_114056_related_content_listing'
-import {
-  down as downPageTemplates,
-  up as upPageTemplates,
-} from '../../migrations/20261104_020601_page_templates_collection'
+import { down as downPageTemplates } from '../../migrations/20261104_020601_page_templates_collection'
 import { setPageTemplateCompositionSchema } from '../helpers/page-template-composition-migration'
 import {
   createContentTaxonomyFixture,
@@ -19,33 +16,21 @@ import { createLexicalDocument } from '../helpers/lexical-document'
 
 const cycleSlug = 'integration-related-content-migration-cycle'
 const eventSlug = 'integration-related-content-migration-event'
-const postSlug = 'integration-related-content-migration-post'
 
 let fixture: ContentTaxonomyFixture
 let migrationRequest: PayloadRequest
+let migrationDatabase: MigrateUpArgs['db']
 
 function migrationArguments(): MigrateDownArgs & MigrateUpArgs {
   return {
-    db: fixture.payload.db.drizzle,
+    db: migrationDatabase,
     payload: fixture.payload,
     req: migrationRequest,
   } as MigrateDownArgs & MigrateUpArgs
 }
 
-async function relatedContentSchemaExists(): Promise<boolean> {
-  const result = await fixture.payload.db.drizzle.execute(sql`
-    SELECT EXISTS (
-      SELECT 1 FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'content_listing_items'
-        AND column_name = 'related_target_search_index'
-    ) AS "exists"
-  `)
-  return result.rows[0]?.exists === true
-}
-
 async function pageTemplatesSchemaExists(): Promise<boolean> {
-  const result = await fixture.payload.db.drizzle.execute(
+  const result = await migrationDatabase.execute(
     sql`SELECT to_regclass('public.page_templates') IS NOT NULL AS "exists"`,
   )
   return result.rows[0]?.exists === true
@@ -54,50 +39,10 @@ async function pageTemplatesSchemaExists(): Promise<boolean> {
 async function suspendPageTemplatesSchema(): Promise<void> {
   await setPageTemplateCompositionSchema(migrationArguments(), false)
   if (await pageTemplatesSchemaExists()) await downPageTemplates(migrationArguments())
-  await fixture.payload.db.drizzle.execute(sql`
+  await migrationDatabase.execute(sql`
     ALTER TABLE "payload_locked_documents_rels"
     ADD COLUMN IF NOT EXISTS "page_templates_id" integer
   `)
-}
-
-async function restorePageTemplatesSchema(): Promise<void> {
-  if (!(await pageTemplatesSchemaExists())) {
-    await fixture.payload.db.drizzle.execute(sql`
-      ALTER TABLE "payload_locked_documents_rels"
-      DROP COLUMN IF EXISTS "page_templates_id"
-    `)
-    await upPageTemplates(migrationArguments())
-    await migrationArguments().db.execute(
-      sql`ALTER TABLE "_page_templates_v" ADD COLUMN "autosave" boolean; CREATE INDEX "_page_templates_v_autosave_idx" ON "_page_templates_v" ("autosave");`,
-    )
-  }
-  await setPageTemplateCompositionSchema(migrationArguments(), true)
-}
-
-async function cleanupFixtures(): Promise<void> {
-  if (!(await relatedContentSchemaExists())) {
-    await suspendPageTemplatesSchema()
-    await upRelatedContent(migrationArguments())
-  }
-  await restorePageTemplatesSchema()
-  await fixture.payload.delete({
-    collection: 'posts',
-    overrideAccess: true,
-    trash: true,
-    where: { slug: { equals: postSlug } },
-  })
-  await fixture.payload.delete({
-    collection: 'events',
-    overrideAccess: true,
-    trash: true,
-    where: { slug: { equals: eventSlug } },
-  })
-  await fixture.payload.delete({
-    collection: 'event-cycles',
-    overrideAccess: true,
-    trash: true,
-    where: { slug: { equals: cycleSlug } },
-  })
 }
 
 beforeAll(async () => {
@@ -106,22 +51,27 @@ beforeAll(async () => {
     { context: { skipContentListingSync: true, skipPublicCacheInvalidation: true } },
     fixture.payload,
   )
-  await cleanupFixtures()
+  await initTransaction(migrationRequest)
+  const transactionId = await migrationRequest.transactionID
+  const db = transactionId == null ? undefined : fixture.payload.db.sessions?.[transactionId]?.db
+  if (!db) throw new Error('Payload migration transaction was not initialized')
+  migrationDatabase = db as MigrateUpArgs['db']
 })
 
 afterAll(async () => {
   if (!fixture?.payload) return
-  await cleanupFixtures()
+  if (migrationRequest) await killTransaction(migrationRequest)
   await fixture.cleanup()
 })
 
 describe('related content migration', () => {
   it('backfills Post relations and guards rollback', { timeout: 20_000 }, async () => {
     const cycle = await fixture.payload.create({
+      req: migrationRequest,
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         eventDefaults: {
           capacityMode: 'unlimited',
           eventType: 1,
@@ -140,10 +90,11 @@ describe('related content migration', () => {
       overrideAccess: true,
     })
     const event = await fixture.payload.create({
+      req: migrationRequest,
       collection: 'events',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         calendarRevision: 0,
         capacityMode: 'unlimited',
         cycle: cycle.id,
@@ -161,19 +112,15 @@ describe('related content migration', () => {
       draft: false,
       overrideAccess: true,
     })
-    const post = await fixture.payload.create({
+    const post = await fixture.payload.update({
+      req: migrationRequest,
       collection: 'posts',
+      id: fixture.post.id,
       data: {
-        _status: 'published',
-        author: fixture.author.id,
-        excerpt: 'Migration post excerpt',
-        layout: [{ blockType: 'richText', content: createLexicalDocument('Post content') }],
         relatedContent: [
           { relationTo: 'events', value: event.id },
           { relationTo: 'event-cycles', value: cycle.id },
         ],
-        slug: postSlug,
-        title: 'Migration related post',
       },
       draft: false,
       overrideAccess: true,
@@ -181,7 +128,7 @@ describe('related content migration', () => {
 
     await suspendPageTemplatesSchema()
     await downRelatedContent(migrationArguments())
-    const legacyPaths = await fixture.payload.db.drizzle.execute(sql`
+    const legacyPaths = await migrationDatabase.execute(sql`
       SELECT "path", count(*)::int AS "count"
       FROM "posts_rels"
       WHERE "parent_id" = ${post.id}
@@ -193,7 +140,7 @@ describe('related content migration', () => {
       { count: 1, path: 'relatedEventCycles' },
       { count: 1, path: 'relatedEvents' },
     ])
-    const legacyVersionPaths = await fixture.payload.db.drizzle.execute(sql`
+    const legacyVersionPaths = await migrationDatabase.execute(sql`
       SELECT DISTINCT "path"
       FROM "_posts_v_rels"
       WHERE "path" IN ('version.relatedEvents', 'version.relatedEventCycles')
@@ -205,17 +152,17 @@ describe('related content migration', () => {
     ])
 
     // The related target must be indexable before this later layout table exists.
-    await fixture.payload.db.drizzle.execute(sql`
+    await migrationDatabase.execute(sql`
       ALTER TABLE "events_blocks_field_row_text" RENAME TO "future_events_blocks_field_row_text"
     `)
     try {
       await upRelatedContent(migrationArguments())
     } finally {
-      await fixture.payload.db.drizzle.execute(sql`
+      await migrationDatabase.execute(sql`
         ALTER TABLE "future_events_blocks_field_row_text" RENAME TO "events_blocks_field_row_text"
       `)
     }
-    const indexedPost = await fixture.payload.db.drizzle.execute(sql`
+    const indexedPost = await migrationDatabase.execute(sql`
       SELECT "related_target_search_index" AS "relatedTargetSearchIndex"
       FROM "content_listing_items"
       WHERE "source" = 'posts' AND "source_document_id" = ${post.id}
@@ -225,6 +172,7 @@ describe('related content migration', () => {
     ])
 
     const migratedPost = await fixture.payload.findByID({
+      req: migrationRequest,
       collection: 'posts',
       depth: 0,
       id: post.id,
@@ -236,6 +184,7 @@ describe('related content migration', () => {
     ])
 
     await fixture.payload.update({
+      req: migrationRequest,
       collection: 'posts',
       data: {
         _status: 'published',
@@ -248,12 +197,13 @@ describe('related content migration', () => {
     await expect(downRelatedContent(migrationArguments())).rejects.toThrow(
       'contains targets unsupported by the legacy fields',
     )
-    await fixture.payload.db.drizzle.execute(sql`
+    await migrationDatabase.execute(sql`
       DELETE FROM "_posts_v_rels"
       WHERE "path" = 'version.relatedContent' AND "pages_id" IS NOT NULL
     `)
 
     await fixture.payload.update({
+      req: migrationRequest,
       collection: 'posts',
       data: {
         _status: 'published',
@@ -286,6 +236,7 @@ describe('related content migration', () => {
     )
 
     await fixture.payload.update({
+      req: migrationRequest,
       collection: 'posts',
       data: {
         _status: 'published',
@@ -295,12 +246,11 @@ describe('related content migration', () => {
       id: post.id,
       overrideAccess: true,
     })
-    await fixture.payload.db.drizzle.execute(sql`
+    await migrationDatabase.execute(sql`
       DELETE FROM "posts_blocks_listing_conditions" WHERE "field" = 'relatedTo';
       DELETE FROM "_posts_v_blocks_listing_conditions" WHERE "field" = 'relatedTo';
     `)
     await downRelatedContent(migrationArguments())
     await upRelatedContent(migrationArguments())
-    await restorePageTemplatesSchema()
   })
 })

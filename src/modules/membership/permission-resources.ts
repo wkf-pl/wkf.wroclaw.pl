@@ -17,11 +17,16 @@ export const permissionResources = {
     label: 'Użytkownicy',
     ownershipField: 'id',
   },
+  'user-groups': {
+    collection: 'user-groups',
+    kind: 'collection',
+    label: 'Grupy użytkowników',
+  },
   media: {
     collection: 'media',
     kind: 'collection',
     label: 'Media',
-    ownershipField: 'uploadedBy',
+    ownershipField: 'author',
   },
   'member-profiles': {
     collection: 'member-profiles',
@@ -29,12 +34,6 @@ export const permissionResources = {
     label: 'Wizytówki klubowiczów',
     ownershipField: 'owner',
     trash: true,
-  },
-  'member-profile-images': {
-    collection: 'member-profile-images',
-    kind: 'collection',
-    label: 'Zdjęcia wizytówek',
-    ownershipField: 'owner',
   },
   pages: {
     collection: 'pages',
@@ -93,13 +92,6 @@ export const permissionResources = {
     collection: 'url-aliases',
     kind: 'collection',
     label: 'Aliasy adresów',
-  },
-  'club-sections': {
-    collection: 'club-sections',
-    kind: 'collection',
-    label: 'Sekcje klubowe',
-    publishedField: '_status',
-    trash: true,
   },
   categories: {
     collection: 'categories',

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
-import type { ClubSection, Role, User } from '@/payload-types'
+import type { Post, Role, User } from '@/payload-types'
 
 const testSlugs = [
   'trash-editor-restore',
@@ -45,13 +45,15 @@ async function findRole(key: string): Promise<Role> {
   return role
 }
 
-async function createSection(slug: (typeof testSlugs)[number]): Promise<ClubSection> {
+async function createPost(slug: (typeof testSlugs)[number]): Promise<Post> {
   return payload.create({
-    collection: 'club-sections',
+    collection: 'posts',
     data: {
       _status: 'published',
-      displayOrder: 100,
-      name: `Trash integration ${slug}`,
+      author: { relationTo: 'users', value: editor.id },
+      excerpt: 'Trash integration fixture',
+      layout: [{ blockType: 'spacer', size: '24' }],
+      title: `Trash integration ${slug}`,
       slug,
     },
     overrideAccess: false,
@@ -59,9 +61,9 @@ async function createSection(slug: (typeof testSlugs)[number]): Promise<ClubSect
   })
 }
 
-async function moveToTrash(id: ClubSection['id']): Promise<ClubSection> {
+async function moveToTrash(id: Post['id']): Promise<Post> {
   return payload.update({
-    collection: 'club-sections',
+    collection: 'posts',
     data: { deletedAt: new Date().toISOString() },
     id,
     overrideAccess: false,
@@ -69,9 +71,9 @@ async function moveToTrash(id: ClubSection['id']): Promise<ClubSection> {
   })
 }
 
-async function permanentlyRemoveTestSections(): Promise<void> {
+async function permanentlyRemoveTestPosts(): Promise<void> {
   await payload.delete({
-    collection: 'club-sections',
+    collection: 'posts',
     overrideAccess: true,
     trash: true,
     where: { slug: { in: [...testSlugs] } },
@@ -94,7 +96,7 @@ async function deleteTestRole(): Promise<void> {
 
 beforeAll(async () => {
   payload = await getPayload({ config })
-  await permanentlyRemoveTestSections()
+  await permanentlyRemoveTestPosts()
   await deleteTestRole()
 
   const [administratorRole, editorRole] = await Promise.all([
@@ -102,7 +104,16 @@ beforeAll(async () => {
     findRole('editor'),
   ])
   administrator = createAuthenticatedUser(-20, administratorRole)
-  editor = createAuthenticatedUser(-21, editorRole)
+  const editorAccount = await payload.create({
+    collection: 'users',
+    data: {
+      displayName: 'Trash integration editor',
+      email: 'trash-integration-editor@example.invalid',
+      password: 'integration-test-only',
+      roles: [editorRole.id],
+    },
+  })
+  editor = { ...editorAccount, collection: 'users' }
   permanentDeleteRole = await payload.create({
     collection: 'roles',
     data: {
@@ -112,7 +123,7 @@ beforeAll(async () => {
         {
           permanentDeleteAllowed: true,
           readAllowed: true,
-          resource: 'club-sections',
+          resource: 'posts',
           updateAllowed: true,
         },
       ],
@@ -125,63 +136,64 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (payload) {
-    await permanentlyRemoveTestSections()
+    await permanentlyRemoveTestPosts()
     await deleteTestRole()
+    if (editor) await payload.delete({ collection: 'users', id: editor.id })
   }
 })
 
 describe('content trash integration', () => {
   it('lets an editor move content to trash and restore it', async () => {
-    const section = await createSection('trash-editor-restore')
-    const trashedSection = await moveToTrash(section.id)
+    const post = await createPost('trash-editor-restore')
+    const trashedPost = await moveToTrash(post.id)
 
-    expect(trashedSection.deletedAt).toBeTypeOf('string')
+    expect(trashedPost.deletedAt).toBeTypeOf('string')
 
     const regularResult = await payload.find({
-      collection: 'club-sections',
+      collection: 'posts',
       overrideAccess: false,
       user: editor,
-      where: { id: { equals: section.id } },
+      where: { id: { equals: post.id } },
     })
     expect(regularResult.docs).toHaveLength(0)
 
     const versions = await payload.findVersions({
-      collection: 'club-sections',
+      collection: 'posts',
       overrideAccess: false,
       trash: true,
       user: editor,
-      where: { parent: { equals: section.id } },
+      where: { parent: { equals: post.id } },
     })
     expect(versions.docs.length).toBeGreaterThan(0)
     await expect(
       payload.restoreVersion({
-        collection: 'club-sections',
+        collection: 'posts',
         id: versions.docs[0]!.id,
         overrideAccess: false,
         user: editor,
       }),
     ).rejects.toMatchObject({ status: 403 })
 
-    const restoredSection = await payload.update({
-      collection: 'club-sections',
+    const restoredPost = await payload.update({
+      collection: 'posts',
       data: { deletedAt: null },
-      id: section.id,
+      id: post.id,
       overrideAccess: false,
       trash: true,
       user: editor,
     })
 
-    expect(restoredSection.deletedAt).toBeNull()
+    expect(restoredPost.deletedAt).toBeNull()
   })
 
   it('does not grant an administrator unconfigured read or restore access', async () => {
-    const section = await createSection('trash-administrator-restore')
-    await moveToTrash(section.id)
+    const post = await createPost('trash-administrator-restore')
+    await moveToTrash(post.id)
 
     await expect(
       payload.findByID({
-        collection: 'club-sections',
-        id: section.id,
+        collection: 'posts',
+        id: post.id,
         overrideAccess: false,
         trash: true,
         user: administrator,
@@ -190,9 +202,9 @@ describe('content trash integration', () => {
 
     await expect(
       payload.update({
-        collection: 'club-sections',
+        collection: 'posts',
         data: { deletedAt: null },
-        id: section.id,
+        id: post.id,
         overrideAccess: false,
         trash: true,
         user: administrator,
@@ -201,14 +213,14 @@ describe('content trash integration', () => {
   })
 
   it('does not treat regular update permission as restore permission', async () => {
-    const section = await createSection('trash-update-without-restore')
-    await moveToTrash(section.id)
+    const post = await createPost('trash-update-without-restore')
+    await moveToTrash(post.id)
 
     await expect(
       payload.update({
-        collection: 'club-sections',
-        data: { deletedAt: null, id: section.id },
-        id: section.id,
+        collection: 'posts',
+        data: { deletedAt: null, id: post.id },
+        id: post.id,
         overrideAccess: false,
         trash: true,
         user: permanentDeleter,
@@ -217,16 +229,16 @@ describe('content trash integration', () => {
   })
 
   it('uses explicit permission for single and bulk permanent deletion', async () => {
-    const sections = await Promise.all([
-      createSection('trash-bulk-first'),
-      createSection('trash-bulk-second'),
+    const posts = await Promise.all([
+      createPost('trash-bulk-first'),
+      createPost('trash-bulk-second'),
     ])
-    await Promise.all(sections.map(({ id }) => moveToTrash(id)))
+    await Promise.all(posts.map(({ id }) => moveToTrash(id)))
 
     await expect(
       payload.delete({
-        collection: 'club-sections',
-        id: sections[0].id,
+        collection: 'posts',
+        id: posts[0].id,
         overrideAccess: false,
         trash: true,
         user: editor,
@@ -235,46 +247,46 @@ describe('content trash integration', () => {
 
     await expect(
       payload.delete({
-        collection: 'club-sections',
+        collection: 'posts',
         overrideAccess: false,
         trash: true,
         user: editor,
-        where: { id: { in: sections.map(({ id }) => id) } },
+        where: { id: { in: posts.map(({ id }) => id) } },
       }),
     ).rejects.toMatchObject({ status: 403 })
 
     await expect(
       payload.delete({
-        collection: 'club-sections',
+        collection: 'posts',
         overrideAccess: false,
         trash: true,
         user: administrator,
-        where: { id: { in: sections.map(({ id }) => id) } },
+        where: { id: { in: posts.map(({ id }) => id) } },
       }),
     ).rejects.toMatchObject({ status: 403 })
 
     const stillTrashed = await payload.find({
-      collection: 'club-sections',
+      collection: 'posts',
       overrideAccess: true,
       trash: true,
-      where: { id: { in: sections.map(({ id }) => id) } },
+      where: { id: { in: posts.map(({ id }) => id) } },
     })
     expect(stillTrashed.docs).toHaveLength(2)
 
     const permanentDeleteResult = await payload.delete({
-      collection: 'club-sections',
+      collection: 'posts',
       overrideAccess: false,
       trash: true,
       user: permanentDeleter,
-      where: { id: { in: sections.map(({ id }) => id) } },
+      where: { id: { in: posts.map(({ id }) => id) } },
     })
     expect(permanentDeleteResult.docs).toHaveLength(2)
 
     const permanentlyDeleted = await payload.find({
-      collection: 'club-sections',
+      collection: 'posts',
       overrideAccess: true,
       trash: true,
-      where: { id: { in: sections.map(({ id }) => id) } },
+      where: { id: { in: posts.map(({ id }) => id) } },
     })
     expect(permanentlyDeleted.docs).toHaveLength(0)
   })
@@ -293,15 +305,15 @@ describe('content trash integration', () => {
       findRole('administrator'),
       findRole('editor'),
     ])
-    const administratorSectionPermission = administratorRole.permissions?.find(
-      ({ resource }) => resource === 'club-sections',
+    const administratorPostPermission = administratorRole.permissions?.find(
+      ({ resource }) => resource === 'posts',
     )
-    const editorSectionPermission = editorRole.permissions?.find(
-      ({ resource }) => resource === 'club-sections',
+    const editorPostPermission = editorRole.permissions?.find(
+      ({ resource }) => resource === 'posts',
     )
 
-    expect(administratorSectionPermission).toBeUndefined()
-    expect(editorSectionPermission).toMatchObject({
+    expect(administratorPostPermission).toBeUndefined()
+    expect(editorPostPermission).toMatchObject({
       permanentDeleteAllowed: false,
       restoreAllowed: true,
     })

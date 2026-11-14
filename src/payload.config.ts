@@ -11,7 +11,6 @@ import { migrations } from '../migrations'
 
 import {
   Categories,
-  ClubSections,
   ContentListingItems,
   DocumentFiles,
   Documents,
@@ -19,7 +18,6 @@ import {
   EventTypes,
   Events,
   Media,
-  MemberProfileImages,
   MemberProfiles,
   Pages,
   PageTemplates,
@@ -27,10 +25,12 @@ import {
   Posts,
   Roles,
   Tags,
+  UserGroups,
   Users,
   UrlAliases,
 } from './collections'
 import { ContentAuditLog } from './collections/ContentAuditLog'
+import { memberProfilePhotoSizeLimit } from '@/modules/members/member-profile-photo-options'
 import { contentAuditPlugin } from './modules/content-audit/plugin'
 import { createEmailAdapter } from './email/create-email-adapter'
 import { Footer, HomepageHero, HomepageSections, Navigation, SiteSettings } from './globals'
@@ -128,18 +128,20 @@ export default buildConfig({
     Categories,
     Tags,
     Media,
-    MemberProfileImages,
     MemberProfiles,
     DocumentFiles,
     Documents,
     UrlAliases,
     Partners,
-    ClubSections,
     Users,
+    UserGroups,
     Roles,
     ContentAuditLog,
   ],
   globals: [SiteSettings, Navigation, HomepageHero, HomepageSections, Footer],
+  bodyParser: {
+    limits: { fieldSize: Math.ceil(memberProfilePhotoSizeLimit / 3) * 4 + 1024 * 1024 },
+  },
   cors: [...trustedOrigins],
   csrf: [...trustedOrigins],
   editor: lexicalEditor({

@@ -7,16 +7,13 @@ type SitemapDocument = {
   updatedAt: string
 }
 
-type SitemapPage = SitemapDocument & {
-  systemKey?: null | string
-}
-
 export type PublicSitemapContent = {
+  blogTemplateUpdatedAt?: string
   categories: SitemapDocument[]
   cycles: SitemapDocument[]
   events: SitemapDocument[]
   memberProfiles: SitemapDocument[]
-  pages: SitemapPage[]
+  pages: SitemapDocument[]
   partners: SitemapDocument[]
   posts: SitemapDocument[]
   tags: SitemapDocument[]
@@ -33,16 +30,14 @@ function createSitemapEntry(
 }
 
 export function createPublicSitemap(content: PublicSitemapContent): MetadataRoute.Sitemap {
-  const blogPage = content.pages.find((page) => page.systemKey === 'blog')
-
   return [
     createSitemapEntry('/'),
-    ...(blogPage ? [createSitemapEntry('/blog', blogPage.updatedAt)] : []),
+    ...(content.blogTemplateUpdatedAt
+      ? [createSitemapEntry('/blog', content.blogTemplateUpdatedAt)]
+      : []),
     createSitemapEntry('/events'),
     createSitemapEntry('/members'),
-    ...content.pages
-      .filter((page) => page.systemKey !== 'blog' && page.systemKey !== 'events')
-      .map((page) => createSitemapEntry(`/${page.slug}`, page.updatedAt)),
+    ...content.pages.map((page) => createSitemapEntry(`/${page.slug}`, page.updatedAt)),
     ...content.posts.map((post) => createSitemapEntry(`/blog/${post.slug}`, post.updatedAt)),
     ...content.categories.map((category) =>
       createSitemapEntry(`/category/${category.slug}`, category.updatedAt),

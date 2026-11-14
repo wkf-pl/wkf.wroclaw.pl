@@ -1,28 +1,23 @@
 import { sql, type MigrateDownArgs, type MigrateUpArgs } from '@payloadcms/db-postgres'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
+import {
+  createLocalReq,
+  getPayload,
+  initTransaction,
+  killTransaction,
+  type Payload,
+  type PayloadRequest,
+} from 'payload'
 
 import config from '@/payload.config'
 import {
   down as downListingConditions,
   up as upListingConditions,
 } from '../../migrations/20261030_031527_listing_conditions'
-import {
-  down as downListingConsolidation,
-  up as upListingConsolidation,
-} from '../../migrations/20261031_111620_listing_sources_and_block_consolidation'
-import {
-  down as downLegacyBlockRemoval,
-  up as upLegacyBlockRemoval,
-} from '../../migrations/20261031_112000_remove_legacy_carousel_and_member_profiles_blocks'
-import {
-  down as downRelatedContent,
-  up as upRelatedContent,
-} from '../../migrations/20261102_114056_related_content_listing'
-import {
-  down as downPageTemplates,
-  up as upPageTemplates,
-} from '../../migrations/20261104_020601_page_templates_collection'
+import { down as downListingConsolidation } from '../../migrations/20261031_111620_listing_sources_and_block_consolidation'
+import { down as downLegacyBlockRemoval } from '../../migrations/20261031_112000_remove_legacy_carousel_and_member_profiles_blocks'
+import { down as downRelatedContent } from '../../migrations/20261102_114056_related_content_listing'
+import { down as downPageTemplates } from '../../migrations/20261104_020601_page_templates_collection'
 import { setPageTemplateCompositionSchema } from '../helpers/page-template-composition-migration'
 
 const fixtureId = 9_300_001
@@ -32,31 +27,32 @@ const carouselBlockId = 'listing-conditions-migration-carousel'
 
 let payload: Payload
 let migrationRequest: PayloadRequest
+let migrationDatabase: MigrateUpArgs['db']
 
 function migrationArguments(): MigrateDownArgs & MigrateUpArgs {
   return {
-    db: payload.db.drizzle,
+    db: migrationDatabase,
     payload,
     req: migrationRequest,
   } as MigrateDownArgs & MigrateUpArgs
 }
 
 async function conditionsSchemaExists(): Promise<boolean> {
-  const result = await payload.db.drizzle.execute(
+  const result = await migrationDatabase.execute(
     sql`SELECT to_regclass('public.homepage_sections_blocks_listing_conditions') IS NOT NULL AS "exists"`,
   )
   return result.rows[0]?.exists === true
 }
 
 async function tableExists(table: string): Promise<boolean> {
-  const result = await payload.db.drizzle.execute(
+  const result = await migrationDatabase.execute(
     sql`SELECT to_regclass(${`public.${table}`}) IS NOT NULL AS "exists"`,
   )
   return result.rows[0]?.exists === true
 }
 
 async function relatedContentSchemaExists(): Promise<boolean> {
-  const result = await payload.db.drizzle.execute(sql`
+  const result = await migrationDatabase.execute(sql`
     SELECT EXISTS (
       SELECT 1 FROM information_schema.columns
       WHERE table_schema = 'public'
@@ -65,20 +61,6 @@ async function relatedContentSchemaExists(): Promise<boolean> {
     ) AS "exists"
   `)
   return result.rows[0]?.exists === true
-}
-
-async function removeLegacyFixtures(): Promise<void> {
-  await payload.db.drizzle.execute(
-    sql.raw(`
-      DELETE FROM "homepage_sections" WHERE "id" = ${fixtureId};
-      DELETE FROM "_homepage_sections_v" WHERE "id" = ${fixtureVersionId};
-      DELETE FROM "pages" WHERE "id" = ${fixtureId};
-      DELETE FROM "event_cycles" WHERE "id" = ${fixtureId};
-      DELETE FROM "categories" WHERE "id" = ${fixtureId};
-      DELETE FROM "tags" WHERE "id" = ${fixtureId};
-      DELETE FROM "content_listing_items" WHERE "source_document_id" = ${fixtureId};
-    `),
-  )
 }
 
 async function moveToBeforeListingConditions(): Promise<void> {
@@ -92,7 +74,7 @@ async function moveToBeforeListingConditions(): Promise<void> {
     await downListingConsolidation(migrationArguments())
   }
   if (await conditionsSchemaExists()) {
-    await payload.db.drizzle.execute(
+    await migrationDatabase.execute(
       sql.raw(`
       DELETE FROM "homepage_sections_blocks_listing_conditions"
       WHERE "text_value" = 'rollback guard';
@@ -102,37 +84,28 @@ async function moveToBeforeListingConditions(): Promise<void> {
   }
 }
 
-async function restoreCurrentSchema(): Promise<void> {
-  await moveToBeforeListingConditions()
-  await removeLegacyFixtures()
-  await upListingConditions(migrationArguments())
-  await upListingConsolidation(migrationArguments())
-  await upLegacyBlockRemoval(migrationArguments())
-  await upRelatedContent(migrationArguments())
-  await upPageTemplates(migrationArguments())
-  await migrationArguments().db.execute(
-    sql`ALTER TABLE "_page_templates_v" ADD COLUMN "autosave" boolean; CREATE INDEX "_page_templates_v_autosave_idx" ON "_page_templates_v" ("autosave");`,
-  )
-  await setPageTemplateCompositionSchema(migrationArguments(), true)
-}
-
 beforeAll(async () => {
   payload = await getPayload({ config })
   migrationRequest = await createLocalReq(
     { context: { skipContentListingSync: true, skipPublicCacheInvalidation: true } },
     payload,
   )
+  await initTransaction(migrationRequest)
+  const transactionId = await migrationRequest.transactionID
+  const db = transactionId == null ? undefined : payload.db.sessions?.[transactionId]?.db
+  if (!db) throw new Error('Payload migration transaction was not initialized')
+  migrationDatabase = db as MigrateUpArgs['db']
 })
 
 afterAll(async () => {
-  if (payload) await restoreCurrentSchema()
+  if (migrationRequest) await killTransaction(migrationRequest)
 })
 
 describe('listing conditions migration', () => {
   it('backfills conditions and guards rollback', { timeout: 20_000 }, async () => {
     await moveToBeforeListingConditions()
 
-    await payload.db.drizzle.execute(
+    await migrationDatabase.execute(
       sql.raw(`
       INSERT INTO "categories" ("id", "name", "slug")
       VALUES (${fixtureId}, 'Migration category', 'migration-category');
@@ -199,7 +172,7 @@ describe('listing conditions migration', () => {
 
     await upListingConditions(migrationArguments())
 
-    const homepageConditions = await payload.db.drizzle.execute(sql`
+    const homepageConditions = await migrationDatabase.execute(sql`
       SELECT "field"::text AS "field", "operator"::text AS "operator",
         "number_value"::int AS "numberValue", "event_time_value"::text AS "eventTimeValue"
       FROM "homepage_sections_blocks_listing_conditions"
@@ -219,7 +192,7 @@ describe('listing conditions migration', () => {
       },
     ])
 
-    const concretizedRelationships = await payload.db.drizzle.execute(sql`
+    const concretizedRelationships = await migrationDatabase.execute(sql`
       SELECT 'page-live' AS "fixture", "pages_id" AS "relationshipId"
       FROM "pages_rels"
       WHERE "path" LIKE 'layout.0.conditions.%.relationshipValue'
@@ -241,7 +214,7 @@ describe('listing conditions migration', () => {
       { fixture: 'page-version', relationshipId: fixtureId },
     ])
 
-    const normalizedTitle = await payload.db.drizzle.execute(sql`
+    const normalizedTitle = await migrationDatabase.execute(sql`
       SELECT "normalized_title" AS "normalizedTitle"
       FROM "content_listing_items" WHERE "source_document_id" = ${fixtureId}
     `)
@@ -249,7 +222,7 @@ describe('listing conditions migration', () => {
 
     await downListingConditions(migrationArguments())
 
-    const restoredLegacyValues = await payload.db.drizzle.execute(sql`
+    const restoredLegacyValues = await migrationDatabase.execute(sql`
       SELECT "category_id" AS "categoryId", "tag_id" AS "tagId",
         "event_cycle_id" AS "eventCycleId", "event_time_filter"::text AS "eventTimeFilter",
         "max_age_days"::int AS "maxAgeDays"
@@ -265,7 +238,7 @@ describe('listing conditions migration', () => {
       },
     ])
 
-    const restoredCurrentPage = await payload.db.drizzle.execute(sql`
+    const restoredCurrentPage = await migrationDatabase.execute(sql`
       SELECT "parent_filter"::text AS "parentFilter", "parent_page_id" AS "parentPageId"
       FROM "pages_blocks_listing" WHERE "id" = ${listingBlockId}
     `)
@@ -274,7 +247,7 @@ describe('listing conditions migration', () => {
     ])
 
     await upListingConditions(migrationArguments())
-    await payload.db.drizzle.execute(sql`
+    await migrationDatabase.execute(sql`
       INSERT INTO "homepage_sections_blocks_listing_conditions"
         ("_order", "_parent_id", "id", "field", "operator", "text_value")
       VALUES (9, ${listingBlockId}, 'non-representable-title-condition', 'title', 'contains', 'rollback guard')

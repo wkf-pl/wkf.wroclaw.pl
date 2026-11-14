@@ -42,8 +42,8 @@ test('groups administrator navigation under Administracja', async ({ page }) => 
   const navigation = page.locator('aside nav')
 
   await expect(
-    navigation.getByRole('button', { name: 'Administracja' }).locator('..'),
-  ).toContainText('Szablony stronUżytkownicyRole')
+    navigation.getByRole('button', { name: 'Administracja' }).locator('..').locator('a'),
+  ).toHaveText(['Szablony stron', 'Użytkownicy', 'Grupy użytkowników', 'Role'])
   await expect(navigation.getByRole('button', { name: 'Klubowe' }).locator('..')).toContainText(
     'Wizytówki klubowiczów',
   )

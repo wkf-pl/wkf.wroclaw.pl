@@ -125,7 +125,7 @@ describe('content listing and pagination', () => {
       collection: 'posts',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         category: childCategory.id,
         excerpt: 'Doubly tagged excerpt',
         layout: [{ blockType: 'richText', content: createLexicalDocument('Tagged content') }],
@@ -215,7 +215,7 @@ describe('content listing and pagination', () => {
       collection: 'pages',
       data: {
         _status: 'draft',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         layout: [
           {
             blockType: 'listing',
@@ -363,7 +363,7 @@ describe('content listing and pagination', () => {
       collection: 'partners',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         excerpt: 'Partner contextual listing excerpt.',
         layout: [
           {
@@ -417,7 +417,7 @@ describe('content listing and pagination', () => {
       collection: 'posts',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         excerpt: 'Recent post excerpt',
         layout: [{ blockType: 'richText', content: createLexicalDocument('Recent content') }],
         publishedAt: new Date(Date.now() - 86_400_000).toISOString(),
@@ -468,7 +468,7 @@ describe('content listing and pagination', () => {
         collection: 'posts',
         data: {
           _status: 'published',
-          author: fixture.author.id,
+          author: { relationTo: 'users', value: fixture.author.id },
           excerpt: `${title} excerpt`,
           layout: [{ blockType: 'richText', content: createLexicalDocument(title) }],
           publishedAt,
@@ -539,7 +539,7 @@ describe('content listing and pagination', () => {
       collection: 'pages',
       data: {
         _status: 'published',
-        author: fixture.author.id,
+        author: { relationTo: 'users', value: fixture.author.id },
         layout: [
           {
             blockType: 'listing',
@@ -621,7 +621,7 @@ describe('content listing and pagination', () => {
             collection: 'posts',
             data: {
               _status: 'published',
-              author: fixture.author.id,
+              author: { relationTo: 'users', value: fixture.author.id },
               category: fixture.category.id,
               excerpt: `Pagination excerpt ${i}`,
               layout: [{ blockType: 'richText', content: createLexicalDocument(`Content ${i}`) }],

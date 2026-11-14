@@ -4,6 +4,7 @@ import {
   invalidateAllPublicDataAfterChange,
   invalidateAllPublicDataAfterDelete,
 } from '@/modules/cache/invalidate-public-data'
+import { createContentAuthorField } from '@/modules/content/content-author-field'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import { mediaDocumentMimeTypes, webRasterImageMimeTypes } from '@/modules/media/media-categories'
 
@@ -38,6 +39,7 @@ export const Media: CollectionConfig = {
       'url',
       'category',
       'tags',
+      'author',
       'uploadedBy',
     ],
     group: 'Treści',
@@ -120,6 +122,7 @@ export const Media: CollectionConfig = {
       label: 'Tagi',
       relationTo: 'tags',
     },
+    createContentAuthorField({ required: false }),
     {
       name: 'uploadedBy',
       type: 'relationship',
