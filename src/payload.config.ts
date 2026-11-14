@@ -25,6 +25,7 @@ import {
   Posts,
   Roles,
   Tags,
+  UserGroups,
   Users,
   UrlAliases,
 } from './collections'
@@ -133,6 +134,7 @@ export default buildConfig({
     UrlAliases,
     Partners,
     Users,
+    UserGroups,
     Roles,
     ContentAuditLog,
   ],

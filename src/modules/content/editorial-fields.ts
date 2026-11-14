@@ -1,5 +1,6 @@
 import type { Field } from 'payload'
 
+import { createContentAuthorField } from './content-author-field'
 import { populateSlug, validatePageSlug } from './slug'
 import { createTaxonomyFields } from './taxonomy-fields'
 
@@ -75,21 +76,7 @@ export function createEditorialFields({
   }
 
   fields.push(
-    {
-      name: 'author',
-      type: 'relationship',
-      defaultValue: ({ user }) => user?.id,
-      label: 'Autor',
-      relationTo: 'users',
-      required: true,
-      admin: {
-        components: {
-          Cell: '/components/admin/UserIdentity#UserRelationshipCell',
-          Field: '/components/admin/UserRelationshipField#UserRelationshipField',
-        },
-        position: 'sidebar',
-      },
-    },
+    createContentAuthorField(),
     {
       name: 'publishedAt',
       type: 'date',

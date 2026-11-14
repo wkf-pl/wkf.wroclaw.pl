@@ -71,6 +71,11 @@ export const Pages: CollectionConfig = {
   access: {
     create: createPages,
     delete: deletePages,
+    readVersions: createRolePermissionAccess({
+      operation: 'read',
+      resource: 'pages',
+      versions: true,
+    }),
     read: readPages,
     update: updatePages,
   },

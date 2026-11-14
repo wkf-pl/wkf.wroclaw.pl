@@ -213,7 +213,7 @@ async function createEventFixtures(payload: Payload, eventIDs: number[]): Promis
       collection: 'events',
       data: {
         _status: 'published',
-        author: author.id,
+        author: { relationTo: 'users', value: author.id },
         calendarRevision: 0,
         capacityMode: 'unlimited',
         endAt: endAt === undefined ? undefined : new Date(endAt).toISOString(),

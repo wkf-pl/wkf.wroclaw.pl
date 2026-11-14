@@ -138,6 +138,7 @@ describe('media blocks', () => {
       'description',
       'category',
       'tags',
+      'author',
       'uploadedBy',
     ])
     expect(Media.admin?.defaultColumns).toEqual([
@@ -149,6 +150,7 @@ describe('media blocks', () => {
       'url',
       'category',
       'tags',
+      'author',
       'uploadedBy',
     ])
   })

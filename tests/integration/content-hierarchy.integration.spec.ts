@@ -92,7 +92,7 @@ describe('content hierarchy', () => {
           collection: 'posts',
           data: {
             _status: 'published',
-            author: fixture.author.id,
+            author: { relationTo: 'users', value: fixture.author.id },
             category: categoryId,
             excerpt: title,
             layout: [{ blockType: 'richText', content: createLexicalDocument(title) }],
@@ -228,7 +228,7 @@ describe('content hierarchy', () => {
         collection: 'pages',
         data: {
           _status: 'published',
-          author: fixture.author.id,
+          author: { relationTo: 'users', value: fixture.author.id },
           layout: [{ blockType: 'richText', content: createLexicalDocument('Published ancestor') }],
           slug: publishedAncestorSlug,
           title: 'Published ancestor',
@@ -240,7 +240,7 @@ describe('content hierarchy', () => {
         collection: 'pages',
         data: {
           _status: 'draft',
-          author: fixture.author.id,
+          author: { relationTo: 'users', value: fixture.author.id },
           parent: publishedAncestor.id,
           slug: draftParentSlug,
           title: 'Unpublished ancestor',
@@ -252,7 +252,7 @@ describe('content hierarchy', () => {
         collection: 'pages',
         data: {
           _status: 'published',
-          author: fixture.author.id,
+          author: { relationTo: 'users', value: fixture.author.id },
           layout: [
             { blockType: 'richText', content: createLexicalDocument('Published descendant') },
           ],

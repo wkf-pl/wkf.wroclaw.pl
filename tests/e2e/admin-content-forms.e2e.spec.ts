@@ -55,7 +55,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'draft',
-      author: author.id,
+      author: { relationTo: 'users', value: author.id },
       slug: `${fixturePrefix}-parent`,
       title: parentPageTitle,
     },
@@ -67,7 +67,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'draft',
-      author: author.id,
+      author: { relationTo: 'users', value: author.id },
       layout: [
         {
           blockType: 'listing',
@@ -91,7 +91,7 @@ test.beforeAll(async () => {
     collection: 'posts',
     data: {
       _status: 'published',
-      author: author.id,
+      author: { relationTo: 'users', value: author.id },
       category: category.id,
       excerpt: 'Wpis używany do sprawdzenia kolumn relacji.',
       layout: [
@@ -113,7 +113,7 @@ test.beforeAll(async () => {
     collection: 'posts',
     data: {
       _status: 'draft',
-      author: author.id,
+      author: { relationTo: 'users', value: author.id },
       excerpt: 'Wpis używany do sprawdzenia pustych wartości.',
       slug: `${fixturePrefix}-unclassified-post`,
       title: unclassifiedPostTitle,
@@ -140,6 +140,7 @@ test('shows complete search labels and concise missing-value fallbacks', async (
 
 async function openListingConditionRow(row: Locator) {
   const toggle = row.getByRole('button', { name: 'Przełącz blok' })
+  await toggle.scrollIntoViewIfNeeded()
   await expect(toggle).toHaveClass(/\bcollapsible__toggle--(?:open|collapsed)\b/)
   if ((await toggle.getAttribute('class'))?.includes('collapsible__toggle--collapsed')) {
     await toggle.click()

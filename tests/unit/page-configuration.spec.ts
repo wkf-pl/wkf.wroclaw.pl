@@ -516,7 +516,7 @@ describe('page configuration', () => {
       'author',
       'publishedAt',
     ])
-    expect(sidebarFieldNames(Media)).toEqual(['category', 'tags', 'uploadedBy'])
+    expect(sidebarFieldNames(Media)).toEqual(['category', 'tags', 'author', 'uploadedBy'])
     expect(sidebarFieldNames(Partners)).toEqual(['slug', 'author', 'publishedAt'])
   })
 

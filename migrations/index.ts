@@ -1,4 +1,3 @@
-import * as migration_20261113_224355_inline_member_profile_photos from './20261113_224355_inline_member_profile_photos'
 import * as migration_20260810_194314_cms_content from './20260810_194314_cms_content'
 import * as migration_20260811_173414_roles_permissions from './20260811_173414_roles_permissions'
 import * as migration_20260812_152738 from './20260812_152738'
@@ -73,6 +72,8 @@ import * as migration_20261111_150257_spacer_block from './20261111_150257_space
 import * as migration_20261113_112823_content_audit_log from './20261113_112823_content_audit_log'
 import * as migration_20261113_213205_retire_system_route_pages from './20261113_213205_retire_system_route_pages'
 import * as migration_20261113_220423_remove_club_sections from './20261113_220423_remove_club_sections'
+import * as migration_20261113_224355_inline_member_profile_photos from './20261113_224355_inline_member_profile_photos'
+import * as migration_20261114_015429_user_groups from './20261114_015429_user_groups'
 
 export const migrations = [
   {
@@ -449,5 +450,10 @@ export const migrations = [
     up: migration_20261113_224355_inline_member_profile_photos.up,
     down: migration_20261113_224355_inline_member_profile_photos.down,
     name: '20261113_224355_inline_member_profile_photos',
+  },
+  {
+    up: migration_20261114_015429_user_groups.up,
+    down: migration_20261114_015429_user_groups.down,
+    name: '20261114_015429_user_groups',
   },
 ]

@@ -111,7 +111,7 @@ test.beforeAll(async () => {
     collection: 'events',
     data: {
       _status: 'published',
-      author: editor.id,
+      author: { relationTo: 'users', value: editor.id },
       calendarRevision: 0,
       capacityMode: 'unlimited',
       eventStatus: 'scheduled',
@@ -205,7 +205,7 @@ test.beforeAll(async () => {
   const draftPage = await payload.create({
     collection: 'pages',
     data: {
-      author: editor.id,
+      author: { relationTo: 'users', value: editor.id },
       layout: [
         {
           blockType: 'heading',
@@ -224,7 +224,7 @@ test.beforeAll(async () => {
   const invalidDraftPage = await payload.create({
     collection: 'pages',
     data: {
-      author: editor.id,
+      author: { relationTo: 'users', value: editor.id },
       layout: [
         {
           blockType: 'listing',
@@ -247,7 +247,7 @@ test.beforeAll(async () => {
   const draftPost = await payload.create({
     collection: 'posts',
     data: {
-      author: editor.id,
+      author: { relationTo: 'users', value: editor.id },
       excerpt: 'Streszczenie testowego szkicu wpisu.',
       layout: [
         {
@@ -600,6 +600,7 @@ test('allows a manual Hero checkpoint after saving an autosave for preview', asy
   const previewPagePromise = page.waitForEvent('popup')
   await previewButton.click()
   const previewPage = await previewPagePromise
+  await expect(previewPage).toHaveURL('/', { timeout: navigationTimeout })
   await expect(previewPage.getByRole('status')).toContainText('Wyświetlasz zapisany szkic.')
   await previewPage.close()
 

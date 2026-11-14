@@ -47,6 +47,11 @@ export const Partners: CollectionConfig = {
   access: {
     create: createPartners,
     delete: deletePartners,
+    readVersions: createRolePermissionAccess({
+      operation: 'read',
+      resource: 'partners',
+      versions: true,
+    }),
     read: readPartners,
     update: updatePartners,
   },

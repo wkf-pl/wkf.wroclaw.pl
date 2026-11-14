@@ -103,7 +103,7 @@ describe('content audit log', () => {
         data: {
           title,
           slug: token,
-          author: administrator.id,
+          author: { relationTo: 'users', value: administrator.id },
           excerpt: 'Content audit fixture',
           layout: [{ blockType: 'spacer', size: '24' }],
           _status: 'published',

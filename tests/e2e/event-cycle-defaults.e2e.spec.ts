@@ -103,7 +103,7 @@ test.beforeAll(async () => {
     collection: 'partners',
     data: {
       _status: 'published',
-      author: author.id,
+      author: { relationTo: 'users', value: author.id },
       excerpt: 'Partner używany w teście domyślnych danych Wydarzenia.',
       layout: layout(),
       name: 'Partner domyślny E2E',
@@ -115,7 +115,7 @@ test.beforeAll(async () => {
     collection: 'event-cycles',
     data: {
       _status: 'published',
-      author: author.id,
+      author: { relationTo: 'users', value: author.id },
       eventDefaults: {
         capacityMode: 'unlimited',
         eventType: 1,

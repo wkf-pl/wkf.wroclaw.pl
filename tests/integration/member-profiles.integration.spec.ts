@@ -253,7 +253,7 @@ describe('member profiles integration', () => {
       collection: 'pages',
       data: {
         _status: 'published',
-        author: owner.id,
+        author: { relationTo: 'users', value: owner.id },
         layout: [
           {
             blockType: 'columnLayout',

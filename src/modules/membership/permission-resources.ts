@@ -17,11 +17,16 @@ export const permissionResources = {
     label: 'Użytkownicy',
     ownershipField: 'id',
   },
+  'user-groups': {
+    collection: 'user-groups',
+    kind: 'collection',
+    label: 'Grupy użytkowników',
+  },
   media: {
     collection: 'media',
     kind: 'collection',
     label: 'Media',
-    ownershipField: 'uploadedBy',
+    ownershipField: 'author',
   },
   'member-profiles': {
     collection: 'member-profiles',

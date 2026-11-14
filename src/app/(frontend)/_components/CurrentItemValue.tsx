@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react'
 import Link from 'next/link'
 
 import { CmsRichText } from '@/components/CmsRichText'
+import { getContentAuthorName } from '@/modules/content/content-author'
 import { findPublicCategoryByID } from '@/modules/content/public-content'
 import { findPublicContent, type ContentListingSource } from '@/modules/content/content-listing'
 import { WARSAW_TIME_ZONE } from '@/modules/events/constants'
@@ -104,14 +105,10 @@ export function CurrentItemValue({
       )
     }
     case 'author':
+      return <CurrentItemText text={getContentAuthorName(value)} variant={variant} />
     case 'name': {
-      const related = value as { displayName?: string; name?: string } | null
-      return (
-        <CurrentItemText
-          text={source.kind === 'author' ? related?.displayName : related?.name}
-          variant={variant}
-        />
-      )
+      const related = value as { name?: string } | null
+      return <CurrentItemText text={related?.name} variant={variant} />
     }
     case 'cycle': {
       const cycle = typeof value === 'object' ? (value as EventCycle | null) : null

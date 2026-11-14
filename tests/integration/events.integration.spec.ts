@@ -32,6 +32,7 @@ let payload: Payload
 let author: User
 let partner: Partner
 let userRole: Role
+let scheduleGroupId: number | undefined
 
 function createEndpointRequest({
   body,
@@ -149,7 +150,7 @@ beforeAll(async () => {
     collection: 'partners',
     data: {
       _status: 'published',
-      author: author.id,
+      author: { relationTo: 'users', value: author.id },
       excerpt: 'Integration events partner',
       layout: layout(),
       name: 'Integration events partner',
@@ -162,6 +163,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await cleanup()
+  if (scheduleGroupId) await payload.delete({ collection: 'user-groups', id: scheduleGroupId })
   await deleteIntegrationAuthor(payload, author)
 })
 
@@ -172,7 +174,7 @@ function eventData(
 ) {
   return {
     _status: status,
-    author: author.id,
+    author: { relationTo: 'users' as const, value: author.id },
     calendarRevision: 0,
     capacityMode: 'unlimited' as const,
     eventStatus: 'scheduled' as const,
@@ -232,7 +234,7 @@ describe('events integration', () => {
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: author.id,
+        author: { relationTo: 'users', value: author.id },
         eventDefaults: {
           capacityMode: 'unlimited',
           eventType: 1,
@@ -323,12 +325,20 @@ describe('events integration', () => {
   })
 
   it('calculates the next Cycle Event dates from the latest dated Event', async () => {
+    const groupName = 'Scheduled event editors'
+    await payload.delete({ collection: 'user-groups', where: { name: { equals: groupName } } })
+    const group = await payload.create({
+      collection: 'user-groups',
+      data: { name: groupName, members: [author.id] },
+    })
+    scheduleGroupId = group.id
     const cycle = await payload.create({
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: author.id,
+        author: { relationTo: 'users', value: author.id },
         eventDefaults: {
+          authorGroup: group.id,
           capacityMode: 'unlimited',
           defaultDayCount: 1,
           defaultEndTime: '22:00',
@@ -376,6 +386,7 @@ describe('events integration', () => {
         overrideAccess: true,
       })
 
+      expect(createdEvent.author).toEqual({ relationTo: 'user-groups', value: group.id })
       expect(createdEvent.startAt).toBe('2030-03-26T17:00:00.000Z')
       expect(createdEvent.endAt).toBe('2030-03-26T21:00:00.000Z')
       expect(JSON.stringify(createdEvent.layout)).toContain('Integration event content')
@@ -510,7 +521,7 @@ describe('events integration', () => {
       overrideAccess: true,
       data: {
         _status: 'published',
-        author: author.id,
+        author: { relationTo: 'users', value: author.id },
         excerpt: createRichTextDocument(['Integration cycle']),
         layout: layout(),
         slug: slugs.cycle,

@@ -48,6 +48,11 @@ export const Posts: CollectionConfig = {
   access: {
     create: createPosts,
     delete: deletePosts,
+    readVersions: createRolePermissionAccess({
+      operation: 'read',
+      resource: 'posts',
+      versions: true,
+    }),
     read: readPosts,
     update: updatePosts,
   },

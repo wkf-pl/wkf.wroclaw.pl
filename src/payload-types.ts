@@ -146,6 +146,7 @@ export interface Config {
     'url-aliases': UrlAlias;
     partners: Partner;
     users: User;
+    'user-groups': UserGroup;
     roles: Role;
     'content-audit-log': ContentAuditLog;
     'payload-kv': PayloadKv;
@@ -186,6 +187,7 @@ export interface Config {
     'url-aliases': UrlAliasesSelect<false> | UrlAliasesSelect<true>;
     partners: PartnersSelect<false> | PartnersSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    'user-groups': UserGroupsSelect<false> | UserGroupsSelect<true>;
     roles: RolesSelect<false> | RolesSelect<true>;
     'content-audit-log': ContentAuditLogSelect<false> | ContentAuditLogSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -350,7 +352,15 @@ export interface Page {
     | null;
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
-  author: number | User;
+  author:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      };
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -373,6 +383,15 @@ export interface Media {
   description?: string | null;
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
+  author?:
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null)
+    | ({
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      } | null);
   uploadedBy?: (number | null) | User;
   _objectKey?: string | null;
   updatedAt: string;
@@ -516,7 +535,15 @@ export interface Post {
   slug: string;
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
-  author: number | User;
+  author:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      };
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -641,7 +668,15 @@ export interface Event {
   slug: string;
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
-  author: number | User;
+  author:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      };
   defaultsAppliedCycle?: (number | null) | EventCycle;
   previousStartAt?: string | null;
   publishedStartAt?: string | null;
@@ -707,6 +742,7 @@ export interface EventCycle {
     image?: (number | null) | Media;
   };
   eventDefaults: {
+    authorGroup?: (number | null) | UserGroup;
     title?: string | null;
     eventType: number | EventType;
     heroImage?: (number | null) | Media;
@@ -811,7 +847,15 @@ export interface EventCycle {
   slug: string;
   category?: (number | null) | Category;
   tags?: (number | Tag)[] | null;
-  author: number | User;
+  author:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      };
   calendarFeedKey?: string | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
@@ -1239,6 +1283,7 @@ export interface Role {
     | {
         resource:
           | 'users'
+          | 'user-groups'
           | 'media'
           | 'member-profiles'
           | 'pages'
@@ -1353,7 +1398,15 @@ export interface Partner {
    * Adres jest tworzony automatycznie z nazwy, ale można go zmienić.
    */
   slug: string;
-  author: number | User;
+  author:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      };
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -2293,6 +2346,17 @@ export interface TabbedContentBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'tabs';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "user-groups".
+ */
+export interface UserGroup {
+  id: number;
+  name: string;
+  members?: (number | User)[] | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3749,6 +3813,10 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'user-groups';
+        value: number | UserGroup;
+      } | null)
+    | ({
         relationTo: 'roles';
         value: number | Role;
       } | null);
@@ -4925,6 +4993,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
   eventDefaults?:
     | T
     | {
+        authorGroup?: T;
         title?: T;
         eventType?: T;
         heroImage?: T;
@@ -5080,6 +5149,7 @@ export interface MediaSelect<T extends boolean = true> {
   description?: T;
   category?: T;
   tags?: T;
+  author?: T;
   uploadedBy?: T;
   _objectKey?: T;
   updatedAt?: T;
@@ -5252,6 +5322,16 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "user-groups_select".
+ */
+export interface UserGroupsSelect<T extends boolean = true> {
+  name?: T;
+  members?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

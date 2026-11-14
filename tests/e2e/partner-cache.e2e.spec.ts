@@ -27,7 +27,7 @@ test.beforeAll(async () => {
     collection: 'partners',
     data: {
       _status: 'published',
-      author: author.id,
+      author: { relationTo: 'users', value: author.id },
       excerpt: 'Partner używany do sprawdzenia unieważniania cache.',
       layout: [createRichTextBlock('Treść partnera używana w teście cache.')],
       name: 'Partner przed aktualizacją cache',

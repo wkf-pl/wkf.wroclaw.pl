@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
-import type { Event, EventCycle, Page, Partner, Post, User } from '@/payload-types'
+import { getContentAuthorName } from '@/modules/content/content-author'
+import type { Event, EventCycle, Page, Partner, Post } from '@/payload-types'
 import { createPageBreadcrumbs, type PublicBreadcrumb } from '@/modules/content/public-hierarchy'
 
 import {
@@ -54,7 +55,7 @@ export async function CmsPageDocument({
   heroDate,
   showHeroMeta = true,
 }: CmsPageDocumentProperties) {
-  const authorName = getAuthorName(document.author)
+  const authorName = getContentAuthorName(document.author)
   const category = 'category' in document ? document.category : undefined
   const tags = 'tags' in document ? document.tags : undefined
   const title = 'title' in document ? document.title : document.name
@@ -152,8 +153,4 @@ async function getContentBreadcrumbs(
     { label: 'Strona główna', url: '/' },
     { label: title, url: null },
   ]
-}
-
-function getAuthorName(author: null | number | User): null | string {
-  return author && typeof author === 'object' ? author.displayName || null : null
 }

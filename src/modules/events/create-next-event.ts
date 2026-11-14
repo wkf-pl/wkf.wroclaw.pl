@@ -1,5 +1,6 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 
+import { getContentAuthorReference, getDefaultEventAuthor } from '@/modules/content/content-author'
 import { getRelationshipId } from '@/lib/relationships'
 
 import { eventEndpointErrorResponse } from './endpoint-response'
@@ -57,6 +58,7 @@ async function handler(req: PayloadRequest): Promise<Response> {
     const data = cycleID
       ? {
           _status: 'draft' as const,
+          author: getDefaultEventAuthor(cycle?.eventDefaults.authorGroup),
           cycle: cycleID,
           endAt,
           startAt: startAt.toISOString(),
@@ -64,7 +66,7 @@ async function handler(req: PayloadRequest): Promise<Response> {
         }
       : {
           _status: 'draft' as const,
-          author: typeof source.author === 'object' ? source.author.id : source.author,
+          author: getContentAuthorReference(source.author),
           capacity: source.capacity,
           capacityMode: source.capacityMode,
           category:

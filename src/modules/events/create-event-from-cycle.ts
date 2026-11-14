@@ -1,5 +1,7 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 
+import { getDefaultEventAuthor } from '@/modules/content/content-author'
+
 import { eventEndpointErrorResponse } from './endpoint-response'
 import { calculateNextEventDates } from './event-cycle-schedule'
 
@@ -40,6 +42,7 @@ async function handler(req: PayloadRequest): Promise<Response> {
       context: { skipSlugGeneration: true },
       data: {
         _status: 'draft',
+        author: getDefaultEventAuthor(cycle.eventDefaults.authorGroup),
         cycle: cycle.id,
         ...dates,
         title: cycle.eventDefaults.title || cycle.title,

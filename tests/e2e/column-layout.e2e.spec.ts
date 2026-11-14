@@ -69,7 +69,7 @@ test.beforeAll(async () => {
       collection: 'posts',
       data: {
         _status: 'published',
-        author: author.id,
+        author: { relationTo: 'users', value: author.id },
         excerpt: `Column layout post ${index}`,
         layout: [richTextBlock(`Column layout post content ${index}`)],
         slug: `${postSlugPrefix}-${index}`,
@@ -83,7 +83,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'published',
-      author: author.id,
+      author: { relationTo: 'users', value: author.id },
       layout: [
         {
           blockType: 'columnLayout',

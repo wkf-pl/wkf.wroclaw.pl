@@ -50,7 +50,7 @@ async function createPost(slug: (typeof testSlugs)[number]): Promise<Post> {
     collection: 'posts',
     data: {
       _status: 'published',
-      author: editor.id,
+      author: { relationTo: 'users', value: editor.id },
       excerpt: 'Trash integration fixture',
       layout: [{ blockType: 'spacer', size: '24' }],
       title: `Trash integration ${slug}`,

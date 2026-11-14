@@ -147,7 +147,7 @@ describe('role access integration', () => {
       collection: 'posts',
       data: {
         _status: 'published',
-        author: editorAccount.id,
+        author: { relationTo: 'users', value: editorAccount.id },
         excerpt: 'Role access integration fixture',
         layout: [{ blockType: 'spacer', size: '24' }],
         title: 'Integration Published',
@@ -160,7 +160,7 @@ describe('role access integration', () => {
       collection: 'posts',
       data: {
         _status: 'draft',
-        author: editorAccount.id,
+        author: { relationTo: 'users', value: editorAccount.id },
         excerpt: 'Role access integration fixture',
         layout: [{ blockType: 'spacer', size: '24' }],
         title: 'Integration Draft',

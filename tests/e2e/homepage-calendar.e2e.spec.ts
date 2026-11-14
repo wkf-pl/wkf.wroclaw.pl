@@ -56,7 +56,7 @@ test.beforeAll(async () => {
       collection: 'events',
       data: {
         _status: 'published',
-        author: author.id,
+        author: { relationTo: 'users', value: author.id },
         calendarRevision: 0,
         capacityMode: 'unlimited',
         eventStatus: 'scheduled',
@@ -153,65 +153,60 @@ test('renders responsive event carousel and calendar content blocks on the homep
   await updateHomepageLayout(createFixtureHomepageLayout())
   homepageLayoutChanged = true
 
-  try {
-    await page.goto('/')
+  await page.goto('/')
 
-    const carousel = page.getByRole('region', { name: 'Karuzela treści' })
-    await expect(carousel).toBeVisible()
-    await expect(carousel.locator('.contentCarouselSlide')).toHaveCount(2)
-    await expect(
-      carousel.locator(
-        '.contentCarouselSlide--active .contentCarouselControls button[aria-pressed="true"]',
-      ),
-    ).toHaveCount(1)
+  const carousel = page.getByRole('region', { name: 'Karuzela treści' })
+  await expect(carousel).toBeVisible()
+  await expect(carousel.locator('.contentCarouselSlide')).toHaveCount(2)
+  await expect(
+    carousel.locator(
+      '.contentCarouselSlide--active .contentCarouselControls button[aria-pressed="true"]',
+    ),
+  ).toHaveCount(1)
 
-    const calendar = page.getByRole('region', { name: 'Kalendarz treści' })
-    await expect(calendar).toBeVisible()
-    await expect(
-      calendar.getByRole('link', { name: /Zasubskrybuj kalendarz WKF/ }),
-    ).toHaveAttribute('href', '/events/calendar.ics')
-    await expect(calendar.getByRole('list', { name: 'Typy treści' })).toContainText('Sesje RPG')
+  const calendar = page.getByRole('region', { name: 'Kalendarz treści' })
+  await expect(calendar).toBeVisible()
+  await expect(calendar.getByRole('link', { name: /Zasubskrybuj kalendarz WKF/ })).toHaveAttribute(
+    'href',
+    '/events/calendar.ics',
+  )
+  await expect(calendar.getByRole('list', { name: 'Typy treści' })).toContainText('Sesje RPG')
 
-    const monthHeading = calendar.getByRole('heading', { level: 3 })
-    const initialHeading = await monthHeading.textContent()
-    await calendar.getByRole('button', { name: 'Następny miesiąc' }).click()
-    await expect(monthHeading).not.toHaveText(initialHeading ?? '')
-    await calendar
-      .getByRole('button', { name: new RegExp(`^${eventDay}, .*${eventTitle}`) })
-      .click()
-    await expect(calendar.getByRole('link', { name: new RegExp(eventTitle) })).toHaveAttribute(
-      'href',
-      `/events/${eventSlug}`,
-    )
-    await expect(calendar).toContainText('Streszczenie wydarzenia kalendarzowego E2E.')
-    await expect(calendar.getByRole('link', { name: 'Klub Pod Kolumnami' })).toHaveAttribute(
-      'href',
-      'https://example.com/klub',
-    )
-    await expect(calendar.getByRole('link', { name: /Dodaj do kalendarza/ })).toHaveAttribute(
-      'href',
-      `/events/${eventSlug}/calendar.ics`,
-    )
-    await calendar.getByRole('button', { name: 'Poprzedni miesiąc' }).click()
-    await expect(monthHeading).toHaveText(initialHeading ?? '')
+  const monthHeading = calendar.getByRole('heading', { level: 3 })
+  const initialHeading = await monthHeading.textContent()
+  await calendar.getByRole('button', { name: 'Następny miesiąc' }).click()
+  await expect(monthHeading).not.toHaveText(initialHeading ?? '')
+  await calendar.getByRole('button', { name: new RegExp(`^${eventDay}, .*${eventTitle}`) }).click()
+  await expect(calendar.getByRole('link', { name: new RegExp(eventTitle) })).toHaveAttribute(
+    'href',
+    `/events/${eventSlug}`,
+  )
+  await expect(calendar).toContainText('Streszczenie wydarzenia kalendarzowego E2E.')
+  await expect(calendar.getByRole('link', { name: 'Klub Pod Kolumnami' })).toHaveAttribute(
+    'href',
+    'https://example.com/klub',
+  )
+  await expect(calendar.getByRole('link', { name: /Dodaj do kalendarza/ })).toHaveAttribute(
+    'href',
+    `/events/${eventSlug}/calendar.ics`,
+  )
+  await calendar.getByRole('button', { name: 'Poprzedni miesiąc' }).click()
+  await expect(monthHeading).toHaveText(initialHeading ?? '')
 
-    await page.setViewportSize({ height: 844, width: 390 })
-    const calendarGrid = calendar.locator('.calendarGrid')
-    await expect(calendarGrid).toBeVisible()
-    expect(
-      await calendarGrid.evaluate((element) => element.scrollWidth <= element.clientWidth),
-    ).toBe(true)
+  await page.setViewportSize({ height: 844, width: 390 })
+  const calendarGrid = calendar.locator('.calendarGrid')
+  await expect(calendarGrid).toBeVisible()
+  expect(await calendarGrid.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+    true,
+  )
 
-    const legendBox = await calendar.getByRole('list', { name: 'Typy treści' }).boundingBox()
-    const subscriptionBox = await calendar
-      .getByRole('link', { name: /Zasubskrybuj kalendarz WKF/ })
-      .boundingBox()
-    expect(legendBox).not.toBeNull()
-    expect(subscriptionBox).not.toBeNull()
-    expect(subscriptionBox?.y ?? 0).toBeGreaterThan(legendBox?.y ?? 0)
-  } finally {
-    await restoreHomepageLayout()
-  }
+  const legendBox = await calendar.getByRole('list', { name: 'Typy treści' }).boundingBox()
+  const subscriptionBox = await calendar
+    .getByRole('link', { name: /Zasubskrybuj kalendarz WKF/ })
+    .boundingBox()
+  expect(legendBox).not.toBeNull()
+  expect(subscriptionBox).not.toBeNull()
+  expect(subscriptionBox?.y ?? 0).toBeGreaterThan(legendBox?.y ?? 0)
 })
 
 function createFixtureHomepageLayout(): HomepageSection['layout'] {

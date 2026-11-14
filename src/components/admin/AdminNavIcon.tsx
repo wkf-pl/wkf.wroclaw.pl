@@ -21,6 +21,7 @@ const adminIconNames: Record<string, RasterIconName> = {
   roles: 'roles',
   'site-settings': 'settings',
   tags: 'tag',
+  'user-groups': 'users',
   users: 'users',
 }
 
