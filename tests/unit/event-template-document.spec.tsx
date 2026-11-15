@@ -39,7 +39,6 @@ const event = {
   cycle,
   createdAt: '2026-11-04T12:00:00.000Z',
   endAt: '2040-02-18T20:00:00.000Z',
-  eventStatus: 'scheduled',
   eventType,
   excerpt: createLexicalDocument('Opis wydarzenia z Hero.'),
   id: 3,
@@ -75,15 +74,7 @@ const template = {
   hero: [
     {
       blockType: 'currentItemFieldRow',
-      items: [
-        { blockType: 'currentItemField', field: 'eventType', variant: 'badge' },
-        {
-          blockType: 'fieldRowText',
-          style: 'badge',
-          text: createLexicalDocument('—'),
-        },
-        { blockType: 'currentItemField', field: 'eventStatus', variant: 'badge' },
-      ],
+      items: [{ blockType: 'currentItemField', field: 'eventType', variant: 'badge' }],
     },
     { blockType: 'currentItemField', field: 'title', variant: 'primaryHeading' },
     { blockType: 'currentItemField', field: 'excerpt', variant: 'lead' },
@@ -218,11 +209,8 @@ describe('event page template document', () => {
     expect(markup).toContain('class="contentHeroPage pageTemplatePage"')
     expect(markup).toContain('<h1>Pierwsza wyprawa</h1>')
     expect(markup).toContain('Sesje RPG')
-    expect(markup).toContain('Zaplanowane')
+    expect(markup).not.toContain('Zaplanowane')
     expect(markup).toContain('class="pageTemplateFieldRow"')
-    expect(markup).toMatch(
-      /Sesje RPG.*class="pageTemplateFieldRowText pageTemplateBadge">—<\/span>.*Zaplanowane/,
-    )
     expect(markup).toContain('Opis wydarzenia z Hero.')
     expect(markup).toContain('href="/events/series/wyprawy"')
     expect(markup).toContain('aria-label="Subskrybuj cykl"')

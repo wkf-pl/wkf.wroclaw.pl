@@ -221,7 +221,6 @@ test.beforeAll(async () => {
       capacityMode: 'exact',
       cycle: series.id,
       endAt: '2040-02-18T20:00:00.000Z',
-      eventStatus: 'scheduled',
       eventType: eventType.id,
       excerpt: createLexicalDocument(
         'Otwarte spotkanie z grą fabularną dla nowych i doświadczonych osób.',

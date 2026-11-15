@@ -114,7 +114,6 @@ test.beforeAll(async () => {
       author: { relationTo: 'users', value: editor.id },
       calendarRevision: 0,
       capacityMode: 'unlimited',
-      eventStatus: 'scheduled',
       eventType: eventType.id,
       excerpt: createLexicalDocument('Wydarzenie używane do podglądu szablonu strony.'),
       heroImage: heroImage.id,
@@ -174,8 +173,6 @@ test.beforeAll(async () => {
           items: [
             { blockType: 'pageTemplateIcon', iconName: 'seance' },
             { blockType: 'currentItemField', field: 'eventType', variant: 'emphasizedBadge' },
-            { blockType: 'fieldRowText', text: createLexicalDocument('—') },
-            { blockType: 'currentItemField', field: 'eventStatus', variant: 'badge' },
           ],
         },
         {
@@ -381,12 +378,11 @@ test('previews a draft page template before enabling template rendering publicly
   await blockDrawer.locator('.drawer__header__close').click()
 
   await expect(
-    heroField.getByText(': Ikona seance + Typ wydarzenia + "—" + Status wydarzenia', {
+    heroField.getByText(': Ikona seance + Typ wydarzenia', {
       exact: true,
     }),
   ).toBeVisible()
   await expect(heroField.getByText(': Seans', { exact: true })).toBeVisible()
-  await expect(heroField.getByText(': —', { exact: true })).toBeVisible()
   const fieldSelect = heroField.locator('.field-type.select').filter({
     has: page.locator('[id="hero.0.items.1.field"]'),
   })

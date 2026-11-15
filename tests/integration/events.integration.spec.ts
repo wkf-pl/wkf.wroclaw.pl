@@ -3,18 +3,23 @@ import { getPayload, type Payload, type PayloadRequest } from 'payload'
 
 import config from '@/payload.config'
 import { createRichTextDocument, extractRichTextText } from '@/modules/content/rich-text'
-import type { Partner, Role, User } from '@/payload-types'
+import type { Event, Partner, Role, User } from '@/payload-types'
 import { findPublicContent } from '@/modules/content/content-listing'
 import { createEventFromCycleEndpoint } from '@/modules/events/create-event-from-cycle'
 import { createNextEventEndpoint } from '@/modules/events/create-next-event'
-import { findEventsForPartner, findPublishedPartnerBySlug } from '@/modules/events/public-events'
+import {
+  findCurrentAndUpcomingEvents,
+  findEventsForPartner,
+  findPastEvents,
+  findPublishedPartnerBySlug,
+} from '@/modules/events/public-events'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { GET as getCalendar } from '@/app/(frontend)/events/calendar.json/route'
 
 import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/integration-author'
 
 const slugs = {
-  cancelled: 'integration-cancelled-event',
+  other: 'integration-other-event',
   completed: 'integration-completed-event',
   cycle: 'integration-event-cycle',
   cycleEvent: 'integration-cycle-event',
@@ -103,7 +108,7 @@ async function cleanup() {
     where: {
       slug: {
         in: [
-          slugs.cancelled,
+          slugs.other,
           slugs.completed,
           slugs.public,
           slugs.members,
@@ -177,7 +182,6 @@ function eventData(
     author: { relationTo: 'users' as const, value: author.id },
     calendarRevision: 0,
     capacityMode: 'unlimited' as const,
-    eventStatus: 'scheduled' as const,
     eventType: 1,
     excerpt: createRichTextDocument([`Integration event ${slug}`]),
     layout: layout(),
@@ -191,7 +195,7 @@ function eventData(
 }
 
 describe('events integration', () => {
-  it('returns an ended scheduled Event as completed', async () => {
+  it('keeps the published event and its dates in the calendar after it ends', async () => {
     const event = await payload.create({
       collection: 'events',
       data: {
@@ -203,7 +207,7 @@ describe('events integration', () => {
       overrideAccess: true,
     })
 
-    expect(event.eventStatus).toBe('completed')
+    expect(event).not.toHaveProperty('eventStatus')
 
     const rereadEvent = await payload.findByID({
       collection: 'events',
@@ -211,7 +215,7 @@ describe('events integration', () => {
       id: event.id,
       overrideAccess: true,
     })
-    expect(rereadEvent.eventStatus).toBe('completed')
+    expect(rereadEvent).toMatchObject({ startAt: event.startAt, endAt: event.endAt })
 
     const calendarResponse = await getCalendar(
       new Request('http://localhost/events/calendar.json?month=2020-01'),
@@ -428,8 +432,7 @@ describe('events integration', () => {
       payload.create({
         collection: 'events',
         data: {
-          ...eventData(slugs.cancelled, 'public', 'published'),
-          eventStatus: 'cancelled',
+          ...eventData(slugs.other, 'public', 'published'),
         },
         draft: false,
         overrideAccess: true,
@@ -444,7 +447,7 @@ describe('events integration', () => {
       where: { slug: { in: Object.values(slugs) } },
     })
     expect(anonymous.docs.map((event) => event.slug).sort()).toEqual(
-      [slugs.cancelled, slugs.completed, slugs.members, slugs.public].sort(),
+      [slugs.other, slugs.completed, slugs.members, slugs.public].sort(),
     )
 
     const publicListing = await findPublicContent({
@@ -466,7 +469,72 @@ describe('events integration', () => {
     expect(partnerEvents.map((event) => event.slug)).toContain(slugs.members)
   })
 
-  it('serves public scheduled Events and the Event type dictionary by month', async () => {
+  it('uses the end time or, when absent, the start time in both event listings', async () => {
+    const now = Date.now()
+    const hour = 3_600_000
+    const earlier = new Date(now - hour).toISOString()
+    const later = new Date(now + hour).toISOString()
+    const fixtures = [
+      { key: 'ongoing', startAt: earlier, endAt: later },
+      { key: 'future-without-end', startAt: later },
+      { key: 'past-without-end', startAt: earlier },
+      { key: 'finished', startAt: earlier, endAt: earlier },
+    ]
+    const events: Event[] = []
+    try {
+      for (const { key, ...dates } of fixtures) {
+        events.push(
+          await payload.create({
+            collection: 'events',
+            data: {
+              ...eventData(`integration-event-time-${key}`, 'public', 'published'),
+              ...dates,
+            },
+            draft: false,
+            overrideAccess: true,
+          }),
+        )
+      }
+      const [ongoing, future, pastWithoutEnd, finished] = events
+      const findListingItems = (eventTimeValue: 'upcoming' | 'past') =>
+        findPublicContent({
+          conditions: [{ eventTimeValue, field: 'eventTime', operator: 'equals' }],
+          page: 1,
+          pageSize: 100,
+          pagination: false,
+          sort: 'oldest',
+          sources: ['events'],
+        })
+      const [upcomingEvents, pastEvents, upcomingListing, pastListing] = await Promise.all([
+        findCurrentAndUpcomingEvents(100),
+        findPastEvents(1, 100),
+        findListingItems('upcoming'),
+        findListingItems('past'),
+      ])
+      for (const ids of [
+        upcomingEvents.map(({ id }) => id),
+        upcomingListing.items.map(({ document }) => document.id),
+      ]) {
+        expect(ids).toEqual(expect.arrayContaining([ongoing.id, future.id]))
+        expect(ids).not.toContain(pastWithoutEnd.id)
+        expect(ids).not.toContain(finished.id)
+      }
+      for (const ids of [
+        pastEvents.docs.map(({ id }) => id),
+        pastListing.items.map(({ document }) => document.id),
+      ]) {
+        expect(ids).toEqual(expect.arrayContaining([pastWithoutEnd.id, finished.id]))
+        expect(ids).not.toContain(ongoing.id)
+        expect(ids).not.toContain(future.id)
+      }
+    } finally {
+      for (const { id } of events) {
+        await payload.delete({ collection: 'events', id, overrideAccess: true })
+      }
+    }
+  })
+
+  it('serves published Events and the Event type dictionary by month', async () => {
     const invalid = await getCalendar(
       new Request('http://localhost/events/calendar.json?month=bad'),
     )
@@ -483,10 +551,9 @@ describe('events integration', () => {
     }
 
     expect(data.events.map((event) => event.slug)).toEqual(
-      expect.arrayContaining([slugs.public, slugs.members]),
+      expect.arrayContaining([slugs.public, slugs.members, slugs.other]),
     )
     expect(data.events.map((event) => event.slug)).not.toContain(slugs.draft)
-    expect(data.events.map((event) => event.slug)).not.toContain(slugs.cancelled)
     expect(data.eventTypes.map((eventType) => eventType.name)).toEqual(['Sesje RPG', 'Spotkania'])
     expect(data.truncated).toBe(false)
   })

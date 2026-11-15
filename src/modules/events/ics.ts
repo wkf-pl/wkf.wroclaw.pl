@@ -80,12 +80,6 @@ function formatLocation(event: Event): string {
     .join(', ')
 }
 
-function eventStatus(event: Event): 'CANCELLED' | 'CONFIRMED' | 'TENTATIVE' {
-  if (event.eventStatus === 'cancelled') return 'CANCELLED'
-  if (event.eventStatus === 'postponed') return 'TENTATIVE'
-  return 'CONFIRMED'
-}
-
 function createEventLines(event: Event, siteURL: string): string[] {
   const url = `${siteURL}/events/${event.slug}`
   const lines = [
@@ -93,7 +87,6 @@ function createEventLines(event: Event, siteURL: string): string[] {
     `UID:${escapeICS(event.calendarUID || `event-${event.id}@wkf.wroclaw.pl`)}`,
     `SEQUENCE:${event.calendarRevision}`,
     `DTSTAMP:${new Date(event.updatedAt).toISOString().replaceAll(/[-:]/g, '').replace('.000', '')}`,
-    `STATUS:${eventStatus(event)}`,
     `SUMMARY:${escapeICS(event.title)}`,
     `DESCRIPTION:${escapeICS(extractRichTextText(event.excerpt))}`,
     `LOCATION:${escapeICS(formatLocation(event))}`,

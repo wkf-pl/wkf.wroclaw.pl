@@ -74,6 +74,7 @@ import * as migration_20261113_213205_retire_system_route_pages from './20261113
 import * as migration_20261113_220423_remove_club_sections from './20261113_220423_remove_club_sections'
 import * as migration_20261113_224355_inline_member_profile_photos from './20261113_224355_inline_member_profile_photos'
 import * as migration_20261114_015429_user_groups from './20261114_015429_user_groups'
+import * as migration_20261115_195332_remove_event_status from './20261115_195332_remove_event_status'
 
 export const migrations = [
   {
@@ -455,5 +456,10 @@ export const migrations = [
     up: migration_20261114_015429_user_groups.up,
     down: migration_20261114_015429_user_groups.down,
     name: '20261114_015429_user_groups',
+  },
+  {
+    up: migration_20261115_195332_remove_event_status.up,
+    down: migration_20261115_195332_remove_event_status.down,
+    name: '20261115_195332_remove_event_status',
   },
 ]

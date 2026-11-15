@@ -70,7 +70,7 @@ export const copyEventCycleContentToDefaults: CollectionBeforeValidateHook = ({
   return data
 }
 
-const calendarFields = ['title', 'startAt', 'endAt', 'timeMode', 'eventStatus', 'location'] as const
+const calendarFields = ['title', 'startAt', 'endAt', 'timeMode', 'location'] as const
 
 export const updateEventCalendarMetadata: CollectionBeforeChangeHook = ({
   data,
@@ -93,15 +93,6 @@ export const updateEventCalendarMetadata: CollectionBeforeChangeHook = ({
     data.calendarRevision = Number(originalDoc?.calendarRevision ?? 0) + 1
   }
 
-  if (
-    data.eventStatus === 'rescheduled' &&
-    originalDoc?.publishedStartAt &&
-    data.startAt !== originalDoc.publishedStartAt
-  ) {
-    data.previousStartAt = originalDoc.publishedStartAt
-  }
-
-  data.publishedStartAt = data.startAt
   data.calendarFingerprint = calendarFingerprint
 
   return data

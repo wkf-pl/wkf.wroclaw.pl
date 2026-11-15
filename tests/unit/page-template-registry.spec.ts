@@ -54,7 +54,7 @@ describe('page template registry', () => {
 
   it('offers item fields in every template region while hiding editorial metadata', () => {
     const fieldsByTemplate = {
-      'event-detail': ['title', 'startAt', 'location.city', 'externalLinks', 'eventStatus'],
+      'event-detail': ['title', 'startAt', 'location.city', 'externalLinks'],
       'event-cycle-detail': [
         'tags',
         'eventDefaults.eventType',

@@ -56,7 +56,6 @@ describe('content calendar', () => {
           capacityMode: 'unlimited',
           category: fixture.category.id,
           cycle: cycleId,
-          eventStatus: 'scheduled',
           eventType: 1,
           excerpt: createLexicalDocument(`Excerpt ${slug}`),
           endAt: '2026-08-14T20:00:00.000Z',

@@ -76,7 +76,7 @@ export function createRelatedContentJoinFields(taxonomyField: 'category' | 'tags
         components: {
           Field: '/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin',
         },
-        defaultColumns: ['title', 'cycle', 'startAt', 'eventStatus', '_status'],
+        defaultColumns: ['title', 'cycle', 'startAt', '_status'],
       },
       collection: 'events',
       defaultLimit: 20,

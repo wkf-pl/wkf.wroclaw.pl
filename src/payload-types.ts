@@ -596,7 +596,6 @@ export interface Event {
   timeMode: 'timed' | 'allDay';
   startAt: string;
   endAt?: string | null;
-  eventStatus: 'scheduled' | 'completed' | 'cancelled' | 'postponed' | 'rescheduled';
   location: {
     venueName?: string | null;
     venueWebsite?: string | null;
@@ -678,8 +677,6 @@ export interface Event {
         value: number | UserGroup;
       };
   defaultsAppliedCycle?: (number | null) | EventCycle;
-  previousStartAt?: string | null;
-  publishedStartAt?: string | null;
   calendarUID?: string | null;
   calendarRevision: number;
   calendarFingerprint?: string | null;
@@ -2736,7 +2733,6 @@ export interface CurrentItemFieldBlock {
     | 'description'
     | 'hierarchy'
     | 'eventType'
-    | 'eventStatus'
     | 'title'
     | 'excerpt'
     | 'eventCycle'
@@ -2781,8 +2777,6 @@ export interface CurrentItemFieldBlock {
     | 'capacity'
     | 'externalLinks'
     | 'defaultsAppliedCycle'
-    | 'previousStartAt'
-    | 'publishedStartAt'
     | 'calendarUID'
     | 'calendarRevision'
     | 'calendarFingerprint'
@@ -4884,7 +4878,6 @@ export interface EventsSelect<T extends boolean = true> {
   timeMode?: T;
   startAt?: T;
   endAt?: T;
-  eventStatus?: T;
   location?:
     | T
     | {
@@ -4947,8 +4940,6 @@ export interface EventsSelect<T extends boolean = true> {
   tags?: T;
   author?: T;
   defaultsAppliedCycle?: T;
-  previousStartAt?: T;
-  publishedStartAt?: T;
   calendarUID?: T;
   calendarRevision?: T;
   calendarFingerprint?: T;

@@ -5,13 +5,11 @@ import { createLinkFields } from '@/modules/navigation/fields'
 
 import {
   capacityModeOptions,
-  eventStatusOptions,
   participationOptions,
   partnerRoleOptions,
   timeModeOptions,
 } from './constants'
 import { normalizeGoogleMapsEmbedField, validateGoogleMapsEmbed } from './map-embed'
-import { resolveEventStatusField } from './event-status'
 import { validatePostalCode, validateVenueWebsite } from './validation'
 
 export {
@@ -22,7 +20,7 @@ export {
 } from './validation'
 
 type CapacitySiblingData = { capacity?: unknown; capacityMode?: unknown }
-type ScheduleSiblingData = { endAt?: unknown; eventStatus?: unknown; startAt?: unknown }
+type ScheduleSiblingData = { startAt?: unknown }
 
 export function validateCapacity(
   value: unknown,
@@ -317,7 +315,7 @@ export function createScheduleFields(): Field[] {
               pickerAppearance: 'dayAndTime',
               timeFormat: 'HH:mm',
             },
-            width: '33.333%',
+            width: '50%',
           },
           index: true,
           label: 'Początek',
@@ -332,24 +330,11 @@ export function createScheduleFields(): Field[] {
               pickerAppearance: 'dayAndTime',
               timeFormat: 'HH:mm',
             },
-            width: '33.333%',
+            width: '50%',
           },
           index: true,
           label: 'Koniec',
           validate: validateEventEnd,
-        },
-        {
-          name: 'eventStatus',
-          type: 'select',
-          admin: { isClearable: false, width: '33.333%' },
-          defaultValue: 'scheduled',
-          hooks: {
-            afterRead: [resolveEventStatusField],
-            beforeChange: [resolveEventStatusField],
-          },
-          label: 'Stan wydarzenia',
-          options: [...eventStatusOptions],
-          required: true,
         },
       ],
     },

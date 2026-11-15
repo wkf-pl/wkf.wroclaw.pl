@@ -22,10 +22,9 @@ const eventType = {
 } satisfies EventType
 
 describe('event detail presentation', () => {
-  it('uses the CMS-managed event type icon and displays the event status', () => {
+  it('uses the CMS-managed event type icon', () => {
     const markup = renderToStaticMarkup(
       createElement(EventHeroEyebrow, {
-        eventStatus: 'scheduled',
         eventType,
       }),
     )
@@ -33,7 +32,7 @@ describe('event detail presentation', () => {
     expect(markup).toContain('data-icon-name="dice"')
     expect(markup).toContain('data-event-type-color="lantern-glow"')
     expect(markup).toContain('Sesje RPG')
-    expect(markup).toContain('Zaplanowane')
+    expect(markup).not.toContain('Zaplanowane')
   })
 
   it('puts the event decision facts and actions in one summary panel', () => {

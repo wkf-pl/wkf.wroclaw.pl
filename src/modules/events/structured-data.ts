@@ -3,14 +3,6 @@ import { extractRichTextText } from '@/modules/content/rich-text'
 import { getMediaURL } from '@/modules/media/media-url'
 
 export function createEventStructuredData(event: Event) {
-  const status =
-    event.eventStatus === 'cancelled'
-      ? 'https://schema.org/EventCancelled'
-      : event.eventStatus === 'postponed'
-        ? 'https://schema.org/EventPostponed'
-        : event.eventStatus === 'rescheduled'
-          ? 'https://schema.org/EventRescheduled'
-          : 'https://schema.org/EventScheduled'
   return {
     '@context': 'https://schema.org',
     '@type': 'Event',
@@ -18,8 +10,6 @@ export function createEventStructuredData(event: Event) {
     description: extractRichTextText(event.excerpt),
     startDate: event.startAt,
     endDate: event.endAt || undefined,
-    eventStatus: status,
-    previousStartDate: event.previousStartAt || undefined,
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     image: getMediaURL(event.heroImage),
     location: event.location?.venueName

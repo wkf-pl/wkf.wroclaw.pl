@@ -2,13 +2,11 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import { extractRichTextText } from '@/modules/content/rich-text'
-import { resolveEventStatus } from '@/modules/events/event-status'
 import {
   formatEventCapacity,
   formatEventDateParts,
   formatEventLocationAddress,
   getEventAudienceLabel,
-  getEventStatusLabel,
 } from '@/modules/events/presentation'
 import type { CurrentItemFieldBlock, Event, PageTemplate } from '@/payload-types'
 
@@ -52,8 +50,6 @@ function EventCurrentItemField({ block, event }: { block: CurrentItemFieldBlock;
   switch (block.field) {
     case 'eventType':
       return <EventTypeField event={event} variant={block.variant} />
-    case 'eventStatus':
-      return <EventStatusField event={event} variant={block.variant} />
     case 'title':
       return <EventTitleField event={event} variant={block.variant} />
     case 'excerpt':
@@ -82,15 +78,6 @@ function EventTypeField({ event, variant }: { event: Event; variant: string }) {
   if (!eventType) return null
 
   return <span className={`pageTemplateBadge pageTemplateBadge--${variant}`}>{eventType.name}</span>
-}
-
-function EventStatusField({ event, variant }: { event: Event; variant: string }) {
-  const status = resolveEventStatus(event.eventStatus, event)
-  return (
-    <span className={`pageTemplateBadge pageTemplateBadge--${variant}`} data-event-status={status}>
-      {getEventStatusLabel(status)}
-    </span>
-  )
 }
 
 function EventTitleField({ event, variant }: { event: Event; variant: string }) {

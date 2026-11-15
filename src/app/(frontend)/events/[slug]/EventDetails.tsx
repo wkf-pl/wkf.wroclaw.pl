@@ -8,14 +8,13 @@ import {
   formatEventDateParts,
   formatEventLocationAddress,
   getEventAudienceLabel,
-  getEventStatusLabel,
   getPartnerRoleLabel,
 } from '@/modules/events/presentation'
 import { getContactChannelLabel } from '@/modules/members/public-members'
 
 import { ContactChannelIcon } from '../../_components/ContactChannelIcon'
 
-type EventHeroEyebrowProperties = Pick<Event, 'eventStatus' | 'eventType'>
+type EventHeroEyebrowProperties = Pick<Event, 'eventType'>
 
 type EventSummaryProperties = {
   event: Pick<
@@ -34,7 +33,7 @@ type EventSummaryProperties = {
 
 type EventSidebarProperties = Pick<Event, 'organizers' | 'partners'>
 
-export function EventHeroEyebrow({ eventStatus, eventType }: EventHeroEyebrowProperties) {
+export function EventHeroEyebrow({ eventType }: EventHeroEyebrowProperties) {
   const populatedEventType = typeof eventType === 'object' ? eventType : null
 
   return (
@@ -45,9 +44,6 @@ export function EventHeroEyebrow({ eventStatus, eventType }: EventHeroEyebrowPro
           <span>{populatedEventType.name}</span>
         </span>
       ) : null}
-      <span className="eventHeroStatus" data-event-status={eventStatus}>
-        {getEventStatusLabel(eventStatus)}
-      </span>
     </span>
   )
 }

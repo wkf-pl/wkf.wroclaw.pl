@@ -11,7 +11,6 @@ function eventFixture(id: number, overrides: Partial<Event> = {}): Event {
     calendarRevision: 0,
     capacityMode: 'unlimited',
     createdAt: '2026-09-01T10:00:00.000Z',
-    eventStatus: 'scheduled',
     eventType: 1,
     excerpt: createRichTextDocument([`Streszczenie ${id}`, `Drugi akapit ${id}`]),
     id,

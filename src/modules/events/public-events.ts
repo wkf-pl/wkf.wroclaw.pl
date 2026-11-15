@@ -8,7 +8,7 @@ import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-ca
 import { publicRequestContext } from '@/modules/content/public-access'
 import { findPublicContent } from '@/modules/content/content-listing'
 
-import { createEventsIndexTimeWhere, createUpcomingEventsIndexWhere } from './events-index-time'
+import { createEventTimeWhere } from './events-index-time'
 
 const published: Where = { _status: { equals: 'published' } }
 
@@ -58,7 +58,7 @@ async function findCurrentAndUpcomingEventsUncached(
   beforeISOString?: string,
 ): Promise<Event[]> {
   const payload = await getPayload({ config })
-  const conditions: Where[] = [published, createUpcomingEventsIndexWhere(new Date())]
+  const conditions: Where[] = [published, createEventTimeWhere('upcoming', new Date())]
   if (beforeISOString) conditions.push({ startAt: { less_than_equal: beforeISOString } })
   const result = await payload.find({
     collection: 'events',
@@ -109,7 +109,7 @@ const findPastEventsCached = cachePublicData(
       page,
       sort: ['-startAt', 'title'],
       user: null,
-      where: { and: [published, createEventsIndexTimeWhere('past', new Date())] },
+      where: { and: [published, createEventTimeWhere('past', new Date())] },
     })
   },
   { revalidate: 300, tags: [publicCacheTags.events] },

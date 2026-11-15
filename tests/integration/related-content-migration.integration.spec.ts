@@ -98,7 +98,6 @@ describe('related content migration', () => {
         calendarRevision: 0,
         capacityMode: 'unlimited',
         cycle: cycle.id,
-        eventStatus: 'scheduled',
         eventType: 1,
         excerpt: createLexicalDocument('Migration event excerpt'),
         layout: [{ blockType: 'richText', content: createLexicalDocument('Event content') }],

@@ -14,7 +14,7 @@ export function createContentMetadata(
   const title = document.seo?.title || documentTitle
   const description =
     document.seo?.description ||
-    ('eventStatus' in document || 'eventDefaults' in document
+    ('startAt' in document || 'eventDefaults' in document
       ? extractRichTextText(document.excerpt)
       : 'excerpt' in document
         ? document.excerpt
@@ -23,7 +23,7 @@ export function createContentMetadata(
           : undefined)
   const socialImage = getMedia(document.seo?.image) ?? getMedia(document.heroImage)
   const canonical =
-    'eventStatus' in document
+    'startAt' in document
       ? `/events/${document.slug}`
       : 'eventDefaults' in document
         ? `/events/series/${document.slug}`

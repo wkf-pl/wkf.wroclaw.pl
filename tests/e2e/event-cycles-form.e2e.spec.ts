@@ -126,11 +126,7 @@ test('renders Cycle tabs, generated URL and grammatical creation labels', async 
   await expect(page.locator('.doc-controls__meta')).toContainText('Tworzenie nowego Wydarzenia')
   await expect(page.getByRole('button', { name: 'Dodaj następne' })).toHaveCount(0)
   await expect(page.locator('#field-timeMode')).toBeHidden()
-  expectSingleRow(await getFieldLayout(page, '#field-startAt, #field-endAt, #field-eventStatus'), [
-    '33.333%',
-    '33.333%',
-    '33.333%',
-  ])
+  expectSingleRow(await getFieldLayout(page, '#field-startAt, #field-endAt'), ['50%', '50%'])
   expectSingleRow(
     await getFieldLayout(
       page,

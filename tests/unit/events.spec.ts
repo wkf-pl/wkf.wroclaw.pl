@@ -53,7 +53,6 @@ function eventFixture(overrides: Partial<Event> = {}): Event {
     excerpt: createRichTextDocument(['Spotkanie przy grach fabularnych.']),
     layout: [],
     timeMode: 'timed',
-    eventStatus: 'scheduled',
     eventType: 1,
     startAt: '2026-09-08T16:00:00.000Z',
     participation: 'public',
@@ -152,19 +151,11 @@ describe('events model', () => {
         width: field.admin?.width,
       })),
     ).toEqual([
-      { name: 'startAt', width: '33.333%' },
-      { name: 'endAt', width: '33.333%' },
-      { name: 'eventStatus', width: '33.333%' },
+      { name: 'startAt', width: '50%' },
+      { name: 'endAt', width: '50%' },
     ])
 
-    const eventStatus = fields.find((field) => 'name' in field && field.name === 'eventStatus')
-    expect(eventStatus).toMatchObject({
-      hooks: {
-        afterRead: [expect.any(Function)],
-        beforeChange: [expect.any(Function)],
-      },
-      options: expect.arrayContaining([{ label: 'Zakończone', value: 'completed' }]),
-    })
+    expect(fields.map((field) => 'name' in field && field.name)).not.toContain('eventStatus')
   })
 
   it('organizes cycle fields into tabs and includes a default Event title', () => {

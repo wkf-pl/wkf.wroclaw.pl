@@ -74,7 +74,6 @@ async function handler(req: PayloadRequest): Promise<Response> {
               ? source.category.id
               : source.category,
           endAt,
-          eventStatus: 'scheduled' as const,
           eventType:
             source.eventType && typeof source.eventType === 'object'
               ? source.eventType.id

@@ -402,7 +402,6 @@ describe('content listing index synchronization', () => {
           calendarRevision: 0,
           capacityMode: 'unlimited',
           cycle: cycle.id,
-          eventStatus: 'scheduled',
           eventType: 1,
           excerpt: createLexicalDocument('Integration listing event'),
           layout: [
@@ -497,7 +496,6 @@ describe('content listing index synchronization', () => {
         calendarRevision: 0,
         capacityMode: 'unlimited',
         cycle: cycle.id,
-        eventStatus: 'scheduled',
         eventType: 1,
         excerpt: createLexicalDocument('Related listing event excerpt'),
         layout: [
