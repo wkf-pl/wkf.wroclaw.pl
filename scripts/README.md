@@ -266,7 +266,7 @@ digests, Payload migration rows, database size and SHA-256, and every blob name,
 content-addressed archive path. A second public manifest exposes only the physical transfer
 inventory and is signed under `wkf-production-backup-storage`; it lets MyDevil authenticate a
 complete upload without the decryption identity. See the
-[storage format decision](../docs/OffsiteBackupStorageDecision.md) for the trust boundary and
+[storage format decision](../docs/ADR/0003-content-addressed-offsite-backups.md) for the trust boundary and
 on-disk layout. To verify a downloaded backup locally, build or pull the matching operations image
 and use the local validation wrapper:
 

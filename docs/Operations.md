@@ -114,8 +114,36 @@ Do not publish an incomplete directory in `repository-v3/snapshots` manually. Di
 or invalid `.complete` marker first.
 
 Format v3 stores media in a two-replica content-addressed object pool and exposes it in snapshots
-through hard links. See [Off-site backup storage format v3](OffsiteBackupStorageDecision.md) before
-changing retention, repairing the repository, or deleting legacy backups.
+through hard links. See [ADR 0003](ADR/0003-content-addressed-offsite-backups.md) for the format
+and its storage tradeoffs.
+
+### Verify or repair the v3 repository
+
+`check-offsite-backup-repository.sh` is read-only by default. It verifies both replica checksums,
+requires the replicas to use different inodes, and verifies that each snapshot object is hard-linked
+to a repository replica. `--repair` may copy a healthy replica over one damaged replica or recreate
+a broken snapshot link. It refuses repair when both replicas of an object are damaged.
+
+A successful repository check is not a restore proof. Release and retention decisions still require
+full validation with the offline `age` identity and an isolated Azure restore drill.
+
+### Legacy archive transition
+
+Backward compatibility with source backup format v2 is intentionally not retained. Restore exports
+continue to use their signed descriptor and `.complete` format v2, but their encrypted logical
+manifest is format v3.
+
+Rollout gates are:
+
+1. pass focused and repository-wide validation;
+2. install the v3 archiver, trusted signer file, and repository checker on MyDevil;
+3. create and fully validate two v3 snapshots;
+4. run the repository checker;
+5. prove one selected v3 snapshot with an isolated Azure restore drill;
+6. only then remove the legacy v2 archive.
+
+Production restore remains a separate approval-gated operation. A successful isolated drill does
+not authorize replacing production data.
 
 ### Failure recovery
 
@@ -260,8 +288,15 @@ the restore replaces both the complete database and Blob container.
 9. From inside the private application container, require `200` from `/`, `/admin`,
    `/api/health`, and `/api/health/live`. Test representative media, document, and profile-image
    range requests and require `206`.
-10. Keep the drill environment until Phase D is complete. It is the authenticated reference copy
-    for comparison and selective recovery.
+10. Collect restore job logs, application logs and HTTP results before cleanup, including on
+    failure. For a standalone drill, delete the temporary resource group and verify its removal.
+    During a production recovery, keep the drill environment until Phase D is complete.
+
+If the captured image cannot use the restored schema, record the mismatch and stop the exact
+restore path before changing production. An isolated drill may use an explicitly selected newer
+image and its migrations to prove data recovery. Record both image references and the migration
+results. See [#53](https://github.com/wkf-pl/wkf.wroclaw.pl/issues/53) for the pending compatibility
+check, rescue classification and exact-restore preflight.
 
 The lower-level command sequence and security properties are also documented in
 [the operational scripts reference](../scripts/README.md#isolated-azure-restore-drill).
