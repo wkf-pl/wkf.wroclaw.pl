@@ -215,7 +215,7 @@ async function createEventFixtures(payload: Payload, eventIDs: number[]): Promis
         eventType: eventType.id,
         excerpt: createLexicalDocument('Wydarzenie używane do porównania listingów.'),
         layout: [{ blockType: 'richText', content: createLexicalDocument('Treść wydarzenia.') }],
-        location: { country: 'Polska' },
+
         participation: 'public',
         slug: `${fixturePrefix}${key}`,
         startAt: new Date(startAt).toISOString(),

@@ -121,7 +121,7 @@ test.beforeAll(async () => {
         eventType: 1,
         excerpt: createRichTextDocument(['Domyślne streszczenie E2E']),
         layout: layout(),
-        location: { country: 'Polska' },
+
         organizers: [{ profile: organizer.id, role: 'Osoba prowadząca' }],
         partners: [{ partner: partner.id, roles: ['partner'] }],
         participation: 'public',

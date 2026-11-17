@@ -123,7 +123,7 @@ test.beforeAll(async () => {
           content: createLexicalDocument('Treść wydarzenia używanego do podglądu szablonu.'),
         },
       ],
-      location: { country: 'Polska' },
+
       participation: 'public',
       slug: pageTemplatePreviewEventSlug,
       startAt: '2026-12-12T17:00:00.000Z',

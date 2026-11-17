@@ -1,6 +1,7 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 
 import { getContentAuthorReference, getDefaultEventAuthor } from '@/modules/content/content-author'
+import { findActiveLocationID } from '@/modules/locations/relationship'
 import { getRelationshipId } from '@/lib/relationships'
 
 import { eventEndpointErrorResponse } from './endpoint-response'
@@ -55,11 +56,14 @@ async function handler(req: PayloadRequest): Promise<Response> {
       timeZone: 'Europe/Warsaw',
     }).format(startAt)
 
+    const previousLocation = source.location
+    const location = await findActiveLocationID(req, previousLocation)
     const data = cycleID
       ? {
           _status: 'draft' as const,
           author: getDefaultEventAuthor(cycle?.eventDefaults.authorGroup),
           cycle: cycleID,
+          location,
           endAt,
           startAt: startAt.toISOString(),
           title: `${cycle?.title || source.title} — ${dateLabel}`,
@@ -85,7 +89,7 @@ async function handler(req: PayloadRequest): Promise<Response> {
               ? source.heroImage.id
               : source.heroImage,
           layout: source.layout,
-          location: source.location,
+          location,
           organizers: source.organizers,
           participation: source.participation,
           partners: source.partners,
@@ -97,13 +101,17 @@ async function handler(req: PayloadRequest): Promise<Response> {
 
     const doc = await req.payload.create({
       collection: 'events',
+      context: { skipDefaultLocation: Boolean(previousLocation && !location) },
       data,
       draft: true,
       overrideAccess: false,
       req,
       user: req.user,
     })
-    return Response.json({ doc: { id: doc.id } }, { status: 201 })
+    return Response.json(
+      { doc: { id: doc.id }, skippedLocation: Boolean(previousLocation && !location) },
+      { status: 201 },
+    )
   } catch (error) {
     return eventEndpointErrorResponse(req, error)
   }

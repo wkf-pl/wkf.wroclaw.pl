@@ -49,6 +49,7 @@ export async function resolveListingBlockSection({
   const result = await findPublicContent({
     conditions: (block.conditions ?? []) as ListingConditionInput[],
     currentTarget,
+    includeInactiveLocations: Boolean(block.includeInactiveLocations),
     manualItems: usesContextRelation
       ? resolvePageTemplateListingItems(getContextRelation(block), document)
       : getManualItems(block),

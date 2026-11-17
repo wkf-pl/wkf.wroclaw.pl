@@ -40,7 +40,7 @@ export async function lockAuthorGroup(
   if (!group) throw new APIError('Wybrana grupa nie istnieje.', 404)
 }
 
-async function getTransactionExecutor(req: PayloadRequest) {
+export async function getTransactionExecutor(req: PayloadRequest) {
   const adapter = req.payload.db
   const transactionId = await req.transactionID
   const transaction = transactionId == null ? undefined : adapter.sessions?.[transactionId]?.db

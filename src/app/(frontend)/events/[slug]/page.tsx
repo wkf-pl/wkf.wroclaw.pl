@@ -1,3 +1,4 @@
+import { getPopulatedRelationship } from '@/lib/relationships'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -65,9 +66,10 @@ export default async function EventPage({ params, searchParams }: Properties) {
   }
 
   const relatedPosts = await findPostsRelatedToEvent(event.id)
-  const location = event.location
+  const location = getPopulatedRelationship(event.location)
   const mapURL = buildGoogleMapsURL({
     city: location?.city,
+    country: location?.country,
     name: location?.venueName,
     postalCode: location?.postalCode,
     streetAddress: location?.streetAddress,

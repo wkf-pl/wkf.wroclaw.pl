@@ -1,3 +1,4 @@
+import { getPopulatedRelationship } from '@/lib/relationships'
 import type { Event, Post } from '@/payload-types'
 import {
   getCalendarEventDate,
@@ -23,7 +24,7 @@ type ContentCalendarBaseItem = {
 export type ContentCalendarEventItem = ContentCalendarBaseItem & {
   endAt: null | string
   kind: 'events'
-  location: Pick<Event['location'], 'venueName' | 'venueWebsite'>
+  location: { venueName?: string | null; venueWebsite?: string | null }
   summary: { kind: 'richText'; value: Event['excerpt'] }
   timeMode: Event['timeMode']
 }
@@ -72,9 +73,10 @@ export function toCalendarContentEvent(
     Event,
     'endAt' | 'eventType' | 'excerpt' | 'id' | 'slug' | 'startAt' | 'timeMode' | 'title'
   > & {
-    location: Pick<Event['location'], 'venueName' | 'venueWebsite'>
+    location?: Event['location']
   },
 ): ContentCalendarEventItem {
+  const location = getPopulatedRelationship(event.location)
   const eventType =
     event.eventType && typeof event.eventType === 'object'
       ? toCalendarContentEventType(event.eventType)
@@ -91,8 +93,8 @@ export function toCalendarContentEvent(
     id: `events:${event.id}`,
     kind: 'events',
     location: {
-      venueName: event.location.venueName,
-      venueWebsite: event.location.venueWebsite,
+      venueName: location?.venueName,
+      venueWebsite: location?.venueWebsite,
     },
     summary: { kind: 'richText', value: event.excerpt },
     timeMode: event.timeMode,

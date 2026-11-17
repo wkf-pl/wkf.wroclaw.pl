@@ -376,7 +376,7 @@ describe('content listing index synchronization', () => {
               content: createLexicalDocument('Integration listing cycle default content'),
             },
           ],
-          location: { city: 'Wrocław', country: 'Polska' },
+
           participation: 'public',
         },
         excerpt: createLexicalDocument('Integration listing cycle'),
@@ -410,7 +410,7 @@ describe('content listing index synchronization', () => {
               content: createLexicalDocument('Integration listing event content'),
             },
           ],
-          location: { city: 'Wrocław', country: 'Polska' },
+
           participation: 'public',
           slug: listingEventSlug,
           startAt: '2030-09-10T16:00:00.000Z',
@@ -474,7 +474,7 @@ describe('content listing index synchronization', () => {
           layout: [
             { blockType: 'richText', content: createLexicalDocument('Cycle default content') },
           ],
-          location: { city: 'Wrocław', country: 'Polska' },
+
           participation: 'public',
           partners: [{ partner: partner.id, roles: ['partner'] }],
         },
@@ -501,7 +501,7 @@ describe('content listing index synchronization', () => {
         layout: [
           { blockType: 'richText', content: createLexicalDocument('Event related content') },
         ],
-        location: { city: 'Wrocław', country: 'Polska' },
+
         participation: 'public',
         partners: [{ partner: partner.id, roles: ['partner'] }],
         slug: eventSlug,

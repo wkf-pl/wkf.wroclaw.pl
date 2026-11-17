@@ -1,3 +1,4 @@
+import { getPopulatedRelationship } from '@/lib/relationships'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
@@ -35,6 +36,11 @@ export function EventTemplateDocument({
       ]}
       currentItem={{
         document: event,
+        afterContent: event.onlineEventURL ? (
+          <p>
+            <a href={event.onlineEventURL}>Dołącz do wydarzenia online</a>
+          </p>
+        ) : undefined,
         renderField: (block) => <EventCurrentItemField block={block} event={event} />,
         target: { relationTo: 'events', value: event.id },
       }}
@@ -114,8 +120,9 @@ function EventTimeField({ event, variant }: { event: Event; variant: string }) {
 }
 
 function EventLocationField({ event, variant }: { event: Event; variant: string }) {
-  const address = formatEventLocationAddress(event.location)
-  const venue = event.location.venueName
+  const location = getPopulatedRelationship(event.location)
+  const address = formatEventLocationAddress(location)
+  const venue = location?.venueName
   if (!address && !venue) return null
 
   return (

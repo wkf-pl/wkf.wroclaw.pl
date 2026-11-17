@@ -1,3 +1,4 @@
+import { locationFixture } from '../helpers/location-fixture'
 import { renderToReadableStream } from 'react-dom/server'
 
 import { describe, expect, it } from 'vitest'
@@ -48,13 +49,13 @@ const event = {
       content: createLexicalDocument('Właściwa treść wydarzenia.'),
     },
   ],
-  location: {
+  location: locationFixture({
     city: 'Wrocław',
     country: 'Polska',
     postalCode: '50-001',
     streetAddress: 'ul. Wyobraźni 12',
     venueName: 'Przystań Wyobraźni',
-  },
+  }),
   participation: 'public',
   partners: [{ contribution: 'Sala oraz materiały do gry', partner, roles: ['venueHost'] }],
   slug: 'pierwsza-wyprawa',

@@ -205,6 +205,17 @@ function createListingBlock({
         ],
       },
       {
+        name: 'includeInactiveLocations',
+        type: 'checkbox',
+        label: 'Uwzględnij nieaktywne miejsca',
+        defaultValue: false,
+        admin: {
+          ...createBooleanSwitchAdmin(),
+          condition: (_data, siblingData) =>
+            siblingData.selectionMode === 'filters' && siblingData.sources?.includes('locations'),
+        },
+      },
+      {
         name: 'items',
         type: 'array',
         admin: {

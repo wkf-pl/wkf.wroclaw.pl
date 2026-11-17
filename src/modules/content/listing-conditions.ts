@@ -7,6 +7,7 @@ export const allListingSources = [
   'event-cycles',
   'documents',
   'partners',
+  'locations',
   'member-profiles',
 ] as const
 
@@ -21,6 +22,7 @@ export const taxonomizableListingSources = [
 export type ContentListingSource = (typeof allListingSources)[number]
 
 export const relatedListingSources = [
+  'locations',
   'posts',
   'events',
   'event-cycles',
@@ -124,6 +126,7 @@ export const listingSourceLabels: Record<ContentListingSource, string> = {
   'member-profiles': 'Wizytówki',
   pages: 'Strony',
   partners: 'Partnerzy',
+  locations: 'Miejsca',
   posts: 'Wpisy',
 }
 
@@ -134,6 +137,7 @@ export const listingSourceSingularLabels: Record<ContentListingSource, string> =
   'member-profiles': 'Wizytówka',
   pages: 'Strona',
   partners: 'Partner',
+  locations: 'Miejsce',
   posts: 'Wpis',
 }
 

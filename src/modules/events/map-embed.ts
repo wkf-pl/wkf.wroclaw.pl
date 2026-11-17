@@ -40,11 +40,18 @@ export function validateGoogleMapsEmbed(value: unknown): true | string {
 
 export function buildGoogleMapsURL(location: {
   city?: null | string
+  country?: null | string
   name?: null | string
   postalCode?: null | string
   streetAddress?: null | string
 }): string {
-  const query = [location.name, location.streetAddress, location.postalCode, location.city]
+  const query = [
+    location.name,
+    location.streetAddress,
+    location.postalCode,
+    location.city,
+    location.country,
+  ]
     .map((part) => part?.trim())
     .filter(Boolean)
     .join(', ')

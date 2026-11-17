@@ -1,3 +1,4 @@
+import { createLocationFixture, deleteLocationFixture } from '../helpers/location-fixture'
 import { expect, test, type Page } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
@@ -142,6 +143,10 @@ test.beforeAll(async () => {
     overrideAccess: true,
   })
 
+  const location = await createLocationFixture(payload, {
+    venueName: 'Przystań Wyobraźni',
+    streetAddress: 'ul. Wyobraźni 12',
+  })
   const series = await payload.create({
     collection: 'event-cycles',
     data: {
@@ -166,13 +171,7 @@ test.beforeAll(async () => {
             content: createLexicalDocument('Domyślna treść wydarzeń z tego cyklu.'),
           },
         ],
-        location: {
-          city: 'Wrocław',
-          country: 'Polska',
-          postalCode: '50-001',
-          streetAddress: 'ul. Wyobraźni 12',
-          venueName: 'Przystań Wyobraźni',
-        },
+        location: location.id,
         organizers: [
           {
             contactFor: 'Zapisy i zasady udziału',
@@ -242,13 +241,7 @@ test.beforeAll(async () => {
           ),
         },
       ],
-      location: {
-        city: 'Wrocław',
-        country: 'Polska',
-        postalCode: '50-001',
-        streetAddress: 'ul. Wyobraźni 12',
-        venueName: 'Przystań Wyobraźni',
-      },
+      location: location.id,
       organizers: [
         {
           contactFor: 'Udział w wydarzeniu',
@@ -832,6 +825,7 @@ async function cleanupFixtures(): Promise<void> {
     overrideAccess: true,
     where: { slug: { equals: fixture.partnerSlug } },
   })
+  await deleteLocationFixture(payload, 'Przystań Wyobraźni')
   await payload.delete({
     collection: 'member-profiles',
     overrideAccess: true,

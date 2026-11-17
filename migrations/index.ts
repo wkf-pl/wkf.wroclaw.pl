@@ -1,3 +1,4 @@
+import * as migration_20261115_212155_index_locations from './20261115_212155_index_locations'
 import * as migration_20260810_194314_cms_content from './20260810_194314_cms_content'
 import * as migration_20260811_173414_roles_permissions from './20260811_173414_roles_permissions'
 import * as migration_20260812_152738 from './20260812_152738'
@@ -75,6 +76,7 @@ import * as migration_20261113_220423_remove_club_sections from './20261113_2204
 import * as migration_20261113_224355_inline_member_profile_photos from './20261113_224355_inline_member_profile_photos'
 import * as migration_20261114_015429_user_groups from './20261114_015429_user_groups'
 import * as migration_20261115_195332_remove_event_status from './20261115_195332_remove_event_status'
+import * as migration_20261115_212154_locations from './20261115_212154_locations'
 
 export const migrations = [
   {
@@ -461,5 +463,15 @@ export const migrations = [
     up: migration_20261115_195332_remove_event_status.up,
     down: migration_20261115_195332_remove_event_status.down,
     name: '20261115_195332_remove_event_status',
+  },
+  {
+    up: migration_20261115_212154_locations.up,
+    down: migration_20261115_212154_locations.down,
+    name: '20261115_212154_locations',
+  },
+  {
+    up: migration_20261115_212155_index_locations.up,
+    down: migration_20261115_212155_index_locations.down,
+    name: '20261115_212155_index_locations',
   },
 ]

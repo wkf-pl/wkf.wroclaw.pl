@@ -46,6 +46,12 @@ export const ContentListingItems: CollectionConfig = {
       defaultValue: false,
       index: true,
     },
+    {
+      name: 'isInactiveLocation',
+      admin: createBooleanSwitchAdmin(),
+      type: 'checkbox',
+      defaultValue: false,
+    },
     { name: 'significantDate', type: 'date', index: true },
     { name: 'eventStartAt', type: 'date', index: true },
     { name: 'eventEndAt', type: 'date', index: true },

@@ -1,5 +1,7 @@
 'use client'
 
+import { getPopulatedRelationship } from '@/lib/relationships'
+
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
@@ -49,6 +51,7 @@ export function EventCarousel({
     >
       <div className="eventCarouselSlides">
         {events.map((item, index) => {
+          const location = getPopulatedRelationship(item.location)
           const isActive = index === activeIndex
           return (
             <article
@@ -73,17 +76,17 @@ export function EventCarousel({
                   </span>
                   <time dateTime={item.startAt}>{formatEventDate(item)}</time>
                 </p>
-                {item.location?.venueName ? (
+                {location?.venueName ? (
                   <p className="featuredEventFact">
                     <span aria-label="Gdzie" className="featuredEventFactIcon" role="img">
                       <RasterIcon name="location" size="medium" />
                     </span>
-                    {item.location.venueWebsite ? (
-                      <a href={item.location.venueWebsite} tabIndex={isActive ? undefined : -1}>
-                        {item.location.venueName}
+                    {location.venueWebsite ? (
+                      <a href={location.venueWebsite} tabIndex={isActive ? undefined : -1}>
+                        {location.venueName}
                       </a>
                     ) : (
-                      item.location.venueName
+                      location.venueName
                     )}
                   </p>
                 ) : null}

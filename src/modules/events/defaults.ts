@@ -96,19 +96,9 @@ export function mergeEventCycleDefaults(currentData: Data, cycle: EventCycle): D
   applyIfEmpty(data, 'partners', normalizeRelationshipRows(defaults.partners, 'partner'))
   applyIfEmpty(data, 'externalLinks', normalizeLinkRows(defaults.externalLinks))
 
-  const currentLocation =
-    data.location && typeof data.location === 'object'
-      ? (data.location as Record<string, unknown>)
-      : {}
-  const defaultLocation = defaults.location
-  if (defaultLocation) {
-    for (const [field, value] of Object.entries(defaultLocation)) {
-      if (isEmpty(currentLocation[field]) && !isEmpty(value)) {
-        currentLocation[field] = structuredClone(value)
-      }
-    }
+  if (typeof defaults.location === 'object' && defaults.location?.isActive) {
+    applyIfEmpty(data, 'location', defaults.location.id)
   }
-  data.location = currentLocation
   data.defaultsAppliedCycle = cycle.id
 
   return data

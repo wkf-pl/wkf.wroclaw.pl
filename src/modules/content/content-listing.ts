@@ -1,8 +1,8 @@
-import { getPayload, type Where } from 'payload'
+import { getPayload, type Payload, type Where } from 'payload'
 
 import config from '@payload-config'
 
-import { getFormRelationshipId, type RelationshipID } from '@/lib/relationships'
+import { getFormRelationshipId, getRelationshipId, type RelationshipID } from '@/lib/relationships'
 import { normalizeListingWindow, paginateInMemory } from '@/modules/content/listing-window'
 import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
@@ -47,6 +47,7 @@ export type FindPublicContentOptions = {
   currentTarget?: CurrentListingTarget
   manualItems?: ManualContentReference[]
   page: number
+  includeInactiveLocations?: boolean
   pageSize: number
   pagination: boolean
   selectionMode?: 'filters' | 'manual'
@@ -108,7 +109,7 @@ async function findPublicContentUncached(
     },
     sort: getPayloadSort(options.sort),
     user: null,
-    where: createListingWhere(options),
+    where: await createListingWhere(payload, options),
   })
 
   return {
@@ -141,6 +142,7 @@ export async function findPublicContent(
   return findPublicContentCached({
     conditions,
     manualItems: options.manualItems,
+    includeInactiveLocations: options.includeInactiveLocations,
     page,
     pageSize,
     pagination: options.pagination,
@@ -222,12 +224,47 @@ function getManualContentReferences(values: readonly ManualContentReference[] | 
   )
 }
 
-function createListingWhere(options: CachedFindPublicContentOptions): Where {
+async function createListingWhere(
+  payload: Payload,
+  options: CachedFindPublicContentOptions,
+): Promise<Where> {
   const now = new Date()
+  const predicates = await Promise.all(
+    options.conditions.map(async (condition): Promise<Where> => {
+      const predicate = compileListingConditionWhere(condition, now)
+      if (
+        !options.sources.includes('locations') ||
+        condition.field !== 'relatedTo' ||
+        condition.relatedTarget?.relationTo !== 'partners'
+      )
+        return predicate
+      const result = await payload.find({
+        collection: 'partners',
+        depth: 0,
+        draft: false,
+        context: publicRequestContext,
+        overrideAccess: false,
+        user: null,
+        limit: 1,
+        select: { locations: true },
+        where: { id: { equals: condition.relatedTarget.value } },
+      })
+      const locationIDs = (result.docs[0]?.locations ?? []).map((location) =>
+        getRelationshipId(location),
+      )
+      return {
+        or: [
+          { and: [{ source: { not_equals: 'locations' } }, predicate] },
+          { and: [{ source: { equals: 'locations' } }, { sourceDocumentId: { in: locationIDs } }] },
+        ],
+      }
+    }),
+  )
   return {
     and: [
       { source: { in: [...new Set(options.sources)].sort() } },
-      ...options.conditions.map((condition) => compileListingConditionWhere(condition, now)),
+      ...predicates,
+      ...(options.includeInactiveLocations ? [] : [{ isInactiveLocation: { not_equals: true } }]),
     ],
   }
 }

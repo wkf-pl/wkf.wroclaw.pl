@@ -1,8 +1,10 @@
+import { getPopulatedRelationship } from '@/lib/relationships'
 import type { Category, Event, EventCycle, Media, Tag } from '@/payload-types'
 import type { PublicContentListItem } from '@/modules/content/content-listing-sources'
 import { getDocumentTypeLabel } from '@/modules/documents/document-types'
 import {
   formatEventDate,
+  formatEventLocationAddress,
   formatEventStartDate,
   getPartnerRoleLabel,
 } from '@/modules/events/presentation'
@@ -55,6 +57,14 @@ export function getContentListingPresentation(
   view: ContentListingView,
 ): ContentListingPresentation {
   switch (item.kind) {
+    case 'locations':
+      return {
+        excerpt: createPlainExcerpt(formatEventLocationAddress(item.document)),
+        facts: [],
+        kindLabel: 'Miejsce',
+        title: item.document.venueName,
+        url: item.url,
+      }
     case 'documents':
       return {
         category: item.document.category,
@@ -83,6 +93,7 @@ export function getContentListingPresentation(
       }
     case 'events': {
       const event = item.document
+      const location = getPopulatedRelationship(event.location)
       const cycle = event.cycle && typeof event.cycle === 'object' ? event.cycle : null
       const facts: ContentListingFact[] = []
       if (view === 'cards' || view === 'carousel') {
@@ -93,15 +104,12 @@ export function getContentListingPresentation(
           value: formatEventDate(event),
         })
       }
-      if (
-        (view === 'cards' || view === 'carousel' || view === 'grid') &&
-        event.location.venueName
-      ) {
+      if ((view === 'cards' || view === 'carousel' || view === 'grid') && location?.venueName) {
         facts.push({
-          href: event.location.venueWebsite ?? undefined,
+          href: location?.venueWebsite ?? undefined,
           icon: 'location',
           label: 'Gdzie',
-          value: event.location.venueName,
+          value: location?.venueName,
         })
       }
 

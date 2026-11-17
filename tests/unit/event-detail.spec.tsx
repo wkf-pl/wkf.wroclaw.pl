@@ -1,3 +1,4 @@
+import { locationFixture } from '../helpers/location-fixture'
 import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -42,13 +43,13 @@ describe('event detail presentation', () => {
           capacityMode: 'approximate',
           capacity: 24,
           endAt: '2026-09-29T20:00:00.000Z',
-          location: {
+          location: locationFixture({
             city: 'Wrocław',
             country: 'Polska',
             postalCode: '50-141',
             streetAddress: 'pl. Nowy Targ 28',
             venueName: 'Wiking Club',
-          },
+          }),
           participation: 'public',
           slug: 'erpegowy-wtorek-v',
           startAt: '2026-09-29T16:00:00.000Z',

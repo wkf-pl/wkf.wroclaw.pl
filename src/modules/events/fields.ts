@@ -9,8 +9,6 @@ import {
   partnerRoleOptions,
   timeModeOptions,
 } from './constants'
-import { normalizeGoogleMapsEmbedField, validateGoogleMapsEmbed } from './map-embed'
-import { validatePostalCode, validateVenueWebsite } from './validation'
 
 export {
   validateClockTime,
@@ -40,124 +38,6 @@ export function validateEventEnd(
   return new Date(String(value)).getTime() >= new Date(String(siblingData.startAt)).getTime()
     ? true
     : 'Koniec wydarzenia nie może poprzedzać początku.'
-}
-
-export function createLocationFields({
-  compactAddressRow = false,
-  prefix = '',
-}: { compactAddressRow?: boolean; prefix?: string } = {}): Field[] {
-  return [
-    {
-      type: 'row',
-      fields: [
-        {
-          name: `${prefix}venueName`,
-          type: 'text',
-          admin: { width: '50%' },
-          label: 'Nazwa miejsca',
-        },
-        {
-          name: `${prefix}venueWebsite`,
-          type: 'text',
-          admin: {
-            components: {
-              Field: '/components/admin/BlurValidatedTextField#BlurValidatedTextField',
-            },
-            custom: { validationKind: 'venueWebsite' },
-            width: '50%',
-          },
-          label: 'Strona WWW miejsca',
-          validate: validateVenueWebsite,
-        },
-      ],
-    },
-    ...(compactAddressRow
-      ? [
-          {
-            type: 'row' as const,
-            fields: [
-              {
-                name: `${prefix}streetAddress`,
-                type: 'text' as const,
-                admin: { width: '50%' },
-                label: 'Adres',
-              },
-              {
-                name: `${prefix}postalCode`,
-                type: 'text' as const,
-                admin: {
-                  components: {
-                    Field: '/components/admin/BlurValidatedTextField#BlurValidatedTextField',
-                  },
-                  custom: { validationKind: 'postalCode' },
-                  width: '25%',
-                },
-                label: 'Kod pocztowy',
-                validate: validatePostalCode,
-              },
-              {
-                name: `${prefix}city`,
-                type: 'text' as const,
-                admin: { width: '25%' },
-                defaultValue: 'Wrocław',
-                label: 'Miejscowość',
-              },
-            ],
-          },
-        ]
-      : [
-          {
-            name: `${prefix}streetAddress`,
-            type: 'text' as const,
-            label: 'Ulica i numer',
-          },
-          {
-            type: 'row' as const,
-            fields: [
-              {
-                name: `${prefix}postalCode`,
-                type: 'text' as const,
-                admin: {
-                  components: {
-                    Field: '/components/admin/BlurValidatedTextField#BlurValidatedTextField',
-                  },
-                  custom: { validationKind: 'postalCode' },
-                  width: '25%',
-                },
-                label: 'Kod pocztowy',
-                validate: validatePostalCode,
-              },
-              {
-                name: `${prefix}city`,
-                type: 'text' as const,
-                admin: { width: '75%' },
-                defaultValue: 'Wrocław',
-                label: 'Miejscowość',
-              },
-            ],
-          },
-        ]),
-    {
-      name: `${prefix}mapEmbedURL`,
-      type: 'text',
-      admin: {
-        components: { Field: '/components/admin/GoogleMapEmbedField#GoogleMapEmbedField' },
-        description:
-          'W Mapach Google wybierz „Udostępnij → Umieść mapę” i wklej skopiowany kod HTML.',
-      },
-      hooks: { beforeValidate: [normalizeGoogleMapsEmbedField] },
-      label: 'Mapa Google',
-      validate: validateGoogleMapsEmbed,
-    },
-    {
-      name: `${prefix}country`,
-      type: 'text',
-      admin: { hidden: true, readOnly: true },
-      defaultValue: 'Polska',
-      label: 'Kraj',
-      required: true,
-    },
-  ]
 }
 
 export function createParticipationFields({ prefix = '' }: { prefix?: string } = {}): Field[] {

@@ -1,3 +1,4 @@
+import { getPopulatedRelationship } from '@/lib/relationships'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
@@ -23,6 +24,7 @@ type EventSummaryProperties = {
     | 'capacityMode'
     | 'endAt'
     | 'location'
+    | 'onlineEventURL'
     | 'participation'
     | 'slug'
     | 'startAt'
@@ -50,8 +52,9 @@ export function EventHeroEyebrow({ eventType }: EventHeroEyebrowProperties) {
 
 export function EventSummary({ event, mapURL }: EventSummaryProperties) {
   const eventDate = formatEventDateParts(event)
-  const locationAddress = formatEventLocationAddress(event.location)
-  const hasLocation = Boolean(event.location.venueName || locationAddress)
+  const location = getPopulatedRelationship(event.location)
+  const locationAddress = formatEventLocationAddress(location)
+  const hasLocation = Boolean(location?.venueName || locationAddress)
 
   return (
     <section aria-label="Najważniejsze informacje o wydarzeniu" className="eventDetails">
@@ -62,24 +65,24 @@ export function EventSummary({ event, mapURL }: EventSummaryProperties) {
             <span className="eventFactSecondary">{eventDate.time}</span>
           </time>
         </EventFact>
-        <EventFact icon="location" label="Gdzie">
-          {event.location.venueName ? (
-            event.location.venueWebsite ? (
-              <strong className="eventFactPrimary">
-                <a href={event.location.venueWebsite}>{event.location.venueName}</a>
-              </strong>
+        {hasLocation ? (
+          <EventFact icon="location" label="Gdzie">
+            {location?.venueName ? (
+              location?.venueWebsite ? (
+                <strong className="eventFactPrimary">
+                  <a href={location?.venueWebsite}>{location?.venueName}</a>
+                </strong>
+              ) : (
+                <strong className="eventFactPrimary">{location?.venueName}</strong>
+              )
             ) : (
-              <strong className="eventFactPrimary">{event.location.venueName}</strong>
-            )
-          ) : locationAddress ? (
-            <strong className="eventFactPrimary">{locationAddress}</strong>
-          ) : (
-            <strong className="eventFactPrimary">Do ustalenia</strong>
-          )}
-          {event.location.venueName && locationAddress ? (
-            <span className="eventFactSecondary">{locationAddress}</span>
-          ) : null}
-        </EventFact>
+              <strong className="eventFactPrimary">{locationAddress}</strong>
+            )}
+            {location?.venueName && locationAddress ? (
+              <span className="eventFactSecondary">{locationAddress}</span>
+            ) : null}
+          </EventFact>
+        ) : null}
         <div className="eventFact eventFact--combined">
           <EventFactHeading icon="users" label="Dla kogo" />
           <dd>{getEventAudienceLabel(event.participation)}</dd>
@@ -92,6 +95,11 @@ export function EventSummary({ event, mapURL }: EventSummaryProperties) {
           <RasterIcon name="calendar" size="small" />
           Dodaj do kalendarza
         </Link>
+        {event.onlineEventURL ? (
+          <a className="eventSecondaryAction" href={event.onlineEventURL}>
+            Dołącz do wydarzenia online
+          </a>
+        ) : null}
         {hasLocation ? (
           <a
             className="eventSecondaryAction"

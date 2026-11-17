@@ -257,6 +257,7 @@ describe('page configuration', () => {
     ])
     expect(describeFieldOrder(listingFields)).toEqual([
       ['selectionMode', 'sources'],
+      'includeInactiveLocations',
       'items',
       'conditions',
       ['sort', 'pageSize', 'pagination'],
@@ -361,6 +362,7 @@ describe('page configuration', () => {
         'event-cycles',
         'documents',
         'partners',
+        'locations',
         'member-profiles',
       ],
       required: true,
@@ -531,6 +533,7 @@ describe('page configuration', () => {
         'event-cycles',
         'documents',
         'partners',
+        'locations',
         'member-profiles',
       ],
       type: 'relationship',

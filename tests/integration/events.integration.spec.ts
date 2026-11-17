@@ -1,3 +1,4 @@
+import { createLocationFixture, deleteLocationFixture } from '../helpers/location-fixture'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getPayload, type Payload, type PayloadRequest } from 'payload'
 
@@ -6,6 +7,7 @@ import { createRichTextDocument, extractRichTextText } from '@/modules/content/r
 import type { Event, Partner, Role, User } from '@/payload-types'
 import { findPublicContent } from '@/modules/content/content-listing'
 import { createEventFromCycleEndpoint } from '@/modules/events/create-event-from-cycle'
+import { createEventsCalendar } from '@/modules/events/ics'
 import { createNextEventEndpoint } from '@/modules/events/create-next-event'
 import {
   findCurrentAndUpcomingEvents,
@@ -20,6 +22,7 @@ import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/int
 
 const slugs = {
   other: 'integration-other-event',
+  locationEvent: 'integration-location-event',
   completed: 'integration-completed-event',
   cycle: 'integration-event-cycle',
   cycleEvent: 'integration-cycle-event',
@@ -169,6 +172,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await cleanup()
   if (scheduleGroupId) await payload.delete({ collection: 'user-groups', id: scheduleGroupId })
+  await deleteLocationFixture(payload, 'Cycle venue integration')
   await deleteIntegrationAuthor(payload, author)
 })
 
@@ -185,7 +189,7 @@ function eventData(
     eventType: 1,
     excerpt: createRichTextDocument([`Integration event ${slug}`]),
     layout: layout(),
-    location: { city: 'Wrocław', country: 'Polska', venueName: 'WKF' },
+
     participation,
     slug,
     startAt: '2030-09-10T16:00:00.000Z',
@@ -244,7 +248,7 @@ describe('events integration', () => {
           eventType: 1,
           excerpt: createRichTextDocument(['Endpoint event excerpt']),
           layout: layout(),
-          location: { city: 'Wrocław', country: 'Polska', venueName: 'WKF' },
+
           participation: 'public',
         },
         excerpt: createRichTextDocument(['Endpoint integration cycle']),
@@ -350,7 +354,7 @@ describe('events integration', () => {
           eventType: 1,
           excerpt: createRichTextDocument(['Scheduled endpoint event excerpt']),
           layout: layout(),
-          location: { city: 'Wrocław', country: 'Polska', venueName: 'WKF' },
+
           participation: 'public',
           recurrenceType: 'weekly',
           recurrenceWeekday: 'tuesday',
@@ -581,7 +585,109 @@ describe('events integration', () => {
     ).rejects.toThrow('Nie można usunąć rodzaju używanego')
   })
 
+  it('keeps an inactive location in event history but excludes it from new assignments and automatic Listings', async () => {
+    const location = await createLocationFixture(payload, {
+      venueName: 'Shared location integration',
+    })
+    const event = await payload.create({
+      collection: 'events',
+      data: {
+        ...eventData(slugs.locationEvent, 'public', 'published'),
+        location: location.id,
+        onlineEventURL: 'https://example.org/meet',
+      },
+    })
+    try {
+      await payload.update({
+        collection: 'partners',
+        id: partner.id,
+        data: { locations: [location.id] },
+      })
+      const listingOptions = {
+        currentTarget: { relationTo: 'partners', value: partner.id } as const,
+        conditions: [
+          { field: 'relatedTo', operator: 'contains', relatedTargetMode: 'current' },
+        ] as const,
+        page: 1,
+        pageSize: 10,
+        pagination: false,
+        sources: ['locations'] as 'locations'[],
+        sort: 'titleAscending' as const,
+      }
+      const listOptions = { ...listingOptions, conditions: [...listingOptions.conditions] }
+      expect((await findPublicContent(listOptions)).items).toMatchObject([
+        {
+          kind: 'locations',
+          document: { id: location.id },
+          url: expect.stringContaining('google.com/maps'),
+        },
+      ])
+
+      await payload.update({
+        collection: 'locations',
+        id: location.id,
+        draft: true,
+        data: { _status: 'draft', streetAddress: 'ul. Nieopublikowana 4' },
+      })
+      const afterDraft = await payload.findByID({ collection: 'events', id: event.id, depth: 1 })
+      expect(afterDraft.location).toMatchObject({ streetAddress: location.streetAddress })
+      expect(afterDraft.calendarRevision).toBe(event.calendarRevision)
+
+      await payload.update({
+        collection: 'locations',
+        id: location.id,
+        data: { _status: 'published', isActive: false, streetAddress: 'ul. Poprawiona 5' },
+      })
+      const archived = await payload.findByID({ collection: 'events', id: event.id, depth: 1 })
+      expect(archived.location).toMatchObject({
+        isActive: false,
+        streetAddress: 'ul. Poprawiona 5',
+      })
+      expect(archived.calendarRevision).toBe(event.calendarRevision + 1)
+      expect(archived.calendarUID).toBe(event.calendarUID)
+      const calendar = createEventsCalendar([archived], 'Test').replaceAll('\r\n ', '')
+      expect(calendar).toContain('https://example.org/meet')
+      expect(calendar).toContain('ul. Poprawiona 5')
+      expect((await findPublicContent(listOptions)).items).toEqual([])
+      expect(
+        (await findPublicContent({ ...listOptions, includeInactiveLocations: true })).items,
+      ).toMatchObject([{ document: { id: location.id } }])
+      await expect(
+        payload.update({
+          collection: 'events',
+          id: event.id,
+          data: { location: location.id, title: 'Existing event with the old address' },
+        }),
+      ).resolves.toMatchObject({ title: 'Existing event with the old address' })
+      await expect(
+        payload.create({
+          collection: 'events',
+          data: {
+            ...eventData(slugs.locationEvent + '-new', 'public', 'draft'),
+            location: location.id,
+          },
+          draft: true,
+        }),
+      ).rejects.toThrow('aktywnego, opublikowanego miejsca')
+      await expect(
+        payload.update({
+          collection: 'locations',
+          id: location.id,
+          data: { _status: 'draft' },
+        }),
+      ).rejects.toThrow('Miejsce jest używane')
+      await expect(payload.delete({ collection: 'locations', id: location.id })).rejects.toThrow(
+        'Miejsce jest używane',
+      )
+    } finally {
+      await payload.update({ collection: 'partners', id: partner.id, data: { locations: [] } })
+      await payload.delete({ collection: 'events', id: event.id })
+      await payload.delete({ collection: 'locations', id: location.id })
+    }
+  })
+
   it('copies cycle defaults once and records published calendar metadata', async () => {
+    const location = await createLocationFixture(payload, { venueName: 'Cycle venue integration' })
     const cycle = await payload.create({
       collection: 'event-cycles',
       draft: false,
@@ -598,7 +704,7 @@ describe('events integration', () => {
           eventType: 1,
           excerpt: createRichTextDocument(['Copied cycle excerpt']),
           layout: layout(),
-          location: { city: 'Wrocław', country: 'Polska', venueName: 'Cycle venue' },
+          location: location.id,
           participation: 'public',
         },
       },
@@ -626,7 +732,6 @@ describe('events integration', () => {
         cycle: cycle.id,
         excerpt: createRichTextDocument([]),
         layout: [],
-        location: { country: 'Polska' },
       },
     })
     const secondEvent = await payload.create({
@@ -638,7 +743,6 @@ describe('events integration', () => {
         cycle: cycle.id,
         excerpt: createRichTextDocument([]),
         layout: [],
-        location: { country: 'Polska' },
       },
     })
     const eventIndex = await payload.find({
@@ -655,7 +759,7 @@ describe('events integration', () => {
       significantDate: event.startAt,
     })
     expect(extractRichTextText(event.excerpt)).toBe('Copied cycle excerpt')
-    expect(event.location.venueName).toBe('Cycle venue')
+    expect(event.location).toMatchObject({ id: location.id, venueName: location.venueName })
     expect(
       typeof event.defaultsAppliedCycle === 'object'
         ? event.defaultsAppliedCycle?.id

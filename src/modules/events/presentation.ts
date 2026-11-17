@@ -1,4 +1,4 @@
-import type { Event } from '@/payload-types'
+import type { Event, Location } from '@/payload-types'
 
 import { partnerRoleOptions } from './constants'
 
@@ -87,9 +87,14 @@ export function formatEventCapacity(event: Pick<Event, 'capacity' | 'capacityMod
   return event.capacityMode === 'approximate' ? `Około ${event.capacity}` : String(event.capacity)
 }
 
-export function formatEventLocationAddress(location: Event['location']): string {
+export function formatEventLocationAddress(
+  location: Pick<Location, 'postalCode' | 'city' | 'streetAddress' | 'country'> | null | undefined,
+): string {
+  if (!location) return ''
   const cityLine = [location.postalCode, location.city].filter(Boolean).join(' ')
-  return [location.streetAddress, cityLine].filter(Boolean).join(', ')
+  return [location.streetAddress, cityLine, location.country === 'Polska' ? null : location.country]
+    .filter(Boolean)
+    .join(', ')
 }
 
 export function getEventAudienceLabel(participation: Event['participation']): string {

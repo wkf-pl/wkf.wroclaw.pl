@@ -1,3 +1,4 @@
+import { getPopulatedRelationship } from '@/lib/relationships'
 import type { Event, EventCycle } from '@/payload-types'
 import type { ManualContentReference } from '@/modules/content/content-listing'
 import { buildGoogleMapsURL } from '@/modules/events/map-embed'
@@ -106,13 +107,15 @@ function resolveContextAction(
   }
 
   if (action === 'eventMap') {
-    if (!hasEventLocation(document)) return null
+    const location = getPopulatedRelationship(document.location)
+    if (!location) return null
     return {
       href: buildGoogleMapsURL({
-        city: document.location.city,
-        name: document.location.venueName,
-        postalCode: document.location.postalCode,
-        streetAddress: document.location.streetAddress,
+        city: location.city,
+        country: location.country,
+        name: location.venueName,
+        postalCode: location.postalCode,
+        streetAddress: location.streetAddress,
       }),
       label: 'Otwórz w Mapach',
     }
@@ -140,24 +143,13 @@ function toCustomTarget(
   }
 }
 
-function hasEventLocation(event: Event): boolean {
-  return Boolean(
-    event.location.venueName?.trim() ||
-    event.location.streetAddress?.trim() ||
-    event.location.postalCode?.trim() ||
-    event.location.city?.trim(),
-  )
-}
-
 function isEvent(value: unknown): value is Event {
   return Boolean(
     value &&
     typeof value === 'object' &&
     'slug' in value &&
     typeof value.slug === 'string' &&
-    'location' in value &&
-    value.location &&
-    typeof value.location === 'object',
+    ('startAt' in value || 'location' in value),
   )
 }
 

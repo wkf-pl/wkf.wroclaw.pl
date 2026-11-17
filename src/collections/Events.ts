@@ -1,4 +1,11 @@
+import {
+  confirmLegacyLocation,
+  createLegacyLocationFields,
+} from '@/modules/locations/legacy-fields'
 import type { CollectionConfig } from 'payload'
+
+import { validateVenueWebsite } from '@/modules/events/validation'
+import { createLocationRelationship } from '@/modules/locations/relationship'
 
 import {
   createEditorialFields,
@@ -13,7 +20,6 @@ import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
 import {
   createExternalLinksField,
-  createLocationFields,
   createOrganizerField,
   createPartnersField,
   createParticipationFields,
@@ -121,11 +127,13 @@ export const Events: CollectionConfig = {
             },
             createContentLayoutField('Treści'),
             { type: 'collapsible', label: 'Termin', fields: createScheduleFields() },
+            createLocationRelationship(),
+            ...createLegacyLocationFields(),
             {
-              name: 'location',
-              type: 'group',
-              label: 'Miejsce',
-              fields: createLocationFields({ compactAddressRow: true }),
+              name: 'onlineEventURL',
+              type: 'text',
+              label: 'Link do wydarzenia online',
+              validate: validateVenueWebsite,
             },
             ...createParticipationFields(),
             createOrganizerField(),
@@ -166,7 +174,7 @@ export const Events: CollectionConfig = {
   hooks: {
     afterChange: [syncContentListingAfterChange],
     afterDelete: [removeContentListingAfterDelete],
-    beforeChange: [updateEventCalendarMetadata, setPublishedAt],
+    beforeChange: [confirmLegacyLocation, updateEventCalendarMetadata, setPublishedAt],
     beforeOperation: [markTrashMutation],
     beforeValidate: [applyEventCycleDefaults, validateMediaBlocks],
   },

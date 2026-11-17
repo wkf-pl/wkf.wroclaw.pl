@@ -1,3 +1,4 @@
+import { locationFixture } from '../helpers/location-fixture'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -23,10 +24,10 @@ describe('content calendar presentation', () => {
       endAt: '2026-08-13T20:00:00.000Z',
       excerpt,
       id: 11,
-      location: {
+      location: locationFixture({
         venueName: 'Klub Pod Kolumnami',
         venueWebsite: 'https://example.com/klub',
-      },
+      }),
       slug: 'sesja-testowa',
       startAt: '2026-08-13T16:00:00.000Z',
       timeMode: 'timed',

@@ -15,7 +15,7 @@ function eventFixture(id: number, overrides: Partial<Event> = {}): Event {
     excerpt: createRichTextDocument([`Streszczenie ${id}`, `Drugi akapit ${id}`]),
     id,
     layout: [],
-    location: { country: 'Polska' },
+
     participation: 'public',
     slug: `wydarzenie-${id}`,
     startAt: `2026-09-${String(id).padStart(2, '0')}T16:00:00.000Z`,

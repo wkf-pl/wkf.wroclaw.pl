@@ -57,7 +57,7 @@ function eventFixture(overrides: Partial<Event> = {}): Event {
     startAt: '2026-09-08T16:00:00.000Z',
     participation: 'public',
     capacityMode: 'unlimited',
-    location: { country: 'Polska' },
+
     slug: 'erpegowy-wtorek',
     author: { relationTo: 'users', value: 1 },
     calendarUID: 'event@example.test',
@@ -253,50 +253,14 @@ describe('events model', () => {
     ])
   })
 
-  it('places the Cycle default address fields in one 50/25/25 row', () => {
-    const addressRow = flattenFields(EventCycles.fields).find(
-      (field) =>
-        field.type === 'row' &&
-        field.fields.some((item) => 'name' in item && item.name === 'streetAddress') &&
-        field.fields.some((item) => 'name' in item && item.name === 'postalCode') &&
-        field.fields.some((item) => 'name' in item && item.name === 'city'),
-    )
-    expect(addressRow?.type).toBe('row')
-    if (addressRow?.type !== 'row') throw new Error('Missing Cycle default address row')
-    expect(
-      addressRow.fields.map((field) => ({
-        label: 'label' in field ? field.label : undefined,
-        name: 'name' in field ? field.name : undefined,
-        width: field.admin?.width,
-      })),
-    ).toEqual([
-      { label: 'Adres', name: 'streetAddress', width: '50%' },
-      { label: 'Kod pocztowy', name: 'postalCode', width: '25%' },
-      { label: 'Miejscowość', name: 'city', width: '25%' },
-    ])
-  })
-
-  it('places the Event address fields in one 50/25/25 row', () => {
-    const addressRow = flattenFields(Events.fields).find(
-      (field) =>
-        field.type === 'row' &&
-        field.fields.some((item) => 'name' in item && item.name === 'streetAddress') &&
-        field.fields.some((item) => 'name' in item && item.name === 'postalCode') &&
-        field.fields.some((item) => 'name' in item && item.name === 'city'),
-    )
-    expect(addressRow?.type).toBe('row')
-    if (addressRow?.type !== 'row') throw new Error('Missing Event address row')
-    expect(
-      addressRow.fields.map((field) => ({
-        label: 'label' in field ? field.label : undefined,
-        name: 'name' in field ? field.name : undefined,
-        width: field.admin?.width,
-      })),
-    ).toEqual([
-      { label: 'Adres', name: 'streetAddress', width: '50%' },
-      { label: 'Kod pocztowy', name: 'postalCode', width: '25%' },
-      { label: 'Miejscowość', name: 'city', width: '25%' },
-    ])
+  it('uses an optional Location relationship in Events and Cycle defaults', () => {
+    for (const collection of [Events, EventCycles]) {
+      const location = flattenFields(collection.fields).find(
+        (field) => 'name' in field && field.name === 'location',
+      )
+      expect(location).toMatchObject({ type: 'relationship', relationTo: 'locations' })
+      expect(location).not.toMatchObject({ required: true })
+    }
   })
 
   it('places Cycle default taxonomy fields in one equal row', () => {
@@ -459,7 +423,7 @@ describe('events model', () => {
             id: 'block-row',
           },
         ] as never,
-        location: { country: 'Polska' },
+
         participation: 'public',
         capacityMode: 'unlimited',
       },

@@ -18,6 +18,9 @@ import { down as downUserGroups } from '../../migrations/20261114_015429_user_gr
 import { down as restoreClubSections } from '../../migrations/20261113_220423_remove_club_sections'
 import { setPageTemplateCompositionSchema } from '../helpers/page-template-composition-migration'
 
+import { down as downLocations } from '../../migrations/20261115_212154_locations'
+import { down as downLocationIndex } from '../../migrations/20261115_212155_index_locations'
+
 const globalTables = [
   'site_settings',
   'navigation',
@@ -55,6 +58,8 @@ async function relatedContentSchemaExists(db: MigrateUpArgs['db']): Promise<bool
 
 async function moveToBeforeGlobalDrafts(args: MigrateUpArgs & MigrateDownArgs): Promise<void> {
   const { db } = args
+  await downLocationIndex(args)
+  await downLocations(args)
   await downUserGroups(args)
   await restoreClubSections(args)
   await downContentAudit(args)

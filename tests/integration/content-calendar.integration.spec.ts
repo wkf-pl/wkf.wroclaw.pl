@@ -1,3 +1,4 @@
+import { createLocationFixture, deleteLocationFixture } from '../helpers/location-fixture'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { findContentCalendarMonth } from '@/modules/content/content-calendar-data'
@@ -35,7 +36,7 @@ describe('content calendar', () => {
           eventType: 1,
           excerpt: createLexicalDocument('Calendar cycle defaults'),
           layout: [{ blockType: 'richText', content: createLexicalDocument('Default content') }],
-          location: { city: 'Wrocław', country: 'Polska' },
+
           participation: 'public',
         },
         excerpt: createLexicalDocument('Calendar cycle'),
@@ -45,6 +46,10 @@ describe('content calendar', () => {
       },
       draft: false,
       overrideAccess: true,
+    })
+    const location = await createLocationFixture(fixture.payload, {
+      venueName: 'Klub Pod Kolumnami',
+      venueWebsite: 'https://example.com/klub',
     })
     const createEvent = (slug: string, cycleId?: number) =>
       fixture.payload.create({
@@ -60,12 +65,7 @@ describe('content calendar', () => {
           excerpt: createLexicalDocument(`Excerpt ${slug}`),
           endAt: '2026-08-14T20:00:00.000Z',
           layout: [{ blockType: 'richText', content: createLexicalDocument(`Content ${slug}`) }],
-          location: {
-            city: 'Wrocław',
-            country: 'Polska',
-            venueName: 'Klub Pod Kolumnami',
-            venueWebsite: 'https://example.com/klub',
-          },
+          location: location.id,
           participation: 'public',
           slug,
           startAt: '2026-08-14T16:00:00.000Z',
@@ -150,4 +150,5 @@ async function cleanupCalendarFixtures(): Promise<void> {
     overrideAccess: true,
     where: { slug: { equals: calendarCycleSlug } },
   })
+  await deleteLocationFixture(fixture.payload, 'Klub Pod Kolumnami')
 }

@@ -38,6 +38,7 @@ const tagsBySource: Record<ContentListingSource, string[]> = {
     publicCacheTags.sitemap,
   ],
   pages: [publicCacheTags.pages, publicCacheTags.contentListings, publicCacheTags.sitemap],
+  locations: [publicCacheTags.events, publicCacheTags.partners, publicCacheTags.contentListings],
   partners: [
     publicCacheTags.partners,
     publicCacheTags.events,

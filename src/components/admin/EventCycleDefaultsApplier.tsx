@@ -1,6 +1,6 @@
 'use client'
 
-import { useDocumentInfo, useForm, useFormFields, useServerFunctions } from '@payloadcms/ui'
+import { toast, useDocumentInfo, useForm, useFormFields, useServerFunctions } from '@payloadcms/ui'
 import { useEffect, useRef } from 'react'
 
 import type { EventCycle } from '@/payload-types'
@@ -21,14 +21,22 @@ export function EventCycleDefaultsApplier() {
     }
 
     const controller = new AbortController()
-    void fetch(`/api/event-cycles/${cycleID}?depth=0`, {
+    void fetch(`/api/event-cycles/${cycleID}?depth=1`, {
       credentials: 'include',
       signal: controller.signal,
     })
       .then(async (response) => (response.ok ? ((await response.json()) as EventCycle) : null))
       .then(async (eventCycle) => {
         if (!eventCycle) return
-        const data = mergeEventCycleDefaults(getData(), eventCycle)
+        const currentData = getData()
+        const data = mergeEventCycleDefaults(currentData, eventCycle)
+        if (
+          !getFormRelationshipId(currentData.location) &&
+          eventCycle.eventDefaults.location &&
+          !data.location
+        ) {
+          toast.info('Domyślne miejsce cyklu jest niedostępne. Wybierz aktywne miejsce.')
+        }
         const result = await getFormState({
           collectionSlug: 'events',
           data,

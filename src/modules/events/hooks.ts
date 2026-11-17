@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 
 import type { CollectionBeforeChangeHook, CollectionBeforeValidateHook } from 'payload'
 
+import { findActiveLocationID } from '@/modules/locations/relationship'
+
 import { getFormRelationshipId } from '@/lib/relationships'
 
 import { mergeEventCycleDefaults } from './defaults'
@@ -40,7 +42,11 @@ export const applyEventCycleDefaults: CollectionBeforeValidateHook = async ({
     overrideAccess: true,
     req,
   })
+  const locationID = req.context.skipDefaultLocation
+    ? undefined
+    : await findActiveLocationID(req, cycle.eventDefaults.location)
   data = mergeEventCycleDefaults(data, cycle)
+  if (!getFormRelationshipId(data.location) && locationID !== undefined) data.location = locationID
 
   return data
 }
@@ -70,7 +76,14 @@ export const copyEventCycleContentToDefaults: CollectionBeforeValidateHook = ({
   return data
 }
 
-const calendarFields = ['title', 'startAt', 'endAt', 'timeMode', 'location'] as const
+const calendarFields = [
+  'title',
+  'startAt',
+  'endAt',
+  'timeMode',
+  'location',
+  'onlineEventURL',
+] as const
 
 export const updateEventCalendarMetadata: CollectionBeforeChangeHook = ({
   data,
@@ -81,10 +94,18 @@ export const updateEventCalendarMetadata: CollectionBeforeChangeHook = ({
     data.calendarUID = `${randomUUID()}@wkf.wroclaw.pl`
   }
 
-  if (data._status !== 'published') return data
+  if ((data._status ?? originalDoc?._status) !== 'published') return data
 
   const calendarFingerprint = JSON.stringify(
-    Object.fromEntries(calendarFields.map((field) => [field, data[field]])),
+    Object.fromEntries(
+      calendarFields.map((field) => {
+        const value = field in data ? data[field] : originalDoc?.[field]
+        return [
+          field,
+          field === 'location' ? (getFormRelationshipId(value) ?? null) : (value ?? null),
+        ]
+      }),
+    ),
   )
   const calendarChanged =
     operation === 'create' || calendarFingerprint !== originalDoc?.calendarFingerprint

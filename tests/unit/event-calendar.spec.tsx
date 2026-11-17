@@ -1,3 +1,4 @@
+import { locationFixture } from '../helpers/location-fixture'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
@@ -29,10 +30,10 @@ const calendarData: CalendarMonthPayload = {
       eventType: { id: 1, iconColor: 'lantern-glow', iconName: 'dice', name: 'Sesje RPG' },
       excerpt: firstExcerpt,
       id: 1,
-      location: {
+      location: locationFixture({
         venueName: 'Klub Pod Kolumnami',
         venueWebsite: 'https://example.com/klub',
-      },
+      }),
       slug: 'erpegowy-wtorek',
       startAt: '2026-09-08T16:00:00.000Z',
       timeMode: 'timed',
@@ -66,10 +67,10 @@ describe('Event calendar', () => {
           endAt: '2026-09-08T20:00:00.000Z',
           id: 'events:1',
           kind: 'events',
-          location: {
+          location: locationFixture({
             venueName: 'Klub Pod Kolumnami',
             venueWebsite: 'https://example.com/klub',
-          },
+          }),
           summary: { kind: 'richText', value: firstExcerpt },
           timeMode: 'timed',
           title: 'Erpegowy Wtorek',
@@ -151,10 +152,10 @@ describe('Event calendar', () => {
         endAt: '2026-09-08T20:00:00.000Z',
         excerpt,
         id: 1,
-        location: {
+        location: locationFixture({
           venueName: 'Klub Pod Kolumnami',
           venueWebsite: 'https://example.com/klub',
-        },
+        }),
         slug: 'wydarzenie',
         startAt: '2026-09-08T16:00:00.000Z',
         timeMode: 'timed',

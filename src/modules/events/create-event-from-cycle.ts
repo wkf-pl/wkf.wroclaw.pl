@@ -1,5 +1,6 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 
+import { findActiveLocationID } from '@/modules/locations/relationship'
 import { getDefaultEventAuthor } from '@/modules/content/content-author'
 
 import { eventEndpointErrorResponse } from './endpoint-response'
@@ -37,6 +38,7 @@ async function handler(req: PayloadRequest): Promise<Response> {
       },
     })
     const dates = calculateNextEventDates(previousEvents.docs[0]?.startAt, cycle.eventDefaults)
+    const location = await findActiveLocationID(req, cycle.eventDefaults.location)
     const doc = await req.payload.create({
       collection: 'events',
       context: { skipSlugGeneration: true },
@@ -44,6 +46,7 @@ async function handler(req: PayloadRequest): Promise<Response> {
         _status: 'draft',
         author: getDefaultEventAuthor(cycle.eventDefaults.authorGroup),
         cycle: cycle.id,
+        location,
         ...dates,
         title: cycle.eventDefaults.title || cycle.title,
       },
@@ -53,7 +56,10 @@ async function handler(req: PayloadRequest): Promise<Response> {
       user: req.user,
     })
 
-    return Response.json({ doc: { id: doc.id } }, { status: 201 })
+    return Response.json(
+      { doc: { id: doc.id }, skippedLocation: Boolean(cycle.eventDefaults.location && !location) },
+      { status: 201 },
+    )
   } catch (error) {
     return eventEndpointErrorResponse(req, error)
   }

@@ -26,7 +26,7 @@ export function GoogleMapEmbedField(properties: TextFieldClientProps) {
               externalMapURL={embedSource}
               requireConsent={false}
               src={embedSource}
-              title="Podgląd mapy wydarzenia"
+              title="Podgląd mapy miejsca"
             />
           </div>
         ) : (

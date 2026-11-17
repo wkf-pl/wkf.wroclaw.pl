@@ -1,3 +1,4 @@
+import { getPopulatedRelationship } from '@/lib/relationships'
 import Link from 'next/link'
 
 import type { Event } from '@/payload-types'
@@ -18,7 +19,9 @@ export function EventList({ events }: { events: Event[] }) {
               <div className="eventCardContent">
                 <h3>{event.title}</h3>
                 <time dateTime={event.startAt}>{formatEventDate(event)}</time>
-                {event.location?.venueName ? <p>{event.location.venueName}</p> : null}
+                {getPopulatedRelationship(event.location)?.venueName ? (
+                  <p>{getPopulatedRelationship(event.location)?.venueName}</p>
+                ) : null}
                 <p>{extractRichTextText(event.excerpt)}</p>
               </div>
             </Link>

@@ -1,3 +1,4 @@
+import { locationFixture } from '../helpers/location-fixture'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
@@ -66,11 +67,11 @@ function createEventItem(): Extract<PublicContentListItem, { kind: 'events' }> {
       excerpt: createLexicalDocument('Otwarte spotkanie dla graczy.'),
       heroImage: null,
       id: 3,
-      location: {
+      location: locationFixture({
         country: 'Polska',
         venueName: 'Centrum kultury, Wrocław',
         venueWebsite: 'https://example.com/miejsce',
-      },
+      }),
       slug: 'wieczor-z-grami',
       startAt: '2026-10-13T16:00:00.000Z',
       tags: [],

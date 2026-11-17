@@ -1,3 +1,8 @@
+import {
+  confirmLegacyLocation,
+  createLegacyLocationFields,
+} from '@/modules/locations/legacy-fields'
+import { createLocationRelationship } from '@/modules/locations/relationship'
 import { randomUUID } from 'node:crypto'
 
 import { APIError, type CollectionConfig, type Field } from 'payload'
@@ -13,7 +18,6 @@ import { populateSlug } from '@/modules/content/slug'
 import { createTaxonomyFields } from '@/modules/content/taxonomy-fields'
 import {
   createExternalLinksField,
-  createLocationFields,
   createOrganizerField,
   createPartnersField,
   createParticipationFields,
@@ -283,12 +287,8 @@ export const EventCycles: CollectionConfig = {
                     },
                   ],
                 },
-                {
-                  name: 'location',
-                  type: 'group',
-                  label: 'Miejsce',
-                  fields: createLocationFields({ compactAddressRow: true }),
-                },
+                createLocationRelationship(),
+                ...createLegacyLocationFields(),
                 ...createParticipationFields(),
                 createOrganizerField(),
                 createPartnersField(),
@@ -316,6 +316,7 @@ export const EventCycles: CollectionConfig = {
     afterChange: [syncContentListingAfterChange],
     afterDelete: [removeContentListingAfterDelete],
     beforeChange: [
+      confirmLegacyLocation,
       ({ data }) => {
         data.calendarFeedKey ||= randomUUID()
         return data

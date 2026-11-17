@@ -1,3 +1,4 @@
+import { locationFixture } from '../helpers/location-fixture'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -22,13 +23,13 @@ const cycle = {
 function createEvent(overrides: Partial<Event> = {}): Event {
   return {
     id: 14,
-    location: {
+    location: locationFixture({
       city: 'Wrocław',
       country: 'Polska',
       postalCode: '50-001',
       streetAddress: 'ul. Wyobraźni 12',
       venueName: 'Przystań Wyobraźni',
-    },
+    }),
     partners: [{ contribution: 'Sala oraz materiały do gry', partner, roles: ['venueHost'] }],
     slug: 'pierwsza-wyprawa',
     title: 'Pierwsza wyprawa',
@@ -109,13 +110,7 @@ describe('page template context', () => {
       ],
       createEvent({
         cycle: null,
-        location: {
-          city: '',
-          country: 'Polska',
-          postalCode: '',
-          streetAddress: '',
-          venueName: '',
-        },
+        location: null,
       }),
     )
 
