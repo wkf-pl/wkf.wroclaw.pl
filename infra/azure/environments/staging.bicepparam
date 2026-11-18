@@ -8,6 +8,7 @@ param postgresAdministratorPassword = readEnvironmentVariable('POSTGRES_ADMIN_PA
 param postgresSkuName = 'Standard_B1ms'
 param postgresSkuTier = 'Burstable'
 param postgresBackupRetentionDays = 7
+param postgresMaxLocksPerTransaction = 256
 param minimumReplicas = 0
 param maximumReplicas = 1
 param monthlyBudgetAmount = 50

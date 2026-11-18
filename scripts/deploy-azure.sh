@@ -417,31 +417,29 @@ if [[ "$provision_infrastructure" == "true" ]]; then
     --parameters customDomainCertificateId="${CUSTOM_DOMAIN_CERTIFICATE_ID:-}" redirectDomainCertificateId="${REDIRECT_DOMAIN_CERTIFICATE_ID:-}" deployApplication="$deploy_application" location="$azure_location" resourcePrefix="$resource_prefix" sourceSha="$infrastructure_source_sha" \
     --output none
 
-  if [[ "$target_environment" == 'prod' ]]; then
-    postgres_server_name="$(az postgres flexible-server list \
+  postgres_server_name="$(az postgres flexible-server list \
+    --resource-group "$resource_group_name" \
+    --query '[0].name' \
+    --output tsv)"
+  postgres_restart_pending=false
+  for postgres_parameter_name in shared_preload_libraries max_locks_per_transaction; do
+    parameter_restart_pending="$(az postgres flexible-server parameter show \
       --resource-group "$resource_group_name" \
-      --query '[0].name' \
+      --server-name "$postgres_server_name" \
+      --name "$postgres_parameter_name" \
+      --query isConfigPendingRestart \
       --output tsv)"
-    postgres_restart_pending=false
-    for postgres_parameter_name in shared_preload_libraries max_locks_per_transaction; do
-      parameter_restart_pending="$(az postgres flexible-server parameter show \
-        --resource-group "$resource_group_name" \
-        --server-name "$postgres_server_name" \
-        --name "$postgres_parameter_name" \
-        --query isConfigPendingRestart \
-        --output tsv)"
-      if [[ "$parameter_restart_pending" == 'true' ]]; then
-        echo "Production PostgreSQL parameter requires restart: $postgres_parameter_name"
-        postgres_restart_pending=true
-      fi
-    done
-    if [[ "$postgres_restart_pending" == 'true' ]]; then
-      echo 'Restarting production PostgreSQL to activate pending static parameters.'
-      az postgres flexible-server restart \
-        --resource-group "$resource_group_name" \
-        --name "$postgres_server_name" \
-        --output none
+    if [[ "$parameter_restart_pending" == 'true' ]]; then
+      echo "PostgreSQL parameter requires restart in $target_environment: $postgres_parameter_name"
+      postgres_restart_pending=true
     fi
+  done
+  if [[ "$postgres_restart_pending" == 'true' ]]; then
+    echo "Restarting $target_environment PostgreSQL to activate pending static parameters."
+    az postgres flexible-server restart \
+      --resource-group "$resource_group_name" \
+      --name "$postgres_server_name" \
+      --output none
   fi
 
   if [[ "$provision_only" == "true" ]]; then
