@@ -1,0 +1,112 @@
+diff --git a/bin.js b/bin.js
+index d1cfb26547c244f6789969592b38a2de09169ac6..c4ed8a38dc7c554f1295f51b4868692482eacffd 100755
+--- a/bin.js
++++ b/bin.js
+@@ -15,7 +15,7 @@ if (disableTranspile) {
+     await bin()
+   }
+ 
+-  void start()
++  await start()
+ } else {
+   const filename = fileURLToPath(import.meta.url)
+   const dirname = path.dirname(filename)
+@@ -23,17 +23,6 @@ if (disableTranspile) {
+ 
+   if (!useSwc) {
+     const start = async () => {
+-      // tsx 4.22.4 uses Node's synchronous `module.registerHooks` API when it is available
+-      // (Node v23.5+). On those versions that code path leaks tsx's internal `?namespace=...`
+-      // query string onto resolved specifiers — including Node built-ins like `node:crypto` —
+-      // which Node then tries to open as a file, failing with ENOENT. Removing `registerHooks`
+-      // forces tsx to fall back to its older async `module.register()` worker path, which does
+-      // not have this bug. See https://github.com/payloadcms/payload/issues/16949
+-      const nodeModule = await import('node:module')
+-      if (typeof nodeModule.default.registerHooks === 'function') {
+-        nodeModule.default.registerHooks = undefined
+-      }
+-
+       // Use tsx
+       let tsImport = (await import('tsx/esm/api')).tsImport
+ 
+@@ -41,7 +30,7 @@ if (disableTranspile) {
+       await bin()
+     }
+ 
+-    void start()
++    await start()
+   } else if (useSwc) {
+     const { register } = await import('node:module')
+     // Remove --use-swc from arguments
+@@ -60,6 +49,6 @@ if (disableTranspile) {
+       await bin()
+     }
+ 
+-    void start()
++    await start()
+   }
+ }
+diff --git a/dist/bin/index.js b/dist/bin/index.js
+index 623570b3963d2cbe47611c3078696e8372cc5fd8..f468803ea552c103da3bd8a69a3cb05b9e5a893e 100644
+--- a/dist/bin/index.js
++++ b/dist/bin/index.js
+@@ -1,5 +1,6 @@
+ /* eslint-disable no-console */ import { Cron } from 'croner';
+ import minimist from 'minimist';
++import * as nodeModule from 'node:module';
+ import { pathToFileURL } from 'node:url';
+ import path from 'path';
+ import { findConfig } from '../config/find.js';
+@@ -22,6 +23,20 @@ const availableScripts = [
+ ];
+ export const bin = async ()=>{
+     loadEnv();
++    // Lexical 0.50's Node entry points use top-level dynamic imports that can stall under tsx.
++    // Select its equivalent static exports after loading the user's environment instead.
++    const environmentCondition = process.env.NODE_ENV === 'production' ? 'production' : 'development';
++    if (typeof nodeModule.registerHooks === 'function') {
++        const { initialize, resolve } = await import(new URL('./lexicalLoader.mjs', import.meta.url).href);
++        initialize(environmentCondition);
++        nodeModule.registerHooks({
++            resolve
++        });
++    } else {
++        nodeModule.register('./lexicalLoader.mjs', import.meta.url, {
++            data: environmentCondition
++        });
++    }
+     process.env.DISABLE_PAYLOAD_HMR = 'true';
+     const args = minimist(process.argv.slice(2));
+     const script = (typeof args._[0] === 'string' ? args._[0] : '').toLowerCase();
+diff --git a/dist/bin/lexicalLoader.mjs b/dist/bin/lexicalLoader.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..5aaa948cb7c6760ef1022b22f51777f7dfc9981f
+--- /dev/null
++++ b/dist/bin/lexicalLoader.mjs
+@@ -0,0 +1,26 @@
++/** @type {'development' | 'production'} */
++let environmentCondition
++
++/** @param {'development' | 'production'} condition */
++export function initialize(condition) {
++  environmentCondition = condition
++}
++
++/** @type {import('node:module').ResolveHook} */
++export const resolve = (specifier, context, nextResolve) => {
++  if (
++    (specifier === 'lexical' ||
++      specifier.startsWith('lexical/') ||
++      specifier.startsWith('@lexical/')) &&
++    !context.conditions.includes('development') &&
++    !context.conditions.includes('production')
++  ) {
++    // Preserve explicit conditions and leave every other package's resolution unchanged.
++    return nextResolve(specifier, {
++      ...context,
++      conditions: [...context.conditions, environmentCondition],
++    })
++  }
++
++  return nextResolve(specifier, context)
++}

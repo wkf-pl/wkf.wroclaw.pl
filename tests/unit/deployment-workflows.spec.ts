@@ -2,10 +2,80 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
 describe('deployment workflows', () => {
+  it.each(['production', 'development'])(
+    'resolves Lexical static exports in %s CLI runs',
+    (condition) => {
+      const result = spawnSync(
+        process.execPath,
+        [
+          '--input-type=module',
+          '-e',
+          `
+      const { initialize, resolve } = await import(process.env.LEXICAL_LOADER_URL)
+      initialize(process.env.LEXICAL_CONDITION)
+      const requests = []
+      const nextResolve = (specifier, context) => requests.push({ specifier, ...context })
+      resolve('lexical', { conditions: ['node', 'import'] }, nextResolve)
+      resolve('@lexical/rich-text', { conditions: ['node', 'import'] }, nextResolve)
+      resolve('react', { conditions: ['node', 'import'] }, nextResolve)
+      resolve('lexical', { conditions: ['node', 'development'] }, nextResolve)
+      console.log(JSON.stringify(requests))
+    `,
+        ],
+        {
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            LEXICAL_LOADER_URL: pathToFileURL(
+              join(process.cwd(), 'node_modules/payload/dist/bin/lexicalLoader.mjs'),
+            ).href,
+            LEXICAL_CONDITION: condition,
+          },
+        },
+      )
+
+      expect(result.status).toBe(0)
+      expect(JSON.parse(result.stdout)).toEqual([
+        { specifier: 'lexical', conditions: ['node', 'import', condition] },
+        { specifier: '@lexical/rich-text', conditions: ['node', 'import', condition] },
+        { specifier: 'react', conditions: ['node', 'import'] },
+        { specifier: 'lexical', conditions: ['node', 'development'] },
+      ])
+    },
+  )
+
+  it('fails migration startup when the config import never settles', () => {
+    const fixtureDirectory = mkdtempSync(join(tmpdir(), 'wkf-payload-startup-'))
+    try {
+      const configPath = join(fixtureDirectory, 'payload.config.mts')
+      writeFileSync(configPath, 'export default await new Promise(() => {})\n')
+      const result = spawnSync(process.execPath, ['node_modules/payload/bin.js', 'migrate'], {
+        encoding: 'utf8',
+        timeout: 10_000,
+        env: { ...process.env, NODE_ENV: 'production', PAYLOAD_CONFIG_PATH: configPath },
+      })
+
+      expect(result.error).toBeUndefined()
+      expect(result.status).toBe(13)
+      expect(result.stderr).toContain('unsettled top-level await')
+    } finally {
+      rmSync(fixtureDirectory, { force: true, recursive: true })
+    }
+  })
+
+  it('runs explicit migrations without automatic startup migrations and sizes staging locks', () => {
+    const migrationJob = readFileSync('infra/azure/modules/migration-job.bicep', 'utf8')
+    const stagingParameters = readFileSync('infra/azure/environments/staging.bicepparam', 'utf8')
+
+    expect(migrationJob).toMatch(/name: 'PAYLOAD_RUN_MIGRATIONS_ON_START'\s+value: 'false'/)
+    expect(stagingParameters).toContain('param postgresMaxLocksPerTransaction = 256')
+  })
+
   it.each([
     {
       description: 'accepts rendered CMS listing markup',
@@ -55,19 +125,22 @@ check_staging_listing_page https://candidate.example.test`,
     expect(result.status).toBe(exitCode)
   })
 
-  it('keeps staging in maintenance when a successful migration job leaves pending migrations', () => {
-    const fixtureDirectory = mkdtempSync(join(tmpdir(), 'wkf-deploy-migrations-'))
-    const commandLog = join(fixtureDirectory, 'commands')
-    try {
-      writeFileSync(
-        join(fixtureDirectory, 'az'),
-        `#!/bin/bash
+  it.each([false, true])(
+    'keeps staging in maintenance with infrastructure provisioning=%s when migrations are missing',
+    (provisionInfrastructure) => {
+      const fixtureDirectory = mkdtempSync(join(tmpdir(), 'wkf-deploy-migrations-'))
+      const commandLog = join(fixtureDirectory, 'commands')
+      try {
+        writeFileSync(
+          join(fixtureDirectory, 'az'),
+          `#!/bin/bash
 echo "$*" >> "$COMMAND_LOG"
 case "$*" in
   'containerapp revision list '*) echo previous-revision ;;
   'containerapp revision show '*) echo previous-image ;;
   'postgres flexible-server list '*) echo staging-database ;;
   'postgres flexible-server show '*) echo Burstable ;;
+  'postgres flexible-server parameter show '*) echo true ;;
   'containerapp show '*fqdn*) echo staging.example.test ;;
   'containerapp job show '*) echo '{"containers":[{"name":"migration","env":[{"name":"DATABASE_URL","secretRef":"database-url"}]}]}' ;;
   'containerapp job start '*--yaml*) echo verifier ;;
@@ -77,46 +150,57 @@ case "$*" in
   'containerapp job logs show '*verifier*) echo '{"Log":"verification: WKF_MIGRATION_CHECK missing 20261115_195332_remove_event_status 20261115_212154_locations"}' ;;
 esac
 `,
-        { mode: 0o755 },
-      )
-      writeFileSync(
-        join(fixtureDirectory, 'curl'),
-        `#!/bin/bash
+          { mode: 0o755 },
+        )
+        writeFileSync(
+          join(fixtureDirectory, 'curl'),
+          `#!/bin/bash
 while [[ "$1" != --output ]]; do shift; done
 echo 'httpErrorCode">503< mailto:webmaster@wkf.wroclaw.pl' > "$2"
 echo 503
 `,
-        { mode: 0o755 },
-      )
+          { mode: 0o755 },
+        )
 
-      const result = spawnSync(
-        'bash',
-        ['scripts/deploy-azure.sh', 'staging', 'image', '--maintenance'],
-        {
-          encoding: 'utf8',
-          timeout: 5_000,
-          env: {
-            ...process.env,
-            PATH: `${fixtureDirectory}:${process.env.PATH}`,
-            COMMAND_LOG: commandLog,
-            SOURCE_SHA: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-            STAGING_INGRESS_REQUIRED: 'true',
+        const result = spawnSync(
+          'bash',
+          [
+            'scripts/deploy-azure.sh',
+            'staging',
+            'image',
+            '--maintenance',
+            ...(provisionInfrastructure ? ['--provision'] : []),
+          ],
+          {
+            encoding: 'utf8',
+            timeout: 5_000,
+            env: {
+              ...process.env,
+              PATH: `${fixtureDirectory}:${process.env.PATH}`,
+              COMMAND_LOG: commandLog,
+              SOURCE_SHA: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+              STAGING_INGRESS_REQUIRED: 'true',
+            },
           },
-        },
-      )
+        )
 
-      expect(result.status).toBe(1)
-      expect(result.stderr).toContain('Missing migration: 20261115_195332_remove_event_status')
-      expect(result.stderr).toContain('Missing migration: 20261115_212154_locations')
-      const commands = readFileSync(commandLog, 'utf8')
-      expect(commands).toContain('MAINTENANCE_ENABLED=1')
-      expect(commands).not.toContain('MAINTENANCE_ENABLED=0')
-      expect(commands).not.toContain('containerapp revision activate')
-      expect(commands).not.toMatch(/containerapp update --name/)
-    } finally {
-      rmSync(fixtureDirectory, { force: true, recursive: true })
-    }
-  })
+        expect(result.status).toBe(1)
+        expect(result.stderr).toContain('Missing migration: 20261115_195332_remove_event_status')
+        expect(result.stderr).toContain('Missing migration: 20261115_212154_locations')
+        const commands = readFileSync(commandLog, 'utf8')
+        expect(commands).toContain('MAINTENANCE_ENABLED=1')
+        expect(commands).not.toContain('MAINTENANCE_ENABLED=0')
+        expect(commands).not.toContain('containerapp revision activate')
+        expect(commands).not.toMatch(/containerapp update --name/)
+        if (provisionInfrastructure)
+          expect(commands).toContain(
+            'postgres flexible-server restart --resource-group rg-wkf-staging',
+          )
+      } finally {
+        rmSync(fixtureDirectory, { force: true, recursive: true })
+      }
+    },
+  )
 
   it('pins and verifies the Payload Azure adapter patch used for managed identity', () => {
     const packageConfiguration = JSON.parse(readFileSync('package.json', 'utf8')) as {

@@ -100,7 +100,7 @@ var migrationEnvironmentVariables = concat([
   }
   {
     name: 'PAYLOAD_RUN_MIGRATIONS_ON_START'
-    value: 'true'
+    value: 'false'
   }
   {
     name: 'SERVER_URL'
