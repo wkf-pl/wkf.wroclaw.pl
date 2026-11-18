@@ -5,9 +5,11 @@ set -euo pipefail
 ubuntu_sources_path="${1:-/etc/apt/sources.list.d/ubuntu.sources}"
 apt_mirror_list_path="${2:-/etc/apt/apt-mirrors.txt}"
 
-grep --fixed-strings --quiet \
-  'mirror+file:/etc/apt/apt-mirrors.txt' \
-  "$ubuntu_sources_path"
+if [[ ! -f "$ubuntu_sources_path" ]] ||
+  ! grep --fixed-strings --quiet 'mirror+file:/etc/apt/apt-mirrors.txt' "$ubuntu_sources_path"; then
+  echo 'Keeping existing Ubuntu package sources.'
+  exit 0
+fi
 
 sed --in-place \
   --expression='\|^http://azure\.archive\.ubuntu\.com/ubuntu/|s|priority:1|priority:2|' \

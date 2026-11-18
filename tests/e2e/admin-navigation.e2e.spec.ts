@@ -76,10 +76,9 @@ test('shows the fixed page template collection to administrators', async ({ page
   test.setTimeout(60_000)
   await login({ page, user: administratorTestUser })
 
-  await expect(page.getByRole('link', { name: 'Szablony stron' })).toHaveAttribute(
-    'href',
-    '/admin/collections/page-templates',
-  )
+  await expect(
+    page.locator('aside nav').getByRole('link', { name: 'Szablony stron', exact: true }),
+  ).toHaveAttribute('href', '/admin/collections/page-templates')
 
   await page.goto('/admin/collections/roles')
   const collectionTitleBox = await page

@@ -142,6 +142,26 @@ describe('deployment workflows', () => {
     }
   })
 
+  it('keeps the runner sources when Ubuntu uses a direct archive URL', () => {
+    const fixtureDirectory = mkdtempSync(join(tmpdir(), 'wkf-apt-mirror-'))
+    const ubuntuSourcesPath = join(fixtureDirectory, 'ubuntu.sources')
+    const mirrorListPath = join(fixtureDirectory, 'apt-mirrors.txt')
+    const ubuntuSources = 'Types: deb\nURIs: https://archive.ubuntu.com/ubuntu/\nSuites: noble\n'
+
+    try {
+      writeFileSync(ubuntuSourcesPath, ubuntuSources)
+      execFileSync(
+        'bash',
+        ['scripts/configure-ci-ubuntu-mirror.sh', ubuntuSourcesPath, mirrorListPath],
+        { stdio: 'pipe' },
+      )
+
+      expect(readFileSync(ubuntuSourcesPath, 'utf8')).toBe(ubuntuSources)
+    } finally {
+      rmSync(fixtureDirectory, { force: true, recursive: true })
+    }
+  })
+
   it('preserves deployment safety boundaries', () => {
     const deploymentScript = readFileSync('scripts/deploy-azure.sh', 'utf8')
     const applicationTemplate = readFileSync('infra/azure/modules/application.bicep', 'utf8')
