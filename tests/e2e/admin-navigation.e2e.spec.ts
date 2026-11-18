@@ -26,7 +26,7 @@ test('groups editor navigation with the intended labels and order', async ({ pag
   ])
   await expect(
     navigation.getByRole('button', { name: 'Klubowe' }).locator('..').locator('a'),
-  ).toHaveText(['Dokumenty', 'Partnerzy'])
+  ).toHaveText(['Dokumenty', 'Miejsca', 'Partnerzy'])
   await expect(
     navigation.getByRole('button', { name: 'Strona główna' }).locator('..').locator('a'),
   ).toHaveText(['Podstawowe', 'Nagłówek', 'Hero', 'Treści', 'Stopka'])

@@ -343,16 +343,33 @@ test('selects a manual Listing target through separate type and target fields', 
   })
 })
 
-test('uses full-width map previews in Events and Cycle defaults', async ({ page }) => {
+test('uses a full-width map preview in the Location form', async ({ page }) => {
   await login({ page, user: editorTestUser })
+  await page.goto('/admin/collections/locations/create')
+
   const mapURL = 'https://www.google.com/maps/embed?pb=e2e'
+  await page.route(mapURL, (route) => route.fulfill({ body: 'Example map' }))
+  await page.locator('#field-mapEmbedURL').fill(mapURL)
+  const frame = page.locator('iframe[title="Podgląd mapy miejsca"]')
+  await expect(frame).toHaveCount(0)
+  await page.getByRole('button', { name: 'Wczytaj podgląd Map Google' }).click()
+  await expect(frame).toBeVisible()
+  await expect(frame).toHaveAttribute('src', mapURL)
 
-  await page.goto('/admin/collections/events/create')
-  await assertFullWidthMapPreview(page, '#field-location__mapEmbedURL', mapURL)
+  const dimensions = await frame.evaluate((element) => {
+    const frameBounds = element.getBoundingClientRect()
+    const fieldBounds = element.parentElement?.getBoundingClientRect()
 
-  await page.goto('/admin/collections/event-cycles/create')
-  await page.getByRole('button', { name: 'Domyślne dane Wydarzenia' }).click()
-  await assertFullWidthMapPreview(page, '#field-eventDefaults__location__mapEmbedURL', mapURL)
+    return {
+      fieldWidth: fieldBounds?.width ?? 0,
+      frameHeight: frameBounds.height,
+      frameWidth: frameBounds.width,
+    }
+  })
+
+  expect(dimensions.frameWidth).toBeGreaterThan(700)
+  expect(Math.abs(dimensions.frameWidth - dimensions.fieldWidth)).toBeLessThan(2)
+  expect(dimensions.frameWidth / dimensions.frameHeight).toBeCloseTo(16 / 9, 1)
 })
 
 test('hides taxonomy columns in Category and Tag related-content lists', async ({ page }) => {
@@ -416,33 +433,6 @@ async function getFieldTop(
       const field = element.closest('.field-type') ?? element
       return field.getBoundingClientRect().top
     })
-}
-
-async function assertFullWidthMapPreview(
-  page: import('@playwright/test').Page,
-  fieldSelector: string,
-  mapURL: string,
-): Promise<void> {
-  await page.locator(fieldSelector).fill(mapURL)
-  await expect(page.locator('iframe[title="Podgląd mapy wydarzenia"]')).toHaveCount(0)
-  await page.getByRole('button', { name: 'Wczytaj podgląd Map Google' }).last().click()
-  const frame = page.locator('iframe[title="Podgląd mapy wydarzenia"]').last()
-  await expect(frame).toBeVisible()
-
-  const dimensions = await frame.evaluate((element) => {
-    const frameBounds = element.getBoundingClientRect()
-    const fieldBounds = element.parentElement?.getBoundingClientRect()
-
-    return {
-      fieldWidth: fieldBounds?.width ?? 0,
-      frameHeight: frameBounds.height,
-      frameWidth: frameBounds.width,
-    }
-  })
-
-  expect(dimensions.frameWidth).toBeGreaterThan(700)
-  expect(Math.abs(dimensions.frameWidth - dimensions.fieldWidth)).toBeLessThan(2)
-  expect(dimensions.frameWidth / dimensions.frameHeight).toBeCloseTo(16 / 9, 1)
 }
 
 async function cleanupFixtures(): Promise<void> {

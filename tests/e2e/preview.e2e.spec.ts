@@ -173,6 +173,7 @@ test.beforeAll(async () => {
           items: [
             { blockType: 'pageTemplateIcon', iconName: 'seance' },
             { blockType: 'currentItemField', field: 'eventType', variant: 'emphasizedBadge' },
+            { blockType: 'fieldRowText', text: createLexicalDocument('—') },
           ],
         },
         {
@@ -378,7 +379,7 @@ test('previews a draft page template before enabling template rendering publicly
   await blockDrawer.locator('.drawer__header__close').click()
 
   await expect(
-    heroField.getByText(': Ikona seance + Typ wydarzenia', {
+    heroField.getByText(': Ikona seance + Typ wydarzenia + "—"', {
       exact: true,
     }),
   ).toBeVisible()
@@ -481,7 +482,7 @@ test('previews a draft page template before enabling template rendering publicly
         return { left, right, verticalCenter: top + height / 2 }
       }),
     )
-    expect(rowItems).toHaveLength(4)
+    expect(rowItems).toHaveLength(3)
     for (let index = 1; index < rowItems.length; index += 1) {
       expect(rowItems[index].left).toBeGreaterThanOrEqual(rowItems[index - 1].right)
       expect(rowItems[index].verticalCenter).toBeCloseTo(rowItems[0].verticalCenter, 0)
