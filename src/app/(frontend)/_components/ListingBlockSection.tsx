@@ -9,7 +9,6 @@ import {
 } from '@/modules/content/content-listing'
 import type { ListingConditionInput } from '@/modules/content/listing-conditions'
 import type { CurrentListingTarget } from '@/modules/content/listing-conditions'
-import { isFilteredEventsListing } from '@/modules/page-templates/events-index-listings'
 import { resolvePageTemplateListingItems } from '@/modules/page-templates/page-template-context'
 
 import type { ContentLayoutDocument } from './ContentLayoutRenderer'
@@ -47,14 +46,10 @@ export async function resolveListingBlockSection({
     searchParams,
   })
   const usesContextRelation = block.selectionMode === 'contextRelation'
-  const usesEventsIndexTime =
-    'templateKey' in document &&
-    document.templateKey === 'events-index' &&
-    isFilteredEventsListing(block)
   const result = await findPublicContent({
     conditions: (block.conditions ?? []) as ListingConditionInput[],
     currentTarget,
-    eventTimeScope: usesEventsIndexTime ? 'eventsIndex' : undefined,
+    includeInactiveLocations: Boolean(block.includeInactiveLocations),
     manualItems: usesContextRelation
       ? resolvePageTemplateListingItems(getContextRelation(block), document)
       : getManualItems(block),

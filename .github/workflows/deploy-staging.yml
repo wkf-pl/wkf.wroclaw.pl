@@ -191,6 +191,21 @@ jobs:
           push: true
           tags: ${{ steps.registry.outputs.login_server }}/wkf-operations:${{ env.SOURCE_SHA }}
 
+      - name: Build and push staging ingress
+        id: ingress-image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: maintenance-ingress
+          push: true
+          tags: ${{ steps.registry.outputs.login_server }}/wkf-staging-ingress:${{ env.SOURCE_SHA }}
+
+      - name: Provision staging ingress before application rollout
+        if: steps.plan.outputs.existing_image_reference != ''
+        env:
+          INGRESS_IMAGE_REFERENCE: ${{ steps.registry.outputs.login_server }}/wkf-staging-ingress@${{ steps.ingress-image.outputs.digest }}
+        run: bash scripts/deploy-staging-ingress.sh "$INGRESS_IMAGE_REFERENCE"
+
       - name: Resolve deployment image
         id: deployment-image
         env:
@@ -220,6 +235,7 @@ jobs:
         id: rollout
         env:
           IMAGE_REFERENCE: ${{ steps.deployment-image.outputs.image_reference }}
+          STAGING_INGRESS_REQUIRED: ${{ steps.plan.outputs.existing_image_reference != '' }}
         run: |
           deployment_options=()
           if [[ "${{ steps.plan.outputs.provision_infrastructure }}" == "true" ]]; then
@@ -231,6 +247,12 @@ jobs:
 
           bash scripts/deploy-azure.sh staging "$IMAGE_REFERENCE" "${deployment_options[@]}"
           echo "deployed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Provision staging ingress for a new environment
+        if: steps.plan.outputs.existing_image_reference == ''
+        env:
+          INGRESS_IMAGE_REFERENCE: ${{ steps.registry.outputs.login_server }}/wkf-staging-ingress@${{ steps.ingress-image.outputs.digest }}
+        run: bash scripts/deploy-staging-ingress.sh "$INGRESS_IMAGE_REFERENCE"
 
       - name: Publish promotion details
         if: steps.rollout.outputs.deployed == 'true'

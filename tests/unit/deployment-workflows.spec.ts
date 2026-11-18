@@ -98,44 +98,34 @@ describe('deployment workflows', () => {
     )
   })
 
-  it('promotes the global Ubuntu archive in the runner mirror list', () => {
+  it.each([
+    'mirror+file:/etc/apt/apt-mirrors.txt',
+    'http://azure.archive.ubuntu.com/ubuntu/',
+    'http://us-east-2.ec2.archive.ubuntu.com/ubuntu',
+    'https://archive.ubuntu.com/ubuntu/',
+  ])('uses the global Ubuntu archive when the runner source is %s', (archiveSource) => {
     const fixtureDirectory = mkdtempSync(join(tmpdir(), 'wkf-apt-mirror-'))
     const ubuntuSourcesPath = join(fixtureDirectory, 'ubuntu.sources')
-    const mirrorListPath = join(fixtureDirectory, 'apt-mirrors.txt')
-
-    writeFileSync(
-      ubuntuSourcesPath,
+    const securitySource = 'URIs: http://security.ubuntu.com/ubuntu/'
+    const sources = (archive: string) =>
       [
         'Types: deb',
-        'URIs: mirror+file:/etc/apt/apt-mirrors.txt',
-        'Suites: noble noble-updates noble-backports noble-security',
+        `URIs: ${archive}`,
+        'Suites: noble noble-updates noble-backports',
         '',
-      ].join('\n'),
-    )
-    writeFileSync(
-      mirrorListPath,
-      [
-        'http://azure.archive.ubuntu.com/ubuntu/\tpriority:1',
-        'https://archive.ubuntu.com/ubuntu/\tpriority:2',
-        'https://security.ubuntu.com/ubuntu/\tpriority:3',
+        'Types: deb',
+        securitySource,
+        'Suites: noble-security',
         '',
-      ].join('\n'),
-    )
+      ].join('\n')
 
     try {
-      execFileSync(
-        'bash',
-        ['scripts/configure-ci-ubuntu-mirror.sh', ubuntuSourcesPath, mirrorListPath],
-        { stdio: 'pipe' },
-      )
-
-      expect(readFileSync(mirrorListPath, 'utf8')).toBe(
-        [
-          'http://azure.archive.ubuntu.com/ubuntu/\tpriority:2',
-          'https://archive.ubuntu.com/ubuntu/\tpriority:1',
-          'https://security.ubuntu.com/ubuntu/\tpriority:3',
-          '',
-        ].join('\n'),
+      writeFileSync(ubuntuSourcesPath, sources(archiveSource))
+      execFileSync('bash', ['scripts/configure-ci-ubuntu-mirror.sh', ubuntuSourcesPath], {
+        stdio: 'pipe',
+      })
+      expect(readFileSync(ubuntuSourcesPath, 'utf8')).toBe(
+        sources('https://archive.ubuntu.com/ubuntu/'),
       )
     } finally {
       rmSync(fixtureDirectory, { force: true, recursive: true })

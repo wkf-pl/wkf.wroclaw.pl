@@ -1,4 +1,4 @@
-# Off-site backup storage format v3
+# Content-addressed off-site backups
 
 Status: accepted for immediate rollout.
 
@@ -75,33 +75,28 @@ Format v3 separates a logical recovery point from physical media storage:
 There is no mutable global index. The object pool can be reconstructed from signed snapshot
 manifests, and snapshot deletion does not automatically garbage-collect objects.
 
-## Integrity and repair
+## Production measurements and Azure recovery evidence
 
-`check-offsite-backup-repository.sh` is read-only by default. It verifies both replica checksums,
-requires the replicas to use different inodes, and verifies that each snapshot object is hard-linked
-to a repository replica. `--repair` may copy a healthy replica over one damaged replica or recreate
-a broken snapshot link. It refuses repair when both replicas of an object are damaged.
+On 2026-11-13, the MyDevil repository checker passed for 21 format-v3 snapshots and 39 unique
+media objects. Their manifests contained 676 media references. The encrypted media would have
+occupied about 469 MiB in independent copies, versus about 93 MiB in the shared pool including
+both replicas. That is about 80% less media storage. The entire v3 repository occupied about
+156 MiB on disk, including independent database dumps and metadata.
 
-A successful repository check is not a restore proof. Release and retention decisions still require
-full validation with the offline `age` identity and an isolated Azure restore drill.
+On 2026-11-17, an isolated Azure drill restored `production-20261112T165620Z` into temporary
+PostgreSQL and Blob Storage resources. It recovered 33 blobs and 63 migration records, with 398
+public tables and zero sessions. The image recorded in the backup (`95c6a8e`) returned HTTP 500
+on the homepage because it expected a column that had already been removed from the captured schema.
+With the newer image (`5f8d3a7`) and eight additional migrations applied to the temporary database,
+the homepage, admin and both health endpoints returned HTTP 200. JPEG and PDF range reads through
+the application returned HTTP 206 with the requested 32 bytes. The temporary resource group was
+deleted after the logs were collected.
 
-## Compatibility and rollout
-
-Backward compatibility with source backup format v2 is intentionally not retained. Restore exports
-continue to use their signed descriptor and `.complete` format v2, but their encrypted logical
-manifest is format v3.
-
-Rollout gates are:
-
-1. pass focused and repository-wide validation;
-2. install the v3 archiver, trusted signer file, and repository checker on MyDevil;
-3. create and fully validate two v3 snapshots;
-4. run the repository checker;
-5. prove one selected v3 snapshot with an isolated Azure restore drill;
-6. only then remove the legacy v2 archive.
-
-Production restore remains a separate approval-gated operation. A successful isolated drill does
-not authorize replacing production data.
+This drill verified recovery from a deduplicated backup by upgrading the restored data. Exact
+historical restore, including image/schema compatibility checks at backup creation, rescue
+classification and rejection of such copies by exact-restore preflight, is tracked in
+[#53](https://github.com/wkf-pl/wkf.wroclaw.pl/issues/53). Automated retention is tracked in
+[#41](https://github.com/wkf-pl/wkf.wroclaw.pl/issues/41).
 
 ## Cost and operational effort
 
@@ -121,3 +116,5 @@ Media growth is proportional to unique content with a fixed two-replica overhead
 and metadata still grow per snapshot. A corrupt single replica is locally repairable. The main
 tradeoff is greater archiver complexity and the need for explicit garbage collection; deleting a
 snapshot alone must never delete shared objects.
+
+See the [operations runbook](../Operations.md) for repository checks, repair and restore procedures.

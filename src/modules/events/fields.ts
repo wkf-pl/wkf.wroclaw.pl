@@ -1,18 +1,16 @@
 import type { Field } from 'payload'
 
 import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
+import { withFieldWidth } from '@/modules/content/editorial-fields'
+import { createLocationRelationship } from '@/modules/locations/relationship'
 import { createLinkFields } from '@/modules/navigation/fields'
 
 import {
   capacityModeOptions,
-  eventStatusOptions,
   participationOptions,
   partnerRoleOptions,
   timeModeOptions,
 } from './constants'
-import { normalizeGoogleMapsEmbedField, validateGoogleMapsEmbed } from './map-embed'
-import { resolveEventStatusField } from './event-status'
-import { validatePostalCode, validateVenueWebsite } from './validation'
 
 export {
   validateClockTime,
@@ -22,7 +20,7 @@ export {
 } from './validation'
 
 type CapacitySiblingData = { capacity?: unknown; capacityMode?: unknown }
-type ScheduleSiblingData = { endAt?: unknown; eventStatus?: unknown; startAt?: unknown }
+type ScheduleSiblingData = { startAt?: unknown }
 
 export function validateCapacity(
   value: unknown,
@@ -44,161 +42,42 @@ export function validateEventEnd(
     : 'Koniec wydarzenia nie może poprzedzać początku.'
 }
 
-export function createLocationFields({
-  compactAddressRow = false,
-  prefix = '',
-}: { compactAddressRow?: boolean; prefix?: string } = {}): Field[] {
-  return [
-    {
-      type: 'row',
-      fields: [
-        {
-          name: `${prefix}venueName`,
-          type: 'text',
-          admin: { width: '50%' },
-          label: 'Nazwa miejsca',
-        },
-        {
-          name: `${prefix}venueWebsite`,
-          type: 'text',
-          admin: {
-            components: {
-              Field: '/components/admin/BlurValidatedTextField#BlurValidatedTextField',
-            },
-            custom: { validationKind: 'venueWebsite' },
-            width: '50%',
-          },
-          label: 'Strona WWW miejsca',
-          validate: validateVenueWebsite,
-        },
-      ],
-    },
-    ...(compactAddressRow
-      ? [
-          {
-            type: 'row' as const,
-            fields: [
-              {
-                name: `${prefix}streetAddress`,
-                type: 'text' as const,
-                admin: { width: '50%' },
-                label: 'Adres',
-              },
-              {
-                name: `${prefix}postalCode`,
-                type: 'text' as const,
-                admin: {
-                  components: {
-                    Field: '/components/admin/BlurValidatedTextField#BlurValidatedTextField',
-                  },
-                  custom: { validationKind: 'postalCode' },
-                  width: '25%',
-                },
-                label: 'Kod pocztowy',
-                validate: validatePostalCode,
-              },
-              {
-                name: `${prefix}city`,
-                type: 'text' as const,
-                admin: { width: '25%' },
-                defaultValue: 'Wrocław',
-                label: 'Miejscowość',
-              },
-            ],
-          },
-        ]
-      : [
-          {
-            name: `${prefix}streetAddress`,
-            type: 'text' as const,
-            label: 'Ulica i numer',
-          },
-          {
-            type: 'row' as const,
-            fields: [
-              {
-                name: `${prefix}postalCode`,
-                type: 'text' as const,
-                admin: {
-                  components: {
-                    Field: '/components/admin/BlurValidatedTextField#BlurValidatedTextField',
-                  },
-                  custom: { validationKind: 'postalCode' },
-                  width: '25%',
-                },
-                label: 'Kod pocztowy',
-                validate: validatePostalCode,
-              },
-              {
-                name: `${prefix}city`,
-                type: 'text' as const,
-                admin: { width: '75%' },
-                defaultValue: 'Wrocław',
-                label: 'Miejscowość',
-              },
-            ],
-          },
-        ]),
-    {
-      name: `${prefix}mapEmbedURL`,
-      type: 'text',
-      admin: {
-        components: { Field: '/components/admin/GoogleMapEmbedField#GoogleMapEmbedField' },
-        description:
-          'W Mapach Google wybierz „Udostępnij → Umieść mapę” i wklej skopiowany kod HTML.',
+export function createEventLocationRow(): Field {
+  return {
+    type: 'row',
+    fields: [
+      withFieldWidth(createLocationRelationship(), '50%'),
+      {
+        name: 'participation',
+        type: 'select',
+        admin: { isClearable: false, width: '16.6666%' },
+        defaultValue: 'public',
+        label: 'Uczestnictwo',
+        options: [...participationOptions],
+        required: true,
       },
-      hooks: { beforeValidate: [normalizeGoogleMapsEmbedField] },
-      label: 'Mapa Google',
-      validate: validateGoogleMapsEmbed,
-    },
-    {
-      name: `${prefix}country`,
-      type: 'text',
-      admin: { hidden: true, readOnly: true },
-      defaultValue: 'Polska',
-      label: 'Kraj',
-      required: true,
-    },
-  ]
-}
-
-export function createParticipationFields({ prefix = '' }: { prefix?: string } = {}): Field[] {
-  return [
-    {
-      type: 'row',
-      fields: [
-        {
-          name: `${prefix}participation`,
-          type: 'select',
-          admin: { isClearable: false, width: '50%' },
-          defaultValue: 'public',
-          label: 'Uczestnictwo',
-          options: [...participationOptions],
-          required: true,
+      {
+        name: 'capacityMode',
+        type: 'select',
+        admin: { isClearable: false, width: '16.6666%' },
+        defaultValue: 'unlimited',
+        label: 'Liczba miejsc',
+        options: [...capacityModeOptions],
+        required: true,
+      },
+      {
+        name: 'capacity',
+        type: 'number',
+        admin: {
+          condition: (_data, siblingData) => siblingData.capacityMode !== 'unlimited',
+          width: '16.6666%',
         },
-        {
-          name: `${prefix}capacityMode`,
-          type: 'select',
-          admin: { isClearable: false, width: '25%' },
-          defaultValue: 'unlimited',
-          label: 'Liczba miejsc',
-          options: [...capacityModeOptions],
-          required: true,
-        },
-        {
-          name: `${prefix}capacity`,
-          type: 'number',
-          admin: {
-            condition: (_data, siblingData) => siblingData[`${prefix}capacityMode`] !== 'unlimited',
-            width: '25%',
-          },
-          label: 'Miejsca',
-          min: 1,
-          validate: validateCapacity,
-        },
-      ],
-    },
-  ]
+        label: 'Miejsca',
+        min: 1,
+        validate: validateCapacity,
+      },
+    ],
+  }
 }
 
 export function createOrganizerField({ name = 'organizers' }: { name?: string } = {}): Field {
@@ -317,7 +196,7 @@ export function createScheduleFields(): Field[] {
               pickerAppearance: 'dayAndTime',
               timeFormat: 'HH:mm',
             },
-            width: '33.333%',
+            width: '50%',
           },
           index: true,
           label: 'Początek',
@@ -332,24 +211,11 @@ export function createScheduleFields(): Field[] {
               pickerAppearance: 'dayAndTime',
               timeFormat: 'HH:mm',
             },
-            width: '33.333%',
+            width: '50%',
           },
           index: true,
           label: 'Koniec',
           validate: validateEventEnd,
-        },
-        {
-          name: 'eventStatus',
-          type: 'select',
-          admin: { isClearable: false, width: '33.333%' },
-          defaultValue: 'scheduled',
-          hooks: {
-            afterRead: [resolveEventStatusField],
-            beforeChange: [resolveEventStatusField],
-          },
-          label: 'Stan wydarzenia',
-          options: [...eventStatusOptions],
-          required: true,
         },
       ],
     },

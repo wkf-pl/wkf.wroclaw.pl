@@ -1,16 +1,26 @@
+import { getPopulatedRelationship } from '@/lib/relationships'
 import type { Event, EventCycle, Partner } from '@/payload-types'
 import { extractRichTextText } from '@/modules/content/rich-text'
 import { getMediaURL } from '@/modules/media/media-url'
 
 export function createEventStructuredData(event: Event) {
-  const status =
-    event.eventStatus === 'cancelled'
-      ? 'https://schema.org/EventCancelled'
-      : event.eventStatus === 'postponed'
-        ? 'https://schema.org/EventPostponed'
-        : event.eventStatus === 'rescheduled'
-          ? 'https://schema.org/EventRescheduled'
-          : 'https://schema.org/EventScheduled'
+  const location = getPopulatedRelationship(event.location)
+  const physicalLocation = location
+    ? {
+        '@type': 'Place',
+        name: location.venueName,
+        address: {
+          '@type': 'PostalAddress',
+          streetAddress: location.streetAddress,
+          postalCode: location.postalCode,
+          addressLocality: location.city,
+          addressCountry: location.country,
+        },
+      }
+    : undefined
+  const onlineLocation = event.onlineEventURL
+    ? { '@type': 'VirtualLocation', url: event.onlineEventURL }
+    : undefined
   return {
     '@context': 'https://schema.org',
     '@type': 'Event',
@@ -18,23 +28,18 @@ export function createEventStructuredData(event: Event) {
     description: extractRichTextText(event.excerpt),
     startDate: event.startAt,
     endDate: event.endAt || undefined,
-    eventStatus: status,
-    previousStartDate: event.previousStartAt || undefined,
-    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    eventAttendanceMode: onlineLocation
+      ? physicalLocation
+        ? 'https://schema.org/MixedEventAttendanceMode'
+        : 'https://schema.org/OnlineEventAttendanceMode'
+      : physicalLocation
+        ? 'https://schema.org/OfflineEventAttendanceMode'
+        : undefined,
     image: getMediaURL(event.heroImage),
-    location: event.location?.venueName
-      ? {
-          '@type': 'Place',
-          name: event.location.venueName,
-          address: {
-            '@type': 'PostalAddress',
-            streetAddress: event.location.streetAddress,
-            postalCode: event.location.postalCode,
-            addressLocality: event.location.city,
-            addressCountry: 'PL',
-          },
-        }
-      : undefined,
+    location:
+      physicalLocation && onlineLocation
+        ? [physicalLocation, onlineLocation]
+        : (physicalLocation ?? onlineLocation),
     organizer: {
       '@type': 'Organization',
       name: 'Wrocławski Klub Fantastyki',

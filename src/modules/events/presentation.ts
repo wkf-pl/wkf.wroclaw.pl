@@ -1,6 +1,6 @@
-import type { Event } from '@/payload-types'
+import type { Event, Location } from '@/payload-types'
 
-import { eventStatusOptions, partnerRoleOptions } from './constants'
+import { partnerRoleOptions } from './constants'
 
 const dateFormatter = new Intl.DateTimeFormat('pl-PL', {
   dateStyle: 'long',
@@ -81,19 +81,20 @@ export function formatEventStartDate(event: Pick<Event, 'startAt' | 'timeMode'>)
     : `${startDate}, ${timeFormatter.format(start)}`
 }
 
-export function getEventStatusLabel(status: Event['eventStatus']): string {
-  return eventStatusOptions.find((option) => option.value === status)?.label ?? status
-}
-
 export function formatEventCapacity(event: Pick<Event, 'capacity' | 'capacityMode'>): string {
   if (event.capacityMode === 'unlimited') return 'Bez limitu'
   if (!event.capacity) return 'Liczba miejsc do potwierdzenia'
   return event.capacityMode === 'approximate' ? `Około ${event.capacity}` : String(event.capacity)
 }
 
-export function formatEventLocationAddress(location: Event['location']): string {
+export function formatEventLocationAddress(
+  location: Pick<Location, 'postalCode' | 'city' | 'streetAddress' | 'country'> | null | undefined,
+): string {
+  if (!location) return ''
   const cityLine = [location.postalCode, location.city].filter(Boolean).join(' ')
-  return [location.streetAddress, cityLine].filter(Boolean).join(', ')
+  return [location.streetAddress, cityLine, location.country === 'Polska' ? null : location.country]
+    .filter(Boolean)
+    .join(', ')
 }
 
 export function getEventAudienceLabel(participation: Event['participation']): string {

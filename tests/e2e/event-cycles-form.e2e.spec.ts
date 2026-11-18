@@ -85,64 +85,36 @@ test('renders Cycle tabs, generated URL and grammatical creation labels', async 
   expectSingleRow(
     await getFieldLayout(
       page,
-      '#field-eventDefaults__location__streetAddress, #field-eventDefaults__location__postalCode, #field-eventDefaults__location__city',
+      '#field-eventDefaults__location, #field-eventDefaults__participation, #field-eventDefaults__capacityMode',
     ),
-    ['50%', '25%', '25%'],
-  )
-  expectSingleRow(
-    await getFieldLayout(
-      page,
-      '#field-eventDefaults__participation, #field-eventDefaults__capacityMode',
-    ),
-    ['50%', '25%'],
+    ['50%', '16.6666%', '16.6666%'],
   )
   await expect(page.locator('#field-eventDefaults__capacity')).toHaveCount(0)
 
-  const venueWebsite = page.locator('#field-eventDefaults__location__venueWebsite')
-  await venueWebsite.fill('https://wiking.')
-  await page.locator('#field-eventDefaults__location__streetAddress').click()
-  await expect(
-    page.getByText('Podaj poprawny adres HTTP lub HTTPS.', { exact: true }),
-  ).toBeVisible()
-  await expect(
-    venueWebsite.locator(
-      'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " field-type ")][1]',
-    ),
-  ).toHaveClass(/error/)
-
-  await venueWebsite.fill('https://wiking.pl')
-  await page.locator('#field-eventDefaults__location__postalCode').fill('50001')
-  await page.locator('#field-eventDefaults__location__city').click()
-  await expect(
-    page.getByText('Podaj kod pocztowy w formacie 00-000.', { exact: true }),
-  ).toBeVisible()
-
-  await page.locator('#field-eventDefaults__location__postalCode').fill('50-001')
-  await page.locator('#field-eventDefaults__location__mapEmbedURL').fill('https://example.test/map')
-  await page.locator('#field-eventDefaults__location__city').click()
-  await expect(page.getByText(/Wklej kod osadzenia mapy Google/)).toBeVisible()
+  await expect(page.locator('#field-eventDefaults__location')).toBeVisible()
 
   await page.goto('/admin/collections/events/create')
   await expect(page.locator('.doc-controls__meta')).toContainText('Tworzenie nowego Wydarzenia')
   await expect(page.getByRole('button', { name: 'Dodaj następne' })).toHaveCount(0)
   await expect(page.locator('#field-timeMode')).toBeHidden()
-  expectSingleRow(await getFieldLayout(page, '#field-startAt, #field-endAt, #field-eventStatus'), [
-    '33.333%',
-    '33.333%',
-    '33.333%',
-  ])
+  await expect(page.locator('#field-location')).toBeVisible()
+  await expect(page.locator('#field-onlineEventURL')).toBeVisible()
+  expectSingleRow(await getFieldLayout(page, '#field-startAt, #field-endAt'), ['50%', '50%'])
+
   expectSingleRow(
-    await getFieldLayout(
-      page,
-      '#field-location__streetAddress, #field-location__postalCode, #field-location__city',
-    ),
-    ['50%', '25%', '25%'],
+    await getFieldLayout(page, '#field-location, #field-participation, #field-capacityMode'),
+    ['50%', '16.6666%', '16.6666%'],
   )
-  expectSingleRow(await getFieldLayout(page, '#field-participation, #field-capacityMode'), [
-    '50%',
-    '25%',
-  ])
   await expect(page.locator('#field-capacity')).toHaveCount(0)
+
+  await page.goto('/admin/collections/locations/create')
+  await expect(page.locator('#field-venueName')).toBeVisible()
+  await expect(page.locator('#field-venueWebsite')).toBeVisible()
+  await expect(page.locator('#field-city')).toHaveValue('Wrocław')
+  await expect(page.locator('#field-country')).toHaveValue('Polska')
+  await expect(page.getByText('Aktywne miejsce', { exact: true })).toBeVisible()
+  await page.locator('#field-mapEmbedURL').fill('https://www.google.com/maps/embed?pb=test')
+  await expect(page.getByRole('button', { name: 'Wczytaj podgląd Map Google' })).toBeVisible()
 
   await page.goto('/admin/collections/partners')
   await expect(

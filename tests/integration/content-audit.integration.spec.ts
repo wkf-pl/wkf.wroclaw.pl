@@ -147,6 +147,22 @@ describe('content audit log', () => {
         data: { deletedAt: new Date().toISOString() },
       })
       await payload.update({ ...options, id: post.id, trash: true, data: { deletedAt: null } })
+      const beforeDelete = await payload.find({
+        collection: 'content-audit-log',
+        pagination: false,
+        where: { target: { equals: 'posts' }, targetId: { equals: String(post.id) } },
+      })
+      const savedVersions = await payload.findVersions({ ...versionQuery, trash: true })
+      const versionIds = beforeDelete.docs.map(({ versionId }) => versionId)
+      expect(new Set(versionIds).size).toBe(beforeDelete.docs.length)
+      for (const entry of beforeDelete.docs) {
+        const savedVersion = savedVersions.docs.find(({ id }) => String(id) === entry.versionId)
+        expect(savedVersion?.version.title).toBe(entry.title)
+        expect(entry.versionId).not.toBe(String(afterPreviews.docs[0]!.id))
+      }
+      expect(beforeDelete.docs.find(({ action }) => action === 'create')?.versionId).toBe(
+        String(versions.docs[0]!.id),
+      )
       await payload.delete({ ...options, id: post.id })
 
       const where: Where = {

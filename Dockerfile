@@ -44,6 +44,20 @@ FROM dependencies AS production-dependencies
 
 RUN pnpm prune --prod
 
+FROM dependencies AS maintenance-pages
+
+COPY tsconfig.json ./
+COPY scripts/generate-maintenance-pages.tsx ./scripts/
+COPY src/components/http-errors ./src/components/http-errors
+COPY public/assets ./public/assets
+RUN node --import tsx/esm scripts/generate-maintenance-pages.tsx /maintenance-pages
+
+FROM nginx:1.30.0-alpine AS maintenance-ingress
+
+ENV MAINTENANCE_ENABLED=0
+COPY infra/azure/maintenance/default.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=maintenance-pages /maintenance-pages /opt/wkf/errors
+
 FROM base AS runner
 
 ENV HOSTNAME="0.0.0.0"

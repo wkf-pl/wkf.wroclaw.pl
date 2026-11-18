@@ -26,7 +26,7 @@ test('groups editor navigation with the intended labels and order', async ({ pag
   ])
   await expect(
     navigation.getByRole('button', { name: 'Klubowe' }).locator('..').locator('a'),
-  ).toHaveText(['Dokumenty', 'Partnerzy'])
+  ).toHaveText(['Dokumenty', 'Miejsca', 'Partnerzy'])
   await expect(
     navigation.getByRole('button', { name: 'Strona główna' }).locator('..').locator('a'),
   ).toHaveText(['Podstawowe', 'Nagłówek', 'Hero', 'Treści', 'Stopka'])
@@ -76,10 +76,9 @@ test('shows the fixed page template collection to administrators', async ({ page
   test.setTimeout(60_000)
   await login({ page, user: administratorTestUser })
 
-  await expect(page.getByRole('link', { name: 'Szablony stron' })).toHaveAttribute(
-    'href',
-    '/admin/collections/page-templates',
-  )
+  await expect(
+    page.locator('aside nav').getByRole('link', { name: 'Szablony stron', exact: true }),
+  ).toHaveAttribute('href', '/admin/collections/page-templates')
 
   await page.goto('/admin/collections/roles')
   const collectionTitleBox = await page

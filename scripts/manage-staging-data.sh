@@ -67,6 +67,8 @@ active_image_reference=""
 deployed_source_sha=""
 firewall_rule_created=false
 maintenance_started=false
+staging_ingress_in_maintenance=false
+source scripts/staging-ingress-mode.sh
 application_reactivated=false
 destructive_restore_started=false
 operation_succeeded=false
@@ -87,7 +89,7 @@ reactivate_application() {
   az containerapp revision activate \
     --resource-group "$resource_group_name" \
     --revision "$active_revision" \
-    --output none
+    --output none || return 1
   application_reactivated=true
   echo "Reactivated staging revision: $active_revision"
 }
@@ -125,6 +127,12 @@ cleanup() {
       --output none \
       || echo "WARNING: Staging revision could not be returned to maintenance mode." >&2
     echo "Restore validation failed. Staging was returned to maintenance mode." >&2
+  fi
+
+  if [[ "$operation_succeeded" != "true" && "$staging_ingress_in_maintenance" == "true" ]] &&
+    [[ "$operation" == "backup" || "$destructive_restore_started" != "true" ]] &&
+    wait_for_application; then
+    set_staging_ingress_mode 0 || echo 'Could not restore traffic through staging ingress.' >&2
   fi
 
   rm -rf -- "$temporary_directory"
@@ -205,6 +213,11 @@ start_maintenance() {
     --revision "$active_revision" \
     --query properties.active \
     --output tsv)"
+  if [[ "${STAGING_INGRESS_REQUIRED:-false}" == "true" ]]; then
+    staging_ingress_in_maintenance=true
+    set_staging_ingress_mode 1
+  fi
+  maintenance_started=true
   if [[ "$revision_active" == "true" ]]; then
     az containerapp revision deactivate \
       --resource-group "$resource_group_name" \
@@ -213,7 +226,9 @@ start_maintenance() {
   else
     echo "Staging revision is already inactive: $active_revision"
   fi
-  maintenance_started=true
+  if [[ "$staging_ingress_in_maintenance" == "true" ]]; then
+    wait_for_staging_ingress 503 "$(staging_ingress_url)" /
+  fi
   echo "Staging maintenance started after deactivating revision: $active_revision"
 }
 
@@ -632,6 +647,9 @@ fi
 
 reactivate_application
 wait_for_application
+if [[ "$staging_ingress_in_maintenance" == "true" ]]; then
+  set_staging_ingress_mode 0
+fi
 operation_succeeded=true
 
 if [[ "${GITHUB_STEP_SUMMARY:-}" != "" ]]; then

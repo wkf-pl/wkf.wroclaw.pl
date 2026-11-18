@@ -59,10 +59,9 @@ test.beforeAll(async () => {
         author: { relationTo: 'users', value: author.id },
         calendarRevision: 0,
         capacityMode: 'unlimited',
-        eventStatus: 'scheduled',
         eventType: eventType.id,
         excerpt: createLexicalDocument(`Streszczenie wydarzenia karuzeli E2E ${index + 1}.`),
-        location: { country: 'Polska' },
+
         participation: 'public',
         layout: [
           {

@@ -39,6 +39,7 @@ describe('listing conditions', () => {
       'event-cycles',
       'documents',
       'partners',
+      'locations',
       'member-profiles',
     ])
     expect(listingSourceLabels).toMatchObject({
@@ -72,7 +73,12 @@ describe('listing conditions', () => {
     expect(listingConditionSupportedSources.parentPage).toEqual(['pages'])
     expect(listingConditionSupportedSources.eventCycle).toEqual(['events'])
     expect(listingConditionSupportedSources.eventTime).toEqual(['events'])
-    expect(listingConditionSupportedSources.relatedTo).toEqual(['posts', 'events', 'event-cycles'])
+    expect(listingConditionSupportedSources.relatedTo).toEqual([
+      'locations',
+      'posts',
+      'events',
+      'event-cycles',
+    ])
     expect(listingConditionSupportedSources.significantDate).toEqual([
       'posts',
       'events',
@@ -259,7 +265,7 @@ describe('listing conditions', () => {
       }),
     ).toEqual({
       or: [
-        { source: { not_in: ['posts', 'events', 'event-cycles'] } },
+        { source: { not_in: ['locations', 'posts', 'events', 'event-cycles'] } },
         { relatedTargetSearchIndex: { contains: '|partners:7|' } },
       ],
     })

@@ -4,11 +4,14 @@ import type {
   Document,
   Event,
   EventCycle,
+  Location,
   MemberProfile,
   Page,
   Partner,
   Post,
 } from '@/payload-types'
+import { formatEventLocationAddress } from '@/modules/events/presentation'
+import { buildGoogleMapsURL } from '@/modules/events/map-embed'
 import { getRelationshipId } from '@/lib/relationships'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { extractRichTextText } from '@/modules/content/rich-text'
@@ -22,13 +25,14 @@ import {
 } from './listing-conditions'
 
 export type ContentListingDocument =
-  Document | Event | EventCycle | MemberProfile | Page | Partner | Post
+  Document | Event | EventCycle | Location | MemberProfile | Page | Partner | Post
 
 export type PublicContentListItem =
   | { document: Document; kind: 'documents'; url: string }
   | { document: EventCycle; kind: 'event-cycles'; url: string }
   | { document: Event; kind: 'events'; url: string }
   | { contextLabel?: null | string; document: MemberProfile; kind: 'member-profiles'; url: string }
+  | { document: Location; kind: 'locations'; url: string }
   | { document: Page; kind: 'pages'; url: string }
   | {
       contextLabel?: null | string
@@ -54,6 +58,7 @@ export type ContentListingIndexData = {
   eventStartAt: null | string
   excerpt: null | string
   hasSignificantDate: boolean
+  isInactiveLocation?: boolean
   heroImage: null | number
   normalizedTitle: string
   parentPage: null | number
@@ -93,6 +98,10 @@ export async function findPublishedContentListingDocument(
   }
 
   switch (source) {
+    case 'locations': {
+      const result = await req.payload.find({ ...query, collection: 'locations' })
+      return result.docs[0]
+    }
     case 'documents': {
       const result = await req.payload.find({
         ...query,
@@ -225,12 +234,24 @@ export function createContentListingIndexData(
   document: ContentListingDocument,
 ): ContentListingIndexData {
   switch (source) {
+    case 'locations': {
+      const location = document as Location
+      return {
+        ...createBaseIndexData(source, location, {
+          excerpt: formatEventLocationAddress(location),
+          title: location.venueName,
+          url:
+            location.venueWebsite || buildGoogleMapsURL({ ...location, name: location.venueName }),
+        }),
+        isInactiveLocation: !location.isActive,
+      }
+    }
     case 'documents':
       return createTaxonomizableIndexData(source, document as Document, {
         excerpt: (document as Document).summary?.trim() || null,
         heroImage: null,
         significantDate: (document as Document).documentDate,
-        url: `/dokumenty/${document.slug}`,
+        url: `/dokumenty/${(document as Document).slug}`,
       })
     case 'event-cycles': {
       const eventCycle = document as EventCycle
@@ -303,12 +324,13 @@ export async function hydrateContentListingItems(
     'member-profiles': [],
     pages: [],
     partners: [],
+    locations: [],
     posts: [],
   }
 
   for (const item of selectedItems) idsBySource[item.source].push(item.sourceDocumentId)
 
-  const [documents, eventCycles, events, memberProfiles, pages, partners, posts] =
+  const [documents, eventCycles, events, memberProfiles, pages, partners, posts, locations] =
     await Promise.all([
       findPublishedDocuments(payload, idsBySource.documents),
       findPublishedEventCycles(payload, idsBySource['event-cycles']),
@@ -317,9 +339,24 @@ export async function hydrateContentListingItems(
       findPublishedPages(payload, idsBySource.pages),
       findPublishedPartners(payload, idsBySource.partners),
       findPublishedPosts(payload, idsBySource.posts),
+      idsBySource.locations.length
+        ? payload
+            .find({
+              collection: 'locations',
+              context: publicRequestContext,
+              overrideAccess: false,
+              user: null,
+              draft: false,
+              pagination: false,
+              depth: 0,
+              where: { id: { in: idsBySource.locations } },
+            })
+            .then((result) => result.docs)
+        : [],
     ])
 
   const documentsByReference = new Map<string, ContentListingDocument>([
+    ...locations.map((document) => [`locations:${document.id}`, document] as const),
     ...documents.map((document) => [`documents:${document.id}`, document] as const),
     ...eventCycles.map((document) => [`event-cycles:${document.id}`, document] as const),
     ...events.map((document) => [`events:${document.id}`, document] as const),
@@ -334,6 +371,8 @@ export async function hydrateContentListingItems(
     if (!document) return []
 
     switch (item.source) {
+      case 'locations':
+        return [{ document: document as Location, kind: item.source, url: item.url }]
       case 'documents':
         return [{ document: document as Document, kind: item.source, url: item.url }]
       case 'event-cycles':

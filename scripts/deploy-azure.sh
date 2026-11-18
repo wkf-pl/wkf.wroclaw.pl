@@ -73,6 +73,8 @@ previous_image_reference=""
 previous_source_sha=""
 backup_name="not-requested"
 maintenance_started=false
+staging_ingress_in_maintenance=false
+source scripts/staging-ingress-mode.sh
 migration_completed=false
 application_update_started=false
 
@@ -261,6 +263,16 @@ rollback_deployment() {
   if [[ "$maintenance_started" == "true" || "$application_update_started" == "true" ]]; then
     if ! restore_previous_revision; then
       echo "Automatic application rollback failed. Restore the previous revision manually: $previous_revision" >&2
+      exit "$failure_status"
+    fi
+  fi
+
+  if [[ "$staging_ingress_in_maintenance" == "true" ]]; then
+    local origin_host
+    origin_host="$(az containerapp show --resource-group "$resource_group_name" --name "$application_name" \
+      --query properties.configuration.ingress.fqdn --output tsv)"
+    if [[ -n "$origin_host" ]] && wait_for_staging_ingress 200 "https://$origin_host" /api/health; then
+      set_staging_ingress_mode 0 || echo 'Could not restore traffic through staging ingress.' >&2
     fi
   fi
 
@@ -385,8 +397,15 @@ if [[ "$run_migrations" == "true" ]]; then
   fi
 
   if [[ "$application_exists" == "true" ]]; then
-    deactivate_revisions_except
+    if [[ "$target_environment" == "staging" && "${STAGING_INGRESS_REQUIRED:-false}" == "true" ]]; then
+      staging_ingress_in_maintenance=true
+      set_staging_ingress_mode 1
+    fi
     maintenance_started=true
+    deactivate_revisions_except
+    if [[ "$staging_ingress_in_maintenance" == "true" ]]; then
+      wait_for_staging_ingress 503 "$(staging_ingress_url)" /
+    fi
     echo "Maintenance mode started after deactivating active revisions."
   fi
 
@@ -416,11 +435,17 @@ if [[ "$application_exists" == "false" ]]; then
     --parameters customDomainCertificateId="${CUSTOM_DOMAIN_CERTIFICATE_ID:-}" redirectDomainCertificateId="${REDIRECT_DOMAIN_CERTIFICATE_ID:-}" deployApplication=true location="$azure_location" resourcePrefix="$resource_prefix" sourceSha="$source_sha" \
     --output none
 else
+  revision_options=()
+  if [[ "$staging_ingress_in_maintenance" == "true" ]]; then
+    # Container Apps can treat redeploying the same image and commit as a no-op.
+    revision_options+=(--revision-suffix "maintenance-$(date -u +%Y%m%d%H%M%S)-${RANDOM}")
+  fi
   az containerapp update \
     --name "$application_name" \
     --resource-group "$resource_group_name" \
     --image "$target_image_reference" \
     --set-env-vars "DEPLOYED_SOURCE_SHA=$source_sha" \
+    "${revision_options[@]}" \
     --output none
 fi
 
@@ -488,6 +513,9 @@ while ((SECONDS < health_deadline)); do
 
   if [[ "$health_check_succeeded" == "true" ]]; then
     trap - ERR
+    if [[ "$staging_ingress_in_maintenance" == "true" ]]; then
+      set_staging_ingress_mode 0
+    fi
     echo "Deployment checks succeeded: https://${application_fqdn}"
     echo "Rollback point: revision=${previous_revision:-none}, backup=${backup_name}"
     exit 0

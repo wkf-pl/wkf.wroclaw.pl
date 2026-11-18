@@ -376,7 +376,7 @@ describe('content listing index synchronization', () => {
               content: createLexicalDocument('Integration listing cycle default content'),
             },
           ],
-          location: { city: 'Wrocław', country: 'Polska' },
+
           participation: 'public',
         },
         excerpt: createLexicalDocument('Integration listing cycle'),
@@ -402,7 +402,6 @@ describe('content listing index synchronization', () => {
           calendarRevision: 0,
           capacityMode: 'unlimited',
           cycle: cycle.id,
-          eventStatus: 'scheduled',
           eventType: 1,
           excerpt: createLexicalDocument('Integration listing event'),
           layout: [
@@ -411,7 +410,7 @@ describe('content listing index synchronization', () => {
               content: createLexicalDocument('Integration listing event content'),
             },
           ],
-          location: { city: 'Wrocław', country: 'Polska' },
+
           participation: 'public',
           slug: listingEventSlug,
           startAt: '2030-09-10T16:00:00.000Z',
@@ -475,7 +474,7 @@ describe('content listing index synchronization', () => {
           layout: [
             { blockType: 'richText', content: createLexicalDocument('Cycle default content') },
           ],
-          location: { city: 'Wrocław', country: 'Polska' },
+
           participation: 'public',
           partners: [{ partner: partner.id, roles: ['partner'] }],
         },
@@ -497,13 +496,12 @@ describe('content listing index synchronization', () => {
         calendarRevision: 0,
         capacityMode: 'unlimited',
         cycle: cycle.id,
-        eventStatus: 'scheduled',
         eventType: 1,
         excerpt: createLexicalDocument('Related listing event excerpt'),
         layout: [
           { blockType: 'richText', content: createLexicalDocument('Event related content') },
         ],
-        location: { city: 'Wrocław', country: 'Polska' },
+
         participation: 'public',
         partners: [{ partner: partner.id, roles: ['partner'] }],
         slug: eventSlug,

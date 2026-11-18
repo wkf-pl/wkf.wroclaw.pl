@@ -78,7 +78,7 @@ describe('related content migration', () => {
           layout: [
             { blockType: 'richText', content: createLexicalDocument('Default cycle content') },
           ],
-          location: { city: 'Wrocław', country: 'Polska' },
+
           participation: 'public',
         },
         excerpt: createLexicalDocument('Migration cycle excerpt'),
@@ -98,11 +98,10 @@ describe('related content migration', () => {
         calendarRevision: 0,
         capacityMode: 'unlimited',
         cycle: cycle.id,
-        eventStatus: 'scheduled',
         eventType: 1,
         excerpt: createLexicalDocument('Migration event excerpt'),
         layout: [{ blockType: 'richText', content: createLexicalDocument('Event content') }],
-        location: { city: 'Wrocław', country: 'Polska' },
+
         participation: 'public',
         slug: eventSlug,
         startAt: '2032-09-10T16:00:00.000Z',

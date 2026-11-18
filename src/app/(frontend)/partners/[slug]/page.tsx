@@ -1,3 +1,6 @@
+import { getPopulatedRelationships } from '@/lib/relationships'
+import { buildGoogleMapsURL } from '@/modules/events/map-embed'
+import { formatEventLocationAddress } from '@/modules/events/presentation'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
@@ -33,6 +36,30 @@ export async function generateMetadata({ params }: Properties): Promise<Metadata
 export default async function PartnerPage({ params, searchParams }: Properties) {
   const partner = await findPublishedPartnerBySlug((await params).slug)
   if (!partner) notFound()
+  const locations = getPopulatedRelationships(partner.locations).filter(
+    (location) => location.isActive,
+  )
+  const locationSection = locations.length ? (
+    <section>
+      <h2>Miejsca</h2>
+      <ul>
+        {locations.map((location) => (
+          <li key={location.id}>
+            <a
+              href={
+                location.venueWebsite ||
+                buildGoogleMapsURL({ ...location, name: location.venueName })
+              }
+            >
+              {location.venueName}
+            </a>
+            {' — '}
+            {formatEventLocationAddress(location)}
+          </li>
+        ))}
+      </ul>
+    </section>
+  ) : null
   const pathname = `/partners/${partner.slug}`
   const breadcrumbs = [
     { label: 'Strona główna', url: '/' },
@@ -51,6 +78,7 @@ export default async function PartnerPage({ params, searchParams }: Properties) 
           breadcrumbs={breadcrumbs}
           currentItem={{
             document: partner,
+            afterContent: locationSection,
             target: { relationTo: 'partners', value: partner.id },
             renderField: ({ field, variant }) => {
               if (field === 'name')
@@ -91,6 +119,7 @@ export default async function PartnerPage({ params, searchParams }: Properties) 
           <a href={partner.website}>Strona WWW Partnera</a>
         </p>
       ) : null}
+      {locationSection}
       {cycles.length ? (
         <section>
           <h2>Powiązane cykle</h2>

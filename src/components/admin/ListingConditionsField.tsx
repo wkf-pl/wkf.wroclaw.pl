@@ -616,6 +616,7 @@ function useConditionRelationshipLabel(condition: ListingConditionInput): string
 }
 
 const relationshipTitleFields = {
+  locations: 'venueName',
   categories: 'fullTitle',
   documents: 'title',
   'event-cycles': 'title',
@@ -633,6 +634,7 @@ const relationshipLabelQuery = {
     fullTitle: true,
     name: true,
     publicName: true,
+    venueName: true,
     slug: true,
     title: true,
   },
@@ -658,7 +660,17 @@ function getRelationshipLabel(value: unknown): string {
   if (typeof value === 'string' && value.trim() && Number.isNaN(Number(value))) return value.trim()
   if (!value || typeof value !== 'object') return ''
   const record = value as Record<string, unknown>
-  for (const key of ['fullTitle', 'title', 'name', 'publicName', 'label', 'slug', 'doc', 'value']) {
+  for (const key of [
+    'fullTitle',
+    'title',
+    'name',
+    'publicName',
+    'venueName',
+    'label',
+    'slug',
+    'doc',
+    'value',
+  ]) {
     const label = getRelationshipLabel(record[key])
     if (label) return label
   }

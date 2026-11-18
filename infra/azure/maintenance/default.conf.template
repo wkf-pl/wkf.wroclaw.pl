@@ -1,0 +1,43 @@
+map $host $maintenance_enabled {
+    default ${MAINTENANCE_ENABLED};
+}
+
+server {
+    listen 8080;
+    root /opt/wkf/errors;
+
+    error_page 502 /_ingress/errors/502.html;
+    error_page 503 /_ingress/errors/503.html;
+    error_page 504 /_ingress/errors/504.html;
+
+    location = /_ingress/ready {
+        return 200;
+    }
+
+    location /_ingress/errors/ {
+        internal;
+        alias /opt/wkf/errors/;
+        add_header Cache-Control "no-store" always;
+    }
+
+    location / {
+        if ($maintenance_enabled) {
+            return 503;
+        }
+
+        proxy_pass https://${ORIGIN_HOST};
+        proxy_ssl_server_name on;
+        proxy_ssl_verify on;
+        proxy_ssl_verify_depth 3;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+        proxy_set_header Host ${ORIGIN_HOST};
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_intercept_errors on;
+        proxy_read_timeout 240s;
+        client_max_body_size 0;
+        proxy_request_buffering off;
+        proxy_buffering off;
+    }
+}

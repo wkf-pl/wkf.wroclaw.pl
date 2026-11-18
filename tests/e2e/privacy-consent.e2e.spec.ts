@@ -32,16 +32,8 @@ test.beforeAll(async () => {
       author: { relationTo: 'users', value: author.id },
       calendarRevision: 0,
       capacityMode: 'unlimited',
-      eventStatus: 'scheduled',
       eventType: 1,
       excerpt: createLexicalDocument('Wydarzenie do testowania ustawień prywatności.'),
-      location: {
-        city: 'Wrocław',
-        country: 'Polska',
-        postalCode: '54-530',
-        streetAddress: 'ul. Rodła 32',
-        venueName: 'Wrocławski Klub Fantastyki',
-      },
       participation: 'public',
       layout: [
         {

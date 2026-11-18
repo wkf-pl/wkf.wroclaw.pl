@@ -11,12 +11,11 @@ function eventFixture(id: number, overrides: Partial<Event> = {}): Event {
     calendarRevision: 0,
     capacityMode: 'unlimited',
     createdAt: '2026-09-01T10:00:00.000Z',
-    eventStatus: 'scheduled',
     eventType: 1,
     excerpt: createRichTextDocument([`Streszczenie ${id}`, `Drugi akapit ${id}`]),
     id,
     layout: [],
-    location: { country: 'Polska' },
+
     participation: 'public',
     slug: `wydarzenie-${id}`,
     startAt: `2026-09-${String(id).padStart(2, '0')}T16:00:00.000Z`,

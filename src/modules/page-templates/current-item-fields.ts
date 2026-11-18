@@ -114,8 +114,6 @@ export const currentItemFieldSources: Record<
     field('organizers', 'Organizatorzy', 'organizers'),
     field('externalLinks', 'Linki zewnętrzne', 'links'),
     field('defaultsAppliedCycle', 'Cykl użyty do ustawienia danych domyślnych', 'cycle'),
-    field('previousStartAt', 'Poprzedni termin rozpoczęcia', 'date'),
-    field('publishedStartAt', 'Opublikowany termin rozpoczęcia', 'date'),
     field('calendarUID', 'UID wpisu w kalendarzu'),
     field('calendarRevision', 'Wersja wpisu w kalendarzu'),
     field('calendarFingerprint', 'Sygnatura wpisu w kalendarzu'),

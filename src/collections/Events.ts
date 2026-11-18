@@ -1,4 +1,10 @@
+import {
+  confirmLegacyLocation,
+  createLegacyLocationFields,
+} from '@/modules/locations/legacy-fields'
 import type { CollectionConfig } from 'payload'
+
+import { validateVenueWebsite } from '@/modules/events/validation'
 
 import {
   createEditorialFields,
@@ -13,10 +19,9 @@ import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
 import { createContentLayoutField } from '@/modules/content/layout-field'
 import {
   createExternalLinksField,
-  createLocationFields,
   createOrganizerField,
   createPartnersField,
-  createParticipationFields,
+  createEventLocationRow,
   createScheduleFields,
 } from '@/modules/events/fields'
 import { applyEventCycleDefaults, updateEventCalendarMetadata } from '@/modules/events/hooks'
@@ -74,16 +79,7 @@ export const Events: CollectionConfig = {
         ],
       },
     },
-    defaultColumns: [
-      'title',
-      'cycle',
-      'eventType',
-      'category',
-      'tags',
-      'startAt',
-      'eventStatus',
-      '_status',
-    ],
+    defaultColumns: ['title', 'cycle', 'eventType', 'category', 'tags', 'startAt', '_status'],
     group: 'Treści',
     listSearchableFields: ['title', 'cycle', 'slug'],
     useAsTitle: 'title',
@@ -130,13 +126,14 @@ export const Events: CollectionConfig = {
             },
             createContentLayoutField('Treści'),
             { type: 'collapsible', label: 'Termin', fields: createScheduleFields() },
+            createEventLocationRow(),
             {
-              name: 'location',
-              type: 'group',
-              label: 'Miejsce',
-              fields: createLocationFields({ compactAddressRow: true }),
+              name: 'onlineEventURL',
+              type: 'text',
+              label: 'Link do wydarzenia online',
+              validate: validateVenueWebsite,
             },
-            ...createParticipationFields(),
+            ...createLegacyLocationFields(),
             createOrganizerField(),
             createPartnersField(),
             createExternalLinksField(),
@@ -155,8 +152,6 @@ export const Events: CollectionConfig = {
       admin: { hidden: true, readOnly: true },
       relationTo: 'event-cycles',
     },
-    { name: 'previousStartAt', type: 'date', admin: { hidden: true, readOnly: true } },
-    { name: 'publishedStartAt', type: 'date', admin: { hidden: true, readOnly: true } },
     {
       name: 'calendarUID',
       type: 'text',
@@ -177,7 +172,7 @@ export const Events: CollectionConfig = {
   hooks: {
     afterChange: [syncContentListingAfterChange],
     afterDelete: [removeContentListingAfterDelete],
-    beforeChange: [updateEventCalendarMetadata, setPublishedAt],
+    beforeChange: [confirmLegacyLocation, updateEventCalendarMetadata, setPublishedAt],
     beforeOperation: [markTrashMutation],
     beforeValidate: [applyEventCycleDefaults, validateMediaBlocks],
   },

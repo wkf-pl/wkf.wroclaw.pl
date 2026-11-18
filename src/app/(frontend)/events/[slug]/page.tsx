@@ -1,3 +1,4 @@
+import { getPopulatedRelationship } from '@/lib/relationships'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -7,7 +8,6 @@ import { createContentMetadata } from '@/modules/content/content-metadata'
 import { findPageTemplateForRequest } from '@/modules/content/preview-content'
 import { shouldRenderPageTemplate } from '@/modules/content/draft-preview'
 import { extractRichTextText } from '@/modules/content/rich-text'
-import { resolveEventStatus } from '@/modules/events/event-status'
 import { buildGoogleMapsURL } from '@/modules/events/map-embed'
 import { findPostsRelatedToEvent, findPublishedEventBySlug } from '@/modules/events/public-events'
 import { createEventStructuredData } from '@/modules/events/structured-data'
@@ -66,9 +66,10 @@ export default async function EventPage({ params, searchParams }: Properties) {
   }
 
   const relatedPosts = await findPostsRelatedToEvent(event.id)
-  const location = event.location
+  const location = getPopulatedRelationship(event.location)
   const mapURL = buildGoogleMapsURL({
     city: location?.city,
+    country: location?.country,
     name: location?.venueName,
     postalCode: location?.postalCode,
     streetAddress: location?.streetAddress,
@@ -123,12 +124,7 @@ export default async function EventPage({ params, searchParams }: Properties) {
         collection="events"
         description={extractRichTextText(event.excerpt)}
         document={event}
-        eyebrow={
-          <EventHeroEyebrow
-            eventStatus={resolveEventStatus(event.eventStatus, event)}
-            eventType={event.eventType}
-          />
-        }
+        eyebrow={<EventHeroEyebrow eventType={event.eventType} />}
         heroContent={
           cycle ? (
             <nav aria-label="Cykl wydarzenia" className="eventHeroLinks">

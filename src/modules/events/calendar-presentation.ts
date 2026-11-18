@@ -1,3 +1,4 @@
+import { getPopulatedRelationship } from '@/lib/relationships'
 import type { Event, EventType } from '@/payload-types'
 import { isEventTypeIconColor, type EventTypeIconColor } from '@/modules/events/event-types'
 import {
@@ -17,7 +18,7 @@ export type CalendarEvent = {
   eventType: CalendarEventType
   excerpt: Event['excerpt']
   id: number
-  location: Pick<Event['location'], 'venueName' | 'venueWebsite'>
+  location: { venueName?: string | null; venueWebsite?: string | null }
   slug: string
   startAt: string
   timeMode: Event['timeMode']
@@ -70,9 +71,10 @@ export function toCalendarEvent(
     Event,
     'endAt' | 'eventType' | 'excerpt' | 'id' | 'slug' | 'startAt' | 'timeMode' | 'title'
   > & {
-    location: Pick<Event['location'], 'venueName' | 'venueWebsite'>
+    location?: Event['location']
   },
 ): CalendarEvent {
+  const location = getPopulatedRelationship(event.location)
   return {
     endAt: event.endAt ?? null,
     eventType:
@@ -82,8 +84,8 @@ export function toCalendarEvent(
     excerpt: event.excerpt,
     id: event.id,
     location: {
-      venueName: event.location.venueName,
-      venueWebsite: event.location.venueWebsite,
+      venueName: location?.venueName,
+      venueWebsite: location?.venueWebsite,
     },
     slug: event.slug,
     startAt: event.startAt,

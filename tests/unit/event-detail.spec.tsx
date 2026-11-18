@@ -1,3 +1,4 @@
+import { locationFixture } from '../helpers/location-fixture'
 import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -22,10 +23,9 @@ const eventType = {
 } satisfies EventType
 
 describe('event detail presentation', () => {
-  it('uses the CMS-managed event type icon and displays the event status', () => {
+  it('uses the CMS-managed event type icon', () => {
     const markup = renderToStaticMarkup(
       createElement(EventHeroEyebrow, {
-        eventStatus: 'scheduled',
         eventType,
       }),
     )
@@ -33,7 +33,7 @@ describe('event detail presentation', () => {
     expect(markup).toContain('data-icon-name="dice"')
     expect(markup).toContain('data-event-type-color="lantern-glow"')
     expect(markup).toContain('Sesje RPG')
-    expect(markup).toContain('Zaplanowane')
+    expect(markup).not.toContain('Zaplanowane')
   })
 
   it('puts the event decision facts and actions in one summary panel', () => {
@@ -43,13 +43,13 @@ describe('event detail presentation', () => {
           capacityMode: 'approximate',
           capacity: 24,
           endAt: '2026-09-29T20:00:00.000Z',
-          location: {
+          location: locationFixture({
             city: 'Wrocław',
             country: 'Polska',
             postalCode: '50-141',
             streetAddress: 'pl. Nowy Targ 28',
             venueName: 'Wiking Club',
-          },
+          }),
           participation: 'public',
           slug: 'erpegowy-wtorek-v',
           startAt: '2026-09-29T16:00:00.000Z',

@@ -72,6 +72,13 @@ export const permissionResources = {
     kind: 'collection',
     label: 'Rodzaje wydarzeń',
   },
+  locations: {
+    collection: 'locations',
+    kind: 'collection',
+    label: 'Miejsca',
+    publishedField: '_status',
+    trash: true,
+  },
   partners: {
     collection: 'partners',
     kind: 'collection',

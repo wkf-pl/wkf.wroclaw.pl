@@ -58,6 +58,10 @@ export type ListingCondition =
             value: number | Partner;
           } | null)
         | ({
+            relationTo: 'locations';
+            value: number | Location;
+          } | null)
+        | ({
             relationTo: 'member-profiles';
             value: number | MemberProfile;
           } | null);
@@ -144,6 +148,7 @@ export interface Config {
     'document-files': DocumentFile;
     documents: Document;
     'url-aliases': UrlAlias;
+    locations: Location;
     partners: Partner;
     users: User;
     'user-groups': UserGroup;
@@ -185,6 +190,7 @@ export interface Config {
     'document-files': DocumentFilesSelect<false> | DocumentFilesSelect<true>;
     documents: DocumentsSelect<false> | DocumentsSelect<true>;
     'url-aliases': UrlAliasesSelect<false> | UrlAliasesSelect<true>;
+    locations: LocationsSelect<false> | LocationsSelect<true>;
     partners: PartnersSelect<false> | PartnersSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     'user-groups': UserGroupsSelect<false> | UserGroupsSelect<true>;
@@ -247,7 +253,7 @@ export interface UserAuthOperations {
  */
 export interface ContentListingItem {
   id: number;
-  source: 'pages' | 'posts' | 'events' | 'event-cycles' | 'documents' | 'partners' | 'member-profiles';
+  source: 'pages' | 'posts' | 'events' | 'event-cycles' | 'documents' | 'partners' | 'locations' | 'member-profiles';
   sourceDocumentId: number;
   sourceUpdatedAt: string;
   title: string;
@@ -281,6 +287,10 @@ export interface ContentListingItem {
             value: number | Partner;
           }
         | {
+            relationTo: 'locations';
+            value: number | Location;
+          }
+        | {
             relationTo: 'member-profiles';
             value: number | MemberProfile;
           }
@@ -289,6 +299,7 @@ export interface ContentListingItem {
   url: string;
   excerpt?: string | null;
   hasSignificantDate?: boolean | null;
+  isInactiveLocation?: boolean | null;
   significantDate?: string | null;
   eventStartAt?: string | null;
   eventEndAt?: string | null;
@@ -498,6 +509,10 @@ export interface Post {
             value: number | Partner;
           }
         | {
+            relationTo: 'locations';
+            value: number | Location;
+          }
+        | {
             relationTo: 'member-profiles';
             value: number | MemberProfile;
           }
@@ -596,22 +611,21 @@ export interface Event {
   timeMode: 'timed' | 'allDay';
   startAt: string;
   endAt?: string | null;
-  eventStatus: 'scheduled' | 'completed' | 'cancelled' | 'postponed' | 'rescheduled';
-  location: {
-    venueName?: string | null;
-    venueWebsite?: string | null;
-    streetAddress?: string | null;
-    postalCode?: string | null;
-    city?: string | null;
-    /**
-     * W Mapach Google wybierz „Udostępnij → Umieść mapę” i wklej skopiowany kod HTML.
-     */
-    mapEmbedURL?: string | null;
-    country: string;
-  };
+  location?: (number | null) | Location;
   participation: 'public' | 'members';
   capacityMode: 'unlimited' | 'exact' | 'approximate';
   capacity?: number | null;
+  onlineEventURL?: string | null;
+  legacyLocation?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  confirmedMissingLocation?: boolean | null;
   organizers?:
     | {
         profile: number | MemberProfile;
@@ -678,8 +692,6 @@ export interface Event {
         value: number | UserGroup;
       };
   defaultsAppliedCycle?: (number | null) | EventCycle;
-  previousStartAt?: string | null;
-  publishedStartAt?: string | null;
   calendarUID?: string | null;
   calendarRevision: number;
   calendarFingerprint?: string | null;
@@ -786,21 +798,20 @@ export interface EventCycle {
     defaultDayCount?: number | null;
     defaultStartTime?: string | null;
     defaultEndTime?: string | null;
-    location: {
-      venueName?: string | null;
-      venueWebsite?: string | null;
-      streetAddress?: string | null;
-      postalCode?: string | null;
-      city?: string | null;
-      /**
-       * W Mapach Google wybierz „Udostępnij → Umieść mapę” i wklej skopiowany kod HTML.
-       */
-      mapEmbedURL?: string | null;
-      country: string;
-    };
+    location?: (number | null) | Location;
     participation: 'public' | 'members';
     capacityMode: 'unlimited' | 'exact' | 'approximate';
     capacity?: number | null;
+    legacyLocation?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    confirmedMissingLocation?: boolean | null;
     organizers?:
       | {
           profile: number | MemberProfile;
@@ -1291,6 +1302,7 @@ export interface Role {
           | 'events'
           | 'event-cycles'
           | 'event-types'
+          | 'locations'
           | 'partners'
           | 'documents'
           | 'url-aliases'
@@ -1368,6 +1380,7 @@ export interface Partner {
   heroImage?: (number | null) | Media;
   excerpt: string;
   website?: string | null;
+  locations?: (number | Location)[] | null;
   layout: (
     | RichTextBlock
     | FieldRowTextBlock
@@ -1411,6 +1424,28 @@ export interface Partner {
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
   publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "locations".
+ */
+export interface Location {
+  id: number;
+  venueName: string;
+  isActive?: boolean | null;
+  venueWebsite?: string | null;
+  streetAddress: string;
+  postalCode: string;
+  city: string;
+  country: string;
+  /**
+   * W Mapach Google wybierz „Udostępnij → Umieść mapę” i wklej skopiowany kod HTML.
+   */
+  mapEmbedURL: string;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -1573,7 +1608,10 @@ export interface ListingBlock {
   surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
   surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   selectionMode: 'manual' | 'filters';
-  sources?: ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents' | 'partners' | 'member-profiles')[] | null;
+  sources?:
+    | ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents' | 'partners' | 'locations' | 'member-profiles')[]
+    | null;
+  includeInactiveLocations?: boolean | null;
   items?:
     | {
         item:
@@ -1600,6 +1638,10 @@ export interface ListingBlock {
           | {
               relationTo: 'partners';
               value: number | Partner;
+            }
+          | {
+              relationTo: 'locations';
+              value: number | Location;
             }
           | {
               relationTo: 'member-profiles';
@@ -2736,7 +2778,6 @@ export interface CurrentItemFieldBlock {
     | 'description'
     | 'hierarchy'
     | 'eventType'
-    | 'eventStatus'
     | 'title'
     | 'excerpt'
     | 'eventCycle'
@@ -2781,8 +2822,6 @@ export interface CurrentItemFieldBlock {
     | 'capacity'
     | 'externalLinks'
     | 'defaultsAppliedCycle'
-    | 'previousStartAt'
-    | 'publishedStartAt'
     | 'calendarUID'
     | 'calendarRevision'
     | 'calendarFingerprint'
@@ -2966,8 +3005,11 @@ export interface PageTemplateListingBlock {
   surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
   surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   selectionMode: 'manual' | 'filters' | 'contextRelation';
-  sources?: ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents' | 'partners' | 'member-profiles')[] | null;
+  sources?:
+    | ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents' | 'partners' | 'locations' | 'member-profiles')[]
+    | null;
   contextRelation?: 'eventPartners' | null;
+  includeInactiveLocations?: boolean | null;
   items?:
     | {
         item:
@@ -2994,6 +3036,10 @@ export interface PageTemplateListingBlock {
           | {
               relationTo: 'partners';
               value: number | Partner;
+            }
+          | {
+              relationTo: 'locations';
+              value: number | Location;
             }
           | {
               relationTo: 'member-profiles';
@@ -3704,9 +3750,8 @@ export interface UrlAlias {
  */
 export interface ContentAuditLog {
   id: number;
-  occurredAt: string;
   actor: string;
-  actorId?: string | null;
+  occurredAt: string;
   action: 'create' | 'update' | 'trash' | 'restore' | 'restore-version' | 'delete';
   saveMode?: ('draft' | 'publish') | null;
   target:
@@ -3725,8 +3770,10 @@ export interface ContentAuditLog {
     | 'homepage-hero'
     | 'homepage-sections'
     | 'footer';
-  targetId?: string | null;
   title: string;
+  actorId?: string | null;
+  targetId?: string | null;
+  versionId?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3805,6 +3852,10 @@ export interface PayloadLockedDocument {
         value: number | UrlAlias;
       } | null)
     | ({
+        relationTo: 'locations';
+        value: number | Location;
+      } | null)
+    | ({
         relationTo: 'partners';
         value: number | Partner;
       } | null)
@@ -3878,6 +3929,7 @@ export interface ContentListingItemsSelect<T extends boolean = true> {
   url?: T;
   excerpt?: T;
   hasSignificantDate?: T;
+  isInactiveLocation?: T;
   significantDate?: T;
   eventStartAt?: T;
   eventEndAt?: T;
@@ -4126,6 +4178,7 @@ export interface PageTemplateListingBlockSelect<T extends boolean = true> {
   selectionMode?: T;
   sources?: T;
   contextRelation?: T;
+  includeInactiveLocations?: T;
   items?:
     | T
     | {
@@ -4616,6 +4669,7 @@ export interface ListingBlockSelect<T extends boolean = true> {
   surfaceVerticalPosition?: T;
   selectionMode?: T;
   sources?: T;
+  includeInactiveLocations?: T;
   items?:
     | T
     | {
@@ -4884,21 +4938,13 @@ export interface EventsSelect<T extends boolean = true> {
   timeMode?: T;
   startAt?: T;
   endAt?: T;
-  eventStatus?: T;
-  location?:
-    | T
-    | {
-        venueName?: T;
-        venueWebsite?: T;
-        streetAddress?: T;
-        postalCode?: T;
-        city?: T;
-        mapEmbedURL?: T;
-        country?: T;
-      };
+  location?: T;
   participation?: T;
   capacityMode?: T;
   capacity?: T;
+  onlineEventURL?: T;
+  legacyLocation?: T;
+  confirmedMissingLocation?: T;
   organizers?:
     | T
     | {
@@ -4947,8 +4993,6 @@ export interface EventsSelect<T extends boolean = true> {
   tags?: T;
   author?: T;
   defaultsAppliedCycle?: T;
-  previousStartAt?: T;
-  publishedStartAt?: T;
   calendarUID?: T;
   calendarRevision?: T;
   calendarFingerprint?: T;
@@ -5025,20 +5069,12 @@ export interface EventCyclesSelect<T extends boolean = true> {
         defaultDayCount?: T;
         defaultStartTime?: T;
         defaultEndTime?: T;
-        location?:
-          | T
-          | {
-              venueName?: T;
-              venueWebsite?: T;
-              streetAddress?: T;
-              postalCode?: T;
-              city?: T;
-              mapEmbedURL?: T;
-              country?: T;
-            };
+        location?: T;
         participation?: T;
         capacityMode?: T;
         capacity?: T;
+        legacyLocation?: T;
+        confirmedMissingLocation?: T;
         organizers?:
           | T
           | {
@@ -5259,6 +5295,24 @@ export interface UrlAliasesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "locations_select".
+ */
+export interface LocationsSelect<T extends boolean = true> {
+  venueName?: T;
+  isActive?: T;
+  venueWebsite?: T;
+  streetAddress?: T;
+  postalCode?: T;
+  city?: T;
+  country?: T;
+  mapEmbedURL?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "partners_select".
  */
 export interface PartnersSelect<T extends boolean = true> {
@@ -5266,6 +5320,7 @@ export interface PartnersSelect<T extends boolean = true> {
   heroImage?: T;
   excerpt?: T;
   website?: T;
+  locations?: T;
   layout?:
     | T
     | {
@@ -5368,14 +5423,15 @@ export interface RolesSelect<T extends boolean = true> {
  * via the `definition` "content-audit-log_select".
  */
 export interface ContentAuditLogSelect<T extends boolean = true> {
-  occurredAt?: T;
   actor?: T;
-  actorId?: T;
+  occurredAt?: T;
   action?: T;
   saveMode?: T;
   target?: T;
-  targetId?: T;
   title?: T;
+  actorId?: T;
+  targetId?: T;
+  versionId?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -1,3 +1,4 @@
+import { locationFixture } from '../helpers/location-fixture'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
@@ -63,11 +64,11 @@ function eventItemFixture(): Extract<PublicContentListItem, { kind: 'events' }> 
       excerpt: createLexicalDocument('Spotkanie dla osób, które chcą zagrać w RPG.'),
       heroImage: null,
       id: 3,
-      location: {
+      location: locationFixture({
         country: 'Polska',
         venueName: 'Wiking Axe Throwing Club Wrocław',
         venueWebsite: 'https://example.com/wiking',
-      },
+      }),
       slug: 'erpegowy-wtorek-v',
       startAt: '2026-10-07T16:00:00.000Z',
       tags: [tag],

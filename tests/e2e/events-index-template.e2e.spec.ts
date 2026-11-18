@@ -1,8 +1,7 @@
 import { expect, test, type Locator } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
-import { getWarsawDaysAgoStartISOString } from '@/modules/content/listing-conditions'
-import type { Event, PageTemplate } from '@/payload-types'
+import type { PageTemplate } from '@/payload-types'
 import config from '@/payload.config'
 
 import { createLexicalDocument } from '../helpers/lexical-document'
@@ -97,18 +96,18 @@ test('previews, publishes and reverts the events index template with legacy list
     const legacyUpcoming = await eventLinks(legacySections.nth(0))
     const legacyArchive = await eventLinks(legacySections.nth(1))
     expect(legacyUpcoming).toEqual(
+      expect.arrayContaining([fixturePath('ongoing'), fixturePath('future')]),
+    )
+    expect(legacyArchive).toEqual(
       expect.arrayContaining([
-        fixturePath('ongoing'),
-        fixturePath('today'),
-        fixturePath('rescheduled'),
+        fixturePath('past'),
+        fixturePath('ended-today'),
+        fixturePath('past-without-end'),
       ]),
     )
-    expect(legacyUpcoming).not.toContain(fixturePath('cancelled-future'))
-    expect(legacyArchive).toEqual(
-      expect.arrayContaining([fixturePath('cancelled-past'), fixturePath('ended-today')]),
-    )
-    expect(legacyArchive).not.toContain(fixturePath('today'))
-    expect(legacyArchive).not.toContain(fixturePath('rescheduled'))
+    expect(legacyUpcoming).not.toContain(fixturePath('past-without-end'))
+    expect(legacyUpcoming).not.toContain(fixturePath('ended-today'))
+    expect(legacyArchive).not.toContain(fixturePath('future'))
 
     await publicPage.goto('/events?page=2')
     const legacyArchivePageTwo = await eventLinks(legacySections.nth(1))
@@ -188,27 +187,23 @@ async function createEventFixtures(payload: Payload, eventIDs: number[]): Promis
   if (!author || !eventType) throw new Error('Missing events index fixtures.')
 
   const now = Date.now()
-  const today = Date.parse(getWarsawDaysAgoStartISOString(0, new Date(now)))
   const day = 86_400_000
   const fixtures: {
     key: string
     startAt: number
     endAt?: number
-    status: Event['eventStatus']
   }[] = [
-    { key: 'ongoing', startAt: today - day, endAt: now + day, status: 'scheduled' },
-    { key: 'today', startAt: now - Math.floor((now - today) / 4), status: 'scheduled' },
-    { key: 'ended-today', startAt: today - day, endAt: now - 60_000, status: 'scheduled' },
-    { key: 'rescheduled', startAt: now + day, status: 'rescheduled' },
-    { key: 'cancelled-future', startAt: now + 2 * day, status: 'cancelled' },
-    { key: 'cancelled-past', startAt: today - day, status: 'cancelled' },
+    { key: 'ongoing', startAt: now - day, endAt: now + day },
+    { key: 'past-without-end', startAt: now - 60_000 },
+    { key: 'ended-today', startAt: now - 120_000, endAt: now - 60_000 },
+    { key: 'future', startAt: now + day },
+    { key: 'past', startAt: now - day },
     ...Array.from({ length: 12 }, (_, index) => ({
       key: `archive-${index}`,
-      startAt: today - (index + 2) * day,
-      status: 'scheduled' as const,
+      startAt: now - (index + 2) * day,
     })),
   ]
-  for (const { key, startAt, endAt, status } of fixtures) {
+  for (const { key, startAt, endAt } of fixtures) {
     const event = await payload.create({
       collection: 'events',
       data: {
@@ -217,11 +212,10 @@ async function createEventFixtures(payload: Payload, eventIDs: number[]): Promis
         calendarRevision: 0,
         capacityMode: 'unlimited',
         endAt: endAt === undefined ? undefined : new Date(endAt).toISOString(),
-        eventStatus: status,
         eventType: eventType.id,
         excerpt: createLexicalDocument('Wydarzenie używane do porównania listingów.'),
         layout: [{ blockType: 'richText', content: createLexicalDocument('Treść wydarzenia.') }],
-        location: { country: 'Polska' },
+
         participation: 'public',
         slug: `${fixturePrefix}${key}`,
         startAt: new Date(startAt).toISOString(),

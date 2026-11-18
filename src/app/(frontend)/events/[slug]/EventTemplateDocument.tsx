@@ -1,14 +1,13 @@
+import { getPopulatedRelationship } from '@/lib/relationships'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import { extractRichTextText } from '@/modules/content/rich-text'
-import { resolveEventStatus } from '@/modules/events/event-status'
 import {
   formatEventCapacity,
   formatEventDateParts,
   formatEventLocationAddress,
   getEventAudienceLabel,
-  getEventStatusLabel,
 } from '@/modules/events/presentation'
 import type { CurrentItemFieldBlock, Event, PageTemplate } from '@/payload-types'
 
@@ -37,6 +36,11 @@ export function EventTemplateDocument({
       ]}
       currentItem={{
         document: event,
+        afterContent: event.onlineEventURL ? (
+          <p>
+            <a href={event.onlineEventURL}>Dołącz do wydarzenia online</a>
+          </p>
+        ) : undefined,
         renderField: (block) => <EventCurrentItemField block={block} event={event} />,
         target: { relationTo: 'events', value: event.id },
       }}
@@ -52,8 +56,6 @@ function EventCurrentItemField({ block, event }: { block: CurrentItemFieldBlock;
   switch (block.field) {
     case 'eventType':
       return <EventTypeField event={event} variant={block.variant} />
-    case 'eventStatus':
-      return <EventStatusField event={event} variant={block.variant} />
     case 'title':
       return <EventTitleField event={event} variant={block.variant} />
     case 'excerpt':
@@ -82,15 +84,6 @@ function EventTypeField({ event, variant }: { event: Event; variant: string }) {
   if (!eventType) return null
 
   return <span className={`pageTemplateBadge pageTemplateBadge--${variant}`}>{eventType.name}</span>
-}
-
-function EventStatusField({ event, variant }: { event: Event; variant: string }) {
-  const status = resolveEventStatus(event.eventStatus, event)
-  return (
-    <span className={`pageTemplateBadge pageTemplateBadge--${variant}`} data-event-status={status}>
-      {getEventStatusLabel(status)}
-    </span>
-  )
 }
 
 function EventTitleField({ event, variant }: { event: Event; variant: string }) {
@@ -127,8 +120,9 @@ function EventTimeField({ event, variant }: { event: Event; variant: string }) {
 }
 
 function EventLocationField({ event, variant }: { event: Event; variant: string }) {
-  const address = formatEventLocationAddress(event.location)
-  const venue = event.location.venueName
+  const location = getPopulatedRelationship(event.location)
+  const address = formatEventLocationAddress(location)
+  const venue = location?.venueName
   if (!address && !venue) return null
 
   return (

@@ -16,3 +16,5 @@ export { Tags } from './Tags'
 export { UserGroups } from './UserGroups'
 export { Users } from './Users'
 export { UrlAliases } from './UrlAliases'
+
+export { Locations } from './Locations'

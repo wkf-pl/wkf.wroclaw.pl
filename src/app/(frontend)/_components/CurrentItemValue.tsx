@@ -227,7 +227,9 @@ async function RelatedContent({
               ? document.title
               : 'name' in document
                 ? document.name
-                : document.publicName}
+                : 'venueName' in document
+                  ? document.venueName
+                  : document.publicName}
           </Link>
         </li>
       ))}

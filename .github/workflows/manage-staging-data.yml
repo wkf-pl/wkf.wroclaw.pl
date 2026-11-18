@@ -49,6 +49,7 @@ jobs:
 
       - name: Manage staging checkpoint
         env:
+          STAGING_INGRESS_REQUIRED: 'true'
           CHECKPOINT_NAME: ${{ inputs.checkpoint_name }}
           OPERATION: ${{ inputs.operation }}
           RESTORE_CONFIRMATION: ${{ inputs.restore_confirmation }}

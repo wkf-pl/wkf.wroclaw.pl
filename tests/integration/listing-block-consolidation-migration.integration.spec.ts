@@ -20,6 +20,15 @@ import {
   up as upRemoval,
 } from '../../migrations/20261031_112000_remove_legacy_carousel_and_member_profiles_blocks'
 
+import {
+  down as downLocations,
+  up as upLocations,
+} from '../../migrations/20261115_212154_locations'
+import {
+  down as downLocationIndex,
+  up as upLocationIndex,
+} from '../../migrations/20261115_212155_index_locations'
+
 const pageID = 9_400_001
 const pageVersionID = 9_400_002
 const memberProfileID = 9_400_003
@@ -86,6 +95,10 @@ async function tableExists(table: string): Promise<boolean> {
 }
 
 async function moveToLegacySchema(): Promise<void> {
+  if (await tableExists('locations')) {
+    await runMigrationInTransaction(downLocationIndex)
+    await runMigrationInTransaction(downLocations)
+  }
   if (!(await tableExists('pages_blocks_carousel'))) await downRemoval(migrationArguments())
   if (await tableExists('_listing_block_migration_provenance')) {
     await downConsolidation(migrationArguments())
@@ -214,6 +227,10 @@ afterAll(async () => {
   if (!payload) return
   await moveToCurrentSchema()
   await removeFixtures()
+  if (!(await tableExists('locations'))) {
+    await runMigrationInTransaction(upLocations)
+    await runMigrationInTransaction(upLocationIndex)
+  }
 })
 
 describe('Listing block consolidation migration', () => {

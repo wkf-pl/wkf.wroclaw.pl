@@ -216,13 +216,6 @@ const basePageTemplateRegistry: readonly PageTemplateDefinition[] = [
     currentItemLabel: 'Wydarzenie',
     dynamicFields: [
       createDynamicField('eventType', 'Typ wydarzenia', ['hero'], pageTemplateBadgeVariants, true),
-      createDynamicField(
-        'eventStatus',
-        'Status wydarzenia',
-        ['hero'],
-        pageTemplateBadgeVariants,
-        true,
-      ),
       createDynamicField('title', 'Tytuł', ['hero'], headingVariants),
       createDynamicField('excerpt', 'Opis', pageTemplateRegions, textVariants),
       createDynamicField('eventCycle', 'Cykl', pageTemplateRegions, listVariants, true),

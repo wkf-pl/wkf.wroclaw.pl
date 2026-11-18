@@ -5,10 +5,12 @@ import config from '@/payload.config'
 import type { MemberProfile, Partner, User } from '@/payload-types'
 import { createRichTextDocument } from '@/modules/content/rich-text'
 
+import { createLocationFixture, deleteLocationFixture } from '../helpers/location-fixture'
 import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
 const cycleSlug = 'e2e-event-defaults-cycle'
+const locationName = 'Miejsce domyślne E2E'
 const cycleTitle = 'E2E domyślny Cykl'
 const eventEditorURL = /\/admin\/collections\/events\/\d+$/
 const navigationTimeout = 20_000
@@ -111,6 +113,8 @@ test.beforeAll(async () => {
     },
     overrideAccess: true,
   })
+  await deleteLocationFixture(payload, locationName)
+  const location = await createLocationFixture(payload, { venueName: locationName })
   const cycle = await payload.create({
     collection: 'event-cycles',
     data: {
@@ -121,7 +125,7 @@ test.beforeAll(async () => {
         eventType: 1,
         excerpt: createRichTextDocument(['Domyślne streszczenie E2E']),
         layout: layout(),
-        location: { country: 'Polska' },
+        location: location.id,
         organizers: [{ profile: organizer.id, role: 'Osoba prowadząca' }],
         partners: [{ partner: partner.id, roles: ['partner'] }],
         participation: 'public',
@@ -156,6 +160,7 @@ test.afterAll(async () => {
     overrideAccess: true,
     where: { slug: { equals: cycleSlug } },
   })
+  await deleteLocationFixture(payload, locationName)
   if (partner) {
     await payload.delete({ collection: 'partners', id: partner.id, overrideAccess: true })
   }
@@ -193,7 +198,7 @@ test('applies selected Cycle defaults to an Event form without overwriting value
   )
   await page.getByText(cycleTitle, { exact: true }).click()
   const cycleResponse = await cycleResponsePromise
-  expect(new URL(cycleResponse.url()).searchParams.get('depth')).toBe('0')
+  expect(new URL(cycleResponse.url()).searchParams.get('depth')).toBe('1')
   expect(cycleResponse.ok()).toBe(true)
   const cycleData = (await cycleResponse.json()) as {
     eventDefaults?: { externalLinks?: unknown[]; organizers?: unknown[]; partners?: unknown[] }
@@ -207,6 +212,7 @@ test('applies selected Cycle defaults to an Event form without overwriting value
     page.locator('[contenteditable="true"]').filter({ hasText: 'Domyślne streszczenie E2E' }),
   ).toBeVisible()
   await expect(page.locator('#field-eventType')).toContainText('Sesje RPG')
+  await expect(page.locator('#field-location')).toContainText(locationName)
   await expect(
     page.getByText('Organizator: Organizator domyślny E2E', { exact: true }),
   ).toBeVisible()

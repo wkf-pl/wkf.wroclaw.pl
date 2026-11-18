@@ -1,10 +1,11 @@
 'use client'
 
-import { Button, useDocumentInfo, useOperation } from '@payloadcms/ui'
+import { Button, toast, useDocumentInfo, useOperation } from '@payloadcms/ui'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 type CreateNextEventResponse = {
+  skippedLocation?: boolean
   doc?: { id?: number | string }
   message?: string
 }
@@ -33,6 +34,8 @@ export function EventActions() {
       if (!response.ok || !result.doc?.id) {
         throw new Error(result.message || 'Nie udało się utworzyć następnego wydarzenia.')
       }
+      if (result.skippedLocation)
+        toast.info('Pominięto nieaktywne miejsce. Wybierz aktywne miejsce.')
       router.push(`/admin/collections/events/${result.doc.id}`)
     } catch (error) {
       window.alert(error instanceof Error ? error.message : 'Nie udało się utworzyć wydarzenia.')

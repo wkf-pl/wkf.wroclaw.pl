@@ -1,3 +1,4 @@
+import { getPopulatedRelationship } from '@/lib/relationships'
 import type { Event } from '@/payload-types'
 import { extractRichTextText } from '@/modules/content/rich-text'
 
@@ -69,34 +70,33 @@ function foldLine(line: string): string {
 }
 
 function formatLocation(event: Event): string {
+  const location = getPopulatedRelationship(event.location)
+  if (!location) return ''
   return [
-    event.location?.venueName,
-    event.location?.streetAddress,
-    event.location?.postalCode,
-    event.location?.city,
-    'Polska',
+    location.venueName,
+    location.streetAddress,
+    location.postalCode,
+    location.city,
+    location.country,
   ]
     .filter(Boolean)
     .join(', ')
 }
 
-function eventStatus(event: Event): 'CANCELLED' | 'CONFIRMED' | 'TENTATIVE' {
-  if (event.eventStatus === 'cancelled') return 'CANCELLED'
-  if (event.eventStatus === 'postponed') return 'TENTATIVE'
-  return 'CONFIRMED'
-}
-
 function createEventLines(event: Event, siteURL: string): string[] {
   const url = `${siteURL}/events/${event.slug}`
+  const physicalLocation = formatLocation(event)
   const lines = [
     'BEGIN:VEVENT',
     `UID:${escapeICS(event.calendarUID || `event-${event.id}@wkf.wroclaw.pl`)}`,
     `SEQUENCE:${event.calendarRevision}`,
-    `DTSTAMP:${new Date(event.updatedAt).toISOString().replaceAll(/[-:]/g, '').replace('.000', '')}`,
-    `STATUS:${eventStatus(event)}`,
+    `DTSTAMP:${new Date(event.updatedAt)
+      .toISOString()
+      .replaceAll(/[-:]/g, '')
+      .replace(/\.\d{3}Z$/, 'Z')}`,
     `SUMMARY:${escapeICS(event.title)}`,
-    `DESCRIPTION:${escapeICS(extractRichTextText(event.excerpt))}`,
-    `LOCATION:${escapeICS(formatLocation(event))}`,
+    `DESCRIPTION:${escapeICS([extractRichTextText(event.excerpt), event.onlineEventURL].filter(Boolean).join('\n\n'))}`,
+    ...(physicalLocation ? [`LOCATION:${escapeICS(physicalLocation)}`] : []),
     `URL:${url}`,
   ]
 

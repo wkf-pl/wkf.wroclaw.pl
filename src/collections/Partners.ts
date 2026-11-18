@@ -1,5 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
+import { createLocationRelationship } from '@/modules/locations/relationship'
+
 import {
   invalidatePartnersAfterChange,
   invalidatePartnersAfterDelete,
@@ -98,6 +100,7 @@ export const Partners: CollectionConfig = {
                 }
               },
             },
+            createLocationRelationship(true),
             createContentLayoutField('Treści'),
           ],
         },
