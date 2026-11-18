@@ -105,7 +105,10 @@ import { UserEmailCell as UserEmailCell_0af2ec3c6a63521c7b2eedb66024da53 } from 
 import { UserGroupAssignments as UserGroupAssignments_b5749c3faf4b1dfd5132e4999b5a8aa0 } from '../../../components/admin/UserGroupAssignments'
 import { PermissionResourceField as PermissionResourceField_67f510ca66240b59a1f7becaf5b326c0 } from '../../../components/admin/PermissionResourceField'
 import { PermissionRowLabel as PermissionRowLabel_2aad346eb5e12c6ee690c795b76ce94c } from '../../../components/admin/PermissionRowLabel'
-import { AuditTitleCell as AuditTitleCell_f2a5bb28e4bfb1508910df77f2cb1f29 } from '../../../components/admin/AuditTitleCell'
+import { AuditActorCell as AuditActorCell_f50c11fcd5d33a2943bf1769f24b589a } from '../../../components/admin/AuditLogCells'
+import { AuditTargetCell as AuditTargetCell_f50c11fcd5d33a2943bf1769f24b589a } from '../../../components/admin/AuditLogCells'
+import { AuditTitleCell as AuditTitleCell_f50c11fcd5d33a2943bf1769f24b589a } from '../../../components/admin/AuditLogCells'
+import { AuditVersionCell as AuditVersionCell_f50c11fcd5d33a2943bf1769f24b589a } from '../../../components/admin/AuditLogCells'
 import { SocialItemRowLabel as SocialItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { FooterColumnItemRowLabel as FooterColumnItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
 import { FooterColumnRowLabel as FooterColumnRowLabel_25248d319d0ee96f21b07bc4bd261dd1 } from '../../../components/admin/DynamicRowLabel'
@@ -226,7 +229,10 @@ export const importMap = {
   "/components/admin/UserGroupAssignments#UserGroupAssignments": UserGroupAssignments_b5749c3faf4b1dfd5132e4999b5a8aa0,
   "/components/admin/PermissionResourceField#PermissionResourceField": PermissionResourceField_67f510ca66240b59a1f7becaf5b326c0,
   "/components/admin/PermissionRowLabel#PermissionRowLabel": PermissionRowLabel_2aad346eb5e12c6ee690c795b76ce94c,
-  "/components/admin/AuditTitleCell#AuditTitleCell": AuditTitleCell_f2a5bb28e4bfb1508910df77f2cb1f29,
+  "/components/admin/AuditLogCells#AuditActorCell": AuditActorCell_f50c11fcd5d33a2943bf1769f24b589a,
+  "/components/admin/AuditLogCells#AuditTargetCell": AuditTargetCell_f50c11fcd5d33a2943bf1769f24b589a,
+  "/components/admin/AuditLogCells#AuditTitleCell": AuditTitleCell_f50c11fcd5d33a2943bf1769f24b589a,
+  "/components/admin/AuditLogCells#AuditVersionCell": AuditVersionCell_f50c11fcd5d33a2943bf1769f24b589a,
   "/components/admin/DynamicRowLabel#SocialItemRowLabel": SocialItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/DynamicRowLabel#FooterColumnItemRowLabel": FooterColumnItemRowLabel_25248d319d0ee96f21b07bc4bd261dd1,
   "/components/admin/DynamicRowLabel#FooterColumnRowLabel": FooterColumnRowLabel_25248d319d0ee96f21b07bc4bd261dd1,

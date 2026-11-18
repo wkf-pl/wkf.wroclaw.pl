@@ -21,6 +21,36 @@ afterAll(async () => {
 })
 
 describe('content hierarchy', () => {
+  it('does not version or audit descendants unless the published hierarchy changes', async () => {
+    const { payload, page, childPage } = fixture
+    const childVersions = () =>
+      payload.findVersions({ collection: 'pages', where: { parent: { equals: childPage.id } } })
+    const childAudit = () =>
+      payload.count({
+        collection: 'content-audit-log',
+        where: { target: { equals: 'pages' }, targetId: { equals: String(childPage.id) } },
+      })
+    const beforeVersions = (await childVersions()).totalDocs
+    const beforeAudit = (await childAudit()).totalDocs
+    const update = { collection: 'pages', id: page.id } as const
+
+    await payload.update({ ...update, draft: true, data: { seo: { title: 'Draft edit' } } })
+    await payload.update({
+      ...update,
+      data: { _status: 'published', seo: { title: 'Published edit' } },
+    })
+    expect((await childVersions()).totalDocs).toBe(beforeVersions)
+    expect((await childAudit()).totalDocs).toBe(beforeAudit)
+
+    const title = `${page.title} renamed`
+    await payload.update({ ...update, draft: true, data: { title } })
+    await payload.update({ ...update, data: { _status: 'published' } })
+    const child = await payload.findByID({ collection: 'pages', id: childPage.id, depth: 0 })
+    expect(child.breadcrumbs?.[0]?.label).toBe(title)
+    expect((await childVersions()).totalDocs).toBe(beforeVersions + 1)
+    expect((await childAudit()).totalDocs).toBe(beforeAudit)
+  })
+
   it('rejects a cycle in persisted page parents', async () => {
     await expect(
       fixture.payload.update({

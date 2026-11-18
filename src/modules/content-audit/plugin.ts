@@ -1,5 +1,9 @@
 import type { PayloadRequest, Plugin } from 'payload'
 
+import { isHierarchyMaintenance } from '@/modules/content/hierarchy-plugin'
+
+import { captureAuditVersions, takeVersionReference } from './version-reference'
+
 import {
   auditedCollections,
   auditedGlobals,
@@ -15,6 +19,7 @@ type AuditEntry = {
   targetId?: string
   title: string
   saveMode?: 'draft' | 'publish'
+  versionId?: string
 }
 
 async function recordChange(req: PayloadRequest, entry: AuditEntry): Promise<void> {
@@ -62,6 +67,9 @@ function trackSaveOperation(
   args: unknown,
 ): void {
   if (operation !== 'create' && operation !== 'update' && operation !== 'restoreVersion') return
+
+  // Payload preserves the database adapter when it reloads config in development.
+  captureAuditVersions(req.payload.db)
 
   const auditRequest: AuditRequest = req
   const operations = (auditRequest[saveOperationsKey] ??= new Map())
@@ -126,15 +134,18 @@ export const contentAuditPlugin: Plugin = (config) => ({
               if (!previousDoc.deletedAt && (doc.deletedAt || data.deletedAt)) action = 'trash'
               if (previousDoc.deletedAt && data.deletedAt === null) action = 'restore'
             }
+            const targetId = String(doc.id)
+            const versionId = takeVersionReference(req, target, targetId)
+            if (isHierarchyMaintenance(req)) return doc
             if (saveOperation === 'autosave' && action === operation && doc._status === 'draft') {
               return doc
             }
 
-            const targetId = String(doc.id)
             await recordChange(req, {
               action,
               target,
               targetId,
+              versionId,
               title: getTitle({ ...previousDoc, ...data, ...doc }, target, targetId),
               saveMode: getSaveMode(action, doc._status ?? data._status),
             })
@@ -181,6 +192,7 @@ export const contentAuditPlugin: Plugin = (config) => ({
         afterChange: [
           ...(global.hooks?.afterChange ?? []),
           async ({ doc, req }) => {
+            const versionId = takeVersionReference(req, target)
             const saveOperation = getSaveOperation(req, target)
             clearSaveOperation(req, target)
             if (saveOperation === 'autosave' && doc._status === 'draft') return doc
@@ -189,6 +201,7 @@ export const contentAuditPlugin: Plugin = (config) => ({
               action,
               target,
               title: auditedGlobals[target].title,
+              versionId,
               saveMode: getSaveMode(action, doc._status),
             })
             return doc

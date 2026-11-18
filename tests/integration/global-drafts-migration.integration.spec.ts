@@ -21,6 +21,8 @@ import { setPageTemplateCompositionSchema } from '../helpers/page-template-compo
 import { down as downLocations } from '../../migrations/20261115_212154_locations'
 import { down as downLocationIndex } from '../../migrations/20261115_212155_index_locations'
 
+import { down as downAuditVersionLinks } from '../../migrations/20261118_095451_content_audit_version_links'
+
 const globalTables = [
   'site_settings',
   'navigation',
@@ -58,6 +60,7 @@ async function relatedContentSchemaExists(db: MigrateUpArgs['db']): Promise<bool
 
 async function moveToBeforeGlobalDrafts(args: MigrateUpArgs & MigrateDownArgs): Promise<void> {
   const { db } = args
+  await downAuditVersionLinks(args)
   await downLocationIndex(args)
   await downLocations(args)
   await downUserGroups(args)

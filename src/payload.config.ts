@@ -1,5 +1,4 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
-import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { lexicalEditor, LinkFeature } from '@payloadcms/richtext-lexical'
 import { pl } from '@payloadcms/translations/languages/pl'
 import path from 'path'
@@ -42,7 +41,7 @@ import {
   getRequiredEnvironmentVariable,
 } from './lib/env'
 import { createStoragePlugins } from './storage/create-storage-plugins'
-import { generateHierarchyLabel, generateHierarchyURL } from './modules/content/hierarchy'
+import { contentHierarchyPlugin } from './modules/content/hierarchy-plugin'
 import {
   createRichTextLinkFields,
   resolveRichTextInternalLink,
@@ -177,16 +176,7 @@ export default buildConfig({
     ...(runProductionMigrations ? { prodMigrations: migrations } : {}),
   }),
   sharp,
-  plugins: [
-    nestedDocsPlugin({
-      collections: ['pages', 'categories'],
-      generateLabel: generateHierarchyLabel,
-      generateURL: generateHierarchyURL,
-      parentFieldSlug: 'parent',
-    }),
-    ...createStoragePlugins(),
-    contentAuditPlugin,
-  ],
+  plugins: [contentHierarchyPlugin, ...createStoragePlugins(), contentAuditPlugin],
 })
 
 function getTrustedOrigins(configuredServerURL: string | undefined): string[] {

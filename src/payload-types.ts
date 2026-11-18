@@ -3750,9 +3750,8 @@ export interface UrlAlias {
  */
 export interface ContentAuditLog {
   id: number;
-  occurredAt: string;
   actor: string;
-  actorId?: string | null;
+  occurredAt: string;
   action: 'create' | 'update' | 'trash' | 'restore' | 'restore-version' | 'delete';
   saveMode?: ('draft' | 'publish') | null;
   target:
@@ -3771,8 +3770,10 @@ export interface ContentAuditLog {
     | 'homepage-hero'
     | 'homepage-sections'
     | 'footer';
-  targetId?: string | null;
   title: string;
+  actorId?: string | null;
+  targetId?: string | null;
+  versionId?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -5422,14 +5423,15 @@ export interface RolesSelect<T extends boolean = true> {
  * via the `definition` "content-audit-log_select".
  */
 export interface ContentAuditLogSelect<T extends boolean = true> {
-  occurredAt?: T;
   actor?: T;
-  actorId?: T;
+  occurredAt?: T;
   action?: T;
   saveMode?: T;
   target?: T;
-  targetId?: T;
   title?: T;
+  actorId?: T;
+  targetId?: T;
+  versionId?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
