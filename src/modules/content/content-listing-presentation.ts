@@ -232,3 +232,37 @@ function createRichTextExcerpt(
     ? { kind: 'richText', value }
     : undefined
 }
+
+export function presentListingItem(
+  item: PublicContentListItem,
+  view: import('./listing-view').ListingView,
+): ContentListingPresentation {
+  const presentation = getContentListingPresentation(item, 'cards')
+  const enabled = view.information
+  const partnerRoles =
+    item.kind === 'partners' ? item.partnerRoles?.map(getPartnerRoleLabel).join(', ') : undefined
+  const shortEventDate = item.kind === 'events' && view.dateFormat === 'short'
+  const metadataDate = shortEventDate
+    ? { dateTime: item.document.startAt, label: formatEventStartDate(item.document) }
+    : presentation.metadataDate
+
+  return {
+    ...presentation,
+    category: enabled.taxonomy ? presentation.category : undefined,
+    contextLabel: enabled.context
+      ? [presentation.contextLabel, partnerRoles].filter(Boolean).join(' · ') || undefined
+      : undefined,
+    excerpt: enabled.excerpt ? presentation.excerpt : undefined,
+    facts: presentation.facts.filter((fact) =>
+      fact.icon === 'calendar' ? enabled.date && !shortEventDate : enabled.venue,
+    ),
+    image: enabled.image ? presentation.image : undefined,
+    interests: enabled.interests ? presentation.interests : undefined,
+    kindLabel: enabled.kind ? presentation.kindLabel : '',
+    metadataDate: enabled.date ? metadataDate : undefined,
+    metadataLink: enabled.cycle ? presentation.metadataLink : undefined,
+    metadataText: enabled.date ? presentation.metadataText : undefined,
+    secondaryAction: enabled.calendar ? presentation.secondaryAction : undefined,
+    tags: enabled.taxonomy ? presentation.tags : undefined,
+  }
+}

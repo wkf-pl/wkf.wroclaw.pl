@@ -12,6 +12,10 @@ import type { CurrentListingTarget } from '@/modules/content/listing-conditions'
 import { resolvePageTemplateListingItems } from '@/modules/page-templates/page-template-context'
 
 import type { ContentLayoutDocument } from './ContentLayoutRenderer'
+import { resolvePublicListingView } from '@/modules/content/public-listing-view'
+import { parseListingAppearance } from '@/modules/content/listing-view'
+import { presentListingItem } from '@/modules/content/content-listing-presentation'
+import { ConfiguredContentList } from './ConfiguredContentList'
 import { ContentList } from './ContentList'
 import { ContentPagination } from './ContentPagination'
 
@@ -36,7 +40,8 @@ export async function resolveListingBlockSection({
   pathname,
   searchParams,
 }: ListingBlockSectionProperties) {
-  const isCarousel = block.view === 'carousel'
+  const { view, legacy } = await resolvePublicListingView(block)
+  const isCarousel = view.layout === 'carousel'
   const paginationEnabled = !isCarousel && Boolean(block.pagination)
   const { parameterName, requestedPage } = resolveBlockPagination({
     blockId: block.id,
@@ -54,7 +59,7 @@ export async function resolveListingBlockSection({
       ? resolvePageTemplateListingItems(getContextRelation(block), document)
       : getManualItems(block),
     page: isCarousel ? 1 : requestedPage,
-    pageSize: block.pageSize,
+    pageSize: isCarousel ? Math.min(block.pageSize, 20) : block.pageSize,
     pagination: paginationEnabled,
     selectionMode: usesContextRelation || block.selectionMode === 'manual' ? 'manual' : 'filters',
     sort: block.sort ?? 'newest',
@@ -69,7 +74,20 @@ export async function resolveListingBlockSection({
     content:
       block.hideWhenEmpty && result.items.length === 0 ? null : (
         <div className="listingBlock">
-          <ContentList emptyMessage={block.emptyMessage} items={result.items} view={block.view} />
+          {legacy ? (
+            <ContentList
+              columns={parseListingAppearance(block.appearance).overrides?.columns}
+              emptyMessage={block.emptyMessage}
+              items={result.items}
+              view={legacy}
+            />
+          ) : (
+            <ConfiguredContentList
+              emptyMessage={block.emptyMessage}
+              items={result.items.map((item) => presentListingItem(item, view))}
+              view={view}
+            />
+          )}
           {paginationEnabled ? (
             <ContentPagination
               currentPage={result.page}

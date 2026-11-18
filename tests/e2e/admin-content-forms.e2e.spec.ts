@@ -154,8 +154,14 @@ test('lays out Listing presentation fields and persists labeled relationship con
   await login({ page, user: editorTestUser })
   await page.goto(`/admin/collections/pages/${listingPageID}`)
 
+  const listingRow = page.locator('#field-layout .blocks-field__row').first()
+  await expect(listingRow.getByRole('button', { name: 'Treści', exact: true })).toBeVisible()
+  await expect(listingRow.getByLabel('Szablon widoku', { exact: true })).toBeHidden()
+  await listingRow.getByRole('button', { name: 'Prezentacja', exact: true }).click()
+  await expect(listingRow.locator('#field-layout__0__selectionMode')).toBeHidden()
+
   const presentationFieldBoxes = await Promise.all(
-    ['view', 'frame', 'surface'].map(async (fieldName) => {
+    ['frame', 'surface'].map(async (fieldName) => {
       const box = await page.locator(`#field-layout__0__${fieldName}`).boundingBox()
       if (!box) throw new Error(`Missing visible Listing field: ${fieldName}`)
       return box
@@ -166,6 +172,12 @@ test('lays out Listing presentation fields and persists labeled relationship con
   expect(presentationFieldBoxes.map(({ x }) => x)).toEqual(
     [...presentationFieldBoxes.map(({ x }) => x)].sort((left, right) => left - right),
   )
+
+  await expect(page.getByLabel('Szablon widoku', { exact: true })).toHaveValue('cards')
+  await expect(page.getByLabel('Kolumny', { exact: true })).toHaveValue('')
+  await expect(page.getByRole('heading', { name: 'Podgląd wyników' })).toBeVisible()
+
+  await listingRow.getByRole('button', { name: 'Treści', exact: true }).click()
 
   const selectionFieldBox = await page.locator('#field-layout__0__selectionMode').boundingBox()
   const sourcesFieldBox = await page.locator('#field-layout__0__sources').boundingBox()

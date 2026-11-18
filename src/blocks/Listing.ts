@@ -1,6 +1,7 @@
-import type { Block, FieldHook, Validate } from 'payload'
+import type { Block, Field, FieldHook, Validate } from 'payload'
 
 import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
+import { getSharedListingViewId, parseListingAppearance } from '@/modules/content/listing-view'
 import { getFormRelationshipId } from '@/lib/relationships'
 import { createContentPresentationFields } from '@/modules/content/content-presentation'
 import { allListingSources, listingSourceLabels } from '@/modules/content/listing-conditions'
@@ -111,6 +112,194 @@ function createListingBlock({
   includeContextRelations: boolean
   interfaceName: string
 }): Block {
+  const contentFields: Field[] = [
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'selectionMode',
+          type: 'select',
+          admin: { isClearable: false, width: '33.333%' },
+          defaultValue: 'filters',
+          label: 'Tryb wyboru',
+          options: [
+            { label: 'Ręczny', value: 'manual' },
+            { label: 'Filtry', value: 'filters' },
+            ...(includeContextRelations
+              ? [{ label: 'Relacja bieżącego elementu', value: 'contextRelation' }]
+              : []),
+          ],
+          required: true,
+        },
+        {
+          name: 'sources',
+          type: 'select',
+          admin: { condition: filtersCondition, isClearable: false, width: '66.667%' },
+          hasMany: true,
+          label: 'Źródła',
+          options: allListingSources.map((source) => ({
+            label: listingSourceLabels[source],
+            value: source,
+          })),
+          validate: validateListingSources,
+        },
+        ...(includeContextRelations
+          ? ([
+              {
+                name: 'contextRelation',
+                type: 'select',
+                admin: {
+                  components: {
+                    Field:
+                      '/components/admin/PageTemplateFields#PageTemplateContextListingRelationSelect',
+                  },
+                  condition: (_data, siblingData) =>
+                    siblingData.selectionMode === 'contextRelation',
+                  isClearable: false,
+                  width: '66.667%',
+                },
+                label: 'Relacja bieżącego elementu',
+                options: uniquePageTemplateContextListingRelations(),
+                validate: ((value, { siblingData }) =>
+                  siblingData.selectionMode !== 'contextRelation' || value
+                    ? true
+                    : 'Wybierz relację bieżącego elementu.') satisfies Validate<
+                  unknown,
+                  unknown,
+                  ListingSiblingData
+                >,
+              },
+            ] satisfies Block['fields'])
+          : []),
+      ],
+    },
+    {
+      name: 'includeInactiveLocations',
+      type: 'checkbox',
+      label: 'Uwzględnij nieaktywne miejsca',
+      defaultValue: false,
+      admin: {
+        ...createBooleanSwitchAdmin(),
+        condition: (_data, siblingData) =>
+          siblingData.selectionMode === 'filters' && siblingData.sources?.includes('locations'),
+      },
+    },
+    {
+      name: 'items',
+      type: 'array',
+      admin: {
+        condition: (_data, siblingData) => siblingData.selectionMode === 'manual',
+        initCollapsed: false,
+      },
+      fields: [
+        {
+          name: 'item',
+          type: 'relationship',
+          admin: {
+            components: {
+              Field: '/components/admin/ListingManualItemField#ListingManualItemField',
+            },
+          },
+          filterOptions: { _status: { equals: 'published' } },
+          label: 'Treść',
+          relationTo: [...allListingSources],
+          required: true,
+        },
+        {
+          name: 'contextLabel',
+          type: 'text',
+          admin: {
+            condition: memberProfileContextCondition,
+            description: 'Opcjonalna funkcja w kontekście tej strony, np. „Prezes Zarządu”.',
+          },
+          hooks: { beforeValidate: [normalizeContextLabel] },
+          label: 'Podpis funkcji',
+          maxLength: 160,
+        },
+      ],
+      label: 'Treści',
+      labels: {
+        plural: 'Treści',
+        singular: 'Treść',
+      },
+      validate: validateManualListingItems,
+    },
+    createListingConditionsField(),
+    createListingPaginationRow({
+      contentListing: true,
+      secondaryLeadingField: {
+        name: 'sort',
+        type: 'select',
+        admin: { condition: filtersCondition, isClearable: false, width: '33.333%' },
+        defaultValue: 'newest',
+        label: 'Sortowanie',
+        options: [
+          { label: 'Najnowsze', value: 'newest' },
+          { label: 'Najstarsze', value: 'oldest' },
+          { label: 'Tytuł A–Z', value: 'titleAscending' },
+          { label: 'Tytuł Z–A', value: 'titleDescending' },
+        ],
+        required: true,
+      },
+    }),
+    {
+      name: 'hideWhenEmpty',
+      type: 'checkbox',
+      admin: createBooleanSwitchAdmin(),
+      defaultValue: false,
+      label: 'Ukryj blok, gdy brak treści',
+    },
+    {
+      name: 'emptyMessage',
+      type: 'text',
+      admin: { condition: (_data, siblingData) => siblingData.hideWhenEmpty !== true },
+      label: 'Komunikat pustego listingu',
+    },
+  ]
+  const presentationFields: Field[] = [
+    {
+      name: 'view',
+      type: 'select',
+      admin: { hidden: true },
+      defaultValue: 'cards',
+      label: 'Widok',
+      options: [
+        { label: 'Kafelki', value: 'tiles' },
+        { label: 'Karty', value: 'cards' },
+        { label: 'Karuzela', value: 'carousel' },
+        { label: 'Lista kompaktowa', value: 'compact' },
+        { label: 'Siatka', value: 'grid' },
+      ],
+      required: true,
+    },
+    ...createContentPresentationFields(),
+    {
+      name: 'appearance',
+      label: 'Wygląd',
+      type: 'json',
+      admin: { components: { Field: '/components/admin/ListingViewField#ListingViewField' } },
+      hooks: {
+        beforeValidate: [({ value }) => (value == null ? value : parseListingAppearance(value))],
+      },
+      validate: async (value, { req, previousValue }) => {
+        const id = getSharedListingViewId(value)
+        if (!id || id === getSharedListingViewId(previousValue)) return true
+        const { docs } = await req.payload.find({
+          collection: 'listing-views',
+          depth: 0,
+          limit: 1,
+          req,
+          overrideAccess: true,
+          where: {
+            id: { equals: id },
+            _status: { equals: 'published' },
+          },
+        })
+        return docs.length > 0 || 'Wybierz dostępny, opublikowany szablon widoku.'
+      },
+    },
+  ]
+
   return {
     slug: 'listing',
     admin: {
@@ -127,164 +316,12 @@ function createListingBlock({
       },
     },
     fields: [
-      ...createContentPresentationFields({
-        leadingField: {
-          name: 'view',
-          type: 'select',
-          admin: { isClearable: false, width: '33.333%' },
-          defaultValue: 'cards',
-          label: 'Widok',
-          options: [
-            { label: 'Kafelki', value: 'tiles' },
-            { label: 'Karty', value: 'cards' },
-            { label: 'Karuzela', value: 'carousel' },
-            { label: 'Lista kompaktowa', value: 'compact' },
-            { label: 'Siatka', value: 'grid' },
-          ],
-          required: true,
-        },
-      }),
       {
-        type: 'row',
-        fields: [
-          {
-            name: 'selectionMode',
-            type: 'select',
-            admin: { isClearable: false, width: '33.333%' },
-            defaultValue: 'filters',
-            label: 'Tryb wyboru',
-            options: [
-              { label: 'Ręczny', value: 'manual' },
-              { label: 'Filtry', value: 'filters' },
-              ...(includeContextRelations
-                ? [{ label: 'Relacja bieżącego elementu', value: 'contextRelation' }]
-                : []),
-            ],
-            required: true,
-          },
-          {
-            name: 'sources',
-            type: 'select',
-            admin: { condition: filtersCondition, isClearable: false, width: '66.667%' },
-            hasMany: true,
-            label: 'Źródła',
-            options: allListingSources.map((source) => ({
-              label: listingSourceLabels[source],
-              value: source,
-            })),
-            validate: validateListingSources,
-          },
-          ...(includeContextRelations
-            ? ([
-                {
-                  name: 'contextRelation',
-                  type: 'select',
-                  admin: {
-                    components: {
-                      Field:
-                        '/components/admin/PageTemplateFields#PageTemplateContextListingRelationSelect',
-                    },
-                    condition: (_data, siblingData) =>
-                      siblingData.selectionMode === 'contextRelation',
-                    isClearable: false,
-                    width: '66.667%',
-                  },
-                  label: 'Relacja bieżącego elementu',
-                  options: uniquePageTemplateContextListingRelations(),
-                  validate: ((value, { siblingData }) =>
-                    siblingData.selectionMode !== 'contextRelation' || value
-                      ? true
-                      : 'Wybierz relację bieżącego elementu.') satisfies Validate<
-                    unknown,
-                    unknown,
-                    ListingSiblingData
-                  >,
-                },
-              ] satisfies Block['fields'])
-            : []),
+        type: 'tabs',
+        tabs: [
+          { label: 'Treści', fields: contentFields },
+          { label: 'Prezentacja', fields: presentationFields },
         ],
-      },
-      {
-        name: 'includeInactiveLocations',
-        type: 'checkbox',
-        label: 'Uwzględnij nieaktywne miejsca',
-        defaultValue: false,
-        admin: {
-          ...createBooleanSwitchAdmin(),
-          condition: (_data, siblingData) =>
-            siblingData.selectionMode === 'filters' && siblingData.sources?.includes('locations'),
-        },
-      },
-      {
-        name: 'items',
-        type: 'array',
-        admin: {
-          condition: (_data, siblingData) => siblingData.selectionMode === 'manual',
-          initCollapsed: false,
-        },
-        fields: [
-          {
-            name: 'item',
-            type: 'relationship',
-            admin: {
-              components: {
-                Field: '/components/admin/ListingManualItemField#ListingManualItemField',
-              },
-            },
-            filterOptions: { _status: { equals: 'published' } },
-            label: 'Treść',
-            relationTo: [...allListingSources],
-            required: true,
-          },
-          {
-            name: 'contextLabel',
-            type: 'text',
-            admin: {
-              condition: memberProfileContextCondition,
-              description: 'Opcjonalna funkcja w kontekście tej strony, np. „Prezes Zarządu”.',
-            },
-            hooks: { beforeValidate: [normalizeContextLabel] },
-            label: 'Podpis funkcji',
-            maxLength: 160,
-          },
-        ],
-        label: 'Treści',
-        labels: {
-          plural: 'Treści',
-          singular: 'Treść',
-        },
-        validate: validateManualListingItems,
-      },
-      createListingConditionsField(),
-      createListingPaginationRow({
-        contentListing: true,
-        secondaryLeadingField: {
-          name: 'sort',
-          type: 'select',
-          admin: { condition: filtersCondition, isClearable: false, width: '33.333%' },
-          defaultValue: 'newest',
-          label: 'Sortowanie',
-          options: [
-            { label: 'Najnowsze', value: 'newest' },
-            { label: 'Najstarsze', value: 'oldest' },
-            { label: 'Tytuł A–Z', value: 'titleAscending' },
-            { label: 'Tytuł Z–A', value: 'titleDescending' },
-          ],
-          required: true,
-        },
-      }),
-      {
-        name: 'hideWhenEmpty',
-        type: 'checkbox',
-        admin: createBooleanSwitchAdmin(),
-        defaultValue: false,
-        label: 'Ukryj blok, gdy brak treści',
-      },
-      {
-        name: 'emptyMessage',
-        type: 'text',
-        admin: { condition: (_data, siblingData) => siblingData.hideWhenEmpty !== true },
-        label: 'Komunikat pustego listingu',
       },
     ],
     interfaceName,

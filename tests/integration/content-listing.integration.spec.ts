@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { sql } from '@payloadcms/db-postgres'
 
 import { findPublicContent } from '@/modules/content/content-listing'
+import { resolvePublicListingView } from '@/modules/content/public-listing-view'
 import { getContentListingPresentation } from '@/modules/content/content-listing-presentation'
 import type { ListingBlock, Post } from '@/payload-types'
 
@@ -22,6 +23,57 @@ afterAll(async () => {
 })
 
 describe('content listing and pagination', () => {
+  it('keeps the published listing view active until the shared draft is published', async () => {
+    const { payload } = fixture
+    const template = await payload.create({
+      collection: 'listing-views',
+      data: {
+        _status: 'published',
+        name: 'Integration shared listing view',
+        settings: { layout: 'static', columns: 3, information: { excerpt: true } },
+      },
+      overrideAccess: true,
+    })
+    const listing = {
+      view: 'cards',
+      appearance: {
+        preset: `shared:${template.id}`,
+        overrides: { information: { excerpt: false } },
+      },
+    }
+    try {
+      await payload.update({
+        collection: 'listing-views',
+        id: template.id,
+        draft: true,
+        data: { settings: { layout: 'carousel', columns: 2, information: { excerpt: true } } },
+        overrideAccess: true,
+      })
+      expect((await resolvePublicListingView(listing)).view).toMatchObject({
+        layout: 'static',
+        columns: 3,
+        information: { excerpt: false },
+      })
+      await payload.update({
+        collection: 'listing-views',
+        id: template.id,
+        data: {
+          _status: 'published',
+          settings: { layout: 'carousel', columns: 2, information: { excerpt: true } },
+          retired: true,
+        },
+        overrideAccess: true,
+      })
+      expect((await resolvePublicListingView(listing)).view).toMatchObject({
+        layout: 'carousel',
+        columns: 2,
+        information: { excerpt: false },
+      })
+    } finally {
+      await payload.delete({ collection: 'listing-views', id: template.id, overrideAccess: true })
+    }
+  })
+
   it('returns a page and a post in one globally sorted public stream', async () => {
     const result = await findPublicContent({
       conditions: [

@@ -231,25 +231,31 @@ describe('page configuration', () => {
   })
 
   it('arranges listing controls into the requested rows', () => {
-    const listingFields = ListingBlock.fields.slice(3)
+    const [tabsField] = ListingBlock.fields
+    if (tabsField?.type !== 'tabs') throw new Error('Missing Listing tabs')
+    const [contentTab, presentationTab] = tabsField.tabs
+
+    expect(tabsField.tabs.map(({ label }) => label)).toEqual(['Treści', 'Prezentacja'])
+    expect(tabsField.tabs.every((tab) => !('name' in tab))).toBe(true)
+
+    const listingFields = contentTab.fields
     const rows = listingFields.filter((field) => field.type === 'row')
     const rowFieldNames = rows.map((row) =>
       row.fields.map((field) => ('name' in field ? field.name : undefined)),
     )
     const conditionsField = findField(ListingBlock.fields, 'conditions')
 
-    expect(ListingBlock.fields[0]).toMatchObject({
-      fields: [
-        {
-          admin: { width: '33.333%' },
-          name: 'view',
-          options: expect.arrayContaining([{ label: 'Kafelki', value: 'tiles' }]),
-          type: 'select',
-        },
-        { admin: { width: '33.333%' }, name: 'frame', type: 'select' },
-        { admin: { width: '33.333%' }, name: 'surface', type: 'select' },
-      ],
-      type: 'row',
+    expect(describeFieldOrder(presentationTab.fields)).toEqual([
+      'view',
+      ['frame', 'surface'],
+      ['surfaceImage', 'surfaceHorizontalPosition', 'surfaceVerticalPosition'],
+      'surfacePreview',
+      'appearance',
+    ])
+    expect(findField(presentationTab.fields, 'view')).toMatchObject({
+      admin: { hidden: true },
+      options: expect.arrayContaining([{ label: 'Kafelki', value: 'tiles' }]),
+      type: 'select',
     })
     expect(rowFieldNames).toEqual([
       ['selectionMode', 'sources'],

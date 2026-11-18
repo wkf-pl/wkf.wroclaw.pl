@@ -899,3 +899,30 @@ a.attachmentItem:hover {
 .contentPagination a:last-child {
   justify-self: end;
 }
+
+.contentList.contentList-configuredColumns {
+  gap: 1rem;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(
+      min(
+        100%,
+        max(
+          var(--listing-minimum),
+          calc((100% - (var(--listing-columns) - 1) * 1rem) / var(--listing-columns))
+        )
+      ),
+      1fr
+    )
+  );
+}
+
+.contentList-cards.contentList-configuredColumns .contentCard {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+
+@media (max-width: 36rem) {
+  .contentList-cards.contentList-configuredColumns .contentCard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

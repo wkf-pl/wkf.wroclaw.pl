@@ -54,6 +54,7 @@ import { ListingConditionScope as ListingConditionScope_93c67ff59ff08c796024876a
 import { ListingConditionsField as ListingConditionsField_93c67ff59ff08c796024876ae00b1667 } from '../../../components/admin/ListingConditionsField'
 import { ListingConditionRowLabel as ListingConditionRowLabel_93c67ff59ff08c796024876ae00b1667 } from '../../../components/admin/ListingConditionsField'
 import { ListingPageSizeField as ListingPageSizeField_a71f919e146f1c5537f5602cc47aea2f } from '../../../components/admin/ListingPageSizeField'
+import { ListingViewField as ListingViewField_5fc1912628b17bd81b7c3e54ce0d7e34 } from '../../../components/admin/ListingViewField'
 import { ListingBlockLabel as ListingBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { ContentCalendarBlockLabel as ContentCalendarBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { MediaGalleryBlockLabel as MediaGalleryBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
@@ -69,6 +70,8 @@ import { SectionGroupTabsField as SectionGroupTabsField_432a355624980b16474727ea
 import { SectionGroupBlockLabel as SectionGroupBlockLabel_d53c993bb109710411f82eaaf564eeff } from '../../../components/admin/ContentBlockLabel'
 import { PageTemplateDescription as PageTemplateDescription_f1adb3d66022274ca5caca04eb1122e1 } from '../../../components/admin/PageTemplateFields'
 import { DraftPreviewButton as DraftPreviewButton_4de757febecdd22106568bfa9952c5dd } from '../../../components/admin/DraftPreviewButton'
+import { ListingViewTemplateField as ListingViewTemplateField_5fc1912628b17bd81b7c3e54ce0d7e34 } from '../../../components/admin/ListingViewField'
+import { ListingViewUsage as ListingViewUsage_fa697b4c9324f9e23c2b1b1c1e0343af } from '../../../components/admin/ListingViewUsage'
 import { HierarchyPath as HierarchyPath_6311b6033928ec6e076fdd24567b1bb0 } from '../../../components/admin/HierarchyPath'
 import { ContentAuthorField as ContentAuthorField_086e739de01cf499e2179dbba0de5e78 } from '../../../components/admin/ContentAuthorField'
 import { PageCreateLabel as PageCreateLabel_0ea542d15a7bc53da30cd446a6eac5d4 } from '../../../components/admin/PageCreateLabel'
@@ -178,6 +181,7 @@ export const importMap = {
   "/components/admin/ListingConditionsField#ListingConditionsField": ListingConditionsField_93c67ff59ff08c796024876ae00b1667,
   "/components/admin/ListingConditionsField#ListingConditionRowLabel": ListingConditionRowLabel_93c67ff59ff08c796024876ae00b1667,
   "/components/admin/ListingPageSizeField#ListingPageSizeField": ListingPageSizeField_a71f919e146f1c5537f5602cc47aea2f,
+  "/components/admin/ListingViewField#ListingViewField": ListingViewField_5fc1912628b17bd81b7c3e54ce0d7e34,
   "/components/admin/ContentBlockLabel#ListingBlockLabel": ListingBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ContentBlockLabel#ContentCalendarBlockLabel": ContentCalendarBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/ContentBlockLabel#MediaGalleryBlockLabel": MediaGalleryBlockLabel_d53c993bb109710411f82eaaf564eeff,
@@ -193,6 +197,8 @@ export const importMap = {
   "/components/admin/ContentBlockLabel#SectionGroupBlockLabel": SectionGroupBlockLabel_d53c993bb109710411f82eaaf564eeff,
   "/components/admin/PageTemplateFields#PageTemplateDescription": PageTemplateDescription_f1adb3d66022274ca5caca04eb1122e1,
   "/components/admin/DraftPreviewButton#DraftPreviewButton": DraftPreviewButton_4de757febecdd22106568bfa9952c5dd,
+  "/components/admin/ListingViewField#ListingViewTemplateField": ListingViewTemplateField_5fc1912628b17bd81b7c3e54ce0d7e34,
+  "/components/admin/ListingViewUsage#ListingViewUsage": ListingViewUsage_fa697b4c9324f9e23c2b1b1c1e0343af,
   "/components/admin/HierarchyPath#HierarchyPath": HierarchyPath_6311b6033928ec6e076fdd24567b1bb0,
   "/components/admin/ContentAuthorField#ContentAuthorField": ContentAuthorField_086e739de01cf499e2179dbba0de5e78,
   "/components/admin/PageCreateLabel#PageCreateLabel": PageCreateLabel_0ea542d15a7bc53da30cd446a6eac5d4,

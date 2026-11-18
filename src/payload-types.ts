@@ -136,6 +136,7 @@ export interface Config {
   collections: {
     'content-listing-items': ContentListingItem;
     'page-templates': PageTemplate;
+    'listing-views': ListingView;
     pages: Page;
     posts: Post;
     events: Event;
@@ -178,6 +179,7 @@ export interface Config {
   collectionsSelect: {
     'content-listing-items': ContentListingItemsSelect<false> | ContentListingItemsSelect<true>;
     'page-templates': PageTemplatesSelect<false> | PageTemplatesSelect<true>;
+    'listing-views': ListingViewsSelect<false> | ListingViewsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
@@ -1598,15 +1600,6 @@ export interface CardBlock {
  * via the `definition` "ListingBlock".
  */
 export interface ListingBlock {
-  view: 'tiles' | 'cards' | 'carousel' | 'compact' | 'grid';
-  frame?: ('none' | 'outline') | null;
-  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
-  /**
-   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
-   */
-  surfaceImage?: (number | null) | Media;
-  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
-  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   selectionMode: 'manual' | 'filters';
   sources?:
     | ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents' | 'partners' | 'locations' | 'member-profiles')[]
@@ -1660,6 +1653,24 @@ export interface ListingBlock {
   pagination?: boolean | null;
   hideWhenEmpty?: boolean | null;
   emptyMessage?: string | null;
+  view: 'tiles' | 'cards' | 'carousel' | 'compact' | 'grid';
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  appearance?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'listing';
@@ -2995,15 +3006,6 @@ export interface PageTemplateIconBlock {
  * via the `definition` "PageTemplateListingBlock".
  */
 export interface PageTemplateListingBlock {
-  view: 'tiles' | 'cards' | 'carousel' | 'compact' | 'grid';
-  frame?: ('none' | 'outline') | null;
-  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
-  /**
-   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
-   */
-  surfaceImage?: (number | null) | Media;
-  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
-  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   selectionMode: 'manual' | 'filters' | 'contextRelation';
   sources?:
     | ('pages' | 'posts' | 'events' | 'event-cycles' | 'documents' | 'partners' | 'locations' | 'member-profiles')[]
@@ -3058,6 +3060,24 @@ export interface PageTemplateListingBlock {
   pagination?: boolean | null;
   hideWhenEmpty?: boolean | null;
   emptyMessage?: string | null;
+  view: 'tiles' | 'cards' | 'carousel' | 'compact' | 'grid';
+  frame?: ('none' | 'outline') | null;
+  surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
+  /**
+   * Obraz pełni funkcję dekoracyjnego tła. Ważne informacje umieść w treści, nie na obrazie.
+   */
+  surfaceImage?: (number | null) | Media;
+  surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
+  surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
+  appearance?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'listing';
@@ -3699,6 +3719,27 @@ export interface PageTemplateSectionGroupBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listing-views".
+ */
+export interface ListingView {
+  id: number;
+  name: string;
+  settings:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  retired?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "url-aliases".
  */
 export interface UrlAlias {
@@ -3802,6 +3843,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'page-templates';
         value: number | PageTemplate;
+      } | null)
+    | ({
+        relationTo: 'listing-views';
+        value: number | ListingView;
       } | null)
     | ({
         relationTo: 'pages';
@@ -4169,12 +4214,6 @@ export interface CardBlockSelect<T extends boolean = true> {
  * via the `definition` "PageTemplateListingBlock_select".
  */
 export interface PageTemplateListingBlockSelect<T extends boolean = true> {
-  view?: T;
-  frame?: T;
-  surface?: T;
-  surfaceImage?: T;
-  surfaceHorizontalPosition?: T;
-  surfaceVerticalPosition?: T;
   selectionMode?: T;
   sources?: T;
   contextRelation?: T;
@@ -4192,6 +4231,13 @@ export interface PageTemplateListingBlockSelect<T extends boolean = true> {
   pagination?: T;
   hideWhenEmpty?: T;
   emptyMessage?: T;
+  view?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
+  appearance?: T;
   id?: T;
   blockName?: T;
 }
@@ -4574,6 +4620,18 @@ export interface PageTemplateSectionGroupBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listing-views_select".
+ */
+export interface ListingViewsSelect<T extends boolean = true> {
+  name?: T;
+  settings?: T;
+  retired?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages_select".
  */
 export interface PagesSelect<T extends boolean = true> {
@@ -4661,12 +4719,6 @@ export interface ActionLinksBlockSelect<T extends boolean = true> {
  * via the `definition` "ListingBlock_select".
  */
 export interface ListingBlockSelect<T extends boolean = true> {
-  view?: T;
-  frame?: T;
-  surface?: T;
-  surfaceImage?: T;
-  surfaceHorizontalPosition?: T;
-  surfaceVerticalPosition?: T;
   selectionMode?: T;
   sources?: T;
   includeInactiveLocations?: T;
@@ -4683,6 +4735,13 @@ export interface ListingBlockSelect<T extends boolean = true> {
   pagination?: T;
   hideWhenEmpty?: T;
   emptyMessage?: T;
+  view?: T;
+  frame?: T;
+  surface?: T;
+  surfaceImage?: T;
+  surfaceHorizontalPosition?: T;
+  surfaceVerticalPosition?: T;
+  appearance?: T;
   id?: T;
   blockName?: T;
 }
