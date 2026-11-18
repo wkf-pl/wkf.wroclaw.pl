@@ -11,14 +11,16 @@ if [[ ! -f "$ubuntu_sources_path" ]] ||
   exit 0
 fi
 
-sed --in-place \
-  --expression='\|^http://azure\.archive\.ubuntu\.com/ubuntu/|s|priority:1|priority:2|' \
-  --expression='\|^https://archive\.ubuntu\.com/ubuntu/|s|priority:2|priority:1|' \
-  "$apt_mirror_list_path"
+global_mirror='^https?://archive\.ubuntu\.com/ubuntu/?[[:space:]]+priority:'
+azure_mirror='^https?://azure\.archive\.ubuntu\.com/ubuntu/?[[:space:]]+priority:'
 
-grep --extended-regexp --quiet \
-  '^https://archive\.ubuntu\.com/ubuntu/[[:space:]]+priority:1$' \
-  "$apt_mirror_list_path"
-grep --extended-regexp --quiet \
-  '^http://azure\.archive\.ubuntu\.com/ubuntu/[[:space:]]+priority:2$' \
+if ! grep --extended-regexp --quiet "${global_mirror}[0-9]+[[:space:]]*$" "$apt_mirror_list_path" ||
+  ! grep --extended-regexp --quiet "${azure_mirror}[0-9]+[[:space:]]*$" "$apt_mirror_list_path"; then
+  echo 'Keeping existing Ubuntu mirror priorities.'
+  exit 0
+fi
+
+sed --in-place --regexp-extended \
+  --expression="s|(${global_mirror})[0-9]+([[:space:]]*)$|\\11\\2|" \
+  --expression="s|(${azure_mirror})[0-9]+([[:space:]]*)$|\\12\\2|" \
   "$apt_mirror_list_path"

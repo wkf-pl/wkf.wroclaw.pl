@@ -98,49 +98,55 @@ describe('deployment workflows', () => {
     )
   })
 
-  it('promotes the global Ubuntu archive in the runner mirror list', () => {
-    const fixtureDirectory = mkdtempSync(join(tmpdir(), 'wkf-apt-mirror-'))
-    const ubuntuSourcesPath = join(fixtureDirectory, 'ubuntu.sources')
-    const mirrorListPath = join(fixtureDirectory, 'apt-mirrors.txt')
+  it.each([
+    ['http://azure.archive.ubuntu.com/ubuntu/', 'https://archive.ubuntu.com/ubuntu/', 1, 2],
+    ['https://azure.archive.ubuntu.com/ubuntu/', 'http://archive.ubuntu.com/ubuntu/', 10, 20],
+  ])(
+    'promotes the global Ubuntu archive for Azure mirror %s',
+    (azureMirror, globalMirror, azurePriority, globalPriority) => {
+      const fixtureDirectory = mkdtempSync(join(tmpdir(), 'wkf-apt-mirror-'))
+      const ubuntuSourcesPath = join(fixtureDirectory, 'ubuntu.sources')
+      const mirrorListPath = join(fixtureDirectory, 'apt-mirrors.txt')
 
-    writeFileSync(
-      ubuntuSourcesPath,
-      [
-        'Types: deb',
-        'URIs: mirror+file:/etc/apt/apt-mirrors.txt',
-        'Suites: noble noble-updates noble-backports noble-security',
-        '',
-      ].join('\n'),
-    )
-    writeFileSync(
-      mirrorListPath,
-      [
-        'http://azure.archive.ubuntu.com/ubuntu/\tpriority:1',
-        'https://archive.ubuntu.com/ubuntu/\tpriority:2',
-        'https://security.ubuntu.com/ubuntu/\tpriority:3',
-        '',
-      ].join('\n'),
-    )
-
-    try {
-      execFileSync(
-        'bash',
-        ['scripts/configure-ci-ubuntu-mirror.sh', ubuntuSourcesPath, mirrorListPath],
-        { stdio: 'pipe' },
-      )
-
-      expect(readFileSync(mirrorListPath, 'utf8')).toBe(
+      writeFileSync(
+        ubuntuSourcesPath,
         [
-          'http://azure.archive.ubuntu.com/ubuntu/\tpriority:2',
-          'https://archive.ubuntu.com/ubuntu/\tpriority:1',
+          'Types: deb',
+          'URIs: mirror+file:/etc/apt/apt-mirrors.txt',
+          'Suites: noble noble-updates noble-backports noble-security',
+          '',
+        ].join('\n'),
+      )
+      writeFileSync(
+        mirrorListPath,
+        [
+          `${azureMirror}\tpriority:${azurePriority}`,
+          `${globalMirror}\tpriority:${globalPriority}`,
           'https://security.ubuntu.com/ubuntu/\tpriority:3',
           '',
         ].join('\n'),
       )
-    } finally {
-      rmSync(fixtureDirectory, { force: true, recursive: true })
-    }
-  })
+
+      try {
+        execFileSync(
+          'bash',
+          ['scripts/configure-ci-ubuntu-mirror.sh', ubuntuSourcesPath, mirrorListPath],
+          { stdio: 'pipe' },
+        )
+
+        expect(readFileSync(mirrorListPath, 'utf8')).toBe(
+          [
+            `${azureMirror}\tpriority:2`,
+            `${globalMirror}\tpriority:1`,
+            'https://security.ubuntu.com/ubuntu/\tpriority:3',
+            '',
+          ].join('\n'),
+        )
+      } finally {
+        rmSync(fixtureDirectory, { force: true, recursive: true })
+      }
+    },
+  )
 
   it('keeps the runner sources when Ubuntu uses a direct archive URL', () => {
     const fixtureDirectory = mkdtempSync(join(tmpdir(), 'wkf-apt-mirror-'))
@@ -157,6 +163,27 @@ describe('deployment workflows', () => {
       )
 
       expect(readFileSync(ubuntuSourcesPath, 'utf8')).toBe(ubuntuSources)
+    } finally {
+      rmSync(fixtureDirectory, { force: true, recursive: true })
+    }
+  })
+
+  it('leaves a mirror list with a regional Ubuntu archive in place', () => {
+    const fixtureDirectory = mkdtempSync(join(tmpdir(), 'wkf-apt-mirror-'))
+    const ubuntuSourcesPath = join(fixtureDirectory, 'ubuntu.sources')
+    const mirrorListPath = join(fixtureDirectory, 'apt-mirrors.txt')
+    const mirrorList = 'https://us.archive.ubuntu.com/ubuntu/\tpriority:1\n'
+
+    try {
+      writeFileSync(ubuntuSourcesPath, 'URIs: mirror+file:/etc/apt/apt-mirrors.txt\n')
+      writeFileSync(mirrorListPath, mirrorList)
+      execFileSync(
+        'bash',
+        ['scripts/configure-ci-ubuntu-mirror.sh', ubuntuSourcesPath, mirrorListPath],
+        { stdio: 'pipe' },
+      )
+
+      expect(readFileSync(mirrorListPath, 'utf8')).toBe(mirrorList)
     } finally {
       rmSync(fixtureDirectory, { force: true, recursive: true })
     }
