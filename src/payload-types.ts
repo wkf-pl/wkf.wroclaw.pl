@@ -612,6 +612,10 @@ export interface Event {
   startAt: string;
   endAt?: string | null;
   location?: (number | null) | Location;
+  participation: 'public' | 'members';
+  capacityMode: 'unlimited' | 'exact' | 'approximate';
+  capacity?: number | null;
+  onlineEventURL?: string | null;
   legacyLocation?:
     | {
         [k: string]: unknown;
@@ -622,10 +626,6 @@ export interface Event {
     | boolean
     | null;
   confirmedMissingLocation?: boolean | null;
-  onlineEventURL?: string | null;
-  participation: 'public' | 'members';
-  capacityMode: 'unlimited' | 'exact' | 'approximate';
-  capacity?: number | null;
   organizers?:
     | {
         profile: number | MemberProfile;
@@ -799,6 +799,9 @@ export interface EventCycle {
     defaultStartTime?: string | null;
     defaultEndTime?: string | null;
     location?: (number | null) | Location;
+    participation: 'public' | 'members';
+    capacityMode: 'unlimited' | 'exact' | 'approximate';
+    capacity?: number | null;
     legacyLocation?:
       | {
           [k: string]: unknown;
@@ -809,9 +812,6 @@ export interface EventCycle {
       | boolean
       | null;
     confirmedMissingLocation?: boolean | null;
-    participation: 'public' | 'members';
-    capacityMode: 'unlimited' | 'exact' | 'approximate';
-    capacity?: number | null;
     organizers?:
       | {
           profile: number | MemberProfile;
@@ -1436,6 +1436,7 @@ export interface Partner {
 export interface Location {
   id: number;
   venueName: string;
+  isActive?: boolean | null;
   venueWebsite?: string | null;
   streetAddress: string;
   postalCode: string;
@@ -1445,7 +1446,6 @@ export interface Location {
    * W Mapach Google wybierz „Udostępnij → Umieść mapę” i wklej skopiowany kod HTML.
    */
   mapEmbedURL: string;
-  isActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -4938,12 +4938,12 @@ export interface EventsSelect<T extends boolean = true> {
   startAt?: T;
   endAt?: T;
   location?: T;
-  legacyLocation?: T;
-  confirmedMissingLocation?: T;
-  onlineEventURL?: T;
   participation?: T;
   capacityMode?: T;
   capacity?: T;
+  onlineEventURL?: T;
+  legacyLocation?: T;
+  confirmedMissingLocation?: T;
   organizers?:
     | T
     | {
@@ -5069,11 +5069,11 @@ export interface EventCyclesSelect<T extends boolean = true> {
         defaultStartTime?: T;
         defaultEndTime?: T;
         location?: T;
-        legacyLocation?: T;
-        confirmedMissingLocation?: T;
         participation?: T;
         capacityMode?: T;
         capacity?: T;
+        legacyLocation?: T;
+        confirmedMissingLocation?: T;
         organizers?:
           | T
           | {
@@ -5298,13 +5298,13 @@ export interface UrlAliasesSelect<T extends boolean = true> {
  */
 export interface LocationsSelect<T extends boolean = true> {
   venueName?: T;
+  isActive?: T;
   venueWebsite?: T;
   streetAddress?: T;
   postalCode?: T;
   city?: T;
   country?: T;
   mapEmbedURL?: T;
-  isActive?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;

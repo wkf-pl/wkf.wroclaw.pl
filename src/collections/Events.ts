@@ -5,7 +5,6 @@ import {
 import type { CollectionConfig } from 'payload'
 
 import { validateVenueWebsite } from '@/modules/events/validation'
-import { createLocationRelationship } from '@/modules/locations/relationship'
 
 import {
   createEditorialFields,
@@ -22,7 +21,7 @@ import {
   createExternalLinksField,
   createOrganizerField,
   createPartnersField,
-  createParticipationFields,
+  createEventLocationRow,
   createScheduleFields,
 } from '@/modules/events/fields'
 import { applyEventCycleDefaults, updateEventCalendarMetadata } from '@/modules/events/hooks'
@@ -127,15 +126,14 @@ export const Events: CollectionConfig = {
             },
             createContentLayoutField('Treści'),
             { type: 'collapsible', label: 'Termin', fields: createScheduleFields() },
-            createLocationRelationship(),
-            ...createLegacyLocationFields(),
+            createEventLocationRow(),
             {
               name: 'onlineEventURL',
               type: 'text',
               label: 'Link do wydarzenia online',
               validate: validateVenueWebsite,
             },
-            ...createParticipationFields(),
+            ...createLegacyLocationFields(),
             createOrganizerField(),
             createPartnersField(),
             createExternalLinksField(),

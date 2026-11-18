@@ -62,11 +62,25 @@ export const Locations: CollectionConfig = {
   },
   fields: [
     {
-      name: 'venueName',
-      type: 'text',
-      hooks: { beforeValidate: [trimText] },
-      label: 'Nazwa',
-      required: true,
+      type: 'row',
+      fields: [
+        {
+          name: 'venueName',
+          type: 'text',
+          hooks: { beforeValidate: [trimText] },
+          label: 'Nazwa',
+          admin: { width: '75%' },
+          required: true,
+        },
+        {
+          name: 'isActive',
+          admin: createBooleanSwitchAdmin({ width: '25%' }),
+          type: 'checkbox',
+          label: 'Aktywne miejsce',
+          defaultValue: true,
+          index: true,
+        },
+      ],
     },
     {
       name: 'venueWebsite',
@@ -80,41 +94,50 @@ export const Locations: CollectionConfig = {
       },
     },
     {
-      name: 'streetAddress',
-      type: 'text',
-      hooks: { beforeValidate: [trimText] },
-      label: 'Adres',
-      required: true,
-    },
-    {
-      name: 'postalCode',
-      type: 'text',
-      hooks: { beforeValidate: [trimText] },
-      label: 'Kod pocztowy',
-      required: true,
-      validate: (value: unknown, { siblingData }: { siblingData: { country?: unknown } }) => {
-        if (typeof value !== 'string' || !value.trim()) return 'Podaj kod pocztowy.'
-        return typeof siblingData.country === 'string' &&
-          siblingData.country.trim().toLowerCase() === 'polska'
-          ? validatePostalCode(value)
-          : true
-      },
-    },
-    {
-      name: 'city',
-      type: 'text',
-      hooks: { beforeValidate: [trimText] },
-      label: 'Miejscowość',
-      required: true,
-      defaultValue: 'Wrocław',
-    },
-    {
-      name: 'country',
-      type: 'text',
-      hooks: { beforeValidate: [trimText] },
-      label: 'Kraj',
-      required: true,
-      defaultValue: 'Polska',
+      type: 'row',
+      fields: [
+        {
+          name: 'streetAddress',
+          type: 'text',
+          admin: { width: '50%' },
+          hooks: { beforeValidate: [trimText] },
+          label: 'Adres',
+          required: true,
+        },
+        {
+          name: 'postalCode',
+          type: 'text',
+          admin: { width: '16.6666%' },
+          hooks: { beforeValidate: [trimText] },
+          label: 'Kod pocztowy',
+          required: true,
+          validate: (value: unknown, { siblingData }: { siblingData: { country?: unknown } }) => {
+            if (typeof value !== 'string' || !value.trim()) return 'Podaj kod pocztowy.'
+            return typeof siblingData.country === 'string' &&
+              siblingData.country.trim().toLowerCase() === 'polska'
+              ? validatePostalCode(value)
+              : true
+          },
+        },
+        {
+          name: 'city',
+          type: 'text',
+          admin: { width: '16.6666%' },
+          hooks: { beforeValidate: [trimText] },
+          label: 'Miasto',
+          required: true,
+          defaultValue: 'Wrocław',
+        },
+        {
+          name: 'country',
+          type: 'text',
+          admin: { width: '16.6666%' },
+          hooks: { beforeValidate: [trimText] },
+          label: 'Kraj',
+          required: true,
+          defaultValue: 'Polska',
+        },
+      ],
     },
     {
       name: 'mapEmbedURL',
@@ -128,14 +151,6 @@ export const Locations: CollectionConfig = {
       },
       hooks: { beforeValidate: [normalizeGoogleMapsEmbedField] },
       validate: (value: unknown) => (value ? validateGoogleMapsEmbed(value) : 'Podaj mapę Google.'),
-    },
-    {
-      name: 'isActive',
-      admin: createBooleanSwitchAdmin(),
-      type: 'checkbox',
-      label: 'Aktywne miejsce',
-      defaultValue: true,
-      index: true,
     },
   ],
   hooks: {

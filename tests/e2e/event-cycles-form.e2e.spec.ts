@@ -85,9 +85,9 @@ test('renders Cycle tabs, generated URL and grammatical creation labels', async 
   expectSingleRow(
     await getFieldLayout(
       page,
-      '#field-eventDefaults__participation, #field-eventDefaults__capacityMode',
+      '#field-eventDefaults__location, #field-eventDefaults__participation, #field-eventDefaults__capacityMode',
     ),
-    ['50%', '25%'],
+    ['50%', '16.6666%', '16.6666%'],
   )
   await expect(page.locator('#field-eventDefaults__capacity')).toHaveCount(0)
 
@@ -101,10 +101,10 @@ test('renders Cycle tabs, generated URL and grammatical creation labels', async 
   await expect(page.locator('#field-onlineEventURL')).toBeVisible()
   expectSingleRow(await getFieldLayout(page, '#field-startAt, #field-endAt'), ['50%', '50%'])
 
-  expectSingleRow(await getFieldLayout(page, '#field-participation, #field-capacityMode'), [
-    '50%',
-    '25%',
-  ])
+  expectSingleRow(
+    await getFieldLayout(page, '#field-location, #field-participation, #field-capacityMode'),
+    ['50%', '16.6666%', '16.6666%'],
+  )
   await expect(page.locator('#field-capacity')).toHaveCount(0)
 
   await page.goto('/admin/collections/locations/create')

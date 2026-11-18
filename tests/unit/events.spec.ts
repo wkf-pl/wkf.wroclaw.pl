@@ -123,9 +123,10 @@ describe('events model', () => {
           width: field.admin?.width,
         })),
       ).toEqual([
-        { name: 'participation', width: '50%' },
-        { name: 'capacityMode', width: '25%' },
-        { name: 'capacity', width: '25%' },
+        { name: 'location', width: '50%' },
+        { name: 'participation', width: '16.6666%' },
+        { name: 'capacityMode', width: '16.6666%' },
+        { name: 'capacity', width: '16.6666%' },
       ])
     }
   })

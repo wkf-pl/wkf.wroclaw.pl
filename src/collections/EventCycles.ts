@@ -2,7 +2,6 @@ import {
   confirmLegacyLocation,
   createLegacyLocationFields,
 } from '@/modules/locations/legacy-fields'
-import { createLocationRelationship } from '@/modules/locations/relationship'
 import { randomUUID } from 'node:crypto'
 
 import { APIError, type CollectionConfig, type Field } from 'payload'
@@ -20,7 +19,7 @@ import {
   createExternalLinksField,
   createOrganizerField,
   createPartnersField,
-  createParticipationFields,
+  createEventLocationRow,
   validateClockTime,
   validateDefaultEndTime,
 } from '@/modules/events/fields'
@@ -287,9 +286,8 @@ export const EventCycles: CollectionConfig = {
                     },
                   ],
                 },
-                createLocationRelationship(),
+                createEventLocationRow(),
                 ...createLegacyLocationFields(),
-                ...createParticipationFields(),
                 createOrganizerField(),
                 createPartnersField(),
                 createExternalLinksField(),

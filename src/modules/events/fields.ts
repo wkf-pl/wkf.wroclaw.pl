@@ -1,6 +1,8 @@
 import type { Field } from 'payload'
 
 import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
+import { withFieldWidth } from '@/modules/content/editorial-fields'
+import { createLocationRelationship } from '@/modules/locations/relationship'
 import { createLinkFields } from '@/modules/navigation/fields'
 
 import {
@@ -40,43 +42,42 @@ export function validateEventEnd(
     : 'Koniec wydarzenia nie może poprzedzać początku.'
 }
 
-export function createParticipationFields({ prefix = '' }: { prefix?: string } = {}): Field[] {
-  return [
-    {
-      type: 'row',
-      fields: [
-        {
-          name: `${prefix}participation`,
-          type: 'select',
-          admin: { isClearable: false, width: '50%' },
-          defaultValue: 'public',
-          label: 'Uczestnictwo',
-          options: [...participationOptions],
-          required: true,
+export function createEventLocationRow(): Field {
+  return {
+    type: 'row',
+    fields: [
+      withFieldWidth(createLocationRelationship(), '50%'),
+      {
+        name: 'participation',
+        type: 'select',
+        admin: { isClearable: false, width: '16.6666%' },
+        defaultValue: 'public',
+        label: 'Uczestnictwo',
+        options: [...participationOptions],
+        required: true,
+      },
+      {
+        name: 'capacityMode',
+        type: 'select',
+        admin: { isClearable: false, width: '16.6666%' },
+        defaultValue: 'unlimited',
+        label: 'Liczba miejsc',
+        options: [...capacityModeOptions],
+        required: true,
+      },
+      {
+        name: 'capacity',
+        type: 'number',
+        admin: {
+          condition: (_data, siblingData) => siblingData.capacityMode !== 'unlimited',
+          width: '16.6666%',
         },
-        {
-          name: `${prefix}capacityMode`,
-          type: 'select',
-          admin: { isClearable: false, width: '25%' },
-          defaultValue: 'unlimited',
-          label: 'Liczba miejsc',
-          options: [...capacityModeOptions],
-          required: true,
-        },
-        {
-          name: `${prefix}capacity`,
-          type: 'number',
-          admin: {
-            condition: (_data, siblingData) => siblingData[`${prefix}capacityMode`] !== 'unlimited',
-            width: '25%',
-          },
-          label: 'Miejsca',
-          min: 1,
-          validate: validateCapacity,
-        },
-      ],
-    },
-  ]
+        label: 'Miejsca',
+        min: 1,
+        validate: validateCapacity,
+      },
+    ],
+  }
 }
 
 export function createOrganizerField({ name = 'organizers' }: { name?: string } = {}): Field {

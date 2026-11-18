@@ -12,7 +12,7 @@ export const participationOptions = [
 
 export const capacityModeOptions = [
   { label: 'Bez limitu', value: 'unlimited' },
-  { label: 'Dokładna liczba miejsc', value: 'exact' },
+  { label: 'Dokładnie', value: 'exact' },
   { label: 'Około', value: 'approximate' },
 ] as const
 
