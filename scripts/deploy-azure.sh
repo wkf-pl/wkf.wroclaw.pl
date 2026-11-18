@@ -170,6 +170,92 @@ run_migration_job() {
   wait_for_migration_job "$execution_name" "$payload_command"
 }
 
+verify_applied_migrations() (
+  local required_migrations template_file execution_name execution_status report deadline
+  local workspace_id
+  local -a missing_migrations
+
+  required_migrations="$(git ls-tree --name-only "$source_sha:migrations" |
+    jq -Rse '
+      split("\n") |
+      map(select(test("[.](ts|js)$") and . != "index.ts" and . != "index.js") | split(".")[0]) |
+      unique | select(length > 0 and all(.[]; test("^[a-zA-Z0-9_-]+$")))
+    ')" || {
+      echo "Could not determine required migrations for source commit $source_sha." >&2
+      return 1
+    }
+
+  template_file="$(mktemp)" || return 1
+  trap 'rm -f -- "$template_file"' EXIT
+  az containerapp job show --name "$migration_job_name" --resource-group "$resource_group_name" \
+    --query properties.template --output json |
+    jq -e --arg image "$target_image_reference" --arg migrations "$required_migrations" \
+      --rawfile check scripts/check-applied-migrations.mjs '
+        .containers |= map(select(.name == "migration")) |
+        select((.containers | length) == 1) |
+        .containers[0] |= (
+          .image = $image | .command = ["node"] |
+          .args = ["--input-type=module", "-e", $check, "--", $migrations] |
+          .env |= map(select(.name == "DATABASE_URL" and .secretRef))
+        )
+        | select((.containers[0].env | length) == 1)
+      ' > "$template_file" || return 1
+
+  execution_name="$(az containerapp job start --name "$migration_job_name" \
+    --resource-group "$resource_group_name" --yaml "$template_file" --query name --output tsv)" || return 1
+  [[ "$execution_name" =~ ^[a-zA-Z0-9-]+$ ]] || return 1
+  echo "Checking migration history in Azure job execution: $execution_name"
+
+  deadline=$((SECONDS + migration_timeout_seconds))
+  report=""
+  while ((SECONDS < deadline)); do
+    if [[ -z "$report" ]]; then
+      report="$(timeout 8 az containerapp job logs show --name "$migration_job_name" \
+        --resource-group "$resource_group_name" --execution "$execution_name" --container migration \
+        --format json --tail 300 2>/dev/null |
+        jq -Rnr '[inputs | fromjson? | .Log | strings | match("WKF_MIGRATION_CHECK .*").string] | last // empty' || true)"
+    fi
+    execution_status="$(az containerapp job execution show --name "$migration_job_name" \
+      --resource-group "$resource_group_name" --job-execution-name "$execution_name" \
+      --query properties.status --output tsv)" || return 1
+    case "$execution_status" in
+      Succeeded | Failed | Stopped | Degraded)
+        break
+        ;;
+    esac
+    sleep 3
+  done
+
+  if [[ -z "$report" && "${execution_status:-}" =~ ^(Succeeded|Failed|Stopped|Degraded)$ ]]; then
+    workspace_id="$(timeout 12 az containerapp env show --name "$application_name" \
+      --resource-group "$resource_group_name" --query properties.appLogsConfiguration.logAnalyticsConfiguration.customerId \
+      --output tsv 2>/dev/null || true)"
+    if [[ -n "$workspace_id" ]]; then
+      report="$(timeout 20 az monitor log-analytics query --workspace "$workspace_id" \
+        --analytics-query "ContainerAppConsoleLogs_CL | where ContainerGroupName_s startswith '${execution_name}-' | where Log_s contains 'WKF_MIGRATION_CHECK ' | top 1 by TimeGenerated desc | project Log_s" \
+        --query '[0].Log_s' --output tsv 2>/dev/null | sed -n 's/^.*\(WKF_MIGRATION_CHECK .*\)$/\1/p' || true)"
+    fi
+  fi
+
+  case "$report" in
+    'WKF_MIGRATION_CHECK complete')
+      if [[ "${execution_status:-}" == 'Succeeded' ]]; then
+        echo 'All required migrations are recorded in payload_migrations.'
+        return 0
+      fi
+      ;;
+    'WKF_MIGRATION_CHECK missing '*)
+      read -r -a missing_migrations <<< "${report#WKF_MIGRATION_CHECK missing }"
+      printf 'Missing migration: %s\n' "${missing_migrations[@]}" >&2
+      ;;
+    'WKF_MIGRATION_CHECK error '*)
+      echo "Migration history query failed: ${report#WKF_MIGRATION_CHECK error }" >&2
+      ;;
+  esac
+  echo "Could not confirm migration history from Azure execution $execution_name (status: ${execution_status:-unknown})." >&2
+  return 1
+)
+
 deactivate_revisions_except() {
   local preserved_revision="${1:-}"
   local active_revision
@@ -299,6 +385,11 @@ if az containerapp show \
   echo "Recorded active revision before deployment: $previous_revision"
 fi
 
+if [[ "$target_environment" == "staging" && "$application_exists" == "true" && "$provision_only" == "false" ]]; then
+  staging_ingress_in_maintenance=true
+  set_staging_ingress_mode 1
+fi
+
 if [[ "$provision_infrastructure" == "true" ]]; then
   if [[ "$application_exists" == "true" ]]; then
     if [[ "$run_migrations" == "true" ]]; then
@@ -397,10 +488,6 @@ if [[ "$run_migrations" == "true" ]]; then
   fi
 
   if [[ "$application_exists" == "true" ]]; then
-    if [[ "$target_environment" == "staging" && "${STAGING_INGRESS_REQUIRED:-false}" == "true" ]]; then
-      staging_ingress_in_maintenance=true
-      set_staging_ingress_mode 1
-    fi
     maintenance_started=true
     deactivate_revisions_except
     if [[ "$staging_ingress_in_maintenance" == "true" ]]; then
@@ -410,6 +497,10 @@ if [[ "$run_migrations" == "true" ]]; then
   fi
 
   run_migration_job "migrate"
+  if ! verify_applied_migrations; then
+    echo 'Deployment stopped before opening traffic. The database schema must be verified before reactivating the application.' >&2
+    exit 1
+  fi
   migration_completed=true
   if [[ "$target_environment" == "prod" ]]; then
     if [[ -z "${OPERATIONS_IMAGE_REFERENCE:-}" ]]; then
@@ -454,6 +545,22 @@ application_fqdn="$(az containerapp show \
   --resource-group "$resource_group_name" \
   --query properties.configuration.ingress.fqdn \
   --output tsv)"
+
+if [[ "$target_environment" == "staging" ]]; then
+  candidate_revision="$(get_latest_revision)"
+  if [[ -z "$candidate_revision" || "$(get_revision_image "$candidate_revision")" != "$target_image_reference" ]]; then
+    echo 'Could not identify the staging revision for the requested image.' >&2
+    false
+  fi
+  candidate_fqdn="$(az containerapp revision show --name "$application_name" \
+    --resource-group "$resource_group_name" --revision "$candidate_revision" \
+    --query properties.fqdn --output tsv)"
+  if [[ -z "$candidate_fqdn" ]]; then
+    echo "Staging revision has no direct hostname: $candidate_revision" >&2
+    false
+  fi
+  application_fqdn="$candidate_fqdn"
+fi
 
 read_http_status() {
   local route="$1"
@@ -512,6 +619,14 @@ while ((SECONDS < health_deadline)); do
   fi
 
   if [[ "$health_check_succeeded" == "true" ]]; then
+    if [[ "$target_environment" == "staging" ]]; then
+      if ! check_staging_listing_page "https://$application_fqdn"; then
+        echo "Deployment check ${health_check_attempt}: /aktualnosci did not render a CMS listing on $candidate_revision." >&2
+        sleep 5
+        continue
+      fi
+      echo "Verified CMS listing: https://$application_fqdn/aktualnosci"
+    fi
     trap - ERR
     if [[ "$staging_ingress_in_maintenance" == "true" ]]; then
       set_staging_ingress_mode 0

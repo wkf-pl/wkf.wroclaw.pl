@@ -235,7 +235,6 @@ jobs:
         id: rollout
         env:
           IMAGE_REFERENCE: ${{ steps.deployment-image.outputs.image_reference }}
-          STAGING_INGRESS_REQUIRED: ${{ steps.plan.outputs.existing_image_reference != '' }}
         run: |
           deployment_options=()
           if [[ "${{ steps.plan.outputs.provision_infrastructure }}" == "true" ]]; then

@@ -50,3 +50,16 @@ set_staging_ingress_mode() {
       wait_for_staging_ingress 200 "$ingress_url" /
   fi
 }
+
+check_staging_listing_page() {
+  local revision_url="$1"
+  local page_html
+
+  page_html="$(curl --fail --silent --show-error --connect-timeout 3 --max-time 15 \
+    --header 'Cache-Control: no-cache' --write-out $'\n%{http_code}' "$revision_url/aktualnosci")" || return 1
+  [[ "$page_html" == *$'\n200' &&
+     "$page_html" == *'<article class="cmsDocument cmsPageDocument">'* &&
+     "$page_html" == *'<div class="listingBlock">'* &&
+     "$page_html" != *'data-next-error-message='* &&
+     "$page_html" != *'id="__next_error__"'* ]]
+}
