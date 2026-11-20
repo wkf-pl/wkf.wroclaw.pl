@@ -2,6 +2,7 @@ import type { PublicContentListItem } from '@/modules/content/content-listing'
 import {
   getContentListingPresentation,
   type ContentListingView,
+  type ContentListingPresentation,
 } from '@/modules/content/content-listing-presentation'
 
 export function ContentListingMeta({
@@ -15,15 +16,37 @@ export function ContentListingMeta({
 }) {
   const presentation = getContentListingPresentation(item, view)
 
+  return <PresentedContentMeta className={className} presentation={presentation} />
+}
+
+export function PresentedContentMeta({
+  className = 'contentCardMeta',
+  presentation,
+  variant = 'contentCard',
+}: {
+  className?: string
+  presentation: ContentListingPresentation
+  variant?: 'contentCard' | 'contentCarousel'
+}) {
+  if (
+    !presentation.kindLabel &&
+    !presentation.metadataText &&
+    !presentation.metadataLink &&
+    !presentation.metadataDate &&
+    !presentation.contextLabel
+  )
+    return null
   return (
     <p className={className}>
-      <span className="contentCardKind">{presentation.kindLabel}</span>
+      {presentation.kindLabel ? (
+        <span className={`${variant}Kind`}>{presentation.kindLabel}</span>
+      ) : null}
       {presentation.metadataText ? (
-        <span className="contentCardMetaText">{presentation.metadataText}</span>
+        <span className={`${variant}MetaText`}>{presentation.metadataText}</span>
       ) : null}
       {presentation.metadataLink ? (
         <>
-          <span className="contentCardMetaText">{presentation.metadataLink.prefix}</span>
+          <span className={`${variant}MetaText`}>{presentation.metadataLink.prefix}</span>
           <a className="contentCardMetaLink" href={presentation.metadataLink.href}>
             {presentation.metadataLink.label}
           </a>
@@ -33,7 +56,7 @@ export function ContentListingMeta({
         <time dateTime={presentation.metadataDate.dateTime}>{presentation.metadataDate.label}</time>
       ) : null}
       {presentation.contextLabel ? (
-        <span className="contentCardMetaText">{presentation.contextLabel}</span>
+        <span className={`${variant}MetaText`}>{presentation.contextLabel}</span>
       ) : null}
     </p>
   )

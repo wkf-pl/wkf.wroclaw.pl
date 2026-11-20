@@ -3723,7 +3723,9 @@ export interface PageTemplateSectionGroupBlock {
  */
 export interface ListingView {
   id: number;
+  presetKey?: string | null;
   name: string;
+  active?: boolean | null;
   settings:
     | {
         [k: string]: unknown;
@@ -3733,7 +3735,6 @@ export interface ListingView {
     | number
     | boolean
     | null;
-  retired?: boolean | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -4623,9 +4624,10 @@ export interface PageTemplateSectionGroupBlockSelect<T extends boolean = true> {
  * via the `definition` "listing-views_select".
  */
 export interface ListingViewsSelect<T extends boolean = true> {
+  presetKey?: T;
   name?: T;
+  active?: T;
   settings?: T;
-  retired?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

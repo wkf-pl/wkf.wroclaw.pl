@@ -6,6 +6,13 @@ const mediaMocks = vi.hoisted(() => ({ findPublicMedia: vi.fn() }))
 
 vi.mock('@/modules/content/content-listing', () => listingMocks)
 vi.mock('@/modules/media/media-listing', () => mediaMocks)
+vi.mock('@/modules/content/public-listing-view', async () => {
+  const { resolveListingView } = await import('@/modules/content/listing-view')
+  return {
+    resolvePublicListingView: async (block: { appearance?: unknown; view?: unknown }) =>
+      resolveListingView(block.appearance, block.view),
+  }
+})
 
 import { SectionGroupRenderer } from '@/app/(frontend)/_components/ContentLayoutRenderer'
 import { resolveListingBlockSection } from '@/app/(frontend)/_components/ListingBlockSection'

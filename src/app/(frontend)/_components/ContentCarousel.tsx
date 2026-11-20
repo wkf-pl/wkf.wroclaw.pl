@@ -1,14 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 
 import { CmsRichText } from '@/components/CmsRichText'
 import { RasterIcon } from '@/components/RasterIcon'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
-import { getContentListingPresentation } from '@/modules/content/content-listing-presentation'
+import type { ListingView } from '@/modules/content/listing-view'
+import {
+  getContentListingPresentation,
+  type ContentListingPresentation,
+} from '@/modules/content/content-listing-presentation'
 
 import { CmsImage } from './CmsImage'
+import { PresentedContentItem } from './PresentedContentItem'
+import { PresentedContentMeta } from './ContentListingMeta'
 import { TaxonomyLinks } from './TaxonomyLinks'
 
 type ContentCarouselProperties = {
@@ -19,11 +25,51 @@ type ContentCarouselProperties = {
 export type ContentCarouselItem = PublicContentListItem
 
 export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperties) {
+  return (
+    <PresentedContentCarousel
+      emptyMessage={emptyMessage}
+      items={items.map((item) => getContentListingPresentation(item, 'carousel'))}
+    />
+  )
+}
+
+export function PresentedContentCarousel({
+  emptyMessage,
+  items,
+  view,
+}: {
+  emptyMessage?: string | null
+  items: ContentListingPresentation[]
+  view?: ListingView
+}) {
+  const collection = Boolean(
+    view && (view.form !== 'horizontal' || view.columns > 1 || !view.information.image),
+  )
+  const [visibleCount, setVisibleCount] = useState(1)
+  const pageCount = Math.ceil(items.length / visibleCount)
   const carouselReference = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [isIntersecting, setIsIntersecting] = useState(true)
   const [isPageVisible, setIsPageVisible] = useState(true)
   const [paused, setPaused] = useState(false)
+
+  useEffect(() => {
+    const carousel = carouselReference.current
+    if (!collection || !carousel || typeof ResizeObserver === 'undefined') {
+      setVisibleCount(1)
+      return
+    }
+    const columns = view?.columns ?? 1
+    const minimum = view?.form === 'horizontal' ? 368 : 176
+    const updateColumns = () =>
+      setVisibleCount(
+        Math.max(1, Math.min(columns, Math.floor((carousel.clientWidth + 16) / (minimum + 16)))),
+      )
+    updateColumns()
+    const observer = new ResizeObserver(updateColumns)
+    observer.observe(carousel)
+    return () => observer.disconnect()
+  }, [collection, view?.columns, view?.form])
 
   useEffect(() => {
     const carousel = carouselReference.current
@@ -46,7 +92,7 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
 
   useEffect(() => {
     if (
-      items.length < 2 ||
+      pageCount < 2 ||
       paused ||
       !isIntersecting ||
       !isPageVisible ||
@@ -55,18 +101,34 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
       return
     }
 
-    const timer = window.setInterval(
-      () => setActiveIndex((index) => (index + 1) % items.length),
-      8000,
-    )
+    const timer = window.setInterval(() => setActiveIndex((index) => (index + 1) % pageCount), 8000)
     return () => window.clearInterval(timer)
-  }, [isIntersecting, isPageVisible, items.length, paused])
+  }, [isIntersecting, isPageVisible, pageCount, paused])
 
   if (!items.length) {
     return <p className="emptyState">{emptyMessage || 'Nie ma opublikowanych treści.'}</p>
   }
 
-  const displayedActiveIndex = activeIndex % items.length
+  const displayedActiveIndex = activeIndex % pageCount
+  const controls = (footer = false) =>
+    pageCount > 1 ? (
+      <div
+        aria-label="Wybór slajdu"
+        className={`contentCarouselControls${footer ? ' contentCarouselControls--footer' : ''}`}
+      >
+        {Array.from({ length: pageCount }, (_, pageIndex) => (
+          <button
+            aria-label={`Pokaż: ${items[pageIndex * visibleCount].title}`}
+            aria-pressed={pageIndex === displayedActiveIndex}
+            key={pageIndex}
+            onClick={() => setActiveIndex(pageIndex)}
+            type="button"
+          >
+            <span className="srOnly">{pageIndex + 1}</span>
+          </button>
+        ))}
+      </div>
+    ) : null
 
   return (
     <div
@@ -82,134 +144,131 @@ export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperti
       ref={carouselReference}
       role="region"
     >
-      <div className="contentCarouselSlides">
+      <div
+        className={`contentCarouselSlides${collection ? ' contentCarouselSlides--collection' : ''}`}
+        style={{ '--carousel-columns': visibleCount } as CSSProperties}
+      >
         {items.map((item, index) => {
-          const isActive = index === displayedActiveIndex
-          const presentation = getContentListingPresentation(item, 'carousel')
+          const isActive = Math.floor(index / visibleCount) === displayedActiveIndex
+          const presentation = item
 
           return (
             <article
               aria-hidden={!isActive}
               aria-label={`${index + 1} z ${items.length}`}
               aria-roledescription="slajd"
-              className={`contentCarouselSlide${isActive ? ' contentCarouselSlide--active' : ''}`}
+              className={`contentCarouselSlide${collection ? ' contentCarouselSlide--collection' : ''}${isActive ? ' contentCarouselSlide--active' : ''}`}
               inert={!isActive}
-              key={`${item.kind}-${item.document.id}-${item.kind === 'member-profiles' ? (item.contextLabel ?? '') : ''}`}
+              key={`${item.url}-${index}`}
             >
-              <div className="contentCarouselVisual">
-                <Link
-                  aria-label={`Zobacz: ${presentation.title}`}
-                  className="contentCarouselVisualLink"
-                  href={presentation.url}
-                  tabIndex={isActive ? undefined : -1}
+              {collection && view ? (
+                <div
+                  className={`contentList contentList-${{ horizontal: 'cards', vertical: 'grid', row: 'compact', tile: 'tiles' }[view.form]} contentCarouselItem`}
                 >
-                  {presentation.image?.kind === 'media' ? (
-                    <CmsImage className="contentCarouselImage" media={presentation.image.media} />
-                  ) : presentation.image?.kind === 'profile' ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- profile images can use a runtime-configured Azure host.
-                    <img
-                      alt={presentation.image.alt}
-                      className="contentCarouselImage"
-                      src={presentation.image.url}
-                    />
-                  ) : (
-                    <span aria-hidden="true" className="contentCarouselImageFallback" />
-                  )}
-                  <span className="contentCarouselTitle">{presentation.title}</span>
-                </Link>
-                {items.length > 1 ? (
-                  <div aria-label="Wybór slajdu" className="contentCarouselControls">
-                    {items.map((controlItem, controlIndex) => {
-                      const controlPresentation = getContentListingPresentation(
-                        controlItem,
-                        'carousel',
-                      )
-                      return (
-                        <button
-                          aria-label={`Pokaż: ${controlPresentation.title}`}
-                          aria-pressed={controlIndex === displayedActiveIndex}
-                          key={`${controlItem.kind}-${controlItem.document.id}-${controlIndex}`}
-                          onClick={() => setActiveIndex(controlIndex)}
-                          type="button"
-                        >
-                          <span className="srOnly">{controlIndex + 1}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                ) : null}
-              </div>
-              <div className="contentCarouselContent">
-                <p className="contentCarouselMeta">
-                  <span className="contentCarouselKind">{presentation.kindLabel}</span>
-                  {presentation.metadataText ? (
-                    <span className="contentCarouselMetaText">{presentation.metadataText}</span>
-                  ) : null}
-                  {presentation.metadataDate ? (
-                    <time dateTime={presentation.metadataDate.dateTime}>
-                      {presentation.metadataDate.label}
-                    </time>
-                  ) : null}
-                  {presentation.contextLabel ? (
-                    <span className="contentCarouselMetaText">{presentation.contextLabel}</span>
-                  ) : null}
-                </p>
-                {presentation.excerpt?.kind === 'richText' ? (
-                  <CmsRichText
-                    className="contentCarouselExcerpt"
-                    data={presentation.excerpt.value}
+                  <PresentedContentItem
+                    presentation={presentation}
+                    form={view.form}
+                    showImage={view.information.image}
                   />
-                ) : presentation.excerpt ? (
-                  <p className="contentCarouselExcerpt">{presentation.excerpt.value}</p>
-                ) : null}
-                {presentation.facts.length ? (
-                  <div className="contentCarouselEventFacts">
-                    {presentation.facts.map((fact) => (
-                      <p key={`${fact.icon}-${fact.value}`}>
-                        <span
-                          aria-label={fact.label}
-                          className="contentCarouselEventFactIcon"
-                          role="img"
-                        >
-                          <RasterIcon name={fact.icon} size="small" />
-                        </span>
-                        {fact.dateTime ? <time dateTime={fact.dateTime}>{fact.value}</time> : null}
-                        {!fact.dateTime && fact.href ? (
-                          <a href={fact.href} tabIndex={isActive ? undefined : -1}>
-                            {fact.value}
-                          </a>
-                        ) : null}
-                        {!fact.dateTime && !fact.href ? fact.value : null}
-                      </p>
-                    ))}
-                  </div>
-                ) : null}
-                <TaxonomyLinks category={presentation.category} tags={presentation.tags} />
-                <div className="contentCarouselActions">
-                  {presentation.secondaryAction ? (
+                </div>
+              ) : (
+                <>
+                  <div className="contentCarouselVisual">
                     <Link
-                      className="contentCarouselSecondaryAction"
-                      href={presentation.secondaryAction.href}
+                      aria-label={`Zobacz: ${presentation.title}`}
+                      className="contentCarouselVisualLink"
+                      href={presentation.url}
                       tabIndex={isActive ? undefined : -1}
                     >
-                      <RasterIcon name="calendar" size="small" />
-                      <span>{presentation.secondaryAction.label}</span>
+                      {presentation.image?.kind === 'media' ? (
+                        <CmsImage
+                          className="contentCarouselImage"
+                          media={presentation.image.media}
+                        />
+                      ) : presentation.image?.kind === 'profile' ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- profile images can use a runtime-configured Azure host.
+                        <img
+                          alt={presentation.image.alt}
+                          className="contentCarouselImage"
+                          src={presentation.image.url}
+                        />
+                      ) : (
+                        <span aria-hidden="true" className="contentCarouselImageFallback" />
+                      )}
+                      <span className="contentCarouselTitle">{presentation.title}</span>
                     </Link>
-                  ) : null}
-                  <Link
-                    className="contentCarouselAction"
-                    href={presentation.url}
-                    tabIndex={isActive ? undefined : -1}
-                  >
-                    <span>Zobacz</span>
-                    <RasterIcon name="arrow-right" size="small" />
-                  </Link>
-                </div>
-              </div>
+                    {controls()}
+                  </div>
+                  <div className="contentCarouselContent">
+                    <PresentedContentMeta
+                      className="contentCarouselMeta"
+                      variant="contentCarousel"
+                      presentation={presentation}
+                    />
+                    {presentation.excerpt?.kind === 'richText' ? (
+                      <CmsRichText
+                        className="contentCarouselExcerpt"
+                        data={presentation.excerpt.value}
+                      />
+                    ) : presentation.excerpt ? (
+                      <p className="contentCarouselExcerpt">{presentation.excerpt.value}</p>
+                    ) : null}
+                    {presentation.facts.length ? (
+                      <div className="contentCarouselEventFacts">
+                        {presentation.facts.map((fact) => (
+                          <p key={`${fact.icon}-${fact.value}`}>
+                            <span
+                              aria-label={fact.label}
+                              className="contentCarouselEventFactIcon"
+                              role="img"
+                            >
+                              <RasterIcon name={fact.icon} size="small" />
+                            </span>
+                            {fact.dateTime ? (
+                              <time dateTime={fact.dateTime}>{fact.value}</time>
+                            ) : null}
+                            {!fact.dateTime && fact.href ? (
+                              <a href={fact.href} tabIndex={isActive ? undefined : -1}>
+                                {fact.value}
+                              </a>
+                            ) : null}
+                            {!fact.dateTime && !fact.href ? fact.value : null}
+                          </p>
+                        ))}
+                      </div>
+                    ) : null}
+                    {presentation.interests ? (
+                      <p className="contentCardInterests">{presentation.interests}</p>
+                    ) : null}
+                    <TaxonomyLinks category={presentation.category} tags={presentation.tags} />
+                    <div className="contentCarouselActions">
+                      {presentation.secondaryAction ? (
+                        <Link
+                          className="contentCarouselSecondaryAction"
+                          href={presentation.secondaryAction.href}
+                          tabIndex={isActive ? undefined : -1}
+                        >
+                          <RasterIcon name="calendar" size="small" />
+                          <span>{presentation.secondaryAction.label}</span>
+                        </Link>
+                      ) : null}
+                      <Link
+                        className="contentCarouselAction"
+                        href={presentation.url}
+                        tabIndex={isActive ? undefined : -1}
+                      >
+                        <span>Zobacz</span>
+                        <RasterIcon name="arrow-right" size="small" />
+                      </Link>
+                    </div>
+                  </div>
+                </>
+              )}
             </article>
           )
         })}
       </div>
+      {collection ? controls(true) : null}
     </div>
   )
 }

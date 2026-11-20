@@ -80,6 +80,7 @@ export default buildConfig({
   admin: {
     components: {
       actions: ['/components/admin/UserMenu#UserMenu'],
+      providers: ['/components/admin/DocumentSidebarToggle#DocumentSidebarToggle'],
       Nav: '/components/admin/AdminNav#AdminNav',
       graphics: {
         Logo: '/components/admin/AdminLogo#AdminLogo',

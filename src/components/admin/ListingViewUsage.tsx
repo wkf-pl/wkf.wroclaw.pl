@@ -4,6 +4,9 @@ import { useConfig, useDocumentInfo } from '@payloadcms/ui'
 import { formatAdminURL } from 'payload/shared'
 import { useEffect, useState } from 'react'
 
+import { isListingSource, listingSourceSingularLabels } from '@/modules/content/listing-conditions'
+import styles from './ListingViewField.module.css'
+
 type Usage = { collection: string; id?: number; title: string; status: 'published' | 'draft' }
 
 export function ListingViewUsage() {
@@ -34,7 +37,7 @@ export function ListingViewUsage() {
   }, [endpoint])
   if (!endpoint) return null
   return (
-    <section>
+    <section className={styles.usage}>
       <h3>Użycie szablonu</h3>
       <p>Publikacja zmiany zaktualizuje powiązane listy.</p>
       {state?.error ? (
@@ -43,24 +46,43 @@ export function ListingViewUsage() {
         state.uses.length === 0 ? (
           <p>Brak użyć w dostępnych dokumentach.</p>
         ) : (
-          <ul>
-            {state.uses.map(({ collection, id: documentID, title, status }) => (
-              <li key={`${collection}-${documentID}-${status}`}>
-                <a
-                  href={formatAdminURL({
-                    adminRoute: admin,
-                    path: documentID
-                      ? `/collections/${collection}/${documentID}`
-                      : `/globals/${collection}`,
-                  })}
-                >
-                  {title}
-                </a>
-                {' · '}
-                {status === 'published' ? 'opublikowane' : 'szkic'}
-              </li>
-            ))}
-          </ul>
+          <div className={styles.usageTableWrap}>
+            <table className={styles.usageTable} aria-label="Użycie szablonu">
+              <thead>
+                <tr>
+                  <th scope="col">Typ</th>
+                  <th scope="col">Nazwa</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {state.uses.map(({ collection, id: documentID, title, status }) => (
+                  <tr key={`${collection}-${documentID}-${status}`}>
+                    <td>
+                      {isListingSource(collection)
+                        ? listingSourceSingularLabels[collection]
+                        : collection === 'page-templates'
+                          ? 'Szablon strony'
+                          : 'Strona główna'}
+                    </td>
+                    <td>
+                      <a
+                        href={formatAdminURL({
+                          adminRoute: admin,
+                          path: documentID
+                            ? `/collections/${collection}/${documentID}`
+                            : `/globals/${collection}`,
+                        })}
+                      >
+                        {title}
+                      </a>
+                    </td>
+                    <td>{status === 'published' ? 'Opublikowano' : 'Szkic'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )
       ) : (
         <p role="status">Sprawdzanie użycia…</p>

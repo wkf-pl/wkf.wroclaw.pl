@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
+import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import { invalidatePublicCacheTags } from '@/modules/cache/invalidate-public-data'
 import { publicCacheTags } from '@/modules/cache/public-data-cache'
 import { listingPresets, resolveListingView } from '@/modules/content/listing-view'
@@ -15,7 +16,7 @@ export const ListingViews: CollectionConfig = {
   admin: {
     group: 'Administracja',
     useAsTitle: 'name',
-    defaultColumns: ['name', '_status', 'retired'],
+    defaultColumns: ['name', '_status', 'active'],
   },
   access: {
     create: ({ req }) => isAdministrator(req),
@@ -35,7 +36,35 @@ export const ListingViews: CollectionConfig = {
     ],
   },
   fields: [
-    { name: 'name', type: 'text', label: 'Nazwa', required: true, maxLength: 160 },
+    {
+      name: 'presetKey',
+      type: 'text',
+      unique: true,
+      index: true,
+      admin: { hidden: true },
+      access: { create: () => false, update: () => false },
+      hooks: { beforeDuplicate: [() => null] },
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'name',
+          type: 'text',
+          label: 'Nazwa',
+          required: true,
+          maxLength: 160,
+          admin: { width: '75%' },
+        },
+        {
+          name: 'active',
+          type: 'checkbox',
+          label: 'Aktywne',
+          defaultValue: true,
+          admin: createBooleanSwitchAdmin({ width: '25%' }),
+        },
+      ],
+    },
     {
       name: 'settings',
       type: 'json',
@@ -48,12 +77,6 @@ export const ListingViews: CollectionConfig = {
       hooks: {
         beforeValidate: [({ value }) => resolveListingView({ overrides: value }, 'upcoming').view],
       },
-    },
-    {
-      name: 'retired',
-      type: 'checkbox',
-      label: 'Wycofaj z wyboru dla nowych bloków',
-      defaultValue: false,
     },
     {
       name: 'usage',

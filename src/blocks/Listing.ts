@@ -1,7 +1,11 @@
 import type { Block, Field, FieldHook, Validate } from 'payload'
 
 import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
-import { getSharedListingViewId, parseListingAppearance } from '@/modules/content/listing-view'
+import {
+  getListingViewReference,
+  getSharedListingViewId,
+  parseListingAppearance,
+} from '@/modules/content/listing-view'
 import { getFormRelationshipId } from '@/lib/relationships'
 import { createContentPresentationFields } from '@/modules/content/content-presentation'
 import { allListingSources, listingSourceLabels } from '@/modules/content/listing-conditions'
@@ -279,7 +283,25 @@ function createListingBlock({
       type: 'json',
       admin: { components: { Field: '/components/admin/ListingViewField#ListingViewField' } },
       hooks: {
-        beforeValidate: [({ value }) => (value == null ? value : parseListingAppearance(value))],
+        beforeValidate: [
+          async ({ value, siblingData, req }) => {
+            const reference = getListingViewReference(value, siblingData.view)
+            const appearance = parseListingAppearance(value)
+            if (!reference || 'id' in reference) return value == null ? value : appearance
+            const { docs } = await req.payload.find({
+              collection: 'listing-views',
+              where: {
+                presetKey: { equals: reference.presetKey },
+                _status: { equals: 'published' },
+              },
+              limit: 1,
+              depth: 0,
+              req,
+              overrideAccess: true,
+            })
+            return docs[0] ? { ...appearance, preset: `shared:${docs[0].id}` } : value
+          },
+        ],
       },
       validate: async (value, { req, previousValue }) => {
         const id = getSharedListingViewId(value)

@@ -16,7 +16,7 @@ export const listingInformation = {
   cycle: 'Cykl wydarzenia',
   excerpt: 'Opis',
   taxonomy: 'Kategorie i tagi',
-  context: 'Funkcja lub rola',
+  context: 'Pozostałe',
   interests: 'Zainteresowania',
   calendar: 'Dodaj do kalendarza',
 } as const
@@ -235,4 +235,16 @@ export function getSharedListingViewId(appearance: unknown): number | undefined 
   if (!preset?.startsWith('shared:')) return undefined
   const id = Number(preset.slice(7))
   return Number.isSafeInteger(id) ? id : undefined
+}
+
+export function getListingViewReference(
+  appearance: unknown,
+  fallback: unknown = 'cards',
+): { id: number } | { presetKey: string } | undefined {
+  const { preset } = parseListingAppearance(appearance)
+  const id = getSharedListingViewId(appearance)
+  if (id) return { id }
+  if (preset === 'custom') return undefined
+  const key = preset ?? (typeof fallback === 'string' ? fallback : 'cards')
+  return Object.hasOwn(listingPresets, key) ? { presetKey: key } : { presetKey: 'cards' }
 }

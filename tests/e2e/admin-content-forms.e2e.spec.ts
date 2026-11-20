@@ -173,9 +173,21 @@ test('lays out Listing presentation fields and persists labeled relationship con
     [...presentationFieldBoxes.map(({ x }) => x)].sort((left, right) => left - right),
   )
 
-  await expect(page.getByLabel('Szablon widoku', { exact: true })).toHaveValue('cards')
-  await expect(page.getByLabel('Kolumny', { exact: true })).toHaveValue('')
+  const templateSelect = listingRow.getByLabel('Szablon widoku', { exact: true })
+  const columnsSelect = listingRow.getByLabel('Kolumny', { exact: true })
+  await expect(templateSelect).toHaveRole('combobox')
+  await expect(
+    templateSelect.locator('xpath=ancestor::div[contains(@class, "field-type")][1]'),
+  ).toContainText('Karty')
+  await expect(
+    columnsSelect.locator('xpath=ancestor::div[contains(@class, "field-type")][1]'),
+  ).toContainText('Z szablonu · 1')
+  await expect(listingRow.locator('select')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Podgląd wyników' })).toBeVisible()
+  const listingPreview = listingRow.frameLocator('iframe[title="Podgląd wyników Listingu"]')
+  await expect(listingPreview.locator('.listingBlock')).toBeVisible()
+  await expect(listingPreview.locator('html')).toHaveCSS('--gold', '#f3a313')
+  await expect(listingPreview.locator('body')).toHaveCSS('font-family', /Roboto Condensed/)
 
   await listingRow.getByRole('button', { name: 'Treści', exact: true }).click()
 
@@ -324,11 +336,13 @@ test('selects a manual Listing target through separate type and target fields', 
   await expect(typeLabel).toBeVisible()
   await expect(targetLabel).toBeVisible()
 
-  const typeField = typeLabel.locator('xpath=ancestor::div[contains(@class, "field-type")][1]')
+  const typeField = typeLabel.locator('xpath=ancestor::div[contains(@class, "field-type")][1][1]')
   await typeField.locator('.rs__control').click()
   await page.locator('.rs__menu').getByText('Wpis', { exact: true }).click()
 
-  const targetField = targetLabel.locator('xpath=ancestor::div[contains(@class, "field-type")][1]')
+  const targetField = targetLabel.locator(
+    'xpath=ancestor::div[contains(@class, "field-type")][1][1]',
+  )
   await targetField.getByRole('combobox').click()
   await page.locator('.rs__menu').getByText(relatedPostTitle, { exact: true }).click()
   await expect(targetField).toContainText(relatedPostTitle)

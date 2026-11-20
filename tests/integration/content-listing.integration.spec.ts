@@ -1,4 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createLocalReq } from 'payload'
+import type { MigrateUpArgs, MigrateDownArgs } from '@payloadcms/db-postgres'
+import { migrateListingViewPresets } from '../../migrations/20261119_160227_listing_view_templates'
+import {
+  up as activateListingViews,
+  down as retireListingViews,
+} from '../../migrations/20261119_162628_listing_views_active'
+import { listingPresets } from '@/modules/content/listing-view'
 import { sql } from '@payloadcms/db-postgres'
 
 import { findPublicContent } from '@/modules/content/content-listing'
@@ -23,6 +31,149 @@ afterAll(async () => {
 })
 
 describe('content listing and pagination', () => {
+  it('publishes editable templates for every former built-in preset', async () => {
+    const { docs } = await fixture.payload.find({
+      collection: 'listing-views',
+      pagination: false,
+      where: { presetKey: { exists: true } },
+      overrideAccess: true,
+    })
+    expect(docs.map(({ presetKey }) => presetKey).sort()).toEqual(
+      Object.keys(listingPresets).sort(),
+    )
+    expect(docs.every(({ _status }) => _status === 'published')).toBe(true)
+    const template = docs.find(({ presetKey }) => presetKey === 'grid')!
+    try {
+      await fixture.payload.update({
+        collection: 'listing-views',
+        id: template.id,
+        data: { settings: { ...listingPresets.grid.view, columns: 2 } },
+        overrideAccess: true,
+      })
+      expect((await resolvePublicListingView({ view: 'grid' })).view.columns).toBe(2)
+    } finally {
+      await fixture.payload.update({
+        collection: 'listing-views',
+        id: template.id,
+        data: { settings: listingPresets.grid.view },
+        overrideAccess: true,
+      })
+    }
+  })
+
+  it('maps old preset references in live blocks and saved versions without losing overrides', async () => {
+    const { payload, page } = fixture
+    const override = { preset: 'grid', overrides: { columns: 2, information: { excerpt: false } } }
+    const original = await payload.findByID({
+      collection: 'pages',
+      id: page.id,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const updated = await payload.update({
+      collection: 'pages',
+      id: page.id,
+      data: {
+        layout: [
+          {
+            blockType: 'listing',
+            selectionMode: 'manual',
+            items: [{ item: { relationTo: 'posts', value: fixture.post.id } }],
+            pageSize: 4,
+            appearance: override,
+          },
+        ],
+      },
+      overrideAccess: true,
+    })
+    try {
+      const blockID = updated.layout!.find((block) => block.blockType === 'listing')!.id
+      await payload.db.drizzle.execute(sql`
+        UPDATE "pages_blocks_listing" SET "appearance" = ${JSON.stringify(override)}::jsonb
+        WHERE "id" = ${blockID};
+      `)
+      await payload.db.drizzle.execute(sql`
+        UPDATE "_pages_v_blocks_listing" SET "appearance" = ${JSON.stringify(override)}::jsonb
+        WHERE "_uuid" = ${blockID};
+      `)
+      const req = await createLocalReq({}, payload)
+      await migrateListingViewPresets({ db: payload.db.drizzle, payload, req } as MigrateUpArgs)
+      const template = (
+        await payload.find({
+          collection: 'listing-views',
+          where: { presetKey: { equals: 'grid' } },
+          overrideAccess: true,
+        })
+      ).docs[0]
+      const current = await payload.findByID({
+        collection: 'pages',
+        id: page.id,
+        depth: 0,
+        overrideAccess: true,
+      })
+      expect(current.layout![0]).toMatchObject({
+        appearance: { ...override, preset: `shared:${template.id}` },
+      })
+      const versions = await payload.db.drizzle.execute(sql`
+        SELECT "appearance" FROM "_pages_v_blocks_listing" WHERE "_uuid" = ${blockID};
+      `)
+      expect(versions.rows.length).toBeGreaterThan(0)
+      for (const row of versions.rows) {
+        expect(row.appearance).toEqual({ ...override, preset: `shared:${template.id}` })
+      }
+    } finally {
+      await payload.update({
+        collection: 'pages',
+        id: page.id,
+        data: { layout: original.layout },
+        overrideAccess: true,
+      })
+    }
+  })
+
+  it('preserves inactive templates and their versions when migrating the active flag in both directions', async () => {
+    const { payload } = fixture
+    const template = await payload.create({
+      collection: 'listing-views',
+      data: {
+        name: 'Inactive view migration fixture',
+        settings: listingPresets.grid.view,
+        active: false,
+        _status: 'published',
+      },
+      overrideAccess: true,
+    })
+    const migration = {
+      db: payload.db.drizzle,
+      payload,
+      req: await createLocalReq({}, payload),
+    } as MigrateUpArgs & MigrateDownArgs
+    try {
+      await retireListingViews(migration)
+      const previous = await payload.db.drizzle.execute(sql`
+        SELECT "retired" FROM "listing_views" WHERE "id" = ${template.id};
+      `)
+      expect(previous.rows[0]?.retired).toBe(true)
+      const previousVersions = await payload.db.drizzle.execute(sql`
+        SELECT "version_retired" FROM "_listing_views_v" WHERE "parent_id" = ${template.id};
+      `)
+      expect(previousVersions.rows.every((row) => row.version_retired === true)).toBe(true)
+      await activateListingViews(migration)
+      const restored = await payload.findByID({
+        collection: 'listing-views',
+        id: template.id,
+        overrideAccess: true,
+      })
+      expect(restored.active).toBe(false)
+      const restoredVersions = await payload.db.drizzle.execute(sql`
+        SELECT "version_active" FROM "_listing_views_v" WHERE "parent_id" = ${template.id};
+      `)
+      expect(restoredVersions.rows.every((row) => row.version_active === false)).toBe(true)
+    } finally {
+      await payload.delete({ collection: 'listing-views', id: template.id, overrideAccess: true })
+    }
+  })
+
   it('keeps the published listing view active until the shared draft is published', async () => {
     const { payload } = fixture
     const template = await payload.create({
@@ -60,7 +211,7 @@ describe('content listing and pagination', () => {
         data: {
           _status: 'published',
           settings: { layout: 'carousel', columns: 2, information: { excerpt: true } },
-          retired: true,
+          active: false,
         },
         overrideAccess: true,
       })

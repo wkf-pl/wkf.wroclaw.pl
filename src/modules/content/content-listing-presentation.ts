@@ -52,6 +52,13 @@ const publicationDateFormatter = new Intl.DateTimeFormat('pl-PL', {
   year: 'numeric',
 })
 
+const shortDateFormatter = new Intl.DateTimeFormat('pl-PL', {
+  day: '2-digit',
+  month: '2-digit',
+  timeZone: 'Europe/Warsaw',
+  year: 'numeric',
+})
+
 export function getContentListingPresentation(
   item: PublicContentListItem,
   view: ContentListingView,
@@ -242,9 +249,15 @@ export function presentListingItem(
   const partnerRoles =
     item.kind === 'partners' ? item.partnerRoles?.map(getPartnerRoleLabel).join(', ') : undefined
   const shortEventDate = item.kind === 'events' && view.dateFormat === 'short'
-  const metadataDate = shortEventDate
-    ? { dateTime: item.document.startAt, label: formatEventStartDate(item.document) }
-    : presentation.metadataDate
+  const dateTime = shortEventDate ? item.document.startAt : presentation.metadataDate?.dateTime
+  const metadataDate = dateTime
+    ? {
+        dateTime,
+        label: (view.dateFormat === 'short' ? shortDateFormatter : publicationDateFormatter).format(
+          new Date(dateTime),
+        ),
+      }
+    : undefined
 
   return {
     ...presentation,

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   getSharedListingViewId,
+  getListingViewReference,
   legacyListingViews,
   resolveListingView,
 } from '@/modules/content/listing-view'
@@ -10,6 +11,13 @@ describe('Listing view resolution', () => {
   it.each(legacyListingViews)('keeps the legacy renderer for an unchanged %s preset', (view) => {
     expect(resolveListingView(undefined, view).legacy).toBe(view)
     expect(resolveListingView({ preset: view }, view).legacy).toBe(view)
+  })
+
+  it('resolves saved and restored preset names through editable templates', () => {
+    expect(getListingViewReference(undefined, 'grid')).toEqual({ presetKey: 'grid' })
+    expect(getListingViewReference({ preset: 'upcoming' })).toEqual({ presetKey: 'upcoming' })
+    expect(getListingViewReference({ preset: 'shared:42' })).toEqual({ id: 42 })
+    expect(getListingViewReference({ preset: 'custom' })).toBeUndefined()
   })
 
   it('applies local columns and hidden information over published settings', () => {

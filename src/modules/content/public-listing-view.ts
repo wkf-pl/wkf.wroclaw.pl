@@ -1,16 +1,21 @@
 import { getPayload } from 'payload'
 
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
-import { getSharedListingViewId, resolveListingView } from '@/modules/content/listing-view'
+import { getListingViewReference, resolveListingView } from '@/modules/content/listing-view'
 
 const loadPublishedSettings = cachePublicData(
-  'listing-view-v1',
-  async (id: number) => {
+  'listing-view-v2',
+  async (reference: { id: number } | { presetKey: string }) => {
     const { default: config } = await import('@payload-config')
     const payload = await getPayload({ config })
     const { docs } = await payload.find({
       collection: 'listing-views',
-      where: { id: { equals: id }, _status: { equals: 'published' } },
+      where: {
+        ...('id' in reference
+          ? { id: { equals: reference.id } }
+          : { presetKey: { equals: reference.presetKey } }),
+        _status: { equals: 'published' },
+      },
       depth: 0,
       limit: 1,
       overrideAccess: true,
@@ -21,10 +26,10 @@ const loadPublishedSettings = cachePublicData(
 )
 
 export async function resolvePublicListingView(block: { appearance?: unknown; view?: unknown }) {
-  const id = getSharedListingViewId(block.appearance)
+  const reference = getListingViewReference(block.appearance, block.view)
   return resolveListingView(
     block.appearance,
     block.view,
-    id ? await loadPublishedSettings(id) : undefined,
+    reference ? await loadPublishedSettings(reference) : undefined,
   )
 }

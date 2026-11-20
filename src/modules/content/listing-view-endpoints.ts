@@ -2,13 +2,18 @@ import type { Endpoint, PaginatedDocs, PayloadRequest, DataFromCollectionSlug } 
 
 import { getFormRelationshipId } from '@/lib/relationships'
 import { findPublicContent } from '@/modules/content/content-listing'
+import { normalizeContentPresentation } from '@/modules/content/content-presentation'
 import { presentListingItem } from '@/modules/content/content-listing-presentation'
 import {
   isListingSource,
   type CurrentListingTarget,
   type ListingConditionInput,
 } from '@/modules/content/listing-conditions'
-import { getSharedListingViewId, resolveListingView } from '@/modules/content/listing-view'
+import {
+  getListingViewReference,
+  getSharedListingViewId,
+  resolveListingView,
+} from '@/modules/content/listing-view'
 import { resolvePageTemplateListingItems } from '@/modules/page-templates/page-template-context'
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -80,11 +85,16 @@ export const listingViewPreviewEndpoint: Endpoint = {
       })
     }
 
-    const id = getSharedListingViewId(block.appearance)
-    const shared = id
+    const reference = getListingViewReference(block.appearance, block.view)
+    const shared = reference
       ? await req.payload.find({
           collection: 'listing-views',
-          where: { id: { equals: id }, _status: { equals: 'published' } },
+          where: {
+            ...('id' in reference
+              ? { id: { equals: reference.id } }
+              : { presetKey: { equals: reference.presetKey } }),
+            _status: { equals: 'published' },
+          },
           depth: 0,
           limit: 1,
           req,
@@ -116,8 +126,23 @@ export const listingViewPreviewEndpoint: Endpoint = {
           : 4,
       pagination: false,
     })
+    const surfaceImageID = getFormRelationshipId(block.surfaceImage)
+    const surfaceImage =
+      block.surface === 'image' && surfaceImageID !== undefined
+        ? await req.payload.findByID({
+            collection: 'media',
+            id: surfaceImageID,
+            depth: 0,
+            overrideAccess: false,
+            req,
+            disableErrors: true,
+          })
+        : undefined
     return Response.json(
-      { items: result.items.map((item) => presentListingItem(item, view)) },
+      {
+        items: result.items.map((item) => presentListingItem(item, view)),
+        presentation: normalizeContentPresentation({ ...block, surfaceImage }),
+      },
       {
         headers: { 'Cache-Control': 'private, no-store' },
       },
