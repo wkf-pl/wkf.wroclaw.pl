@@ -79,3 +79,52 @@ describe('configured Listing uses the public presentation', () => {
     expect(markup).not.toContain('contentCardKind')
   })
 })
+
+describe('Listing appearance images', () => {
+  const media = { surface: '/outer.webp', fill: '/inner.webp', fallback: '/fallback.webp' }
+
+  it.each(['row', 'tile', 'horizontal', 'vertical'] as const)(
+    'uses the same decoration for the %s format',
+    (form) => {
+      const view = resolveListingView({
+        overrides: {
+          form,
+          decoration: {
+            surface: 'image',
+            fill: 'image',
+            fillVerticalPosition: 'bottom',
+            fallback: 'custom',
+            frame: 'outline',
+            itemBorder: 'outline',
+            gap: 'none',
+            padding: 'large',
+          },
+        },
+      }).view
+      const markup = renderToStaticMarkup(
+        <ConfiguredContentList items={items} view={view} media={media} />,
+      )
+      expect(markup).toContain('listingPresentation--joined listingPresentation--outlinedItems')
+      expect(markup).toContain('--listing-padding:1.5rem')
+      expect(markup).toContain('src="/outer.webp"')
+      expect(markup).toContain('src="/inner.webp"')
+      expect(markup).toContain('object-position:center bottom')
+      if (form === 'row') expect(markup).not.toContain('src="/fallback.webp"')
+      else expect(markup).toContain('src="/fallback.webp"')
+    },
+  )
+
+  it('drops the empty image space in cards but keeps real images', () => {
+    const withImage: ContentListingPresentation = {
+      ...items[1],
+      image: { kind: 'profile', url: '/real.webp', alt: '' },
+    }
+    const view = resolveListingView({ overrides: { decoration: { fallback: 'none' } } }).view
+    const markup = renderToStaticMarkup(
+      <ConfiguredContentList items={[items[0], withImage]} view={view} />,
+    )
+    expect(markup).toContain('contentCard--withoutImage')
+    expect(markup).toContain('src="/real.webp"')
+    expect(markup).not.toContain('contentCardImageFallback')
+  })
+})

@@ -1,3 +1,4 @@
+import { getListingComponents } from './listing-view'
 import { getPopulatedRelationship } from '@/lib/relationships'
 import type { Category, Event, EventCycle, Media, Tag } from '@/payload-types'
 import type { PublicContentListItem } from '@/modules/content/content-listing-sources'
@@ -23,6 +24,7 @@ export type ContentListingExcerpt =
 export type ContentListingFact = {
   dateTime?: string
   href?: string
+  address?: string
   icon: 'calendar' | 'location'
   label: string
   value: string
@@ -36,6 +38,9 @@ export type ContentListingPresentation = {
   image?: ContentListingImage
   interests?: string
   kindLabel: string
+  highlightKindLabel?: boolean
+  hideTitle?: boolean
+  actionStyle?: 'none' | 'icon' | 'text' | 'full'
   metadataDate?: { dateTime: string; label: string }
   metadataLink?: { href: string; label: string; prefix: string }
   metadataText?: string
@@ -248,34 +253,50 @@ export function presentListingItem(
   const enabled = view.information
   const partnerRoles =
     item.kind === 'partners' ? item.partnerRoles?.map(getPartnerRoleLabel).join(', ') : undefined
-  const shortEventDate = item.kind === 'events' && view.dateFormat === 'short'
+  const components = getListingComponents(view)
+  const shortEventDate = item.kind === 'events' && components.date === 'short'
   const dateTime = shortEventDate ? item.document.startAt : presentation.metadataDate?.dateTime
   const metadataDate = dateTime
     ? {
         dateTime,
-        label: (view.dateFormat === 'short' ? shortDateFormatter : publicationDateFormatter).format(
+        label: (components.date === 'short' ? shortDateFormatter : publicationDateFormatter).format(
           new Date(dateTime),
         ),
       }
     : undefined
 
+  const location = item.kind === 'events' ? getPopulatedRelationship(item.document.location) : null
+  const parent = item.kind === 'pages' ? getPopulatedRelationship(item.document.parent) : null
+
   return {
     ...presentation,
+    hideTitle: !components.title,
+    highlightKindLabel: components.kind === 'highlighted',
+    actionStyle: view.components?.actions,
     category: enabled.taxonomy ? presentation.category : undefined,
-    contextLabel: enabled.context
-      ? [presentation.contextLabel, partnerRoles].filter(Boolean).join(' · ') || undefined
+    contextLabel: components.other
+      ? [presentation.contextLabel, partnerRoles, parent?.title].filter(Boolean).join(' · ') ||
+        undefined
       : undefined,
     excerpt: enabled.excerpt ? presentation.excerpt : undefined,
-    facts: presentation.facts.filter((fact) =>
-      fact.icon === 'calendar' ? enabled.date && !shortEventDate : enabled.venue,
-    ),
+    facts: presentation.facts.flatMap((fact) => {
+      if (fact.icon === 'calendar')
+        return components.date !== 'none' && !shortEventDate ? [fact] : []
+      return components.venue === 'none'
+        ? []
+        : [
+            components.venue === 'full'
+              ? { ...fact, address: formatEventLocationAddress(location) }
+              : fact,
+          ]
+    }),
     image: enabled.image ? presentation.image : undefined,
     interests: enabled.interests ? presentation.interests : undefined,
-    kindLabel: enabled.kind ? presentation.kindLabel : '',
-    metadataDate: enabled.date ? metadataDate : undefined,
-    metadataLink: enabled.cycle ? presentation.metadataLink : undefined,
-    metadataText: enabled.date ? presentation.metadataText : undefined,
-    secondaryAction: enabled.calendar ? presentation.secondaryAction : undefined,
+    kindLabel: components.kind !== 'none' ? presentation.kindLabel : '',
+    metadataDate: components.date !== 'none' ? metadataDate : undefined,
+    metadataLink: components.other ? presentation.metadataLink : undefined,
+    metadataText: components.date !== 'none' ? presentation.metadataText : undefined,
+    secondaryAction: components.actions !== 'none' ? presentation.secondaryAction : undefined,
     tags: enabled.taxonomy ? presentation.tags : undefined,
   }
 }

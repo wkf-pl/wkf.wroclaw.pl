@@ -276,7 +276,13 @@ function createListingBlock({
       ],
       required: true,
     },
-    ...createContentPresentationFields(),
+    ...createContentPresentationFields().map(
+      (field): Field =>
+        ({
+          ...field,
+          admin: { ...field.admin, condition: () => false },
+        }) as Field,
+    ),
     {
       name: 'appearance',
       label: 'Wygląd',

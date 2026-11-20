@@ -2,6 +2,7 @@ import type { Endpoint, PaginatedDocs, PayloadRequest, DataFromCollectionSlug } 
 
 import { getFormRelationshipId } from '@/lib/relationships'
 import { findPublicContent } from '@/modules/content/content-listing'
+import { loadListingDecorationMedia } from '@/modules/content/listing-decoration-media'
 import { normalizeContentPresentation } from '@/modules/content/content-presentation'
 import { presentListingItem } from '@/modules/content/content-listing-presentation'
 import {
@@ -101,7 +102,12 @@ export const listingViewPreviewEndpoint: Endpoint = {
           overrideAccess: false,
         })
       : undefined
-    const { view } = resolveListingView(block.appearance, block.view, shared?.docs[0]?.settings)
+    const { view } = resolveListingView(
+      block.appearance,
+      block.view,
+      shared?.docs[0]?.settings,
+      block,
+    )
     const sort = block.sort
     const result = await findPublicContent({
       conditions: Array.isArray(block.conditions)
@@ -128,7 +134,7 @@ export const listingViewPreviewEndpoint: Endpoint = {
     })
     const surfaceImageID = getFormRelationshipId(block.surfaceImage)
     const surfaceImage =
-      block.surface === 'image' && surfaceImageID !== undefined
+      !view.decoration && block.surface === 'image' && surfaceImageID !== undefined
         ? await req.payload.findByID({
             collection: 'media',
             id: surfaceImageID,
@@ -141,7 +147,11 @@ export const listingViewPreviewEndpoint: Endpoint = {
     return Response.json(
       {
         items: result.items.map((item) => presentListingItem(item, view)),
-        presentation: normalizeContentPresentation({ ...block, surfaceImage }),
+        view,
+        media: await loadListingDecorationMedia(req.payload, view.decoration),
+        presentation: view.decoration
+          ? undefined
+          : normalizeContentPresentation({ ...block, surfaceImage }),
       },
       {
         headers: { 'Cache-Control': 'private, no-store' },

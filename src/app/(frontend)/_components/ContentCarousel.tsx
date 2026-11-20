@@ -6,14 +6,20 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { CmsRichText } from '@/components/CmsRichText'
 import { RasterIcon } from '@/components/RasterIcon'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
+import type { ListingDecorationMedia } from '@/modules/content/listing-decoration'
 import type { ListingView } from '@/modules/content/listing-view'
 import {
   getContentListingPresentation,
   type ContentListingPresentation,
 } from '@/modules/content/content-listing-presentation'
 
+import { ListingActionContent, ListingFactValue } from './ListingItemContent'
 import { CmsImage } from './CmsImage'
-import { PresentedContentItem } from './PresentedContentItem'
+import {
+  ListingItemSurface,
+  ListingPresentedItem,
+  resolveListingItemImage,
+} from './ListingDecoration'
 import { PresentedContentMeta } from './ContentListingMeta'
 import { TaxonomyLinks } from './TaxonomyLinks'
 
@@ -37,14 +43,17 @@ export function PresentedContentCarousel({
   emptyMessage,
   items,
   view,
+  media,
 }: {
   emptyMessage?: string | null
   items: ContentListingPresentation[]
   view?: ListingView
+  media?: ListingDecorationMedia
 }) {
   const collection = Boolean(
     view && (view.form !== 'horizontal' || view.columns > 1 || !view.information.image),
   )
+  const configuredDecoration = Boolean(view?.decoration)
   const [visibleCount, setVisibleCount] = useState(1)
   const pageCount = Math.ceil(items.length / visibleCount)
   const carouselReference = useRef<HTMLDivElement>(null)
@@ -61,15 +70,33 @@ export function PresentedContentCarousel({
     }
     const columns = view?.columns ?? 1
     const minimum = view?.form === 'horizontal' ? 368 : 176
-    const updateColumns = () =>
-      setVisibleCount(
-        Math.max(1, Math.min(columns, Math.floor((carousel.clientWidth + 16) / (minimum + 16)))),
-      )
+    const updateColumns = () => {
+      if (!configuredDecoration) {
+        setVisibleCount(
+          Math.max(1, Math.min(columns, Math.floor((carousel.clientWidth + 16) / (minimum + 16)))),
+        )
+        return
+      }
+      const slides = carousel.firstElementChild
+      if (!slides) return
+      const style = getComputedStyle(slides)
+      const gap = parseFloat(style.columnGap) || 0
+      const width =
+        slides.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+      setVisibleCount(Math.max(1, Math.min(columns, Math.floor((width + gap) / (minimum + gap)))))
+    }
     updateColumns()
     const observer = new ResizeObserver(updateColumns)
     observer.observe(carousel)
     return () => observer.disconnect()
-  }, [collection, view?.columns, view?.form])
+  }, [
+    collection,
+    configuredDecoration,
+    view?.columns,
+    view?.form,
+    view?.decoration?.gap,
+    view?.decoration?.padding,
+  ])
 
   useEffect(() => {
     const carousel = carouselReference.current
@@ -150,14 +177,16 @@ export function PresentedContentCarousel({
       >
         {items.map((item, index) => {
           const isActive = Math.floor(index / visibleCount) === displayedActiveIndex
-          const presentation = item
+          const { presentation, showImage } = view
+            ? resolveListingItemImage(item, view, media)
+            : { presentation: item, showImage: true }
 
           return (
             <article
               aria-hidden={!isActive}
               aria-label={`${index + 1} z ${items.length}`}
               aria-roledescription="slajd"
-              className={`contentCarouselSlide${collection ? ' contentCarouselSlide--collection' : ''}${isActive ? ' contentCarouselSlide--active' : ''}`}
+              className={`contentCarouselSlide${collection ? ' contentCarouselSlide--collection' : ''}${isActive ? ' contentCarouselSlide--active' : ''}${!showImage && !collection ? ' contentCarouselSlide--withoutImage' : ''}`}
               inert={!isActive}
               key={`${item.url}-${index}`}
             >
@@ -165,41 +194,48 @@ export function PresentedContentCarousel({
                 <div
                   className={`contentList contentList-${{ horizontal: 'cards', vertical: 'grid', row: 'compact', tile: 'tiles' }[view.form]} contentCarouselItem`}
                 >
-                  <PresentedContentItem
-                    presentation={presentation}
-                    form={view.form}
-                    showImage={view.information.image}
-                  />
+                  <ListingPresentedItem presentation={item} view={view} media={media} />
                 </div>
               ) : (
-                <>
-                  <div className="contentCarouselVisual">
-                    <Link
-                      aria-label={`Zobacz: ${presentation.title}`}
-                      className="contentCarouselVisualLink"
-                      href={presentation.url}
-                      tabIndex={isActive ? undefined : -1}
-                    >
-                      {presentation.image?.kind === 'media' ? (
-                        <CmsImage
-                          className="contentCarouselImage"
-                          media={presentation.image.media}
-                        />
-                      ) : presentation.image?.kind === 'profile' ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- profile images can use a runtime-configured Azure host.
-                        <img
-                          alt={presentation.image.alt}
-                          className="contentCarouselImage"
-                          src={presentation.image.url}
-                        />
-                      ) : (
-                        <span aria-hidden="true" className="contentCarouselImageFallback" />
-                      )}
-                      <span className="contentCarouselTitle">{presentation.title}</span>
-                    </Link>
-                    {controls()}
-                  </div>
+                <CarouselItemSurface view={view} media={media}>
+                  {showImage ? (
+                    <div className="contentCarouselVisual">
+                      <Link
+                        aria-label={`Zobacz: ${presentation.title}`}
+                        className="contentCarouselVisualLink"
+                        href={presentation.url}
+                        tabIndex={isActive ? undefined : -1}
+                      >
+                        {presentation.image?.kind === 'media' ? (
+                          <CmsImage
+                            className="contentCarouselImage"
+                            media={presentation.image.media}
+                          />
+                        ) : presentation.image?.kind === 'profile' ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- profile images can use a runtime-configured Azure host.
+                          <img
+                            alt={presentation.image.alt}
+                            className="contentCarouselImage"
+                            src={presentation.image.url}
+                          />
+                        ) : (
+                          <span aria-hidden="true" className="contentCarouselImageFallback" />
+                        )}
+                        <span
+                          className={presentation.hideTitle ? 'srOnly' : 'contentCarouselTitle'}
+                        >
+                          {presentation.title}
+                        </span>
+                      </Link>
+                      {controls()}
+                    </div>
+                  ) : null}
                   <div className="contentCarouselContent">
+                    {!showImage ? (
+                      <h2 className={presentation.hideTitle ? 'srOnly' : undefined}>
+                        <Link href={presentation.url}>{presentation.title}</Link>
+                      </h2>
+                    ) : null}
                     <PresentedContentMeta
                       className="contentCarouselMeta"
                       variant="contentCarousel"
@@ -224,15 +260,7 @@ export function PresentedContentCarousel({
                             >
                               <RasterIcon name={fact.icon} size="small" />
                             </span>
-                            {fact.dateTime ? (
-                              <time dateTime={fact.dateTime}>{fact.value}</time>
-                            ) : null}
-                            {!fact.dateTime && fact.href ? (
-                              <a href={fact.href} tabIndex={isActive ? undefined : -1}>
-                                {fact.value}
-                              </a>
-                            ) : null}
-                            {!fact.dateTime && !fact.href ? fact.value : null}
+                            <ListingFactValue fact={fact} />
                           </p>
                         ))}
                       </div>
@@ -241,28 +269,38 @@ export function PresentedContentCarousel({
                       <p className="contentCardInterests">{presentation.interests}</p>
                     ) : null}
                     <TaxonomyLinks category={presentation.category} tags={presentation.tags} />
-                    <div className="contentCarouselActions">
-                      {presentation.secondaryAction ? (
+                    {presentation.actionStyle !== 'none' ? (
+                      <div className="contentCarouselActions">
+                        {presentation.secondaryAction ? (
+                          <Link
+                            className="contentCarouselSecondaryAction"
+                            href={presentation.secondaryAction.href}
+                            tabIndex={isActive ? undefined : -1}
+                          >
+                            <ListingActionContent
+                              style={presentation.actionStyle}
+                              icon="calendar"
+                              label={presentation.secondaryAction.label}
+                            />
+                          </Link>
+                        ) : null}
                         <Link
-                          className="contentCarouselSecondaryAction"
-                          href={presentation.secondaryAction.href}
+                          className="contentCarouselAction"
+                          href={presentation.url}
                           tabIndex={isActive ? undefined : -1}
                         >
-                          <RasterIcon name="calendar" size="small" />
-                          <span>{presentation.secondaryAction.label}</span>
+                          <ListingActionContent
+                            style={presentation.actionStyle}
+                            icon="arrow-right"
+                            label="Zobacz"
+                            iconLast
+                          />
                         </Link>
-                      ) : null}
-                      <Link
-                        className="contentCarouselAction"
-                        href={presentation.url}
-                        tabIndex={isActive ? undefined : -1}
-                      >
-                        <span>Zobacz</span>
-                        <RasterIcon name="arrow-right" size="small" />
-                      </Link>
-                    </div>
+                      </div>
+                    ) : null}
+                    {!showImage ? controls(true) : null}
                   </div>
-                </>
+                </CarouselItemSurface>
               )}
             </article>
           )
@@ -270,5 +308,23 @@ export function PresentedContentCarousel({
       </div>
       {collection ? controls(true) : null}
     </div>
+  )
+}
+
+function CarouselItemSurface({
+  view,
+  media,
+  children,
+}: {
+  view?: ListingView
+  media?: ListingDecorationMedia
+  children: React.ReactNode
+}) {
+  return view ? (
+    <ListingItemSurface view={view} media={media}>
+      {children}
+    </ListingItemSurface>
+  ) : (
+    children
   )
 }

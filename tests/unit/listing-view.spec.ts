@@ -54,3 +54,88 @@ describe('Listing view resolution', () => {
     ).toMatchObject({ columns: 3, form: 'row', information: { image: false } })
   })
 })
+
+describe('Listing decoration', () => {
+  it('merges each local and template setting independently', () => {
+    const shared = {
+      decoration: {
+        frame: 'outline',
+        itemBorder: 'outline',
+        gap: 'small',
+        surfaceImage: 21,
+        fill: 'inverse',
+      },
+    }
+    const { view, legacy } = resolveListingView(
+      {
+        preset: 'shared:42',
+        overrides: { decoration: { frame: 'none', padding: 'large', surfaceImage: null } },
+      },
+      'tiles',
+      shared,
+    )
+    expect(legacy).toBeUndefined()
+    expect(view.decoration).toMatchObject({
+      frame: 'none',
+      itemBorder: 'outline',
+      gap: 'small',
+      padding: 'large',
+      surfaceImage: null,
+      fill: 'inverse',
+    })
+  })
+
+  it('keeps the existing renderer for records without decoration', () => {
+    expect(resolveListingView(undefined, 'compact', undefined, { frame: 'outline' })).toMatchObject(
+      { legacy: 'compact' },
+    )
+    expect(resolveListingView(undefined, 'compact').view.decoration).toBeUndefined()
+  })
+
+  it('maps legacy row decoration and lets a reset follow the template', () => {
+    const previous = {
+      frame: 'outline',
+      surface: 'image',
+      surfaceImage: { id: 21 },
+      surfaceHorizontalPosition: 'right',
+    }
+    const shared = { decoration: { frame: 'none' } }
+    expect(
+      resolveListingView(undefined, 'compact', shared, previous).view.decoration,
+    ).toMatchObject({
+      frame: 'outline',
+      itemBorder: 'outline',
+      padding: 'none',
+      gap: 'none',
+      surface: 'image',
+      surfaceImage: 21,
+      surfaceHorizontalPosition: 'right',
+    })
+    expect(
+      resolveListingView({ overrides: { decoration: {} } }, 'compact', shared, previous).view
+        .decoration,
+    ).toMatchObject({
+      frame: 'none',
+      itemBorder: 'none',
+      surface: 'transparent',
+    })
+  })
+
+  it('does not pass malformed values or raw media URLs into the view', () => {
+    expect(
+      resolveListingView({
+        overrides: {
+          decoration: {
+            gap: '10px',
+            fallbackImage: 'https://example.invalid/a.png',
+            fillImage: -1,
+          },
+        },
+      }).view.decoration,
+    ).toMatchObject({
+      gap: 'large',
+      fallbackImage: null,
+      fillImage: null,
+    })
+  })
+})

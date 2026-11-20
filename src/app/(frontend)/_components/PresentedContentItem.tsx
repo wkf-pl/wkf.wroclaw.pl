@@ -5,6 +5,7 @@ import { RasterIcon } from '@/components/RasterIcon'
 import type { ContentListingPresentation } from '@/modules/content/content-listing-presentation'
 import type { ListingView } from '@/modules/content/listing-view'
 
+import { ListingActionContent, ListingFactValue } from './ListingItemContent'
 import { CmsImage } from './CmsImage'
 import { PresentedContentMeta } from './ContentListingMeta'
 import { TaxonomyLinks } from './TaxonomyLinks'
@@ -25,13 +26,7 @@ export function PresentedContentDetails({
               <span aria-label={fact.label} className="contentCardFactIcon" role="img">
                 <RasterIcon name={fact.icon} size="small" />
               </span>
-              {fact.dateTime ? (
-                <time dateTime={fact.dateTime}>{fact.value}</time>
-              ) : fact.href ? (
-                <a href={fact.href}>{fact.value}</a>
-              ) : (
-                fact.value
-              )}
+              <ListingFactValue fact={fact} />
             </p>
           ))}
         </div>
@@ -50,8 +45,11 @@ export function PresentedContentDetails({
           className="contentCarouselSecondaryAction contentCardSecondaryAction"
           href={presentation.secondaryAction.href}
         >
-          <RasterIcon name="calendar" size="small" />
-          <span>{presentation.secondaryAction.label}</span>
+          <ListingActionContent
+            style={presentation.actionStyle}
+            icon="calendar"
+            label={presentation.secondaryAction.label}
+          />
         </Link>
       ) : null}
     </>
@@ -86,25 +84,31 @@ export function PresentedContentItem({
   presentation,
   form,
   showImage = true,
+  showTileOverlay = true,
 }: {
   presentation: ContentListingPresentation
   form: ListingView['form']
   showImage?: boolean
+  showTileOverlay?: boolean
 }) {
   if (form === 'tile') {
     return (
       <article className="contentTile">
-        <div className="contentTileLink">
+        <div className={`contentTileLink${showImage ? '' : ' contentTileLink--withoutImage'}`}>
           {showImage ? (
             <span aria-hidden="true" className="contentTileMedia">
               <PresentedImage presentation={presentation} tile />
             </span>
           ) : null}
-          <span aria-hidden="true" className="contentTileOverlay" />
+          {showTileOverlay ? <span aria-hidden="true" className="contentTileOverlay" /> : null}
           <div className="contentTileContent">
-            <h2>
+            <h2 className={presentation.hideTitle ? 'listingHiddenTitle' : undefined}>
               <Link className="contentTileTitleLink" href={presentation.url}>
-                {presentation.title}
+                {presentation.hideTitle ? (
+                  <span className="srOnly">{presentation.title}</span>
+                ) : (
+                  presentation.title
+                )}
               </Link>
             </h2>
             <PresentedContentMeta
@@ -130,8 +134,14 @@ export function PresentedContentItem({
       ) : null}
       <div className="contentCardContent">
         <PresentedContentMeta presentation={presentation} />
-        <h2>
-          <Link href={presentation.url}>{presentation.title}</Link>
+        <h2 className={presentation.hideTitle ? 'listingHiddenTitle' : undefined}>
+          <Link href={presentation.url}>
+            {presentation.hideTitle ? (
+              <span className="srOnly">{presentation.title}</span>
+            ) : (
+              presentation.title
+            )}
+          </Link>
         </h2>
         <PresentedContentDetails grid={grid} presentation={presentation} />
       </div>

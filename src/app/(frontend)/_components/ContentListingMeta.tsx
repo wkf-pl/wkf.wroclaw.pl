@@ -39,7 +39,15 @@ export function PresentedContentMeta({
   return (
     <p className={className}>
       {presentation.kindLabel ? (
-        <span className={`${variant}Kind`}>{presentation.kindLabel}</span>
+        <span
+          className={
+            presentation.highlightKindLabel
+              ? 'pageTemplateBadge pageTemplateBadge--emphasizedBadge'
+              : `${variant}Kind`
+          }
+        >
+          {presentation.kindLabel}
+        </span>
       ) : null}
       {presentation.metadataText ? (
         <span className={`${variant}MetaText`}>{presentation.metadataText}</span>

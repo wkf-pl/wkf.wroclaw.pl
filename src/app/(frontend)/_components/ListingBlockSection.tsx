@@ -12,10 +12,15 @@ import type { CurrentListingTarget } from '@/modules/content/listing-conditions'
 import { resolvePageTemplateListingItems } from '@/modules/page-templates/page-template-context'
 
 import type { ContentLayoutDocument } from './ContentLayoutRenderer'
-import { resolvePublicListingView } from '@/modules/content/public-listing-view'
+import { normalizeContentPresentation } from '@/modules/content/content-presentation'
+import {
+  resolvePublicListingDecorationMedia,
+  resolvePublicListingView,
+} from '@/modules/content/public-listing-view'
 import { parseListingAppearance } from '@/modules/content/listing-view'
 import { presentListingItem } from '@/modules/content/content-listing-presentation'
 import { ConfiguredContentList } from './ConfiguredContentList'
+import { ContentPresentation } from './ContentPresentation'
 import { ContentList } from './ContentList'
 import { ContentPagination } from './ContentPagination'
 
@@ -24,6 +29,7 @@ type ListingBlockSectionProperties = {
   blockPath: string
   document: ContentLayoutDocument
   currentTarget?: CurrentListingTarget
+  presentationPlacement?: 'block' | 'tab'
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
 }
@@ -38,6 +44,7 @@ export async function resolveListingBlockSection({
   currentTarget,
   document,
   pathname,
+  presentationPlacement = 'block',
   searchParams,
 }: ListingBlockSectionProperties) {
   const { view, legacy } = await resolvePublicListingView(block)
@@ -70,35 +77,49 @@ export async function resolveListingBlockSection({
     redirect(createPaginatedURL(pathname, searchParams, parameterName, result.totalPages))
   }
 
+  if (block.hideWhenEmpty && result.items.length === 0) {
+    return { content: null, isEmpty: true }
+  }
+  const media = view.decoration ? await resolvePublicListingDecorationMedia(view) : undefined
+  const content = (
+    <div className="listingBlock">
+      {legacy ? (
+        <ContentList
+          columns={parseListingAppearance(block.appearance).overrides?.columns}
+          emptyMessage={block.emptyMessage}
+          items={result.items}
+          view={legacy}
+        />
+      ) : (
+        <ConfiguredContentList
+          emptyMessage={block.emptyMessage}
+          items={result.items.map((item) => presentListingItem(item, view))}
+          view={view}
+          media={media}
+        />
+      )}
+      {paginationEnabled ? (
+        <ContentPagination
+          currentPage={result.page}
+          parameterName={parameterName}
+          pathname={pathname}
+          searchParams={searchParams}
+          totalPages={result.totalPages}
+        />
+      ) : null}
+    </div>
+  )
   return {
-    content:
-      block.hideWhenEmpty && result.items.length === 0 ? null : (
-        <div className="listingBlock">
-          {legacy ? (
-            <ContentList
-              columns={parseListingAppearance(block.appearance).overrides?.columns}
-              emptyMessage={block.emptyMessage}
-              items={result.items}
-              view={legacy}
-            />
-          ) : (
-            <ConfiguredContentList
-              emptyMessage={block.emptyMessage}
-              items={result.items.map((item) => presentListingItem(item, view))}
-              view={view}
-            />
-          )}
-          {paginationEnabled ? (
-            <ContentPagination
-              currentPage={result.page}
-              parameterName={parameterName}
-              pathname={pathname}
-              searchParams={searchParams}
-              totalPages={result.totalPages}
-            />
-          ) : null}
-        </div>
-      ),
+    content: view.decoration ? (
+      content
+    ) : (
+      <ContentPresentation
+        placement={presentationPlacement}
+        presentation={normalizeContentPresentation(block)}
+      >
+        {content}
+      </ContentPresentation>
+    ),
     isEmpty: result.items.length === 0,
   }
 }

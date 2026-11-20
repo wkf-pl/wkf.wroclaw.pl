@@ -95,6 +95,8 @@ type PresentedContentLeafBlock = Exclude<
   | HeadingBlock
   | FieldRowTextBlock
   | SpacerBlock
+  | ListingBlock
+  | PageTemplateListingBlock
 >
 type SectionContentBlock =
   ColumnLayoutBlock | InformationPanelColumnsBlock | TabbedContentBlock | ContentLeafBlock
@@ -641,6 +643,19 @@ async function resolveContentLeafBlock({
     }
   }
 
+  if (block.blockType === 'listing') {
+    const resolution = await resolveListingBlockSection({
+      block,
+      blockPath: path,
+      currentTarget,
+      document,
+      pathname,
+      presentationPlacement,
+      searchParams,
+    })
+    return createFilterBlockResolution(block.blockType, resolution)
+  }
+
   const resolution = await resolvePresentedLeafBlock({
     block: block as PresentedContentLeafBlock,
     currentTarget,
@@ -668,8 +683,6 @@ async function resolveContentLeafBlock({
 
 async function resolvePresentedLeafBlock({
   block,
-  currentTarget,
-  document,
   path,
   pathname,
   searchParams,
@@ -693,17 +706,6 @@ async function resolvePresentedLeafBlock({
       const resolution = await resolveMediaBlockSection({
         block,
         blockPath: path,
-        pathname,
-        searchParams,
-      })
-      return createFilterBlockResolution(block.blockType, resolution)
-    }
-    case 'listing': {
-      const resolution = await resolveListingBlockSection({
-        block,
-        blockPath: path,
-        currentTarget,
-        document,
         pathname,
         searchParams,
       })

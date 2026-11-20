@@ -654,6 +654,7 @@ async function findPublishedPages(payload: Payload, ids: readonly number[]): Pro
       id: true,
       layout: true,
       listingExcerpt: true,
+      parent: true,
       slug: true,
       tags: true,
       title: true,

@@ -1,22 +1,23 @@
 'use client'
 
-import {
-  Button,
-  FieldLabel,
-  ReactSelect,
-  useAllFormFields,
-  useConfig,
-  useField,
-  useForm,
-} from '@payloadcms/ui'
+import { Button, useAllFormFields, useConfig, useField, useForm } from '@payloadcms/ui'
 import type { JSONFieldClientProps } from 'payload'
 import { formatAdminURL } from 'payload/shared'
 import { useEffect, useId, useState } from 'react'
 
+import { ListingDecorationFields } from './ListingDecorationFields'
+import { ListingViewSelect } from './ListingViewSelect'
 import { ListingPreviewFrame } from './ListingPreviewFrame'
+import {
+  getDefaultListingDecoration,
+  getLegacyListingDecoration,
+  type ListingDecorationMedia,
+} from '@/modules/content/listing-decoration'
 import type { ResolvedContentPresentation } from '@/modules/content/content-presentation'
 import type { ContentListingPresentation } from '@/modules/content/content-listing-presentation'
 import {
+  getListingComponents,
+  listingComponentOptions,
   listingForms,
   listingInformation,
   listingPresets,
@@ -30,10 +31,13 @@ import type { ListingView as SharedView } from '@/payload-types'
 import styles from './ListingViewField.module.css'
 
 const layoutLabels = { static: 'Statyczne', carousel: 'Karuzela' }
-const dateLabels = { short: 'Krótka data', full: 'Pełna data' }
-const informationKeys = (
-  Object.keys(listingInformation) as (keyof typeof listingInformation)[]
-).filter((key) => key !== 'interests')
+const informationKeys = ['title', 'excerpt', 'taxonomy', 'image', 'other'] as const
+const componentLabels = {
+  kind: 'Typ treści',
+  date: 'Data lub termin',
+  venue: 'Miejsce',
+  actions: 'Akcje',
+} as const
 const previewFields = [
   'frame',
   'surface',
@@ -54,55 +58,8 @@ type PreviewResponse = {
   items?: ContentListingPresentation[]
   missingContext?: boolean
   presentation?: ResolvedContentPresentation
-}
-
-export function ListingViewSelect({
-  label,
-  options,
-  value,
-  onChange,
-  inherited,
-  readOnly,
-}: {
-  label: string
-  options: Record<string, string>
-  value?: string | number
-  onChange: (value: string) => void
-  inherited?: string | number
-  readOnly?: boolean
-}) {
-  const inputId = useId()
-  const selectOptions = [
-    ...(inherited !== undefined
-      ? [{ label: `Z szablonu · ${options[inherited]}`, value: '' }]
-      : []),
-    ...Object.entries(options).map(([option, text]) => ({ label: text, value: option })),
-  ]
-
-  return (
-    <div className={`field-type select ${styles.control}`}>
-      <FieldLabel htmlFor={inputId} label={label} />
-      <ReactSelect
-        disabled={readOnly}
-        inputId={inputId}
-        isClearable={false}
-        isSearchable={false}
-        options={selectOptions}
-        value={selectOptions.find((option) => option.value === String(value ?? ''))}
-        onChange={(option) => {
-          if (
-            readOnly ||
-            !option ||
-            Array.isArray(option) ||
-            typeof option !== 'object' ||
-            !('value' in option)
-          )
-            return
-          if (typeof option.value === 'string') onChange(option.value)
-        }}
-      />
-    </div>
-  )
+  view?: ListingView
+  media?: ListingDecorationMedia
 }
 
 const columnOptions = { 1: '1', 2: '2', 3: '3', 4: '4' }
@@ -111,103 +68,145 @@ function ViewDetails({
   base,
   overrides,
   onChange,
-  columnSettings,
+  currentView,
+  baseDecoration,
   readOnly,
 }: {
   readOnly?: boolean
-  columnSettings?: { value: number; onChange: (value: string) => void }
   base?: ListingView
+  currentView: ListingView
+  baseDecoration?: ListingView['decoration']
   overrides: ListingViewOverrides
   onChange: (value: ListingViewOverrides) => void
 }) {
-  const view = overrides.form ?? base?.form
+  const components = getListingComponents(currentView)
+  const inheritedComponents = base && getListingComponents(base)
+  const decoration = currentView.decoration ?? getDefaultListingDecoration(currentView)
   return (
     <div className={styles.controls}>
-      <div className={`${styles.detailsRow} ${columnSettings ? styles.templateDetailsRow : ''}`}>
-        {columnSettings ? (
+      <ListingDecorationFields
+        base={baseDecoration}
+        current={decoration}
+        overrides={overrides.decoration}
+        imageEnabled={currentView.form !== 'row' && currentView.information.image}
+        readOnly={readOnly}
+        onChange={(settings) => onChange({ ...overrides, decoration: settings })}
+        columnsControl={
           <ListingViewSelect
             readOnly={readOnly}
-            label="Kolumny"
+            label={currentView.layout === 'carousel' ? 'Widoczne elementy' : 'Kolumny'}
             options={columnOptions}
-            value={columnSettings.value}
-            onChange={columnSettings.onChange}
+            value={currentView.columns}
+            onChange={(columns) =>
+              onChange({
+                ...overrides,
+                columns: Number(columns) === base?.columns ? undefined : Number(columns),
+              })
+            }
           />
-        ) : null}
-        <ListingViewSelect
-          readOnly={readOnly}
-          label="Rozmieszczenie"
-          options={layoutLabels}
-          value={overrides.layout}
-          inherited={base?.layout}
-          onChange={(value) =>
-            onChange({ ...overrides, layout: value ? (value as ListingView['layout']) : undefined })
-          }
-        />
-        <ListingViewSelect
-          readOnly={readOnly}
-          label="Format elementu"
-          options={listingForms}
-          value={overrides.form}
-          inherited={base?.form}
-          onChange={(value) =>
-            onChange({ ...overrides, form: value ? (value as ListingView['form']) : undefined })
-          }
-        />
-        <ListingViewSelect
-          readOnly={readOnly}
-          label="Format daty"
-          options={dateLabels}
-          value={overrides.dateFormat}
-          inherited={base?.dateFormat}
-          onChange={(value) =>
-            onChange({
-              ...overrides,
-              dateFormat: value ? (value as ListingView['dateFormat']) : undefined,
-            })
-          }
-        />
-      </div>
-      <fieldset className={styles.information}>
-        <legend>Informacje na elemencie</legend>
-        {informationKeys.map((key) => {
-          const inherited = base?.information[key]
-          const disabled = key === 'image' && view === 'row'
-          const enabled = !disabled && (overrides.information?.[key] ?? inherited ?? false)
-          return (
-            <div
-              key={key}
-              className={`wkf-boolean-switch ${enabled ? 'wkf-boolean-switch--checked' : ''} ${styles.informationSwitch}`}
-            >
-              <label className={styles.switchLabel}>
-                <span>{listingInformation[key]}</span>
-                <span className="wkf-boolean-switch__control">
-                  <input
-                    aria-label={listingInformation[key]}
-                    type="checkbox"
-                    role="switch"
-                    disabled={readOnly || disabled}
-                    checked={enabled}
-                    onChange={(event) => {
-                      const information = { ...overrides.information }
-                      if (inherited !== undefined && event.target.checked === inherited)
-                        delete information[key]
-                      else information[key] = event.target.checked
-                      const nextOverrides: ListingViewOverrides = { ...overrides, information }
-                      if (Object.keys(information).length === 0) delete nextOverrides.information
-                      onChange(nextOverrides)
-                    }}
-                  />
-                  <span aria-hidden="true" className="wkf-boolean-switch__track">
-                    <span className="wkf-boolean-switch__thumb" />
+        }
+        layoutControl={
+          <ListingViewSelect
+            readOnly={readOnly}
+            label="Rozmieszczenie"
+            options={layoutLabels}
+            value={currentView.layout}
+            inherited={base?.layout}
+            onChange={(value) =>
+              onChange({
+                ...overrides,
+                layout: value === base?.layout ? undefined : (value as ListingView['layout']),
+              })
+            }
+          />
+        }
+        formatControl={
+          <ListingViewSelect
+            readOnly={readOnly}
+            label="Format elementu"
+            options={listingForms}
+            value={currentView.form}
+            inherited={base?.form}
+            onChange={(value) =>
+              onChange({
+                ...overrides,
+                form: value === base?.form ? undefined : (value as ListingView['form']),
+              })
+            }
+          />
+        }
+      />
+      <fieldset className={styles.settingsGroup}>
+        <legend>Składowe na elemencie</legend>
+        <div className={styles.information}>
+          {informationKeys.map((key) => {
+            const component = key === 'title' || key === 'other'
+            const label =
+              key === 'title' ? 'Tytuł' : key === 'other' ? 'Pozostałe' : listingInformation[key]
+            const inherited = component ? inheritedComponents?.[key] : base?.information[key]
+            const disabled = key === 'image' && currentView.form === 'row'
+            const enabled =
+              !disabled && (component ? components[key] : currentView.information[key])
+            return (
+              <div
+                key={key}
+                className={`wkf-boolean-switch ${enabled ? 'wkf-boolean-switch--checked' : ''} ${styles.informationSwitch}${disabled ? ' ' + styles.disabledSwitch : ''}`}
+              >
+                <label className={styles.switchLabel}>
+                  <span>{label}</span>
+                  <span className="wkf-boolean-switch__control">
+                    <input
+                      aria-label={label}
+                      type="checkbox"
+                      role="switch"
+                      disabled={readOnly || disabled}
+                      checked={enabled}
+                      onChange={(event) => {
+                        const checked = event.target.checked
+                        if (key === 'title' || key === 'other') {
+                          onChange({
+                            ...overrides,
+                            components: { ...overrides.components, [key]: checked },
+                          })
+                          return
+                        }
+                        const information = { ...overrides.information }
+                        if (inherited !== undefined && event.target.checked === inherited)
+                          delete information[key]
+                        else information[key] = event.target.checked
+                        const nextOverrides: ListingViewOverrides = { ...overrides, information }
+                        if (Object.keys(information).length === 0) delete nextOverrides.information
+                        onChange(nextOverrides)
+                      }}
+                    />
+                    <span aria-hidden="true" className="wkf-boolean-switch__track">
+                      <span className="wkf-boolean-switch__thumb" />
+                    </span>
+                    <span aria-hidden="true" className="wkf-boolean-switch__state">
+                      {enabled ? 'Tak' : 'Nie'}
+                    </span>
                   </span>
-                  <span aria-hidden="true" className="wkf-boolean-switch__state">
-                    {enabled ? 'Tak' : 'Nie'}
-                  </span>
-                </span>
-              </label>
-            </div>
-          )
-        })}
+                </label>
+              </div>
+            )
+          })}
+        </div>
+        <div className={styles.componentChoices}>
+          {(Object.keys(listingComponentOptions) as (keyof typeof listingComponentOptions)[]).map(
+            (key) => (
+              <ListingViewSelect
+                key={key}
+                readOnly={readOnly}
+                label={componentLabels[key]}
+                options={listingComponentOptions[key]}
+                value={components[key]}
+                onChange={(value) =>
+                  onChange({ ...overrides, components: { ...overrides.components, [key]: value } })
+                }
+              />
+            ),
+          )}
+        </div>
       </fieldset>
     </div>
   )
@@ -220,15 +219,7 @@ export function ListingViewTemplateField({ path, readOnly }: JSONFieldClientProp
     <div className={styles.section}>
       <fieldset className={styles.editor} disabled={readOnly}>
         <legend>Wygląd</legend>
-        <ViewDetails
-          readOnly={readOnly}
-          overrides={view}
-          onChange={setValue}
-          columnSettings={{
-            value: view.columns,
-            onChange: (columns) => setValue({ ...view, columns: Number(columns) }),
-          }}
-        />
+        <ViewDetails readOnly={readOnly} overrides={view} currentView={view} onChange={setValue} />
       </fieldset>
     </div>
   )
@@ -248,7 +239,8 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
   const oldView = fields[parentPath + 'view']?.value
   const fallback =
     typeof oldView === 'string' && Object.hasOwn(listingPresets, oldView) ? oldView : 'cards'
-  const { preset: storedPreset = fallback, overrides = {} } = parseListingAppearance(value)
+  const { preset: storedPreset = fallback, overrides: storedOverrides = {} } =
+    parseListingAppearance(value)
   const libraryURL = formatAdminURL({ apiRoute: api, path: '/listing-views', serverURL })
   const [library, setLibrary] = useState<SharedView[]>([])
   const [libraryError, setLibraryError] = useState(false)
@@ -269,12 +261,38 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
     ({ id, presetKey }) => storedPreset === `shared:${id}` || storedPreset === presetKey,
   )
   const preset = selected ? `shared:${selected.id}` : storedPreset
-  const { view } = resolveListingView({ preset, overrides }, fallback, selected?.settings)
+  const { view } = resolveListingView(
+    { preset, overrides: storedOverrides },
+    fallback,
+    selected?.settings,
+    selection,
+  )
+  const legacyDecoration = getLegacyListingDecoration(view, selection)
+  const overrides =
+    storedOverrides.decoration === undefined && Object.keys(legacyDecoration).length
+      ? { ...storedOverrides, decoration: legacyDecoration }
+      : storedOverrides
+  function saveOverrides(settings: ListingViewOverrides, nextPreset = preset) {
+    setValue({ preset: nextPreset, overrides: { decoration: {}, ...settings } })
+  }
   const base = resolveListingView({ preset }, fallback, selected?.settings).view
+  const baseDecoration = resolveListingView(
+    { preset, overrides: { ...overrides, decoration: {} } },
+    fallback,
+    selected?.settings,
+  ).view.decoration
+  const editingView =
+    storedOverrides.decoration === undefined && overrides.decoration
+      ? resolveListingView({ preset, overrides }, fallback, selected?.settings).view
+      : view
   const detached = preset === 'custom'
   const overrideCount =
-    Object.keys(overrides).filter((key) => key !== 'information').length +
-    Object.keys(overrides.information ?? {}).length
+    Object.keys(overrides).filter(
+      (key) => key !== 'information' && key !== 'decoration' && key !== 'components',
+    ).length +
+    Object.keys(overrides.decoration ?? {}).length +
+    Object.keys(overrides.information ?? {}).length +
+    Object.keys(overrides.components ?? {}).length
 
   useEffect(() => {
     const controller = new AbortController()
@@ -333,7 +351,7 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
       nextOverrides.information = { ...nextOverrides.information }
       delete nextOverrides.information.image
     }
-    setValue({ preset: next, overrides: nextOverrides })
+    saveOverrides(nextOverrides, next)
   }
 
   const presetOptions = {
@@ -357,29 +375,13 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
     <section className={styles.section}>
       <div className={styles.workspace}>
         <fieldset className={styles.editor} disabled={readOnly}>
-          <legend>Wygląd</legend>
-          <div className={styles.templateRow}>
-            <ListingViewSelect
-              readOnly={readOnly}
-              label="Szablon widoku"
-              options={presetOptions}
-              value={preset}
-              onChange={selectPreset}
-            />
-            <ListingViewSelect
-              readOnly={readOnly}
-              label={view.layout === 'carousel' ? 'Widoczne elementy' : 'Kolumny'}
-              options={columnOptions}
-              value={overrides.columns}
-              inherited={detached ? undefined : base.columns}
-              onChange={(columns) =>
-                setValue({
-                  preset,
-                  overrides: { ...overrides, columns: columns ? Number(columns) : undefined },
-                })
-              }
-            />
-          </div>
+          <ListingViewSelect
+            readOnly={readOnly}
+            label="Szablon widoku"
+            options={presetOptions}
+            value={preset}
+            onChange={selectPreset}
+          />
           {libraryError ? (
             <p role="status">Biblioteka szablonów jest chwilowo niedostępna.</p>
           ) : null}
@@ -391,8 +393,10 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
             <ViewDetails
               readOnly={readOnly}
               base={detached ? undefined : base}
+              baseDecoration={detached ? undefined : baseDecoration}
+              currentView={editingView}
               overrides={overrides}
-              onChange={(settings) => setValue({ preset, overrides: settings })}
+              onChange={(settings) => saveOverrides(settings)}
             />
             <div className={styles.actions}>
               {!detached && overrideCount > 0 ? (
@@ -402,7 +406,7 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
                   margin={false}
                   size="medium"
                   type="button"
-                  onClick={() => setValue({ preset })}
+                  onClick={() => saveOverrides({})}
                 >
                   Przywróć ustawienia szablonu
                 </Button>
@@ -414,7 +418,18 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
                   margin={false}
                   size="medium"
                   type="button"
-                  onClick={() => setValue({ preset: 'custom', overrides: view })}
+                  onClick={() =>
+                    saveOverrides(
+                      {
+                        ...view,
+                        decoration: view.decoration ?? {
+                          ...getDefaultListingDecoration(view),
+                          ...legacyDecoration,
+                        },
+                      },
+                      'custom',
+                    )
+                  }
                 >
                   Odłącz od szablonu
                 </Button>
@@ -461,7 +476,8 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
             ) : (
               <ListingPreviewFrame
                 items={preview.items ?? []}
-                view={view}
+                view={preview.view ?? view}
+                media={preview.media}
                 presentation={preview.presentation}
               />
             )}

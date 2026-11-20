@@ -1,6 +1,8 @@
 import { getPayload } from 'payload'
 
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
+import type { ContentPresentationData } from '@/modules/content/content-presentation'
+import { loadListingDecorationMedia } from '@/modules/content/listing-decoration-media'
 import { getListingViewReference, resolveListingView } from '@/modules/content/listing-view'
 
 const loadPublishedSettings = cachePublicData(
@@ -25,11 +27,24 @@ const loadPublishedSettings = cachePublicData(
   { tags: [publicCacheTags.listingViews], revalidate: 300 },
 )
 
-export async function resolvePublicListingView(block: { appearance?: unknown; view?: unknown }) {
+export async function resolvePublicListingView(
+  block: ContentPresentationData & { appearance?: unknown; view?: unknown },
+) {
   const reference = getListingViewReference(block.appearance, block.view)
   return resolveListingView(
     block.appearance,
     block.view,
     reference ? await loadPublishedSettings(reference) : undefined,
+    block,
   )
+}
+
+export async function resolvePublicListingDecorationMedia(
+  view: ReturnType<typeof resolveListingView>['view'],
+) {
+  const decoration = view.decoration
+  if (!decoration || !(decoration.surfaceImage || decoration.fillImage || decoration.fallbackImage))
+    return undefined
+  const { default: config } = await import('@payload-config')
+  return loadListingDecorationMedia(await getPayload({ config }), decoration)
 }

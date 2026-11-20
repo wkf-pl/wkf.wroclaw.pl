@@ -44,3 +44,62 @@ describe('Listing date format', () => {
     expect(presentListingItem(event, view).facts[0]?.value).toBe('19 listopada 2026, od 18:30')
   })
 })
+
+describe('Listing item components', () => {
+  it('resolves the event cycle, full linked venue and icon-only action without showing its title', () => {
+    const { view } = resolveListingView({
+      overrides: {
+        components: {
+          title: false,
+          other: true,
+          kind: 'label',
+          date: 'short',
+          venue: 'full',
+          actions: 'icon',
+        },
+      },
+    })
+    const item = {
+      ...event,
+      document: {
+        ...event.document,
+        location: {
+          venueName: 'Club',
+          venueWebsite: 'https://example.invalid',
+          streetAddress: 'Testowa 1',
+          city: 'Wrocław',
+        },
+        cycle: { title: 'Series', slug: 'series' },
+      } as Event,
+    }
+    const presentation = presentListingItem(item, view)
+    expect(presentation).toMatchObject({
+      hideTitle: true,
+      highlightKindLabel: false,
+      actionStyle: 'icon',
+      metadataLink: { label: 'Series' },
+      metadataDate: { label: '19.11.2026' },
+      facts: [{ value: 'Club', address: 'Testowa 1, Wrocław', href: 'https://example.invalid' }],
+      secondaryAction: { href: '/events/test/calendar.ics' },
+    })
+  })
+
+  it('resolves the page parent and can hide every selectable detail', () => {
+    const item = {
+      kind: 'pages',
+      url: '/child',
+      document: { title: 'Child', parent: { title: 'Parent' } } as import('@/payload-types').Page,
+    } satisfies PublicContentListItem
+    const { view } = resolveListingView({
+      overrides: {
+        components: { other: true, kind: 'none', date: 'none', venue: 'none', actions: 'none' },
+      },
+    })
+    expect(presentListingItem(item, view)).toMatchObject({
+      contextLabel: 'Parent',
+      kindLabel: '',
+      facts: [],
+    })
+    expect(presentListingItem(event, view).secondaryAction).toBeUndefined()
+  })
+})

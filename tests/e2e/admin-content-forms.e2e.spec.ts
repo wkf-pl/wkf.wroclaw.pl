@@ -160,18 +160,10 @@ test('lays out Listing presentation fields and persists labeled relationship con
   await listingRow.getByRole('button', { name: 'Prezentacja', exact: true }).click()
   await expect(listingRow.locator('#field-layout__0__selectionMode')).toBeHidden()
 
-  const presentationFieldBoxes = await Promise.all(
-    ['frame', 'surface'].map(async (fieldName) => {
-      const box = await page.locator(`#field-layout__0__${fieldName}`).boundingBox()
-      if (!box) throw new Error(`Missing visible Listing field: ${fieldName}`)
-      return box
-    }),
-  )
-  const presentationFieldTops = presentationFieldBoxes.map(({ y }) => y)
-  expect(Math.max(...presentationFieldTops) - Math.min(...presentationFieldTops)).toBeLessThan(2)
-  expect(presentationFieldBoxes.map(({ x }) => x)).toEqual(
-    [...presentationFieldBoxes.map(({ x }) => x)].sort((left, right) => left - right),
-  )
+  await expect(listingRow.getByLabel('Ramka', { exact: true })).toBeHidden()
+  await listingRow.locator('summary').filter({ hasText: 'Dostosuj wygląd' }).click()
+  await expect(listingRow.getByLabel('Ramka', { exact: true })).toBeVisible()
+  await expect(listingRow.getByLabel('Powierzchnia', { exact: true })).toBeVisible()
 
   const templateSelect = listingRow.getByLabel('Szablon widoku', { exact: true })
   const columnsSelect = listingRow.getByLabel('Kolumny', { exact: true })
@@ -181,13 +173,28 @@ test('lays out Listing presentation fields and persists labeled relationship con
   ).toContainText('Karty')
   await expect(
     columnsSelect.locator('xpath=ancestor::div[contains(@class, "field-type")][1]'),
-  ).toContainText('Z szablonu · 1')
+  ).toContainText('1')
   await expect(listingRow.locator('select')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Podgląd wyników' })).toBeVisible()
   const listingPreview = listingRow.frameLocator('iframe[title="Podgląd wyników Listingu"]')
   await expect(listingPreview.locator('.listingBlock')).toBeVisible()
   await expect(listingPreview.locator('html')).toHaveCSS('--gold', '#f3a313')
   await expect(listingPreview.locator('body')).toHaveCSS('font-family', /Roboto Condensed/)
+
+  const frameField = listingRow
+    .getByLabel('Ramka', { exact: true })
+    .locator('xpath=ancestor::div[contains(@class, "field-type")][1]')
+  await frameField.locator('.rs__control').click()
+  await page.getByRole('option', { name: 'Obrys', exact: true }).click()
+  const listingPresentation = listingPreview.locator('.listingPresentation')
+  await expect(listingPresentation).toHaveAttribute('data-frame', 'outline')
+  await expect(listingPresentation.locator(':scope > .contentPresentationContent')).toHaveCSS(
+    'padding',
+    '0px',
+  )
+  await frameField.locator('.rs__control').click()
+  await page.getByRole('option', { name: 'Brak', exact: true }).click()
+  await expect(listingPresentation).toHaveAttribute('data-frame', 'none')
 
   await listingRow.getByRole('button', { name: 'Treści', exact: true }).click()
 

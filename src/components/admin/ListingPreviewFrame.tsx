@@ -4,25 +4,28 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { ResolvedContentPresentation } from '@/modules/content/content-presentation'
 import type { ContentListingPresentation } from '@/modules/content/content-listing-presentation'
+import type { ListingDecorationMedia } from '@/modules/content/listing-decoration'
 import type { ListingView } from '@/modules/content/listing-view'
 
 export function ListingPreviewFrame({
   items,
   view,
   presentation,
+  media,
 }: {
   items: ContentListingPresentation[]
   view: ListingView
   presentation?: ResolvedContentPresentation
+  media?: ListingDecorationMedia
 }) {
   const frame = useRef<HTMLIFrameElement>(null)
   const [height, setHeight] = useState(240)
   const sendPreview = useCallback(() => {
     frame.current?.contentWindow?.postMessage(
-      { type: 'wkf:listing-preview', items, view, presentation },
+      { type: 'wkf:listing-preview', items, view, presentation, media },
       window.location.origin,
     )
-  }, [items, view, presentation])
+  }, [items, view, presentation, media])
 
   useEffect(() => {
     const receiveMessage = (event: MessageEvent) => {

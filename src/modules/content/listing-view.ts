@@ -1,3 +1,12 @@
+import type { ContentPresentationData } from './content-presentation'
+import {
+  getDefaultListingDecoration,
+  getLegacyListingDecoration,
+  parseListingDecoration,
+  type ListingDecoration,
+  type ListingDecorationOverrides,
+} from './listing-decoration'
+
 export const legacyListingViews = ['cards', 'grid', 'tiles', 'compact', 'carousel'] as const
 export type LegacyListingView = (typeof legacyListingViews)[number]
 
@@ -21,15 +30,41 @@ export const listingInformation = {
   calendar: 'Dodaj do kalendarza',
 } as const
 
+export const listingComponentOptions = {
+  kind: { none: 'Brak', label: 'Etykieta', highlighted: 'Etykieta wyróżniona' },
+  date: { none: 'Brak', short: 'Krótka', full: 'Długa' },
+  venue: { none: 'Brak', name: 'Nazwa', full: 'Pełne' },
+  actions: { none: 'Brak', icon: 'Ikony', text: 'Tekst', full: 'Pełne' },
+} as const
+
+type ListingComponents = {
+  [Key in keyof typeof listingComponentOptions]: keyof (typeof listingComponentOptions)[Key]
+} & { title: boolean; other: boolean }
+
+export function getListingComponents(view: ListingView): ListingComponents {
+  return {
+    title: true,
+    other: view.information.context || view.information.cycle,
+    kind: view.information.kind ? 'label' : 'none',
+    date: view.information.date ? view.dateFormat : 'none',
+    venue: view.information.venue ? 'name' : 'none',
+    actions: view.information.calendar ? 'full' : 'none',
+    ...view.components,
+  }
+}
+
 export type ListingView = {
   layout: 'static' | 'carousel'
   columns: number
   form: keyof typeof listingForms
+  decoration?: ListingDecoration
+  components?: Partial<ListingComponents>
   dateFormat: 'short' | 'full'
   information: Record<keyof typeof listingInformation, boolean>
 }
 
-export type ListingViewOverrides = Partial<Omit<ListingView, 'information'>> & {
+export type ListingViewOverrides = Partial<Omit<ListingView, 'information' | 'decoration'>> & {
+  decoration?: ListingDecorationOverrides
   information?: Partial<ListingView['information']>
 }
 
@@ -178,6 +213,20 @@ export function parseListingOverrides(value: unknown): ListingViewOverrides {
     overrides.form = input.form as ListingView['form']
   if (input.dateFormat === 'short' || input.dateFormat === 'full')
     overrides.dateFormat = input.dateFormat
+  const decoration = parseListingDecoration(input.decoration)
+  if (decoration) overrides.decoration = decoration
+  const components = record(input.components)
+  const parsedComponents: Partial<ListingComponents> = {}
+  for (const [key, options] of Object.entries(listingComponentOptions)) {
+    const choice = components[key]
+    if (typeof choice === 'string' && Object.hasOwn(options, choice))
+      Object.assign(parsedComponents, { [key]: choice })
+  }
+  for (const key of ['title', 'other'] as const) {
+    if (typeof components[key] === 'boolean') parsedComponents[key] = components[key]
+  }
+  if (Object.keys(parsedComponents).length) overrides.components = parsedComponents
+
   const fields = record(input.information)
   for (const key of informationKeys) {
     const enabled = fields[key]
@@ -202,6 +251,7 @@ export function resolveListingView(
   appearance: unknown,
   fallback: unknown = 'cards',
   shared?: unknown,
+  legacyPresentation?: ContentPresentationData,
 ) {
   const { preset, overrides = {} } = parseListingAppearance(appearance)
   const fallbackKey =
@@ -209,13 +259,27 @@ export function resolveListingView(
   const key = preset && Object.hasOwn(listingPresets, preset) ? preset : fallbackKey
   const base = listingPresets[key].view
   const sharedSettings = parseListingOverrides(shared)
+  const { decoration: sharedDecoration, ...sharedView } = sharedSettings
+  const { decoration: localDecoration, ...localView } = overrides
   const view: ListingView = {
     ...base,
-    ...sharedSettings,
-    ...overrides,
+    ...sharedView,
+    ...localView,
     information: { ...base.information, ...sharedSettings.information, ...overrides.information },
   }
+  if (sharedView.components || localView.components) {
+    view.components = { ...sharedView.components, ...localView.components }
+  }
   if (view.form === 'row') view.information.image = false
+  if (sharedDecoration || localDecoration) {
+    view.decoration = {
+      ...getDefaultListingDecoration(view),
+      ...sharedDecoration,
+      ...(localDecoration === undefined && legacyPresentation
+        ? getLegacyListingDecoration(view, legacyPresentation)
+        : localDecoration),
+    }
+  }
   const localKeys = Object.keys(overrides)
   const legacy = legacyListingViews.find((candidate) => candidate === key)
   return {

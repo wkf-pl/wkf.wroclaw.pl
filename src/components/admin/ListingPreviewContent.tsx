@@ -6,6 +6,7 @@ import { ContentPresentation } from '@/app/(frontend)/_components/ContentPresent
 import type { ResolvedContentPresentation } from '@/modules/content/content-presentation'
 import { ConfiguredContentList } from '@/app/(frontend)/_components/ConfiguredContentList'
 import type { ContentListingPresentation } from '@/modules/content/content-listing-presentation'
+import type { ListingDecorationMedia } from '@/modules/content/listing-decoration'
 import { resolveListingView } from '@/modules/content/listing-view'
 
 export function ListingPreviewContent() {
@@ -13,6 +14,7 @@ export function ListingPreviewContent() {
     items: ContentListingPresentation[]
     view: ReturnType<typeof resolveListingView>['view']
     presentation?: ResolvedContentPresentation
+    media?: ListingDecorationMedia
   }>()
   const content = useRef<HTMLDivElement>(null)
 
@@ -29,6 +31,7 @@ export function ListingPreviewContent() {
         items: event.data.items,
         view: resolveListingView({ preset: 'custom', overrides: event.data.view }).view,
         presentation: event.data.presentation,
+        media: event.data.media,
       })
     }
     window.addEventListener('message', receivePreview)
@@ -50,25 +53,22 @@ export function ListingPreviewContent() {
     return () => observer.disconnect()
   }, [])
 
+  const listing = preview ? (
+    <div className="listingBlock">
+      <ConfiguredContentList items={preview.items} view={preview.view} media={preview.media} />
+    </div>
+  ) : (
+    <p role="status">Ładowanie podglądu…</p>
+  )
+
   return (
     <div ref={content} style={{ display: 'flow-root' }}>
-      {preview ? (
-        <ContentPresentation
-          placement="block"
-          presentation={
-            preview.presentation ?? {
-              frame: 'none',
-              surface: 'transparent',
-              objectPosition: 'center center',
-            }
-          }
-        >
-          <div className="listingBlock">
-            <ConfiguredContentList items={preview.items} view={preview.view} />
-          </div>
+      {preview?.presentation ? (
+        <ContentPresentation placement="block" presentation={preview.presentation}>
+          {listing}
         </ContentPresentation>
       ) : (
-        <p role="status">Ładowanie podglądu…</p>
+        listing
       )}
     </div>
   )

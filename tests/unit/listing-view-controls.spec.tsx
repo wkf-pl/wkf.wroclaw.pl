@@ -17,7 +17,7 @@ vi.mock('@payloadcms/ui', () => ({
   useForm: vi.fn(),
 }))
 
-import { ListingViewSelect } from '@/components/admin/ListingViewField'
+import { ListingViewSelect } from '@/components/admin/ListingViewSelect'
 
 describe('Listing view controls', () => {
   let container: HTMLDivElement
@@ -58,7 +58,7 @@ describe('Listing view controls', () => {
     expect(container.querySelector('select')).toBeNull()
   })
 
-  it('preserves inheritance and reports selecting the template value', async () => {
+  it('shows the inherited value as an ordinary option', async () => {
     const onChange = vi.fn()
     await act(async () =>
       root.render(
@@ -71,10 +71,14 @@ describe('Listing view controls', () => {
       ),
     )
     const properties = selectMock.mock.lastCall![0]
-    expect(properties.value).toEqual({ label: 'Z szablonu · 2', value: '' })
+    expect(properties.value).toEqual({ label: '2', value: '2' })
+    expect(properties.options).toEqual([
+      { label: '1', value: '1' },
+      { label: '2', value: '2' },
+    ])
     properties.onChange({ label: '1', value: '1' })
-    properties.onChange({ label: 'Z szablonu · 2', value: '' })
-    expect(onChange.mock.calls).toEqual([['1'], ['']])
+    properties.onChange({ label: '2', value: '2' })
+    expect(onChange.mock.calls).toEqual([['1'], ['2']])
   })
 
   it('disables the standard select and ignores changes in read-only mode', async () => {

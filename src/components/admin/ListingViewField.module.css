@@ -175,3 +175,38 @@
   text-align: start;
   font-weight: 600;
 }
+
+.settingsGroup {
+  min-width: 0;
+  margin: 1.25rem 0;
+  padding: 0;
+  border: 0;
+}
+
+.mediaControls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.componentChoices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.disabledSwitch {
+  opacity: 0.55;
+}
+
+.actions {
+  justify-content: flex-end;
+}
+
+@container (max-width: 650px) {
+  .componentChoices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
