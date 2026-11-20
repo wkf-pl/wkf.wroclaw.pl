@@ -31,7 +31,7 @@ Each release below corresponds to a completed production deployment, listed from
 ## 1.3.0 - User groups and content change history - 2026-11-15
 
 - **user groups** - administrators can create user groups, assign content to a group as its author, and let group members work with that content within their role permissions.
-- **content change history** - authorized administration-panel users can inspect a read-only history of content changes, including who performed each action and when. 
+- **content change history** - authorized administration-panel users can inspect a read-only history of content changes, including who performed each action and when.
 - **blog index template** - the blog index now uses its published page template, including its search and sharing metadata. Editors no longer maintain special system pages for the blog and events indexes.
 - **profile photos and administration cleanup** - member profile photos can be managed directly in the profile editor, including unpublished photo changes. Removed the separate profile-photo and club-section administration areas.
 - **error and maintenance pages** - visitors receive branded missing-page and error screens with recovery actions. Added maintenance fallback pages for service interruptions.

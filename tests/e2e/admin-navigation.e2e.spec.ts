@@ -43,7 +43,13 @@ test('groups administrator navigation under Administracja', async ({ page }) => 
 
   await expect(
     navigation.getByRole('button', { name: 'Administracja' }).locator('..').locator('a'),
-  ).toHaveText(['Szablony stron', 'Użytkownicy', 'Grupy użytkowników', 'Role'])
+  ).toHaveText([
+    'Szablony stron',
+    'Szablony widoków listingu',
+    'Użytkownicy',
+    'Grupy użytkowników',
+    'Role',
+  ])
   await expect(navigation.getByRole('button', { name: 'Klubowe' }).locator('..')).toContainText(
     'Wizytówki klubowiczów',
   )
@@ -70,6 +76,22 @@ test('hides inaccessible collections from navigation and dashboard', async ({ pa
     0,
   )
   await expect(page.getByRole('heading', { level: 3, name: 'Szablony stron' })).toHaveCount(0)
+  await expect(
+    page.locator('aside nav').getByRole('link', { name: 'Szablony widoków listingu' }),
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('heading', { level: 3, name: 'Szablony widoków listingu' }),
+  ).toHaveCount(0)
+
+  // Editors still need to read published templates from the Listing editor.
+  const result = await page.evaluate(async () => {
+    const response = await fetch('/api/listing-views?limit=1')
+    const { docs } = (await response.json()) as { docs?: { _status?: string }[] }
+    return { status: response.status, docs }
+  })
+  expect(result.status).toBe(200)
+  expect(result.docs).toHaveLength(1)
+  expect(result.docs?.[0]._status).toBe('published')
 })
 
 test('shows the fixed page template collection to administrators', async ({ page }) => {

@@ -8,6 +8,8 @@ import {
   listingViewPreviewEndpoint,
   listingViewUsageEndpoint,
 } from '@/modules/content/listing-view-endpoints'
+import { clientUserHasRole } from '@/modules/membership/permission-resolution'
+import { administratorRoleKey } from '@/modules/membership/role-configuration'
 import { isAdministrator } from '@/modules/membership/role-access'
 
 export const ListingViews: CollectionConfig = {
@@ -15,6 +17,7 @@ export const ListingViews: CollectionConfig = {
   labels: { singular: 'Szablon widoku listingu', plural: 'Szablony widoków listingu' },
   admin: {
     group: 'Administracja',
+    hidden: ({ user }) => !clientUserHasRole(user, administratorRoleKey),
     useAsTitle: 'name',
     defaultColumns: ['name', '_status', 'active'],
   },
