@@ -1,5 +1,10 @@
 import type { Field, FieldHook, NumberFieldValidation } from 'payload'
 
+import {
+  getSharedListingViewId,
+  parseListingAppearance,
+  resolveListingView,
+} from '@/modules/content/listing-view'
 import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 
 const filtersCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
@@ -93,7 +98,7 @@ export function createListingPaginationRow({
         admin: {
           ...createBooleanSwitchAdmin({ width: fieldWidth }),
           ...(contentListing
-            ? { condition: (_data, siblingData) => siblingData.view !== 'carousel' }
+            ? { condition: (_data, siblingData) => !isLegacyListingCarousel(siblingData) }
             : {}),
         },
         defaultValue: true,
@@ -105,7 +110,17 @@ export function createListingPaginationRow({
 }
 
 type ContentListingWindowSiblingData = {
+  appearance?: unknown
   view?: unknown
+}
+
+function isLegacyListingCarousel(data: ContentListingWindowSiblingData): boolean {
+  const { preset } = parseListingAppearance(data.appearance)
+  return (
+    !getSharedListingViewId(data.appearance) &&
+    (!preset || preset === 'carousel') &&
+    resolveListingView(data.appearance, data.view).legacy === 'carousel'
+  )
 }
 
 const normalizeContentListingPageSize: FieldHook<
@@ -113,7 +128,7 @@ const normalizeContentListingPageSize: FieldHook<
   number | null | undefined,
   ContentListingWindowSiblingData
 > = ({ siblingData, value }) => {
-  const defaultValue = siblingData.view === 'carousel' ? 5 : 12
+  const defaultValue = isLegacyListingCarousel(siblingData) ? 5 : 12
   return typeof value === 'number' && Number.isFinite(value) ? value : defaultValue
 }
 
@@ -121,10 +136,10 @@ const disableCarouselPagination: FieldHook<
   { id: number | string },
   boolean | null | undefined,
   ContentListingWindowSiblingData
-> = ({ siblingData, value }) => (siblingData.view === 'carousel' ? false : Boolean(value))
+> = ({ siblingData, value }) => (isLegacyListingCarousel(siblingData) ? false : Boolean(value))
 
 export const validateContentListingPageSize: NumberFieldValidation = (value, { siblingData }) => {
-  const maximum = (siblingData as ContentListingWindowSiblingData).view === 'carousel' ? 20 : 100
+  const maximum = isLegacyListingCarousel(siblingData as ContentListingWindowSiblingData) ? 20 : 100
   return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= maximum
     ? true
     : `Podaj liczbę od 1 do ${maximum}.`

@@ -22,7 +22,7 @@ export default async function EventsPage({
     await findRenderablePageTemplateForRequest('events-index', parameters)
 
   if (template) {
-    const archiveURL = resolveEventsIndexArchiveURL(template, parameters)
+    const archiveURL = await resolveEventsIndexArchiveURL(template, parameters)
     if (archiveURL) redirect(archiveURL)
 
     return (

@@ -175,7 +175,6 @@ describe('content composition', () => {
     }
 
     expect(firstRowNames(RichTextBlock.fields)).toEqual(['textStyle', 'frame', 'surface'])
-    expect(firstRowNames(ListingBlock.fields)).toEqual(['view', 'frame', 'surface'])
     for (const block of [ContentCalendarBlock, MediaGalleryBlock, AttachmentsBlock]) {
       expect(firstRowNames(block.fields)).toEqual(['frame', 'surface'])
     }

@@ -1,61 +1,40 @@
 # Changelog
 
-Each release below corresponds to one commit on `master`, listed from the public release forward.
+Each release below corresponds to a completed production deployment, listed from the public release forward. Changes are described relative to the previous production release. Dates use Europe/Warsaw time, and hashes identify the deployed application source. Failed deployment attempts and staging-only changes are excluded.
 
 ## 1.0.0 - Public release - 2026-10-24
 
-Made the WKF website publicly available at its canonical address and ensured that visitors are consistently directed there. (`e01e898`)
+**public launch** - made the WKF website publicly available at its canonical address and ensured that visitors are consistently directed there. (`e01e898`)
 
-## 1.0.1 - Staging PostgreSQL start alert - 2026-10-24
+## 1.1.0 - URL aliases and editor improvements - 2026-10-25
 
-Added an automatic alert when the normally dormant staging database starts, helping maintainers detect unexpected activity and control infrastructure costs. (`f5de458`)
+- **URL aliases** - editors can create short or alternative addresses for existing content, with visitors redirected to the selected destination and validation preventing conflicting routes.
+- **layout block navigation** - editors can name layout blocks and retain the selected tab while working with nested content, making complex pages easier to navigate in the administration panel.
+- **icons and spacing** - expanded the icon choices available to editors and refined spacing in composed content, listings, and tabbed sections.
+- **production access control** - added an operator-controlled Microsoft Entra sign-in switch for temporarily restricting production access.
+- **off-site backups** - reduced off-site backup storage growth by reusing unchanged media, strengthened backup integrity checks, and required backup tooling qualified on staging to reduce recovery risks.
 
-## 1.1.0 - Block editor and Entra sign-in tooling - 2026-10-24
+(`3a5082a`)
 
-- Made complex page layouts easier to edit with clearer block names and more intuitive controls for nested content.
-- Added an operator-controlled Microsoft Entra sign-in switch that can temporarily restrict the production website to authenticated users.
+## 1.1.1 - Content layout spacing fixes - 2026-10-26
 
-(`bc79707`)
+**content layout spacing** - corrected spacing around decorated sections, home page content, column headings, and page blocks, improving the consistency of content layouts across screen sizes. (`95c6a8e`)
 
-## 1.1.1 - Responsive layout refinements - 2026-10-24
+## 1.2.0 - Page templates, draft previews, and flexible listings - 2026-11-12
 
-Improved visual consistency across screen sizes by correcting spacing in composed content, listings, and tabbed sections. (`fb3b612`)
+- **page templates** - editors can configure and preview shared layouts for the blog, events, event series, members, partners, categories, and tags, including information drawn from the item being displayed.
+- **draft previews and trash** - editors can preview unpublished page and site-wide content changes before publishing them. Authorized users can move content to the trash, restore it, or permanently delete it according to their permissions.
+- **flexible listings** - editors can combine listing conditions, show content related to the current or a selected item, and include partners and member profiles alongside existing content types. A shared listing editor provides carousel and other presentation options.
 
-## 1.1.2 - Local database restore fixes - 2026-10-24
+(`5f8d3a7`)
 
-Made local copies of production and staging data more dependable, so maintainers can reproduce and diagnose application issues without manual restore workarounds. (`7a5f33a`)
+## 1.3.0 - User groups and content change history - 2026-11-15
 
-## 1.2.0 - Off-site backup storage format v3 - 2026-10-25
+- **user groups** - administrators can create user groups, assign content to a group as its author, and let group members work with that content within their role permissions.
+- **content change history** - authorized administration-panel users can inspect a read-only history of content changes, including who performed each action and when.
+- **blog index template** - the blog index now uses its published page template, including its search and sharing metadata. Editors no longer maintain special system pages for the blog and events indexes.
+- **profile photos and administration cleanup** - member profile photos can be managed directly in the profile editor, including unpublished photo changes. Removed the separate profile-photo and club-section administration areas.
+- **error and maintenance pages** - visitors receive branded missing-page and error screens with recovery actions. Added maintenance fallback pages for service interruptions.
+- **database monitoring** - added production database availability monitoring and diagnostic activity records to help maintainers investigate outages.
 
-Reduced off-site storage growth by reusing unchanged media and strengthened backup integrity checks, making disaster recovery more reliable without changing everyday visitor or editor workflows. (`f635c52`)
-
-## 1.2.1 - Production backup deployment consistency - 2026-10-25
-
-Reduced the risk of unusable production backups by running the backup process with a release already proven in staging. (`1ae6a0f`)
-
-## 1.2.2 - Production backup schedule - 2026-10-25
-
-Moved the daily production backup to 00:49, keeping automated data protection in a predictable nightly window. (`88641b2`)
-
-## 1.2.3 - Expanded raster icon library - 2026-10-25
-
-Expanded the icon choices available to editors, making it easier to give navigation and content elements clear, distinctive visual cues. (`8747edb`)
-
-## 1.3.0 - URL aliases - 2026-10-25
-
-Editors can create and manage short or alternative addresses for existing content. Visitors are redirected to the correct destination, while validation helps prevent conflicting or broken routes. (`3a5082a`)
-
-## 1.3.1 - Content layout spacing fixes - 2026-10-26
-
-Improved the rhythm and readability of grouped sections, home page layouts, column headings, and listing grids across different screen sizes. (`95c6a8e`)
-
-## 1.4.0 - Draft previews and content trash - 2026-10-26
-
-- Editors can preview unpublished changes to pages and site-wide content before making them public.
-- Authorized users can move content to the trash, restore items deleted by mistake, or permanently remove them, with actions limited by their role.
-
-(`62ab132`)
-
-## 1.5.0 - Condition-based listing filters - 2026-10-31
-
-Editors can build more precise listings and carousels by combining conditions in the administration panel, giving visitors more relevant content without requiring a separate code change for every filter. (`2ba34d5`)
+(`a34bf04`)

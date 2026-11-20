@@ -1,0 +1,489 @@
+'use client'
+
+import { Button, useAllFormFields, useConfig, useField, useForm } from '@payloadcms/ui'
+import type { JSONFieldClientProps } from 'payload'
+import { formatAdminURL } from 'payload/shared'
+import { useEffect, useId, useState } from 'react'
+
+import { ListingDecorationFields } from './ListingDecorationFields'
+import { ListingViewSelect } from './ListingViewSelect'
+import { ListingPreviewFrame } from './ListingPreviewFrame'
+import {
+  getDefaultListingDecoration,
+  getLegacyListingDecoration,
+  type ListingDecorationMedia,
+} from '@/modules/content/listing-decoration'
+import type { ResolvedContentPresentation } from '@/modules/content/content-presentation'
+import type { ContentListingPresentation } from '@/modules/content/content-listing-presentation'
+import {
+  getListingComponents,
+  listingComponentOptions,
+  listingForms,
+  listingInformation,
+  listingPresets,
+  parseListingAppearance,
+  resolveListingView,
+  type ListingView,
+  type ListingViewOverrides,
+} from '@/modules/content/listing-view'
+import type { ListingView as SharedView } from '@/payload-types'
+
+import styles from './ListingViewField.module.css'
+
+const layoutLabels = { static: 'Statyczne', carousel: 'Karuzela' }
+const informationKeys = ['title', 'excerpt', 'taxonomy', 'image', 'other'] as const
+const componentLabels = {
+  kind: 'Typ treści',
+  date: 'Data lub termin',
+  venue: 'Miejsce',
+  actions: 'Akcje',
+} as const
+const previewFields = [
+  'frame',
+  'surface',
+  'surfaceImage',
+  'surfaceHorizontalPosition',
+  'surfaceVerticalPosition',
+  'selectionMode',
+  'contextRelation',
+  'conditions',
+  'includeInactiveLocations',
+  'items',
+  'pageSize',
+  'sort',
+  'sources',
+]
+
+type PreviewResponse = {
+  items?: ContentListingPresentation[]
+  missingContext?: boolean
+  presentation?: ResolvedContentPresentation
+  view?: ListingView
+  media?: ListingDecorationMedia
+}
+
+const columnOptions = { 1: '1', 2: '2', 3: '3', 4: '4' }
+
+function ViewDetails({
+  base,
+  overrides,
+  onChange,
+  currentView,
+  baseDecoration,
+  readOnly,
+}: {
+  readOnly?: boolean
+  base?: ListingView
+  currentView: ListingView
+  baseDecoration?: ListingView['decoration']
+  overrides: ListingViewOverrides
+  onChange: (value: ListingViewOverrides) => void
+}) {
+  const components = getListingComponents(currentView)
+  const inheritedComponents = base && getListingComponents(base)
+  const decoration = currentView.decoration ?? getDefaultListingDecoration(currentView)
+  return (
+    <div className={styles.controls}>
+      <ListingDecorationFields
+        base={baseDecoration}
+        current={decoration}
+        overrides={overrides.decoration}
+        imageEnabled={currentView.form !== 'row' && currentView.information.image}
+        readOnly={readOnly}
+        onChange={(settings) => onChange({ ...overrides, decoration: settings })}
+        columnsControl={
+          <ListingViewSelect
+            readOnly={readOnly}
+            label={currentView.layout === 'carousel' ? 'Widoczne elementy' : 'Kolumny'}
+            options={columnOptions}
+            value={currentView.columns}
+            onChange={(columns) =>
+              onChange({
+                ...overrides,
+                columns: Number(columns) === base?.columns ? undefined : Number(columns),
+              })
+            }
+          />
+        }
+        layoutControl={
+          <ListingViewSelect
+            readOnly={readOnly}
+            label="Rozmieszczenie"
+            options={layoutLabels}
+            value={currentView.layout}
+            inherited={base?.layout}
+            onChange={(value) =>
+              onChange({
+                ...overrides,
+                layout: value === base?.layout ? undefined : (value as ListingView['layout']),
+              })
+            }
+          />
+        }
+        formatControl={
+          <ListingViewSelect
+            readOnly={readOnly}
+            label="Format elementu"
+            options={listingForms}
+            value={currentView.form}
+            inherited={base?.form}
+            onChange={(value) =>
+              onChange({
+                ...overrides,
+                form: value === base?.form ? undefined : (value as ListingView['form']),
+              })
+            }
+          />
+        }
+      />
+      <fieldset className={styles.settingsGroup}>
+        <legend>Składowe na elemencie</legend>
+        <div className={styles.information}>
+          {informationKeys.map((key) => {
+            const component = key === 'title' || key === 'other'
+            const label =
+              key === 'title' ? 'Tytuł' : key === 'other' ? 'Pozostałe' : listingInformation[key]
+            const inherited = component ? inheritedComponents?.[key] : base?.information[key]
+            const disabled = key === 'image' && currentView.form === 'row'
+            const enabled =
+              !disabled && (component ? components[key] : currentView.information[key])
+            return (
+              <div
+                key={key}
+                className={`wkf-boolean-switch ${enabled ? 'wkf-boolean-switch--checked' : ''} ${styles.informationSwitch}${disabled ? ' ' + styles.disabledSwitch : ''}`}
+              >
+                <label className={styles.switchLabel}>
+                  <span>{label}</span>
+                  <span className="wkf-boolean-switch__control">
+                    <input
+                      aria-label={label}
+                      type="checkbox"
+                      role="switch"
+                      disabled={readOnly || disabled}
+                      checked={enabled}
+                      onChange={(event) => {
+                        const checked = event.target.checked
+                        if (key === 'title' || key === 'other') {
+                          onChange({
+                            ...overrides,
+                            components: { ...overrides.components, [key]: checked },
+                          })
+                          return
+                        }
+                        const information = { ...overrides.information }
+                        if (inherited !== undefined && event.target.checked === inherited)
+                          delete information[key]
+                        else information[key] = event.target.checked
+                        const nextOverrides: ListingViewOverrides = { ...overrides, information }
+                        if (Object.keys(information).length === 0) delete nextOverrides.information
+                        onChange(nextOverrides)
+                      }}
+                    />
+                    <span aria-hidden="true" className="wkf-boolean-switch__track">
+                      <span className="wkf-boolean-switch__thumb" />
+                    </span>
+                    <span aria-hidden="true" className="wkf-boolean-switch__state">
+                      {enabled ? 'Tak' : 'Nie'}
+                    </span>
+                  </span>
+                </label>
+              </div>
+            )
+          })}
+        </div>
+        <div className={styles.componentChoices}>
+          {(Object.keys(listingComponentOptions) as (keyof typeof listingComponentOptions)[]).map(
+            (key) => (
+              <ListingViewSelect
+                key={key}
+                readOnly={readOnly}
+                label={componentLabels[key]}
+                options={listingComponentOptions[key]}
+                value={components[key]}
+                onChange={(value) =>
+                  onChange({ ...overrides, components: { ...overrides.components, [key]: value } })
+                }
+              />
+            ),
+          )}
+        </div>
+      </fieldset>
+    </div>
+  )
+}
+
+export function ListingViewTemplateField({ path, readOnly }: JSONFieldClientProps) {
+  const { value, setValue } = useField<unknown>({ path })
+  const { view } = resolveListingView({ overrides: value }, 'upcoming')
+  return (
+    <div className={styles.section}>
+      <fieldset className={styles.editor} disabled={readOnly}>
+        <legend>Wygląd</legend>
+        <ViewDetails readOnly={readOnly} overrides={view} currentView={view} onChange={setValue} />
+      </fieldset>
+    </div>
+  )
+}
+
+export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
+  const { value, setValue, showError, errorMessage } = useField<unknown>({ path })
+  const [fields] = useAllFormFields()
+  const { getDataByPath } = useForm()
+  const {
+    config: {
+      routes: { api },
+      serverURL,
+    },
+  } = useConfig()
+  const parentPath = path.slice(0, path.lastIndexOf('.') + 1)
+  const oldView = fields[parentPath + 'view']?.value
+  const fallback =
+    typeof oldView === 'string' && Object.hasOwn(listingPresets, oldView) ? oldView : 'cards'
+  const { preset: storedPreset = fallback, overrides: storedOverrides = {} } =
+    parseListingAppearance(value)
+  const libraryURL = formatAdminURL({ apiRoute: api, path: '/listing-views', serverURL })
+  const [library, setLibrary] = useState<SharedView[]>([])
+  const [libraryError, setLibraryError] = useState(false)
+  const [narrow, setNarrow] = useState(false)
+  const previewId = useId()
+  const selection = Object.fromEntries(
+    previewFields.map((name) => [
+      name,
+      getDataByPath(parentPath + name) ?? fields[parentPath + name]?.value,
+    ]),
+  )
+  const previewBody = JSON.stringify({
+    block: { ...selection, appearance: value, view: fallback },
+    previewTarget: fields.previewTarget?.value,
+  })
+  const [preview, setPreview] = useState<PreviewResponse & { body: string; error?: boolean }>()
+  const selected = library.find(
+    ({ id, presetKey }) => storedPreset === `shared:${id}` || storedPreset === presetKey,
+  )
+  const preset = selected ? `shared:${selected.id}` : storedPreset
+  const { view } = resolveListingView(
+    { preset, overrides: storedOverrides },
+    fallback,
+    selected?.settings,
+    selection,
+  )
+  const legacyDecoration = getLegacyListingDecoration(view, selection)
+  const overrides =
+    storedOverrides.decoration === undefined && Object.keys(legacyDecoration).length
+      ? { ...storedOverrides, decoration: legacyDecoration }
+      : storedOverrides
+  function saveOverrides(settings: ListingViewOverrides, nextPreset = preset) {
+    setValue({ preset: nextPreset, overrides: { decoration: {}, ...settings } })
+  }
+  const base = resolveListingView({ preset }, fallback, selected?.settings).view
+  const baseDecoration = resolveListingView(
+    { preset, overrides: { ...overrides, decoration: {} } },
+    fallback,
+    selected?.settings,
+  ).view.decoration
+  const editingView =
+    storedOverrides.decoration === undefined && overrides.decoration
+      ? resolveListingView({ preset, overrides }, fallback, selected?.settings).view
+      : view
+  const detached = preset === 'custom'
+  const overrideCount =
+    Object.keys(overrides).filter(
+      (key) => key !== 'information' && key !== 'decoration' && key !== 'components',
+    ).length +
+    Object.keys(overrides.decoration ?? {}).length +
+    Object.keys(overrides.information ?? {}).length +
+    Object.keys(overrides.components ?? {}).length
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(`${libraryURL}?depth=0&pagination=false&where[_status][equals]=published`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Could not load listing views')
+        const result = (await response.json()) as { docs: SharedView[] }
+        setLibrary(result.docs)
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setLibraryError(true)
+      })
+    return () => controller.abort()
+  }, [libraryURL])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const timeout = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`${libraryURL}/preview`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: previewBody,
+          signal: controller.signal,
+        })
+        if (!response.ok) throw new Error('Could not load listing preview')
+        const data = (await response.json()) as PreviewResponse
+        if (!controller.signal.aborted) setPreview({ ...data, body: previewBody })
+      } catch {
+        if (!controller.signal.aborted) setPreview({ body: previewBody, error: true })
+      }
+    }, 300)
+    return () => {
+      window.clearTimeout(timeout)
+      controller.abort()
+    }
+  }, [libraryURL, previewBody])
+
+  function selectPreset(next: string) {
+    const template = library.find(({ id }) => next === `shared:${id}`)
+    const nextView = resolveListingView(
+      { preset: next, overrides },
+      fallback,
+      template?.settings,
+    ).view
+    const nextOverrides = { ...overrides }
+    if (nextView.form === 'row' && nextOverrides.information?.image !== undefined) {
+      if (
+        !window.confirm(
+          'Widok wiersza nie obsługuje obrazu. Zmienić szablon i usunąć lokalne ustawienie obrazu?',
+        )
+      )
+        return
+      nextOverrides.information = { ...nextOverrides.information }
+      delete nextOverrides.information.image
+    }
+    saveOverrides(nextOverrides, next)
+  }
+
+  const presetOptions = {
+    ...Object.fromEntries(
+      library
+        .filter((entry) => entry.active !== false || entry.id === selected?.id)
+        .map((entry) => [
+          `shared:${entry.id}`,
+          entry.active === false ? `${entry.name} (nieaktywny)` : entry.name,
+        ]),
+    ),
+    ...(detached ? { custom: 'Ustawienia własne' } : {}),
+    ...(!selected && !detached
+      ? {
+          [preset]: libraryError ? 'Szablon niedostępny' : 'Ładowanie szablonu…',
+        }
+      : {}),
+  }
+
+  return (
+    <section className={styles.section}>
+      <div className={styles.workspace}>
+        <fieldset className={styles.editor} disabled={readOnly}>
+          <ListingViewSelect
+            readOnly={readOnly}
+            label="Szablon widoku"
+            options={presetOptions}
+            value={preset}
+            onChange={selectPreset}
+          />
+          {libraryError ? (
+            <p role="status">Biblioteka szablonów jest chwilowo niedostępna.</p>
+          ) : null}
+          {showError ? <p role="alert">{errorMessage}</p> : null}
+          <details>
+            <summary>
+              Dostosuj wygląd{!detached && overrideCount > 0 ? ` · ${overrideCount}` : ''}
+            </summary>
+            <ViewDetails
+              readOnly={readOnly}
+              base={detached ? undefined : base}
+              baseDecoration={detached ? undefined : baseDecoration}
+              currentView={editingView}
+              overrides={overrides}
+              onChange={(settings) => saveOverrides(settings)}
+            />
+            <div className={styles.actions}>
+              {!detached && overrideCount > 0 ? (
+                <Button
+                  buttonStyle="primary"
+                  disabled={readOnly}
+                  margin={false}
+                  size="medium"
+                  type="button"
+                  onClick={() => saveOverrides({})}
+                >
+                  Przywróć ustawienia szablonu
+                </Button>
+              ) : null}
+              {!detached ? (
+                <Button
+                  buttonStyle="primary"
+                  disabled={readOnly}
+                  margin={false}
+                  size="medium"
+                  type="button"
+                  onClick={() =>
+                    saveOverrides(
+                      {
+                        ...view,
+                        decoration: view.decoration ?? {
+                          ...getDefaultListingDecoration(view),
+                          ...legacyDecoration,
+                        },
+                      },
+                      'custom',
+                    )
+                  }
+                >
+                  Odłącz od szablonu
+                </Button>
+              ) : null}
+            </div>
+          </details>
+        </fieldset>
+        <section className={styles.preview} aria-labelledby={previewId}>
+          <div className={styles.previewHeader}>
+            <h4 id={previewId}>Podgląd wyników</h4>
+            <div className={styles.previewModes} aria-label="Szerokość podglądu">
+              <Button
+                buttonStyle={!narrow ? 'primary' : 'secondary'}
+                extraButtonProps={{ 'aria-pressed': !narrow }}
+                margin={false}
+                size="medium"
+                type="button"
+                onClick={() => setNarrow(false)}
+              >
+                Szeroki
+              </Button>
+              <Button
+                buttonStyle={narrow ? 'primary' : 'secondary'}
+                extraButtonProps={{ 'aria-pressed': narrow }}
+                margin={false}
+                size="medium"
+                type="button"
+                onClick={() => setNarrow(true)}
+              >
+                Wąski
+              </Button>
+            </div>
+          </div>
+          <div
+            className={`${styles.previewCanvas} ${narrow ? styles.narrow : ''}`}
+            aria-busy={preview?.body !== previewBody}
+          >
+            {preview?.body !== previewBody ? (
+              <p role="status">Ładowanie podglądu…</p>
+            ) : preview.error ? (
+              <p role="alert">Nie udało się pobrać podglądu. Sprawdź ustawienia treści.</p>
+            ) : preview.missingContext ? (
+              <p>Wybierz w szablonie strony element do podglądu relacji.</p>
+            ) : (
+              <ListingPreviewFrame
+                items={preview.items ?? []}
+                view={preview.view ?? view}
+                media={preview.media}
+                presentation={preview.presentation}
+              />
+            )}
+          </div>
+        </section>
+      </div>
+    </section>
+  )
+}

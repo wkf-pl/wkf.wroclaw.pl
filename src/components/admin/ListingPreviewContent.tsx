@@ -1,0 +1,75 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+
+import { ContentPresentation } from '@/app/(frontend)/_components/ContentPresentation'
+import type { ResolvedContentPresentation } from '@/modules/content/content-presentation'
+import { ConfiguredContentList } from '@/app/(frontend)/_components/ConfiguredContentList'
+import type { ContentListingPresentation } from '@/modules/content/content-listing-presentation'
+import type { ListingDecorationMedia } from '@/modules/content/listing-decoration'
+import { resolveListingView } from '@/modules/content/listing-view'
+
+export function ListingPreviewContent() {
+  const [preview, setPreview] = useState<{
+    items: ContentListingPresentation[]
+    view: ReturnType<typeof resolveListingView>['view']
+    presentation?: ResolvedContentPresentation
+    media?: ListingDecorationMedia
+  }>()
+  const content = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const receivePreview = (event: MessageEvent) => {
+      if (
+        event.origin !== window.location.origin ||
+        event.source !== window.parent ||
+        event.data?.type !== 'wkf:listing-preview'
+      )
+        return
+      if (!Array.isArray(event.data.items)) return
+      setPreview({
+        items: event.data.items,
+        view: resolveListingView({ preset: 'custom', overrides: event.data.view }).view,
+        presentation: event.data.presentation,
+        media: event.data.media,
+      })
+    }
+    window.addEventListener('message', receivePreview)
+    window.parent.postMessage({ type: 'wkf:listing-preview-ready' }, window.location.origin)
+    return () => window.removeEventListener('message', receivePreview)
+  }, [])
+
+  useEffect(() => {
+    const element = content.current
+    if (!element) return
+    const reportHeight = () =>
+      window.parent.postMessage(
+        { type: 'wkf:listing-preview-height', height: element.getBoundingClientRect().height },
+        window.location.origin,
+      )
+    const observer = new ResizeObserver(reportHeight)
+    observer.observe(element)
+    reportHeight()
+    return () => observer.disconnect()
+  }, [])
+
+  const listing = preview ? (
+    <div className="listingBlock">
+      <ConfiguredContentList items={preview.items} view={preview.view} media={preview.media} />
+    </div>
+  ) : (
+    <p role="status">Ładowanie podglądu…</p>
+  )
+
+  return (
+    <div ref={content} style={{ display: 'flow-root' }}>
+      {preview?.presentation ? (
+        <ContentPresentation placement="block" presentation={preview.presentation}>
+          {listing}
+        </ContentPresentation>
+      ) : (
+        listing
+      )}
+    </div>
+  )
+}

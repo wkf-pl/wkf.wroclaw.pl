@@ -6,6 +6,7 @@ export const publicCacheTags = {
   eventCycles: 'public:event-cycles',
   eventTypes: 'public:event-types',
   events: 'public:events',
+  listingViews: 'public:listing-views',
   homepage: 'public:homepage',
   media: 'public:media',
   memberProfiles: 'public:member-profiles',

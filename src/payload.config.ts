@@ -29,6 +29,7 @@ import {
   Users,
   UrlAliases,
 } from './collections'
+import { ListingViews } from './collections/ListingViews'
 import { ContentAuditLog } from './collections/ContentAuditLog'
 import { memberProfilePhotoSizeLimit } from '@/modules/members/member-profile-photo-options'
 import { contentAuditPlugin } from './modules/content-audit/plugin'
@@ -79,6 +80,7 @@ export default buildConfig({
   admin: {
     components: {
       actions: ['/components/admin/UserMenu#UserMenu'],
+      providers: ['/components/admin/DocumentSidebarToggle#DocumentSidebarToggle'],
       Nav: '/components/admin/AdminNav#AdminNav',
       graphics: {
         Logo: '/components/admin/AdminLogo#AdminLogo',
@@ -120,6 +122,7 @@ export default buildConfig({
   collections: [
     ContentListingItems,
     PageTemplates,
+    ListingViews,
     Pages,
     Posts,
     Events,

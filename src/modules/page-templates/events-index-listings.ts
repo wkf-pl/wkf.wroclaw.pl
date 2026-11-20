@@ -10,10 +10,10 @@ export function isFilteredEventsListing(block: ListingBlock | PageTemplateListin
   )
 }
 
-export function resolveEventsIndexArchiveURL(
+export async function resolveEventsIndexArchiveURL(
   template: PageTemplate,
   searchParams: Record<string, string | string[] | undefined>,
-): string | undefined {
+): Promise<string | undefined> {
   return resolveTemplateListingPageURL({
     template,
     pathname: '/events',

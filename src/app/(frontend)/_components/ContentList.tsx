@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { CSSProperties } from 'react'
 
 import type { PublicContentListItem } from '@/modules/content/content-listing'
 import { getContentListingPresentation } from '@/modules/content/content-listing-presentation'
@@ -11,12 +12,13 @@ import { ContentTile } from './ContentTile'
 export type ContentListView = 'cards' | 'carousel' | 'compact' | 'grid' | 'tiles'
 
 type ContentListProperties = {
+  columns?: number
   emptyMessage?: null | string
   items: PublicContentListItem[]
   view: ContentListView
 }
 
-export function ContentList({ emptyMessage, items, view }: ContentListProperties) {
+export function ContentList({ columns, emptyMessage, items, view }: ContentListProperties) {
   if (!items.length) {
     return <p className="emptyState">{emptyMessage || 'Nie ma opublikowanych treści.'}</p>
   }
@@ -25,9 +27,17 @@ export function ContentList({ emptyMessage, items, view }: ContentListProperties
     return <ContentCarousel emptyMessage={emptyMessage} items={items} />
   }
 
+  const layoutStyle = columns
+    ? ({
+        '--listing-columns': columns,
+        '--listing-minimum': view === 'cards' ? '23rem' : '11rem',
+      } as CSSProperties)
+    : undefined
+  const configuredColumns = columns ? ' contentList-configuredColumns' : ''
+
   if (view === 'tiles') {
     return (
-      <div className="contentList contentList-tiles">
+      <div className={`contentList contentList-tiles${configuredColumns}`} style={layoutStyle}>
         {items.map((item) => (
           <ContentTile item={item} key={`${item.kind}-${item.document.id}`} />
         ))}
@@ -37,7 +47,7 @@ export function ContentList({ emptyMessage, items, view }: ContentListProperties
 
   if (view !== 'compact') {
     return (
-      <div className={`contentList contentList-${view}`}>
+      <div className={`contentList contentList-${view}${configuredColumns}`} style={layoutStyle}>
         {items.map((item) => (
           <ContentCard item={item} key={`${item.kind}-${item.document.id}`} view={view} />
         ))}
@@ -46,7 +56,7 @@ export function ContentList({ emptyMessage, items, view }: ContentListProperties
   }
 
   return (
-    <div className="contentList contentList-compact">
+    <div className={`contentList contentList-compact${configuredColumns}`} style={layoutStyle}>
       {items.map((item) => {
         const presentation = getContentListingPresentation(item, 'compact')
         const showsPartnerRoles = item.kind === 'partners' && Boolean(item.partnerRoles?.length)

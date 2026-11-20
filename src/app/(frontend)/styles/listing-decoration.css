@@ -1,0 +1,250 @@
+.listingBlock:has(> .listingPresentation) {
+  width: 100%;
+}
+
+.listingPresentation > .contentPresentationContent {
+  padding: var(--listing-padding);
+}
+
+.listingPresentation[data-frame='outline'] {
+  border-width: 2px;
+}
+
+.listingPresentation .contentList:not(.contentCarouselItem),
+.listingPresentation .contentCarouselSlides--collection {
+  gap: var(--listing-gap);
+  overflow: hidden;
+}
+
+.listingPresentation .contentList-configuredColumns {
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(
+      min(
+        100%,
+        max(
+          var(--listing-minimum),
+          calc((100% - (var(--listing-columns) - 1) * var(--listing-gap)) / var(--listing-columns))
+        )
+      ),
+      1fr
+    )
+  );
+}
+
+.listingPresentation :is(.contentList-compact, .contentCarousel) {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.listingPresentation .contentCarousel {
+  --surface-accent: inherit;
+  --surface-focus: inherit;
+  --surface-line: inherit;
+  --surface-muted: inherit;
+  --surface-text: inherit;
+  color: inherit;
+}
+
+.listingPresentation .contentCarouselSlides--collection {
+  padding: 0;
+}
+
+.listingPresentation .contentCarouselControls--footer {
+  padding-top: 1rem;
+  padding-bottom: 0;
+}
+
+.listingItemSurface {
+  display: grid;
+  min-width: 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  color: var(--surface-text, var(--ivory));
+}
+
+.listingItemSurface--legacy {
+  background: rgb(5 31 47 / 86%);
+}
+
+.listingPresentation .listingItemSurface > .contentPresentationContent,
+.listingPresentation .listingItemSurface > .contentPresentationContent > .contentPresentationBody {
+  display: grid;
+  padding: 0;
+}
+
+.listingPresentation .listingItemSurface :is(.contentCard, .contentTileLink) {
+  --surface-accent: inherit;
+  --surface-focus: inherit;
+  --surface-line: inherit;
+  --surface-muted: inherit;
+  --surface-text: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.listingItemSurface
+  :is(
+    .contentCard h2 a,
+    .contentCardFacts p,
+    .contentCardMetaText,
+    .contentCardMeta time,
+    .contentCardMetaLink
+  ) {
+  color: var(--surface-text, var(--ivory));
+}
+
+.listingItemSurface :is(.contentCardKind, .contentCardFactIcon) {
+  color: var(--surface-accent, var(--gold-light));
+}
+
+.listingItemSurface :is(.contentCardExcerpt, .contentCardInterests) {
+  color: var(--surface-muted, var(--muted));
+}
+
+.listingItemSurface .contentTileLink:not(.contentTileLink--withoutImage) .contentTileContent {
+  --surface-text: var(--ivory);
+  --surface-muted: var(--muted);
+  --surface-accent: var(--gold-light);
+  color: var(--ivory);
+}
+
+.listingItemSurface .contentTileLink--withoutImage .contentTileContent {
+  text-shadow: none;
+}
+
+.listingItemSurface .contentTileLink--withoutImage .contentTileMeta :is(.contentCardMetaText, time),
+.listingItemSurface .contentTileLink--withoutImage .contentTileMeta .contentCardKind {
+  color: var(--surface-accent, var(--gold-light));
+}
+
+.listingPresentation--outlinedItems:not(.listingPresentation--joined) .listingItemSurface {
+  border: 1px solid var(--surface-line, rgb(243 163 19 / 55%));
+}
+
+.listingPresentation--joined .listingItemSurface {
+  border-radius: 0;
+}
+
+.listingPresentation--joined.listingPresentation--outlinedItems
+  :is(.contentList > .listingItemSurface, .contentCarouselSlide--collection) {
+  box-shadow:
+    -1px 0 var(--surface-line, rgb(243 163 19 / 38%)),
+    0 -1px var(--surface-line, rgb(243 163 19 / 38%));
+}
+
+.listingPresentation .contentList-grid .listingItemSurface .contentCardImage {
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+  width: 100%;
+}
+
+.listingPresentation .contentCardImageFallback,
+.listingPresentation .contentList-grid .contentCardImage img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.listingPresentation .contentCarouselItem .listingItemSurface {
+  height: 100%;
+}
+
+.listingPresentation
+  .contentCarouselSlide:not(.contentCarouselSlide--collection)
+  > .listingItemSurface--legacy {
+  background: linear-gradient(135deg, rgb(9 38 57 / 96%), rgb(0 18 31 / 98%));
+}
+
+.listingPresentation .contentCarouselSlide:not(.contentCarouselSlide--collection) {
+  display: block;
+}
+
+.listingPresentation
+  .contentCarouselSlide:not(.contentCarouselSlide--collection)
+  .contentPresentationBody {
+  grid-template-columns: minmax(0, 1.18fr) minmax(20rem, 0.82fr);
+}
+
+.listingPresentation
+  .contentCarouselSlide--withoutImage:not(.contentCarouselSlide--collection)
+  .contentPresentationBody {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@container content-carousel (width <= 62rem) {
+  .listingPresentation
+    .contentCarouselSlide:not(.contentCarouselSlide--collection)
+    .contentPresentationBody {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 1fr);
+  }
+  .listingPresentation
+    .contentCarouselSlide--withoutImage:not(.contentCarouselSlide--collection)
+    .contentPresentationBody {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container content-carousel (width <= 48rem) {
+  .listingPresentation
+    .contentCarouselSlide:not(.contentCarouselSlide--collection)
+    .contentPresentationBody {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.contentCarouselSlide--withoutImage {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.listingVenueAddress {
+  display: block;
+}
+
+.contentCard .listingHiddenTitle,
+.contentTileContent .listingHiddenTitle {
+  height: 0;
+  margin: 0;
+}
+
+.contentCard .listingHiddenTitle:focus-within {
+  height: auto;
+}
+
+.listingHiddenTitle a:focus-visible .srOnly {
+  position: static;
+  width: auto;
+  height: auto;
+  clip-path: none;
+  white-space: normal;
+}
+
+.contentTileContent:has(.listingHiddenTitle) .contentTileMeta {
+  margin-top: 0;
+}
+
+.contentPresentation--inverse {
+  --listing-emphasized-badge-background: var(--background-deep);
+  --listing-emphasized-badge-border: #fff;
+}
+
+:is(
+  .contentPresentation--default,
+  .contentPresentation--subtle,
+  .contentPresentation--image,
+  .listingItemSurface--legacy
+),
+.listingItemSurface .contentTileLink:not(.contentTileLink--withoutImage) .contentTileContent {
+  --listing-emphasized-badge-background: initial;
+  --listing-emphasized-badge-border: initial;
+}
+
+:is(.contentCardMeta, .contentCarouselMeta) > .pageTemplateBadge--emphasizedBadge {
+  background-color: var(--listing-emphasized-badge-background, transparent);
+  border-color: var(--listing-emphasized-badge-border, rgb(243 163 19 / 70%));
+}

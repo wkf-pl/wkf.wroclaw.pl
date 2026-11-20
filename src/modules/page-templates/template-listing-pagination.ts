@@ -1,3 +1,4 @@
+import { resolvePublicListingView } from '@/modules/content/public-listing-view'
 import {
   createPaginatedURL,
   getRequestedPage,
@@ -5,7 +6,7 @@ import {
 } from '@/modules/content/pagination'
 import type { PageTemplate, PageTemplateListingBlock } from '@/payload-types'
 
-export function resolveTemplateListingPageURL({
+export async function resolveTemplateListingPageURL({
   template,
   pathname,
   searchParams,
@@ -15,11 +16,14 @@ export function resolveTemplateListingPageURL({
   pathname: string
   searchParams: Record<string, string | string[] | undefined>
   matches: (block: PageTemplateListingBlock) => boolean
-}): string | undefined {
+}): Promise<string | undefined> {
   const { page, ...blockSearchParams } = searchParams
   if (page === undefined) return undefined
 
-  const listingID = findPaginatedListingID([template.informationPanel, template.content], matches)
+  const listingID = await findPaginatedListingID(
+    [template.informationPanel, template.content],
+    matches,
+  )
   if (!listingID) return undefined
 
   const { parameterName } = resolveBlockPagination({
@@ -33,13 +37,13 @@ export function resolveTemplateListingPageURL({
   return createPaginatedURL(pathname, blockSearchParams, parameterName, requestedPage)
 }
 
-function findPaginatedListingID(
+async function findPaginatedListingID(
   blocks: unknown[],
   matches: (block: PageTemplateListingBlock) => boolean,
-): string | undefined {
+): Promise<string | undefined> {
   for (const block of blocks) {
     if (Array.isArray(block)) {
-      const match = findPaginatedListingID(block, matches)
+      const match = await findPaginatedListingID(block, matches)
       if (match) return match
       continue
     }
@@ -47,14 +51,19 @@ function findPaginatedListingID(
     if (!block || typeof block !== 'object') continue
     if ('blockType' in block && block.blockType === 'listing') {
       const listing = block as PageTemplateListingBlock
-      if (listing.id && listing.pagination && listing.view !== 'carousel' && matches(listing)) {
+      if (
+        listing.id &&
+        listing.pagination &&
+        matches(listing) &&
+        (await resolvePublicListingView(listing)).view.layout !== 'carousel'
+      ) {
         return listing.id
       }
       continue
     }
 
     const container = block as Record<string, unknown>
-    const match = findPaginatedListingID(
+    const match = await findPaginatedListingID(
       [container.columns, container.sections, container.tabs, container.blocks].filter(
         Array.isArray,
       ),

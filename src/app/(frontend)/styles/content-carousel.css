@@ -144,6 +144,7 @@
 
 .contentCarouselMeta {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.35rem 0.8rem;
   margin: 0 0 1rem;
@@ -295,4 +296,34 @@
   .contentCarousel * {
     scroll-behavior: auto;
   }
+}
+
+.contentCarouselSlides--collection {
+  grid-template-columns: repeat(var(--carousel-columns), minmax(0, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.contentCarouselSlide.contentCarouselSlide--collection {
+  grid-area: auto;
+  display: none;
+}
+
+.contentCarouselSlide--collection.contentCarouselSlide--active {
+  display: block;
+}
+
+.contentCarouselItem.contentList {
+  display: block;
+  height: 100%;
+}
+
+.contentCarouselItem > article {
+  height: 100%;
+}
+
+.contentCarouselControls--footer {
+  position: static;
+  justify-content: center;
+  padding: 0 1rem 1rem;
 }

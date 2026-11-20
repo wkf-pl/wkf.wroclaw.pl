@@ -27,7 +27,7 @@ export async function TaxonomyTemplateDocument({
   template: PageTemplate
   title: string
 }) {
-  const listingURL = resolveTemplateListingPageURL({
+  const listingURL = await resolveTemplateListingPageURL({
     template,
     pathname,
     searchParams,

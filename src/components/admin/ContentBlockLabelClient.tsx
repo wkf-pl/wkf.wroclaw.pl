@@ -1,6 +1,8 @@
 'use client'
 
 import { useFormFields, useRowLabel } from '@payloadcms/ui'
+import { parseListingAppearance } from '@/modules/content/listing-view'
+
 import type { ReactNode } from 'react'
 
 import {
@@ -179,9 +181,19 @@ export function RichTextBlockLabelClient({ initialContent }: { initialContent?: 
 }
 
 export function ListingBlockLabelClient() {
-  const { data } = useRowLabel<PresentedBlockData>()
+  const { data } = useRowLabel<PresentedBlockData & { appearance?: unknown }>()
+  const appearance = parseListingAppearance(data.appearance)
+  const decoration = appearance.overrides?.decoration
+  const description =
+    decoration?.surface !== undefined && decoration.frame !== undefined
+      ? getPresentationDescription(decoration)
+      : appearance.preset === 'custom'
+        ? 'ustawienia własne'
+        : appearance.preset
+          ? 'widok z szablonu'
+          : getPresentationDescription(data)
 
-  return <BlockLabel prefix="Listing" value={getPresentationDescription(data)} />
+  return <BlockLabel prefix="Listing" value={description} />
 }
 
 export function ContentCalendarBlockLabelClient() {
