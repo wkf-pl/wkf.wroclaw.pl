@@ -1,0 +1,21 @@
+html[data-theme='light'] {
+  --wkf-related-link-color: #3465a4;
+  --wkf-related-link-hover-color: #204a87;
+}
+
+html[data-theme='dark'] {
+  --wkf-related-link-color: #729fcf;
+  --wkf-related-link-hover-color: #729fcf;
+}
+
+:is(.wkf-hierarchy-path, .table) {
+  a,
+  .default-cell__first-cell {
+    color: var(--wkf-related-link-color);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--wkf-related-link-hover-color);
+    }
+  }
+}

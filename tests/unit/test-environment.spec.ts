@@ -165,8 +165,12 @@ describe('integration test environment', () => {
     expect(continuousIntegrationWorkflow).toContain('name: wkf-next-runtime-${{ github.sha }}')
     expect(continuousIntegrationWorkflow).toContain('uses: actions/download-artifact@v8')
     expect(continuousIntegrationWorkflow).toContain('run: pnpm test:e2e:ci')
-    expect(continuousIntegrationWorkflow).toContain('shard: [1, 2, 3, 4]')
-    expect(continuousIntegrationWorkflow).toContain('PLAYWRIGHT_SHARD: ${{ matrix.shard }}/4')
+    expect(continuousIntegrationWorkflow).toContain(
+      "fromJSON(inputs.e2e_shards == '3' && '[1,2,3]' || '[1,2,3,4]')",
+    )
+    expect(continuousIntegrationWorkflow).toContain(
+      "PLAYWRIGHT_SHARD: ${{ matrix.shard }}/${{ inputs.e2e_shards == '3' && '3' || '4' }}",
+    )
     expect(continuousIntegrationWorkflow).toContain('playwright-diagnostics-${{ matrix.shard }}')
 
     const validateContainerJob = continuousIntegrationWorkflow.split('  validate-container:\n')[1]

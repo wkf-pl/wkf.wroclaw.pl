@@ -28,7 +28,7 @@ type ContentCarouselProperties = {
   items: ContentCarouselItem[]
 }
 
-export type ContentCarouselItem = PublicContentListItem
+type ContentCarouselItem = PublicContentListItem
 
 export function ContentCarousel({ emptyMessage, items }: ContentCarouselProperties) {
   return (

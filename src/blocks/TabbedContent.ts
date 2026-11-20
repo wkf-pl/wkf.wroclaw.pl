@@ -24,7 +24,7 @@ function getTabCountValidationError(value: unknown): string | undefined {
     : undefined
 }
 
-export const validateTabbedContentTabs: ArrayFieldValidation = (value) =>
+const validateTabbedContentTabs: ArrayFieldValidation = (value) =>
   getTabCountValidationError(value) ?? true
 
 const enforceTabbedContentTabs: FieldHook = ({ value }) => {

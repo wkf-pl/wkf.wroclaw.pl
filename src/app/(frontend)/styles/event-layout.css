@@ -1,0 +1,38 @@
+.eventGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.2rem;
+  margin: 1rem 0 3rem;
+}
+
+.eventCard {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  background: rgb(5 27 42 / 92%);
+}
+
+.eventCard > a {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.eventCardImage {
+  width: 100%;
+  height: 12rem;
+  object-fit: cover;
+}
+
+.eventCardContent {
+  padding: 1.2rem;
+}
+
+.eventCardContent h3 {
+  margin: 0.3rem 0 0.8rem;
+}
+
+.eventPageBody {
+  padding-top: 0;
+}

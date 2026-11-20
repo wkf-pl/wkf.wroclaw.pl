@@ -1,163 +1,40 @@
 import { Fragment, type CSSProperties, type ReactNode } from 'react'
 
-import { getSpacerHeight } from '@/blocks/Spacer'
-import { CmsRichText } from '@/components/CmsRichText'
-import { getTextBadgeClassName } from '@/modules/content/text-styles'
 import {
-  normalizeContentHeading,
   normalizeContentPresentation,
-  type ContentHeadingData,
   type ContentPresentationData,
 } from '@/modules/content/content-presentation'
 import { getPublicSiteSettings } from '@/modules/content/public-content'
-import {
-  isSectionGroupEmptyAwareBlockType,
-  shouldHideSectionGroup,
-} from '@/modules/content/section-group-visibility'
+import { shouldHideSectionGroup } from '@/modules/content/section-group-visibility'
 import { resolvePresentedLinks } from '@/modules/navigation/links'
 import type {
-  ActionLinksBlock,
-  AttachmentsBlock,
-  CardBlock,
-  Category,
   ColumnLayoutBlock,
-  ContentCalendarBlock,
-  CurrentItemContentBlock,
-  CurrentItemFieldBlock,
-  CurrentItemFieldRowBlock,
-  Event,
-  EventCycle,
-  FieldRowTextBlock,
-  HeadingBlock,
-  HomepageSection,
   InformationPanelColumnsBlock,
-  InformationPanelGroupBlock,
-  ListingBlock,
-  MediaGalleryBlock,
-  MemberProfile,
-  Page,
-  PageTemplate,
-  PageTemplateActionLinksBlock,
-  PageTemplateColumnLayoutBlock,
-  PageTemplateIconBlock,
-  PageTemplateListingBlock,
-  PageTemplateSectionGroupBlock,
-  PageTemplateTabbedContentBlock,
-  Partner,
-  Post,
-  RichTextBlock,
   SectionGroupBlock,
-  SpacerBlock,
   TabbedContentBlock,
-  Tag,
 } from '@/payload-types'
-import type { CurrentListingTarget } from '@/modules/content/listing-conditions'
 
-import { ActionLinksList } from './ActionLinksList'
-import { TextBlockContent } from './TextBlockContent'
-import { ContentHeading, ContentPresentation } from './ContentPresentation'
-import { CardBlockSection } from './CardBlockSection'
-import { ContentCalendarBlockSection } from './ContentCalendarBlockSection'
-import { resolveListingBlockSection } from './ListingBlockSection'
-import { resolveMediaBlockSection } from './MediaBlockSection'
+import { ContentLeafBlockRenderer, resolveContentLeafBlock } from './ContentLeafBlockRenderer'
+import { ContentPresentation } from './ContentPresentation'
 import { PresentedLink } from './PresentedLink'
 import { TabbedContentFrame, type TabbedContentFrameTab } from './TabbedContentFrame'
-
-export type ContentLayoutDocument =
-  | Category
-  | Event
-  | EventCycle
-  | HomepageSection
-  | MemberProfile
-  | Page
-  | PageTemplate
-  | Partner
-  | Post
-  | Tag
-type ContentLeafBlock =
-  | ActionLinksBlock
-  | PageTemplateActionLinksBlock
-  | AttachmentsBlock
-  | CardBlock
-  | ContentCalendarBlock
-  | HeadingBlock
-  | ListingBlock
-  | PageTemplateListingBlock
-  | MediaGalleryBlock
-  | RichTextBlock
-  | FieldRowTextBlock
-  | SpacerBlock
-type PresentedContentLeafBlock = Exclude<
+import type {
+  ContentBlockResolution,
+  ContentLayoutBlock,
   ContentLeafBlock,
-  | ActionLinksBlock
-  | PageTemplateActionLinksBlock
-  | CardBlock
-  | HeadingBlock
-  | FieldRowTextBlock
-  | SpacerBlock
-  | ListingBlock
-  | PageTemplateListingBlock
->
-type SectionContentBlock =
-  ColumnLayoutBlock | InformationPanelColumnsBlock | TabbedContentBlock | ContentLeafBlock
-type TabbedContentSectionBlock = ColumnLayoutBlock | ContentLeafBlock
-type PageTemplateLayoutBlock =
-  | CurrentItemContentBlock
-  | CurrentItemFieldBlock
-  | CurrentItemFieldRowBlock
-  | FieldRowTextBlock
-  | InformationPanelColumnsBlock
-  | InformationPanelGroupBlock
-  | PageTemplateIconBlock
-  | PageTemplateColumnLayoutBlock
-  | PageTemplateSectionGroupBlock
-  | PageTemplateTabbedContentBlock
-export type ContentLayoutBlock =
-  | ColumnLayoutBlock
-  | SectionGroupBlock
-  | TabbedContentBlock
-  | ContentLeafBlock
-  | PageTemplateLayoutBlock
+  ContentRendererProperties,
+  PositionedRendererProperties,
+  SectionContentBlock,
+  TabbedContentSectionBlock,
+} from './content-layout-types'
 
-export type ContentLayoutCustomBlockResolution = {
-  content: ReactNode
-  hasEmptyFilterBlock?: boolean
-}
-
-export type ContentLayoutCustomBlockProperties = {
-  block: ContentLayoutBlock
-  currentTarget?: CurrentListingTarget
-  document: ContentLayoutDocument
-  path: string
-  pathname: string
-  searchParams: Record<string, string | string[] | undefined>
-}
-
-export type ContentLayoutCustomBlockRenderer = (
-  properties: ContentLayoutCustomBlockProperties,
-) =>
-  | ContentLayoutCustomBlockResolution
-  | Promise<ContentLayoutCustomBlockResolution | undefined>
-  | undefined
-
-type ContentRendererProperties = {
-  currentTarget?: CurrentListingTarget
-  customBlockRenderer?: ContentLayoutCustomBlockRenderer
-  document: ContentLayoutDocument
-  layout?: ContentLayoutBlock[]
-  layoutPath?: string
-  pathname: string
-  searchParams: Record<string, string | string[] | undefined>
-}
-
-type PositionedRendererProperties = ContentRendererProperties & {
-  path: string
-}
-
-type ContentBlockResolution = {
-  content: ReactNode
-  hasEmptyFilterBlock: boolean
-}
+export { ContentLeafBlockRenderer } from './ContentLeafBlockRenderer'
+export type {
+  ContentLayoutBlock,
+  ContentLayoutCustomBlockProperties,
+  ContentLayoutCustomBlockResolution,
+  ContentLayoutDocument,
+} from './content-layout-types'
 
 export async function ContentLayoutRenderer({
   currentTarget,
@@ -253,7 +130,7 @@ async function ContentBlockRenderer({
 
   return (
     <ContentLeafBlockRenderer
-      block={block as ContentLeafBlock}
+      block={block}
       currentTarget={currentTarget}
       customBlockRenderer={customBlockRenderer}
       document={document}
@@ -547,184 +424,5 @@ async function resolveColumnLayout({
     hasEmptyFilterBlock: resolvedColumns.some(({ resolvedBlocks }) =>
       resolvedBlocks.some(({ hasEmptyFilterBlock }) => hasEmptyFilterBlock),
     ),
-  }
-}
-
-export async function ContentLeafBlockRenderer({
-  ...properties
-}: ContentRendererProperties & {
-  block: ContentLayoutBlock
-  path: string
-  presentationPlacement?: 'block' | 'tab'
-}) {
-  return (await resolveContentLeafBlock(properties)).content
-}
-
-async function resolveContentLeafBlock({
-  block,
-  currentTarget,
-  customBlockRenderer,
-  document,
-  path,
-  pathname,
-  presentationPlacement = 'block',
-  searchParams,
-}: ContentRendererProperties & {
-  block: ContentLayoutBlock
-  path: string
-  presentationPlacement?: 'block' | 'tab'
-}): Promise<ContentBlockResolution> {
-  const customResolution = await customBlockRenderer?.({
-    block,
-    currentTarget,
-    document,
-    path,
-    pathname,
-    searchParams,
-  })
-  if (customResolution) {
-    return {
-      content: customResolution.content,
-      hasEmptyFilterBlock: customResolution.hasEmptyFilterBlock ?? false,
-    }
-  }
-
-  if (block.blockType === 'spacer') {
-    return {
-      content: (
-        <div
-          aria-hidden="true"
-          className="contentSpacer"
-          style={{ blockSize: getSpacerHeight(block.size) }}
-        />
-      ),
-      hasEmptyFilterBlock: false,
-    }
-  }
-
-  if (block.blockType === 'fieldRowText') {
-    return { content: <TextBlockContent block={block} />, hasEmptyFilterBlock: false }
-  }
-
-  if (block.blockType === 'heading') {
-    return {
-      content: (
-        <ContentHeading
-          appearance={pathname === '/' ? 'homeSection' : 'default'}
-          heading={normalizeContentHeading(block as ContentHeadingData)}
-        />
-      ),
-      hasEmptyFilterBlock: false,
-    }
-  }
-
-  if (block.blockType === 'actionLinks') {
-    const actionLinksBlock = block as ActionLinksBlock | PageTemplateActionLinksBlock
-    const siteSettings = await getPublicSiteSettings()
-    const items = resolvePresentedLinks(actionLinksBlock.items ?? [], {
-      siteContactEmail: siteSettings.contactEmail,
-    })
-    return {
-      content: (
-        <ActionLinksList
-          alignment={actionLinksBlock.alignment}
-          items={items}
-          layout={actionLinksBlock.layout}
-        />
-      ),
-      hasEmptyFilterBlock: false,
-    }
-  }
-
-  if (block.blockType === 'card') {
-    return {
-      content: <CardBlockSection block={block as CardBlock} />,
-      hasEmptyFilterBlock: false,
-    }
-  }
-
-  if (block.blockType === 'listing') {
-    const resolution = await resolveListingBlockSection({
-      block,
-      blockPath: path,
-      currentTarget,
-      document,
-      pathname,
-      presentationPlacement,
-      searchParams,
-    })
-    return createFilterBlockResolution(block.blockType, resolution)
-  }
-
-  const resolution = await resolvePresentedLeafBlock({
-    block: block as PresentedContentLeafBlock,
-    currentTarget,
-    document,
-    path,
-    pathname,
-    searchParams,
-  })
-  if (!resolution.content) {
-    return resolution
-  }
-
-  return {
-    content: (
-      <ContentPresentation
-        placement={presentationPlacement}
-        presentation={normalizeContentPresentation(block as ContentPresentationData)}
-      >
-        {resolution.content}
-      </ContentPresentation>
-    ),
-    hasEmptyFilterBlock: resolution.hasEmptyFilterBlock,
-  }
-}
-
-async function resolvePresentedLeafBlock({
-  block,
-  path,
-  pathname,
-  searchParams,
-}: ContentRendererProperties & {
-  block: PresentedContentLeafBlock
-  path: string
-}): Promise<ContentBlockResolution> {
-  switch (block.blockType) {
-    case 'richText':
-      return {
-        content: (
-          <CmsRichText
-            className={`richText richText--${block.textStyle ?? 'default'}${getTextBadgeClassName(block.textStyle)}`}
-            data={block.content}
-          />
-        ),
-        hasEmptyFilterBlock: false,
-      }
-    case 'mediaGallery':
-    case 'attachments': {
-      const resolution = await resolveMediaBlockSection({
-        block,
-        blockPath: path,
-        pathname,
-        searchParams,
-      })
-      return createFilterBlockResolution(block.blockType, resolution)
-    }
-    case 'contentCalendar':
-      return {
-        content: await ContentCalendarBlockSection({ block }),
-        hasEmptyFilterBlock: false,
-      }
-  }
-}
-
-function createFilterBlockResolution(
-  blockType: string,
-  resolution: { content: ReactNode; isEmpty: boolean },
-): ContentBlockResolution {
-  return {
-    content: resolution.content,
-    hasEmptyFilterBlock: isSectionGroupEmptyAwareBlockType(blockType) && resolution.isEmpty,
   }
 }

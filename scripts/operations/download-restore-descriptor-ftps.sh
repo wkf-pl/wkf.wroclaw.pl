@@ -49,14 +49,9 @@ cleanup() {
 trap cleanup EXIT INT TERM
 mkdir --parents -- "$output_directory"
 
+source "$(dirname -- "${BASH_SOURCE[0]}")/lib/ftps.sh"
 curl_config_file="$temporary_directory/curl.config"
-curl_config_escape() {
-  local value="$1"
-  value="${value//\\/\\\\}"
-  value="${value//\"/\\\"}"
-  printf '%s' "$value"
-}
-(umask 077 && printf 'user = "%s:%s"\n' "$(curl_config_escape "$FTPS_USER")" "$(curl_config_escape "$FTPS_PASSWORD")" >"$curl_config_file")
+write_ftps_curl_config "$curl_config_file"
 
 remote_root="${FTPS_REMOTE_ROOT%/}"
 if [[ -n "$remote_root" && "$remote_root" != /* ]]; then

@@ -170,28 +170,38 @@ test('keeps block pagination working on a single post route', async ({ page }) =
   await expect(page.getByText(filenames[2], { exact: true })).toBeVisible()
 })
 
-test('invalidates cached media block data after a Payload update', async ({ page }) => {
-  await page.goto(`/${pageSlug}`)
-  await expect(page.getByRole('link', { name: /e2e-attachment\.pdf/ })).toContainText(
-    'Opis załącznika PDF',
-  )
+test(
+  'invalidates cached media block data after a Payload update',
+  { tag: '@public-cache' },
+  async ({ page }) => {
+    await page.goto(`/${pageSlug}`)
+    await expect(page.getByRole('link', { name: /e2e-attachment\.pdf/ })).toContainText(
+      'Opis załącznika PDF',
+    )
 
-  await login({ page, user: editorTestUser })
-  const updateResponse = await updateMediaDescription(
-    page,
-    attachment.id,
-    'Opis po unieważnieniu cache',
-  )
-  expect(updateResponse.ok, updateResponse.body).toBe(true)
+    await login({ page, user: editorTestUser })
+    const updateResponse = await updateMediaDescription(
+      page,
+      attachment.id,
+      'Opis po unieważnieniu cache',
+    )
+    expect(updateResponse.ok, updateResponse.body).toBe(true)
 
-  await page.goto(`/${pageSlug}`)
-  await expect(page.getByRole('link', { name: /e2e-attachment\.pdf/ })).toContainText(
-    'Opis po unieważnieniu cache',
-  )
-
-  const restoreResponse = await updateMediaDescription(page, attachment.id, 'Opis załącznika PDF')
-  expect(restoreResponse.ok, restoreResponse.body).toBe(true)
-})
+    try {
+      await page.goto(`/${pageSlug}`)
+      await expect(page.getByRole('link', { name: /e2e-attachment\.pdf/ })).toContainText(
+        'Opis po unieważnieniu cache',
+      )
+    } finally {
+      const restoreResponse = await updateMediaDescription(
+        page,
+        attachment.id,
+        'Opis załącznika PDF',
+      )
+      expect(restoreResponse.ok, restoreResponse.body).toBe(true)
+    }
+  },
+)
 
 async function createMedia(
   data: Buffer,

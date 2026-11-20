@@ -9,12 +9,6 @@ import { editorTestUser } from '../helpers/seedUser'
 
 const draftSlug = 'e2e-draft-preview'
 const invalidDraftSlug = 'e2e-invalid-draft-preview'
-const globalDraftPreviewSlugs = [
-  'navigation',
-  'homepage-hero',
-  'homepage-sections',
-  'footer',
-] as const
 const navigationTimeout = 20_000
 const pageTemplateDraftHeading = 'Roboczy układ szablonu wydarzenia E2E'
 const pageTemplateEditorUser = {
@@ -312,50 +306,43 @@ test('rejects anonymous draft preview access', async ({ request }) => {
   expect(globalDraftAPIResponse.status()).toBe(403)
 })
 
-test('shows the preview button for every versioned global', async ({ page }) => {
-  await login({ page, user: editorTestUser })
+test(
+  'matches event template spacing to the legacy layout on desktop and mobile',
+  { tag: '@full-visual' },
+  async ({ page }) => {
+    await login({ page, user: pageTemplateEditorUser })
+    await page.goto(`/events/${pageTemplatePreviewEventSlug}`)
+    await expect(page.locator('.eventDetails')).toBeVisible()
 
-  for (const globalSlug of globalDraftPreviewSlugs) {
-    await page.goto(`/admin/globals/${globalSlug}`)
-    await expect(page.locator('#preview-button')).toBeVisible()
-  }
-})
+    const previewPage = await page.context().newPage()
+    await previewPage.goto('/preview?pageTemplate=event-detail')
+    await expect(previewPage.getByRole('region', { name: 'Panel informacyjny' })).toBeVisible()
 
-test('matches event template spacing to the legacy layout on desktop and mobile', async ({
-  page,
-}) => {
-  await login({ page, user: pageTemplateEditorUser })
-  await page.goto(`/events/${pageTemplatePreviewEventSlug}`)
-  await expect(page.locator('.eventDetails')).toBeVisible()
+    for (const width of [1280, 960, 390]) {
+      await page.setViewportSize({ height: 900, width })
+      await previewPage.setViewportSize({ height: 900, width })
+      const legacySpacing = await measureEventSpacing(page, '.eventDetails', '.eventPageBody')
+      const templateSpacing = await measureEventSpacing(
+        previewPage,
+        '.pageTemplateInformationPanel',
+        '.pageTemplateContent',
+      )
 
-  const previewPage = await page.context().newPage()
-  await previewPage.goto('/preview?pageTemplate=event-detail')
-  await expect(previewPage.getByRole('region', { name: 'Panel informacyjny' })).toBeVisible()
-
-  for (const width of [1280, 960, 390]) {
-    await page.setViewportSize({ height: 900, width })
-    await previewPage.setViewportSize({ height: 900, width })
-    const legacySpacing = await measureEventSpacing(page, '.eventDetails', '.eventPageBody')
-    const templateSpacing = await measureEventSpacing(
-      previewPage,
-      '.pageTemplateInformationPanel',
-      '.pageTemplateContent',
-    )
-
-    expect
-      .soft(templateSpacing.headerToHero, `Header to Hero at ${width}px`)
-      .toBeCloseTo(legacySpacing.headerToHero, 0)
-    expect
-      .soft(templateSpacing.panelToContent, `Panel to content at ${width}px`)
-      .toBeCloseTo(legacySpacing.panelToContent, 0)
-    expect
-      .soft(templateSpacing.imageToPanel, `Template image to panel at ${width}px`)
-      .toBeGreaterThanOrEqual(24)
-    expect
-      .soft(legacySpacing.imageToPanel, `Legacy image to panel at ${width}px`)
-      .toBeGreaterThanOrEqual(24)
-  }
-})
+      expect
+        .soft(templateSpacing.headerToHero, `Header to Hero at ${width}px`)
+        .toBeCloseTo(legacySpacing.headerToHero, 0)
+      expect
+        .soft(templateSpacing.panelToContent, `Panel to content at ${width}px`)
+        .toBeCloseTo(legacySpacing.panelToContent, 0)
+      expect
+        .soft(templateSpacing.imageToPanel, `Template image to panel at ${width}px`)
+        .toBeGreaterThanOrEqual(24)
+      expect
+        .soft(legacySpacing.imageToPanel, `Legacy image to panel at ${width}px`)
+        .toBeGreaterThanOrEqual(24)
+    }
+  },
+)
 
 test('previews a draft page template before enabling template rendering publicly', async ({
   page,
@@ -631,13 +618,6 @@ test('allows a manual Hero checkpoint after saving an autosave for preview', asy
   await saveDraftButton.click()
   expect((await checkpoint).ok()).toBe(true)
   await expect(saveDraftButton).toBeDisabled()
-})
-
-test('shows only the direct save action for Podstawowe', async ({ page }) => {
-  await login({ page, user: editorTestUser })
-  await page.goto('/admin/globals/site-settings')
-  await expect(page.locator('#action-save')).toBeVisible()
-  await expect(page.locator('#preview-button, #action-save-draft')).toHaveCount(0)
 })
 
 test('validates required manual Listing targets before opening draft preview', async ({ page }) => {

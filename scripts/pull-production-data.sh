@@ -8,6 +8,7 @@ umask 077
 backup_name="${1:-}"
 import_confirmation="${2:-}"
 project_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$project_directory/scripts/lib/import-blob-names.sh"
 age_identity_input="${PRODUCTION_BACKUP_AGE_IDENTITY_FILE:-}"
 operations_image="${PRODUCTION_PULL_OPERATIONS_IMAGE:-wkf-operations:local}"
 local_backup_directory_input="${PRODUCTION_BACKUP_LOCAL_DIRECTORY:-}"
@@ -27,16 +28,6 @@ cleanup() {
     rm --recursive --force -- "$temporary_directory"
   fi
   exit "$exit_status"
-}
-
-validate_blob_name() {
-  local blob_name="$1"
-  if [[ -z "$blob_name" || "$blob_name" == /* || "/$blob_name/" == *'/../'* ]]; then
-    fail "Unsafe production blob name: $blob_name"
-  fi
-  if [[ "$blob_name" == *$'\n'* || "$blob_name" == *$'\r'* ]]; then
-    fail 'Production blob names containing line breaks are not supported.'
-  fi
 }
 
 if [[ ! "$backup_name" =~ ^production-[0-9]{8}T[0-9]{6}Z$ ]]; then
@@ -152,7 +143,7 @@ staging_media_entries="$temporary_directory/staging-media-entries.jsonl"
 while IFS= read -r entry <&3; do
   blob_name="$(jq --raw-output '.name' <<<"$entry")"
   source_file="$(jq --raw-output '.sourceFile' <<<"$entry")"
-  validate_blob_name "$blob_name"
+  validate_import_blob_name "$blob_name" production
   source_path="$validated_directory/media/$source_file"
   destination_path="$checkpoint_media_directory/$blob_name"
   if [[ ! -f "$source_path" ]]; then

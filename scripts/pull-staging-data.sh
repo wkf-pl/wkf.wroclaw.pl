@@ -17,6 +17,7 @@ local_checkpoint_root_input="${STAGING_PULL_LOCAL_CHECKPOINT_ROOT:-}"
 source_label="${STAGING_PULL_SOURCE_LABEL:-staging}"
 
 project_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$project_directory/scripts/lib/import-blob-names.sh"
 temporary_directory=""
 temporary_directory_owned=false
 local_rescue_directory=""
@@ -92,20 +93,6 @@ restore_database_from_dump() {
     || return 1
 }
 
-validate_blob_name() {
-  local blob_name="$1"
-
-  if [[ -z "$blob_name" || "$blob_name" == /* || "/$blob_name/" == *"/../"* ]]; then
-    echo "Unsafe blob name: $blob_name" >&2
-    return 1
-  fi
-
-  if [[ "$blob_name" == *$'\n'* || "$blob_name" == *$'\r'* ]]; then
-    echo "Blob names containing line breaks are not supported." >&2
-    return 1
-  fi
-}
-
 validate_downloaded_blobs() {
   local blob_manifest_path="$1"
   local source_directory="$2"
@@ -121,7 +108,7 @@ validate_downloaded_blobs() {
 
   while IFS= read -r blob_record; do
     source_blob_name="$(jq -r '.name' <<<"$blob_record")"
-    validate_blob_name "$source_blob_name" || return 1
+    validate_import_blob_name "$source_blob_name" || return 1
 
     if [[ ! -f "$source_directory/$source_blob_name" ]]; then
       echo "Downloaded blob file is missing: $source_directory/$source_blob_name" >&2
@@ -160,7 +147,7 @@ upload_blobs_from_manifest() {
     fi
 
     destination_blob_name="${source_blob_name#"$source_prefix"}"
-    validate_blob_name "$destination_blob_name" || return 1
+    validate_import_blob_name "$destination_blob_name" || return 1
     source_file_path="$source_directory/$source_blob_name"
 
     if [[ ! -f "$source_file_path" ]]; then

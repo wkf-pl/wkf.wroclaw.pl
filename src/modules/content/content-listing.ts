@@ -31,8 +31,8 @@ import {
   type ListingConditionOperator,
   type ListingEventTimeValue,
 } from '@/modules/content/listing-conditions'
+import { createRelatedTargetSearchIndex } from '@/modules/content/content-listing-index-data'
 import {
-  createRelatedTargetSearchIndex,
   hydrateContentListingItems,
   type ContentListingDocument,
   type PublicContentListItem,
@@ -156,48 +156,50 @@ async function findManualPublicContent(
   options: FindPublicContentOptions,
 ): Promise<PublicContentResult> {
   const references = getManualContentReferences(options.manualItems)
-  let selectedItems: SelectedContentListingItem[] = []
+  if (!references.length) return paginateInMemory([], options)
 
-  if (references.length > 0) {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'content-listing-items',
-      context: publicRequestContext,
-      depth: 1,
-      limit: references.length,
-      overrideAccess: false,
-      pagination: false,
-      select: {
-        source: true,
-        sourceDocumentId: true,
-        url: true,
-      },
-      user: null,
-      where: {
-        or: references.map<Where>(({ id, source }) => {
-          const conditions: Where[] = [
-            { source: { equals: source } },
-            { sourceDocumentId: { equals: id } },
-          ]
-          return { and: conditions }
-        }),
-      },
-    })
-
-    const itemsByReference = new Map(
-      result.docs.map((item) => [`${item.source}:${String(item.sourceDocumentId)}`, item]),
-    )
-    selectedItems = references.flatMap(({ contextLabel, id, partnerRoles, source }) => {
-      const item = itemsByReference.get(`${source}:${String(id)}`)
-      return item ? [{ ...item, contextLabel, partnerRoles }] : []
-    })
+  const idsBySource = new Map<ContentListingSource, Set<RelationshipID>>()
+  for (const { id, source } of references) {
+    const ids = idsBySource.get(source) ?? new Set<RelationshipID>()
+    ids.add(id)
+    idsBySource.set(source, ids)
   }
 
+  const payload = await getPayload({ config })
+  const result = await payload.find({
+    collection: 'content-listing-items',
+    context: publicRequestContext,
+    depth: 0,
+    limit: references.length,
+    overrideAccess: false,
+    pagination: false,
+    select: {
+      source: true,
+      sourceDocumentId: true,
+      url: true,
+    },
+    user: null,
+    where: {
+      or: Array.from(idsBySource, ([source, ids]): Where => ({
+        and: [{ source: { equals: source } }, { sourceDocumentId: { in: [...ids] } }],
+      })),
+    },
+  })
+
+  const itemsByReference = new Map(
+    result.docs.map((item) => [`${item.source}:${item.sourceDocumentId}`, item]),
+  )
+  const selectedItems = references.flatMap<SelectedContentListingItem>(
+    ({ contextLabel, id, partnerRoles, source }) => {
+      const item = itemsByReference.get(`${source}:${id}`)
+      return item ? [{ ...item, contextLabel, partnerRoles }] : []
+    },
+  )
   const paginatedItems = paginateInMemory(selectedItems, options)
 
   return {
     ...paginatedItems,
-    items: await hydrateContentListingItems(await getPayload({ config }), paginatedItems.items),
+    items: await hydrateContentListingItems(payload, paginatedItems.items),
   }
 }
 

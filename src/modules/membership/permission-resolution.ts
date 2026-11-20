@@ -1,7 +1,7 @@
 import type { AccessResult, Where } from 'payload'
 
 import { isGroupAuthoredCollection } from '@/modules/content/content-author'
-import { getRelationshipId, type RelationshipReference } from '@/lib/relationships'
+import type { RelationshipReference } from '@/lib/relationships'
 import {
   getCollectionPermissionResources,
   permissionResources,
@@ -210,20 +210,6 @@ export function resolveRolePermission(
   return scopes.length === 1 ? scopes[0] : { or: scopes }
 }
 
-export function resolveCollectionRolePermission(
-  roles: readonly RoleRecord[],
-  collection: string,
-  operation: PermissionOperation,
-  userId: number | string,
-  groupIds: readonly number[] = [],
-): AccessResult {
-  return combineAccessResults(
-    ...getCollectionPermissionResources(collection).map((resource) =>
-      resolveRolePermission(roles, resource, operation, userId, groupIds),
-    ),
-  )
-}
-
 export function combineAccessResults(...results: AccessResult[]): AccessResult {
   if (results.some((result) => result === true)) return true
 
@@ -239,9 +225,4 @@ export function combineAccessWithConstraint(
   if (result === false) return false
   if (result === true) return constraint
   return constraint === true ? result : { and: [result, constraint] }
-}
-
-export function relationshipValueMatches(left: unknown, right: number | string): boolean {
-  const relationshipId = getRelationshipId(left as RelationshipReference)
-  return relationshipId !== undefined && String(relationshipId) === String(right)
 }

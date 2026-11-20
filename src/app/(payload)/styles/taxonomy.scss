@@ -1,0 +1,40 @@
+.wkf-taxonomy-related-content {
+  margin-top: calc(var(--base) * 3);
+  padding-top: calc(var(--base) * 2);
+  border-top: 1px solid var(--theme-elevation-150);
+
+  & + & {
+    margin-top: calc(var(--base) * 2);
+  }
+
+  .relationship-table__header {
+    display: flex;
+    align-items: center;
+  }
+
+  .relationship-table__actions {
+    display: contents;
+  }
+
+  .wkf-taxonomy-related-content__heading {
+    margin: 0 var(--base) 0 0;
+  }
+
+  .relationship-table__toggle-columns {
+    margin-left: auto;
+  }
+
+  .no-results {
+    padding-top: calc(var(--base) / 2);
+
+    h3,
+    p,
+    .no-results__actions {
+      display: none;
+    }
+
+    &::before {
+      content: 'Brak';
+    }
+  }
+}

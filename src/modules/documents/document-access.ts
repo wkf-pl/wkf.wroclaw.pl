@@ -19,7 +19,7 @@ const readDocumentFilesByPermission = createRolePermissionAccess({
   resource: 'documents',
 })
 
-export async function findPublicDocumentFileIds(req: PayloadRequest): Promise<(number | string)[]> {
+async function findPublicDocumentFileIds(req: PayloadRequest): Promise<(number | string)[]> {
   const documents = await collectPayloadPages((page) =>
     req.payload.find({
       collection: 'documents',

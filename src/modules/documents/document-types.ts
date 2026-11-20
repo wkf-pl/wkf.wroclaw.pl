@@ -9,12 +9,6 @@ export const documentTypeOptions = [
   { label: 'Inny', value: 'other' },
 ] as const
 
-export type DocumentType = (typeof documentTypeOptions)[number]['value']
-
-export function isDocumentType(value: unknown): value is DocumentType {
-  return documentTypeOptions.some((option) => option.value === value)
-}
-
 export function getDocumentTypeLabel(value: string): string {
   return documentTypeOptions.find((option) => option.value === value)?.label ?? value
 }

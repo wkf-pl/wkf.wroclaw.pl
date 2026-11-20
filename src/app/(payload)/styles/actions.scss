@@ -1,0 +1,192 @@
+// Payload's native classes identify most actions. Project-owned controls use
+// the matching wkf-action-* class.
+@mixin wkf-action-color($color, $hover-color, $contrast: #2e3436, $hover-contrast: $contrast) {
+  --wkf-action-color: #{$color};
+  --wkf-action-hover-color: #{$hover-color};
+
+  &:not(.btn):not(.pill) {
+    color: var(--wkf-action-color);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--wkf-action-hover-color);
+    }
+  }
+
+  &.btn,
+  .btn {
+    --color: var(--wkf-action-color);
+    --hover-color: var(--wkf-action-hover-color);
+  }
+
+  &.btn--style-secondary,
+  .btn--style-secondary {
+    --btn-border: 1px solid var(--wkf-action-color);
+    --hover-btn-border: 1px solid var(--wkf-action-hover-color);
+  }
+
+  &.btn--style-primary,
+  &.btn--style-pill,
+  &.btn--withPopup,
+  .btn--style-primary,
+  .btn--style-pill {
+    --color: #{$contrast};
+    --bg-color: var(--wkf-action-color);
+    --hover-color: #{$hover-contrast};
+    --hover-bg: var(--wkf-action-hover-color);
+    --btn-border: 1px solid var(--wkf-action-color);
+    --hover-btn-border: 1px solid var(--wkf-action-hover-color);
+  }
+
+  &.pill,
+  .pill {
+    border: 1px solid var(--wkf-action-color);
+    background: var(--wkf-action-color);
+    color: #{$contrast};
+
+    &:hover,
+    &:focus-visible {
+      border-color: var(--wkf-action-hover-color);
+      background: var(--wkf-action-hover-color);
+      color: #{$hover-contrast};
+    }
+  }
+}
+
+:is(
+  .wkf-action-add,
+  #action-create,
+  .array-field__add-row,
+  .blocks-field__drawer-toggler,
+  .list-create-new-doc__create-new-button,
+  .list-header__create-new-button,
+  .no-results__actions .btn,
+  .relationship-add-new__add-button,
+  .upload__createNewToggler
+) {
+  @include wkf-action-color(var(--wkf-action-add-color), var(--wkf-action-add-hover-color), #fff);
+}
+
+.array-field__add-row {
+  color: var(--wkf-action-add-color);
+
+  .icon--plus .stroke {
+    stroke: currentColor;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: var(--wkf-action-add-hover-color);
+  }
+}
+
+:is(.wkf-action-save, #action-save) {
+  @include wkf-action-color(#73d216, #4e9a06);
+}
+
+:is(#preview-button, #action-save-draft).btn--style-secondary:is(:disabled, .btn--disabled) {
+  // Use the secondary button hover palette for disabled preview and draft actions.
+  --color: var(--theme-elevation-600);
+  --btn-border: 1px solid var(--theme-elevation-400);
+  --hover-color: var(--color);
+  --hover-btn-border: var(--btn-border);
+  --hover-bg: var(--bg-color);
+}
+
+:is(
+  .wkf-action-select,
+  .upload__listToggler,
+  .drawer .list-controls .pill--has-action,
+  .drawer .collection-list__list-selection-actions .pill--has-action
+) {
+  @include wkf-action-color(#75507b, #5c3566, #fff);
+}
+
+:is(
+  .wkf-action-delete,
+  #force-unlock,
+  #action-permanently-delete,
+  #empty-trash-button,
+  #delete-preset,
+  .delete-documents__toggle,
+  .schedule-publish__delete,
+  .array-actions__remove,
+  .upload__remove,
+  .upload-relationship-details__remove,
+  .payload-settings > div:last-child > .btn,
+  .delete-document #confirm-action,
+  .confirmation-modal:has(.delete-documents__checkbox) #confirm-action
+) {
+  @include wkf-action-color(#ef2929, #cc0000, #fff);
+}
+
+.schedule-publish__delete {
+  border-color: var(--wkf-action-color);
+  color: var(--wkf-action-color);
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--wkf-action-hover-color);
+    color: var(--wkf-action-hover-color);
+  }
+}
+
+.field-type.relationship {
+  :is(.multi-value-remove, .clear-indicator) {
+    color: #ef2929;
+
+    .stroke {
+      stroke-width: 2px;
+    }
+
+    &:hover,
+    &:focus-visible {
+      color: #cc0000;
+    }
+  }
+
+  :is(
+    .relationship--multi-value-label__drawer-toggler,
+    .relationship--single-value__drawer-toggler
+  ) {
+    color: var(--wkf-related-link-color);
+
+    .icon--edit {
+      display: none;
+    }
+
+    &::after {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+      background-color: currentColor;
+      content: '';
+      mask: url('/assets/icons/small/external-link.png') center / contain no-repeat;
+    }
+
+    &:hover,
+    &:focus-visible {
+      color: var(--wkf-related-link-hover-color);
+    }
+  }
+
+  .relationship-add-new__add-button {
+    .icon--plus .stroke {
+      stroke-width: 2px;
+    }
+  }
+}
+
+.date-time-picker__clear-button {
+  color: #ef2929;
+
+  .icon--x .stroke {
+    stroke: currentColor;
+    stroke-width: 2px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: #cc0000;
+  }
+}

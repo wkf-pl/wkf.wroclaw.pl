@@ -1,0 +1,268 @@
+/* CMS listing and article pages */
+.contentShell {
+  padding-bottom: clamp(4rem, 10vw, 8rem);
+}
+
+.contentPageBody,
+.documentBody,
+.memberProfilePage {
+  width: min(76rem, calc(100% - 3rem));
+  margin-inline: auto;
+}
+
+.cmsDocument {
+  width: 100%;
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.richText {
+  color: #dde0e2;
+  font-size: 1.08rem;
+  line-height: 1.75;
+}
+
+.richText h2,
+.richText h3 {
+  margin-top: 2.25em;
+  color: var(--ivory);
+}
+
+.richText a,
+.attachments a {
+  color: var(--gold-light);
+}
+
+.richText img {
+  max-width: 100%;
+  height: auto;
+}
+
+.taxonomyLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.taxonomyLinks a {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.taxonomyLinks .taxonomyLink--category {
+  border-color: var(--gold-light);
+  background: rgb(0 13 23 / 36%);
+  color: var(--gold-light);
+}
+
+.taxonomyLinks .taxonomyLink--tag {
+  border-color: rgb(111 168 235 / 78%);
+  background: rgb(3 29 46 / 46%);
+  color: #b9d5f5;
+}
+
+.taxonomyLinks .taxonomyLink--category:hover,
+.taxonomyLinks .taxonomyLink--category:focus-visible {
+  border-color: var(--gold);
+  background: rgb(243 163 19 / 14%);
+  color: var(--ivory);
+}
+
+.taxonomyLinks .taxonomyLink--tag:hover,
+.taxonomyLinks .taxonomyLink--tag:focus-visible {
+  border-color: #a8cdf8;
+  background: rgb(111 168 235 / 14%);
+  color: var(--ivory);
+}
+
+.taxonomyLinks .taxonomyLink:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+.hierarchyBreadcrumbs {
+  margin-bottom: 1.25rem;
+  color: #9faab2;
+  font-size: 0.9rem;
+}
+
+.hierarchyBreadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hierarchyBreadcrumbs li + li::before {
+  margin-right: 0.4rem;
+  color: var(--gold);
+  content: '›';
+}
+
+.hierarchyBreadcrumbs a,
+.childCategories a {
+  color: var(--gold-light);
+}
+
+.childCategories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.5rem;
+}
+
+.childCategories a {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgb(243 163 19 / 45%);
+  border-radius: 0.35rem;
+  text-decoration: none;
+}
+
+.attachments {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+}
+
+.documentDetail {
+  width: 100%;
+}
+
+.documentDetail .contentHero {
+  overflow: visible;
+}
+
+.documentDetail .contentHeroInner {
+  z-index: 4;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+  align-items: start;
+}
+
+.documentDetail .contentHeroMedia {
+  position: absolute;
+  top: 12.95rem;
+  right: 0;
+  align-self: start;
+  width: min(28rem, 100%);
+  aspect-ratio: 210 / 297;
+}
+
+.documentBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+  column-gap: clamp(2.5rem, 6vw, 5rem);
+  min-height: 32rem;
+}
+
+.documentPdfPreview {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+}
+
+.documentPdfPreviewFrame {
+  display: block;
+  width: calc(100% + 1rem);
+  height: 100%;
+  border: 0;
+}
+
+.documentPdfPreviewActions {
+  position: absolute;
+  z-index: 1;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.documentPdfPreviewAction {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  padding: 0;
+  border: 1px solid var(--gold-light);
+  border-radius: 0.4rem;
+  background: rgb(0 13 23 / 92%);
+  color: var(--ivory);
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 0.7rem 1.6rem rgb(0 0 0 / 24%);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.documentPdfPreviewAction--open {
+  cursor: zoom-in;
+}
+
+.documentPdfPreviewAction .rasterIcon {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.documentPdfPreviewAction:hover,
+.documentPdfPreviewAction:focus-visible {
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.documentPdfPreviewAction:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+.documentSummary,
+.documentBody .richText,
+.documentBody .attachments {
+  grid-column: 1;
+  max-width: 70ch;
+}
+
+.documentSummary {
+  margin: 0 0 2rem;
+  color: var(--ivory);
+  font-size: clamp(1.08rem, 1.6vw, 1.2rem);
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.documentBody .richText {
+  line-height: 1.8;
+}
+
+.emptyState {
+  width: min(48rem, 100%);
+  margin: 0 auto;
+  padding: 2rem;
+  border: 1px dashed rgb(243 163 19 / 48%);
+  border-radius: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}

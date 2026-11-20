@@ -316,13 +316,6 @@ export const selectableRasterIconNames = selectableRasterIconDefinitions.map(
   ({ name }) => name,
 ) as SelectableRasterIconName[]
 
-export function isRasterIconName(value: unknown): value is RasterIconName {
-  return (
-    typeof value === 'string' &&
-    rasterIconDefinitions.some((definition) => definition.name === value)
-  )
-}
-
 export function isSelectableRasterIconName(value: unknown): value is SelectableRasterIconName {
   return (
     typeof value === 'string' &&

@@ -1,0 +1,56 @@
+.cmsPageDocument {
+  width: 100%;
+}
+
+.pageBlocks {
+  display: grid;
+  gap: 2rem;
+}
+
+:is(.listingBlock, .mediaBlock) {
+  container-name: content-block;
+  container-type: inline-size;
+}
+
+.columnLayout {
+  width: min(70rem, 100%);
+  min-width: 0;
+  margin-inline: auto;
+  container-name: column-layout;
+  container-type: inline-size;
+}
+
+.columnLayoutGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(1.25rem, 3vw, 2rem);
+  align-items: stretch;
+}
+
+.columnLayoutColumn {
+  display: grid;
+  grid-column: span var(--column-width);
+  grid-auto-rows: max-content;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  min-width: 0;
+}
+
+.columnLayoutColumn > :is(.richText, .listingBlock, .mediaBlock) {
+  width: 100%;
+  min-width: 0;
+  margin-inline: 0;
+}
+
+.columnLayoutColumn
+  :is(
+    .listingBlockHeading,
+    .contentList,
+    .mediaBlockHeading,
+    .mediaList,
+    .contentPagination,
+    .emptyState
+  ) {
+  width: 100%;
+  min-width: 0;
+  margin-inline: 0;
+}

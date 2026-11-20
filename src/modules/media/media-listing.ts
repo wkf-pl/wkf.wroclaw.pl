@@ -155,13 +155,7 @@ const findManualPublicMediaByIDsCached = cachePublicData(
 )
 
 export async function findPublicMedia(options: FindPublicMediaOptions): Promise<PublicMediaResult> {
-  const normalizedOptions: NormalizedPublicMediaOptions = {
-    ...normalizePublicMediaOptions(options),
-    categoryIds:
-      options.categoryId === undefined
-        ? undefined
-        : await findCategorySubtreeIDs(options.categoryId),
-  }
+  const normalizedOptions = normalizePublicMediaOptions(options)
 
   if (options.selectionMode === 'manual') {
     const mediaIDs = getRelationshipIds(options.manualMedia).flatMap((id) =>
@@ -170,7 +164,13 @@ export async function findPublicMedia(options: FindPublicMediaOptions): Promise<
     return findManualPublicMediaByIDsCached(normalizedOptions, mediaIDs)
   }
 
-  return findFilteredPublicMediaCached(normalizedOptions)
+  return findFilteredPublicMediaCached({
+    ...normalizedOptions,
+    categoryIds:
+      options.categoryId === undefined
+        ? undefined
+        : await findCategorySubtreeIDs(options.categoryId),
+  })
 }
 
 export function normalizePublicMediaOptions(

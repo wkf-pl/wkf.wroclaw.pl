@@ -1,0 +1,363 @@
+.listingBlock {
+  width: min(70rem, 100%);
+  margin-inline: auto;
+}
+
+.listingBlockHeading {
+  width: min(62rem, 100%);
+  margin: 0 auto 1.5rem;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+}
+
+.contentList {
+  display: grid;
+  gap: 1.5rem;
+  margin: 0 auto;
+}
+
+.contentCard {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.2fr);
+  overflow: hidden;
+  border: 1px solid rgb(243 163 19 / 55%);
+  border-radius: 0.75rem;
+  background: rgb(5 31 47 / 86%);
+}
+
+.contentCardImage {
+  display: block;
+  overflow: hidden;
+  min-height: 15rem;
+  background: var(--panel);
+}
+
+.contentCardImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.contentCardContent {
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+}
+
+.contentList-cards .contentCardContent {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.contentCardMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0;
+  color: #9faab2;
+  font-size: 0.9rem;
+}
+
+.contentCardKind {
+  color: var(--gold-light);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.contentCardMetaText,
+.contentCardMeta time {
+  color: var(--ivory);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.contentCardMetaLink {
+  color: var(--ivory);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.contentCard h2 {
+  margin: 0.5rem 0 0.75rem;
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+}
+
+.contentCard h2 a {
+  text-decoration: none;
+}
+
+.contentCardExcerpt {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.contentCardExcerpt > :last-child {
+  margin-bottom: 0;
+}
+
+.contentCardInterests {
+  margin: 0.8rem 0 0;
+  color: color-mix(in srgb, var(--ivory) 76%, transparent);
+  font-size: 0.92rem;
+}
+
+.contentCardFacts {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0 0 1rem;
+}
+
+.contentCardFacts--grid {
+  margin-bottom: 1.5rem;
+}
+
+.contentCardFacts p {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  margin: 0;
+  color: var(--ivory);
+  line-height: 1.45;
+}
+
+.contentCardFacts a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.contentCardFactIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--gold-light);
+}
+
+.contentCardFactIcon .rasterIcon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.contentList-cards .contentCardContent > .taxonomyLinks {
+  margin: 1.75rem 0 0;
+}
+
+.contentList-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+}
+
+.contentList-tiles {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.contentTile {
+  min-width: 0;
+}
+
+.contentTileLink {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgb(243 163 19 / 72%);
+  border-radius: 0.75rem;
+  background: var(--background-deep);
+  color: var(--ivory);
+  text-decoration: none;
+  transition: border-color 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.contentTileMedia,
+.contentTileOverlay,
+.contentTileContent {
+  grid-area: 1 / 1;
+}
+
+.contentTileMedia {
+  display: block;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.contentTileImage,
+.contentTileImageFallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.contentTileImage {
+  object-fit: cover;
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.contentTileImageFallback {
+  background:
+    url('/assets/placeholder-nebula.webp') center / cover no-repeat,
+    var(--background-deep);
+}
+
+.contentTileOverlay {
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgb(0 13 23 / 4%) 0%,
+    rgb(0 13 23 / 6%) 24%,
+    rgb(0 13 23 / 16%) 44%,
+    rgb(0 13 23 / 35%) 62%,
+    rgb(0 13 23 / 59%) 78%,
+    rgb(0 13 23 / 80%) 90%,
+    rgb(0 13 23 / 96%) 100%
+  );
+  pointer-events: none;
+}
+
+.contentTileContent {
+  z-index: 2;
+  align-self: end;
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 1.35rem);
+  text-shadow: 0 3px 22px rgb(0 0 0 / 65%);
+}
+
+.contentTileContent h2 {
+  margin: 0 0 0.65rem;
+  color: var(--ivory);
+  font-size: 1.5rem;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.contentTileMeta {
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.contentTileMeta :is(.contentCardKind, .contentCardMetaText, time) {
+  color: inherit;
+}
+
+.contentTileLink:hover,
+.contentTileLink:focus-visible {
+  border-color: var(--gold-light);
+}
+
+.contentTileLink:hover .contentTileImage,
+.contentTileLink:focus-visible .contentTileImage {
+  transform: scale(1.035);
+}
+
+.contentTileLink:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+.contentList-grid .contentCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.contentList-grid > article.contentCard > .contentCardImage {
+  display: block;
+  align-self: start;
+  overflow: hidden;
+  width: 100%;
+  min-height: 0;
+  max-height: none;
+  aspect-ratio: 16 / 9;
+}
+
+.contentList-grid > article.contentCard > .contentCardImage img {
+  display: block;
+}
+
+:is(.contentList-grid, .contentList-cards)
+  > article.contentCard
+  > .contentCardImage
+  > .contentCardImageFallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.contentList-grid .contentCardContent {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  padding: 1.25rem;
+}
+
+.contentList-grid .contentCard h2 {
+  font-size: 1.5rem;
+}
+
+.contentList-grid .contentCardContent > .taxonomyLinks {
+  margin: auto 0 0;
+  padding-top: 2rem;
+}
+
+.listingBlock:has(> .contentList-compact) {
+  width: 100%;
+}
+
+.listingBlock:has(> .contentCarousel) {
+  width: 100%;
+}
+
+.contentList-compact {
+  gap: 0;
+  overflow: hidden;
+  width: 100%;
+  border: 1px solid rgb(243 163 19 / 55%);
+  border-radius: 0.75rem;
+  background: rgb(5 31 47 / 86%);
+}
+
+.contentList-compact > .contentCard {
+  border: 0;
+  border-bottom: 1px solid rgb(243 163 19 / 45%);
+  border-radius: 0;
+  background: transparent;
+}
+
+.contentList-compact > .contentCard:last-child {
+  border-bottom: 0;
+}
+
+.contentList-compact .contentCard {
+  display: block;
+}
+
+.contentList-compact .contentCardContent {
+  display: grid;
+  grid-template-columns: minmax(18rem, 5fr) minmax(0, 7fr);
+  align-items: center;
+  gap: 0;
+  padding: 1rem 1.25rem;
+}
+
+.contentList-compact .contentCardContent--partnerRoles {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+}
+
+.contentList-compact h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.contentList-compact h2 a {
+  color: var(--ivory);
+}
+
+.contentList-compact .contentCardMeta {
+  padding-right: 1.25rem;
+}

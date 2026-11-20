@@ -44,19 +44,23 @@ test.afterAll(async () => {
   }
 })
 
-test('invalidates the cached partner detail after a Payload update', async ({ page }) => {
-  await page.goto(`/partners/${partnerSlug}`)
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Partner przed aktualizacją cache' }),
-  ).toBeVisible()
+test(
+  'invalidates the cached partner detail after a Payload update',
+  { tag: '@public-cache' },
+  async ({ page }) => {
+    await page.goto(`/partners/${partnerSlug}`)
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Partner przed aktualizacją cache' }),
+    ).toBeVisible()
 
-  await updatePartnerName(page, 'Partner po aktualizacji cache')
+    await updatePartnerName(page, 'Partner po aktualizacji cache')
 
-  await page.goto(`/partners/${partnerSlug}`)
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Partner po aktualizacji cache' }),
-  ).toBeVisible()
-})
+    await page.goto(`/partners/${partnerSlug}`)
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Partner po aktualizacji cache' }),
+    ).toBeVisible()
+  },
+)
 
 async function updatePartnerName(
   page: import('@playwright/test').Page,

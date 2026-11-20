@@ -12,6 +12,7 @@ import { sql } from '@payloadcms/db-postgres'
 import { findPublicContent } from '@/modules/content/content-listing'
 import { resolvePublicListingView } from '@/modules/content/public-listing-view'
 import { getContentListingPresentation } from '@/modules/content/content-listing-presentation'
+import { listingViewUsageEndpoint } from '@/modules/content/listing-view-endpoints'
 import type { ListingBlock, Post } from '@/payload-types'
 
 import {
@@ -31,6 +32,95 @@ afterAll(async () => {
 })
 
 describe('content listing and pagination', () => {
+  it(
+    'reports nested shared views in both published layouts and drafts',
+    { timeout: 20_000 },
+    async () => {
+      const { author, page, payload } = fixture
+      const {
+        docs: [administratorRole],
+      } = await payload.find({
+        collection: 'roles',
+        where: { key: { equals: 'administrator' } },
+        limit: 1,
+      })
+      const {
+        docs: [sharedView],
+      } = await payload.find({
+        collection: 'listing-views',
+        where: { presetKey: { equals: 'grid' } },
+        limit: 1,
+      })
+      if (!administratorRole || !sharedView) throw new Error('Missing migrated roles or views.')
+
+      const listing: ListingBlock = {
+        appearance: { preset: `shared:${sharedView.id}` },
+        blockType: 'listing',
+        pageSize: 4,
+        selectionMode: 'filters',
+        sort: 'newest',
+        sources: ['posts'],
+        view: 'grid',
+      }
+      const req = await createLocalReq(
+        {
+          req: { routeParams: { id: String(sharedView.id) } },
+          user: {
+            ...author,
+            collection: 'users',
+            roles: [...(author.roles ?? []), administratorRole.id],
+          },
+        },
+        payload,
+      )
+      const draft = await payload.create({
+        collection: 'pages',
+        data: {
+          _status: 'draft',
+          author: { relationTo: 'users', value: author.id },
+          layout: [listing],
+          slug: 'integration-listing-usage-draft',
+          title: 'Draft shared listing usage',
+        },
+        draft: true,
+      })
+
+      try {
+        await payload.update({
+          collection: 'pages',
+          id: page.id,
+          data: {
+            layout: [
+              {
+                blockType: 'sectionGroup',
+                sections: [{ blocks: [listing] }],
+              },
+            ],
+          },
+          draft: false,
+        })
+
+        const response = await listingViewUsageEndpoint.handler(req)
+        expect(response.status).toBe(200)
+        const usages = await response.json()
+        expect(usages).toEqual(
+          expect.arrayContaining([
+            { collection: 'pages', id: page.id, status: 'published', title: page.title },
+            { collection: 'pages', id: draft.id, status: 'draft', title: draft.title },
+          ]),
+        )
+      } finally {
+        await payload.delete({ collection: 'pages', id: draft.id })
+        await payload.update({
+          collection: 'pages',
+          id: page.id,
+          data: { layout: page.layout },
+          draft: false,
+        })
+      }
+    },
+  )
+
   it('publishes editable templates for every former built-in preset', async () => {
     const { docs } = await fixture.payload.find({
       collection: 'listing-views',

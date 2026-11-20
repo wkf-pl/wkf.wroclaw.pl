@@ -17,7 +17,6 @@ import {
   listingConditionOperatorsByField,
   normalizeListingTitle,
   type ListingConditionInput,
-  type ContentListingSource,
 } from '@/modules/content/listing-conditions'
 
 type ListingConditionSiblingData = {
@@ -401,9 +400,3 @@ function getConditionSignature(condition: ListingConditionInput): string {
       return JSON.stringify([condition.field, condition.operator])
   }
 }
-
-export function getListingSources(value: unknown): ContentListingSource[] {
-  return Array.isArray(value) ? value.filter(isListingSource) : []
-}
-
-export { allListingSources }
