@@ -176,7 +176,7 @@ jobs:
             echo 'Migration timed out. Production preview remains stopped.' >&2
             exit 1
           fi
-          bash scripts/run-production-database-operation.sh reconcile-grants "$OPERATIONS_IMAGE_REFERENCE"
+          bash scripts/run-production-database-operation.sh reconcile-grants "$OPERATIONS_IMAGE_REFERENCE" --analyze-after-restore
 
       - name: Restart preview and run anonymous smoke checks
         run: |

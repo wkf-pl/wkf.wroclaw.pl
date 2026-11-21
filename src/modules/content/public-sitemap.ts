@@ -2,7 +2,7 @@ import { getPayload } from 'payload'
 
 import config from '@payload-config'
 
-import { findPublishedPageTemplate } from '@/modules/page-templates/public-page-templates'
+import { findPublishedPageTemplateMetadata } from '@/modules/page-templates/public-page-templates'
 import { collectPayloadPages } from '@/lib/payload-pagination'
 
 import { publicRequestContext } from './public-access'
@@ -15,7 +15,7 @@ export async function loadPublicSitemap() {
   const payload = await getPayload({ config })
   const [blogTemplate, pages, posts, categories, tags, events, cycles, partners, memberProfiles] =
     await Promise.all([
-      findPublishedPageTemplate('blog-index'),
+      findPublishedPageTemplateMetadata('blog-index'),
       collectPayloadPages((page) =>
         payload.find({
           collection: 'pages',

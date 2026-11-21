@@ -306,6 +306,7 @@ else
   restore_media "$checkpoint_name"
   run_payload_job migrate
   run_payload_job migrate:status
+  analyze_restored_database
   az containerapp job update \
     --resource-group "$resource_group_name" \
     --name "$migration_job_name" \

@@ -47,6 +47,24 @@ restore_database() {
       /work/restore.dump
 }
 
+analyze_restored_database() {
+  local started_at=$SECONDS
+  echo 'Collecting PostgreSQL planner statistics after staging migrations.'
+  docker run --rm \
+    --env PGPASSWORD \
+    --env PGSSLMODE \
+    "$postgres_image" \
+    psql \
+      --no-psqlrc \
+      --host "$postgres_server_fqdn" \
+      --username "$database_administrator" \
+      --dbname "$database_name" \
+      --set ON_ERROR_STOP=1 \
+      --command 'ANALYZE' \
+      --command "SELECT count(*) AS analyzed_application_tables FROM pg_stat_user_tables WHERE schemaname = 'public' AND last_analyze IS NOT NULL"
+  echo "PostgreSQL ANALYZE completed in $((SECONDS - started_at)) seconds."
+}
+
 restore_media() {
   local source_checkpoint_name="$1"
   local checkpoint_prefix="$source_checkpoint_name/media/"

@@ -2,6 +2,7 @@ targetScope = 'resourceGroup'
 
 param containerAppEnvironmentId string
 param imageReference string
+param analyzeAfterRestore bool = false
 param jobName string = 'wkf-prod-reconcile-grants'
 param location string = 'polandcentral'
 
@@ -15,6 +16,16 @@ param tags object = {
   environment: 'prod'
   lifecycle: 'ephemeral-operation'
 }
+
+var reconcileAndAnalyze = '''
+  bash /opt/wkf/reconcile-postgres-grants.sh
+  started_at=$SECONDS
+  echo 'Collecting PostgreSQL planner statistics after restore.'
+  psql "$POSTGRES_MIGRATOR_URL" --no-psqlrc --set ON_ERROR_STOP=1 \
+    --command 'ANALYZE' \
+    --command "SELECT count(*) AS analyzed_application_tables FROM pg_stat_user_tables WHERE schemaname = 'public' AND last_analyze IS NOT NULL"
+  echo "PostgreSQL ANALYZE completed in $((SECONDS - started_at)) seconds."
+'''
 
 resource grantsJob 'Microsoft.App/jobs@2024-03-01' = {
   name: jobName
@@ -54,7 +65,10 @@ resource grantsJob 'Microsoft.App/jobs@2024-03-01' = {
         {
           name: 'reconcile-grants'
           image: imageReference
-          args: [
+          args: analyzeAfterRestore ? [
+            '-ec'
+            reconcileAndAnalyze
+          ] : [
             '/opt/wkf/reconcile-postgres-grants.sh'
           ]
           env: [

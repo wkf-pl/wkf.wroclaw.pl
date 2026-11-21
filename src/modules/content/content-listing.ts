@@ -66,7 +66,7 @@ export type PublicContentResult = {
   items: PublicContentListItem[]
   page: number
   pageSize: number
-  totalDocs: number
+  totalDocs: number | null
   totalPages: number
 }
 
@@ -102,6 +102,7 @@ async function findPublicContentUncached(
     limit: pageSize,
     overrideAccess: false,
     page,
+    pagination: options.pagination,
     select: {
       source: true,
       sourceDocumentId: true,
@@ -116,13 +117,13 @@ async function findPublicContentUncached(
     items: await hydrateContentListingItems(payload, result.docs),
     page,
     pageSize,
-    totalDocs: result.totalDocs,
+    totalDocs: options.pagination ? result.totalDocs : null,
     totalPages: options.pagination ? Math.max(1, result.totalPages) : 1,
   }
 }
 
 const findPublicContentCached = cachePublicData(
-  'public-content-listing-v2',
+  'public-content-listing-v3',
   findPublicContentUncached,
   {
     revalidate: 300,

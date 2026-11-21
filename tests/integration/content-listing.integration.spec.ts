@@ -358,7 +358,10 @@ describe('content listing and pagination', () => {
       sources: ['pages'],
     })
     expect(childResult.items.map((item) => item.document.id)).toEqual([fixture.childPage.id])
-    expect(childResult.items[0]?.document).toHaveProperty('layout')
+    expect(childResult.items[0]?.document).toMatchObject({
+      listingExcerpt: fixture.childPage.listingExcerpt,
+    })
+    expect(childResult.items[0]?.document).not.toHaveProperty('layout')
 
     const mixedSourceResult = await findPublicContent({
       conditions: [
@@ -918,17 +921,17 @@ describe('content listing and pagination', () => {
               category: fixture.category.id,
               excerpt: `Pagination excerpt ${i}`,
               layout: [{ blockType: 'richText', content: createLexicalDocument(`Content ${i}`) }],
-              publishedAt: new Date(Date.UTC(2026, 7, 15 + i)).toISOString(),
+              publishedAt: new Date(Date.UTC(2026, 7, 15 + Math.min(i, 5))).toISOString(),
               slug: `integration-listing-pagination-${i}`,
               tags: [fixture.tag.id],
-              title: `Integration pagination ${i}`,
+              title: `Integration pagination ${Math.min(i, 5)}`,
             },
             overrideAccess: true,
           }),
         )
       }
 
-      const result = await findPublicContent({
+      const options = {
         conditions: [
           {
             field: 'category',
@@ -946,12 +949,20 @@ describe('content listing and pagination', () => {
         pagination: true,
         sort: 'newest',
         sources: ['posts', 'pages', 'posts'],
-      })
+      } satisfies Parameters<typeof findPublicContent>[0]
+      const result = await findPublicContent(options)
+      const firstPage = await findPublicContent({ ...options, page: 1 })
+      const unpaginated = await findPublicContent({ ...options, pagination: false })
 
       expect(result.items).toHaveLength(2)
       expect(result.page).toBe(4)
       expect(result.pageSize).toBe(2)
       expect(result.totalDocs).toBe(9)
+      expect(unpaginated).toMatchObject({ page: 1, pageSize: 2, totalDocs: null, totalPages: 1 })
+      expect(unpaginated.items).toEqual(firstPage.items)
+      expect(unpaginated.items.map(({ document }) => document.id)).toEqual(
+        createdPosts.slice(-2).map(({ id }) => id),
+      )
     } finally {
       for (const createdPost of createdPosts) {
         await fixture.payload.delete({

@@ -93,6 +93,15 @@ restore_database_from_dump() {
     || return 1
 }
 
+analyze_local_database() {
+  local started_at=$SECONDS
+  echo 'Collecting PostgreSQL planner statistics after local restore.'
+  docker compose exec -T postgres sh -c \
+    'psql --no-psqlrc --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --set ON_ERROR_STOP=1 --command "ANALYZE"' \
+    || return 1
+  echo "PostgreSQL ANALYZE completed in $((SECONDS - started_at)) seconds."
+}
+
 validate_downloaded_blobs() {
   local blob_manifest_path="$1"
   local source_directory="$2"
@@ -276,6 +285,7 @@ cleanup() {
 
     if restore_database_from_dump "$local_rescue_directory/database.dump"; then
       rollback_database_succeeded=true
+      analyze_local_database || echo 'WARNING: Could not refresh PostgreSQL statistics after rollback.' >&2
     fi
     if replace_local_media \
       "$local_rescue_directory/media-blobs.json" \
@@ -559,6 +569,7 @@ docker compose run --rm --no-deps app pnpm payload migrate:status
 
 docker compose exec -T postgres sh -c \
   'psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --set ON_ERROR_STOP=1 --command "TRUNCATE TABLE users_sessions, payload_locked_documents CASCADE; UPDATE users SET reset_password_token = NULL, reset_password_expiration = NULL, login_attempts = 0, lock_until = NULL;"'
+analyze_local_database
 
 if [[ "$application_was_running" == "true" ]]; then
   docker compose up -d app

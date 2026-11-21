@@ -1,10 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { getPayload, type Payload } from 'payload'
+import { createLocalReq, getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
 import type { Category, Document, Role, Tag, User } from '@/payload-types'
 import { findPublicContent } from '@/modules/content/content-listing'
 import { publicRequestContext } from '@/modules/content/public-access'
+import { readDocumentFiles } from '@/modules/documents/document-access'
 
 import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/integration-author'
 
@@ -290,6 +291,75 @@ describe('document website access integration', () => {
         : roleDocument.primaryFile
     expect(documents.docs).toHaveLength(2)
     expect(files.docs.some(({ id }) => id === roleFileID)).toBe(true)
+  })
+
+  it('checks published membership for a single file by ID and upload filename', async () => {
+    const attachment = await payload.create({
+      collection: 'document-files',
+      data: { label: 'Visibility test attachment' },
+      file: {
+        data: testPDF,
+        mimetype: 'application/pdf',
+        name: 'integration-visibility-attachment.pdf',
+        size: testPDF.length,
+      },
+    })
+    const primaryFileID =
+      typeof publicDocument.primaryFile === 'object'
+        ? publicDocument.primaryFile.id
+        : publicDocument.primaryFile
+    const documentOptions = { collection: 'documents', id: publicDocument.id } as const
+    const readFile = (id: number) =>
+      payload.findByID({
+        collection: 'document-files',
+        context: publicRequestContext,
+        depth: 0,
+        id,
+        overrideAccess: false,
+        disableErrors: true,
+      })
+    const readStaticFile = async () =>
+      readDocumentFiles({
+        data: { filename: attachment.filename },
+        isReadingStaticFile: true,
+        req: await createLocalReq({}, payload),
+      })
+
+    try {
+      await payload.update({ ...documentOptions, data: { attachments: [attachment.id] } })
+      expect(await readFile(primaryFileID)).toMatchObject({ id: primaryFileID })
+      expect(await readFile(attachment.id)).toMatchObject({ id: attachment.id })
+      expect(await readStaticFile()).toEqual({ id: { equals: attachment.id } })
+
+      await payload.update({
+        ...documentOptions,
+        data: { _status: 'draft' },
+        unpublishAllLocales: true,
+      })
+      expect(await readFile(primaryFileID)).toBeNull()
+      expect(await readStaticFile()).toBe(false)
+
+      await payload.update({ ...documentOptions, data: { _status: 'published' } })
+      await payload.update({ ...documentOptions, data: { deletedAt: new Date().toISOString() } })
+      expect(await readFile(primaryFileID)).toBeNull()
+      expect(await readStaticFile()).toBe(false)
+
+      await payload.update({
+        ...documentOptions,
+        data: { attachments: [], deletedAt: null },
+        trash: true,
+      })
+      expect(await readFile(primaryFileID)).toMatchObject({ id: primaryFileID })
+      expect(await readFile(attachment.id)).toBeNull()
+      expect(await readStaticFile()).toBe(false)
+    } finally {
+      await payload.update({
+        ...documentOptions,
+        data: { _status: 'published', attachments: [], deletedAt: null },
+        trash: true,
+      })
+      await payload.delete({ collection: 'document-files', id: attachment.id })
+    }
   })
 
   it('assigns multiple files and deletes them with their parent document', async () => {

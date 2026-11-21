@@ -20,6 +20,12 @@ describe('deployment data operations', () => {
     expect(stagingDataScript).toContain('destructive_restore_started=true')
     expect(stagingDataScript).toContain('run_payload_job migrate')
     expect(stagingDataScript).toContain('run_payload_job migrate:status')
+    expect(stagingDataScript.indexOf('analyze_restored_database\n')).toBeGreaterThan(
+      stagingDataScript.indexOf('run_payload_job migrate:status'),
+    )
+    expect(stagingDataScript.indexOf('analyze_restored_database\n')).toBeLessThan(
+      stagingDataScript.indexOf('\nreactivate_application\n'),
+    )
     expect(stagingDataScript).toContain('No active revision found; restore will recover')
     expect(readFileSync('scripts/staging-checkpoint/restore.sh', 'utf8')).toContain(
       'GRANT ALL ON SCHEMA public',
@@ -53,6 +59,9 @@ describe('deployment data operations', () => {
     expect(stagingPullScript).toContain(' EXTENSION - pgaudit[[:space:]]*$')
     expect(stagingPullScript).toContain(' COMMENT - EXTENSION pgaudit[[:space:]]*$')
     expect(stagingPullScript).toContain('--use-list "$restore_list_path"')
+    expect(stagingPullScript.indexOf('--command "ANALYZE"')).toBeGreaterThan(
+      stagingPullScript.indexOf('--use-list "$restore_list_path"'),
+    )
     expect(stagingPullScript).toContain(
       '"$route" == "/api/media?limit=1" && "$route_status" == "403"',
     )
@@ -237,6 +246,25 @@ describe('deployment data operations', () => {
       importScript.indexOf('azcopy remove "$production_url"'),
     )
     expect(importScript).toContain('TRUNCATE TABLE users_sessions, payload_locked_documents')
+  })
+
+  it('refreshes planner statistics in the post-restore grants job for either production workflow', () => {
+    const importWorkflow = readFileSync('.github/workflows/import-production-data.yml', 'utf8')
+    const restoreWorkflow = readFileSync('.github/workflows/restore-production-offsite.yml', 'utf8')
+    const grantsJob = readFileSync('infra/azure/grants-job.bicep', 'utf8')
+    const analyzeOption = 'reconcile-grants "$OPERATIONS_IMAGE_REFERENCE" --analyze-after-restore'
+
+    expect(importWorkflow.indexOf(analyzeOption)).toBeGreaterThan(-1)
+    expect(importWorkflow.indexOf(analyzeOption)).toBeLessThan(
+      importWorkflow.indexOf('name: Restart preview'),
+    )
+    expect(restoreWorkflow.indexOf(analyzeOption)).toBeGreaterThan(-1)
+    expect(restoreWorkflow.indexOf(analyzeOption)).toBeLessThan(
+      restoreWorkflow.indexOf('name: Start production'),
+    )
+    expect(grantsJob).toContain('param analyzeAfterRestore bool = false')
+    expect(grantsJob).toContain('bash /opt/wkf/reconcile-postgres-grants.sh')
+    expect(grantsJob).toContain("--command 'ANALYZE'")
   })
 
   it('uses keyring-free managed identity authentication for AzCopy operations', () => {

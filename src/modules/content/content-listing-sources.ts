@@ -357,6 +357,7 @@ async function findPublishedEvents(payload: Payload, ids: readonly number[]): Pr
     draft: false,
     overrideAccess: false,
     pagination: false,
+    populate: { 'event-cycles': { slug: true, title: true } },
     select: {
       category: true,
       cycle: true,
@@ -417,7 +418,6 @@ async function findPublishedPages(payload: Payload, ids: readonly number[]): Pro
       category: true,
       heroImage: true,
       id: true,
-      layout: true,
       listingExcerpt: true,
       parent: true,
       slug: true,
