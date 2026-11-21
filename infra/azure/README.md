@@ -265,3 +265,6 @@ All PostgreSQL application connections require TLS through `sslmode=require`.
 
 Operational backup, restore, suspension, and Easy Auth procedures are documented in the
 [production operations runbook](../../docs/Operations.md).
+
+The deployed topology, measured monthly run rate, and dated nonprofit-grant forecast are recorded
+in the [architecture and Azure cost snapshot](../../docs/Architecture.md).

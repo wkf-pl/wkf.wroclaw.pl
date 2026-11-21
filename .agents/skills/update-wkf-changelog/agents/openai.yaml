@@ -1,7 +1,7 @@
 interface:
   display_name: 'Update WKF Changelog'
-  short_description: 'Add new master commits to the WKF changelog'
-  default_prompt: 'Use $update-wkf-changelog to add the latest master commits to CHANGELOG.md.'
+  short_description: 'Record production deployments in the WKF changelog'
+  default_prompt: 'Use $update-wkf-changelog to record the latest confirmed production deployments in CHANGELOG.md.'
 
 policy:
   allow_implicit_invocation: false
