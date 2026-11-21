@@ -54,7 +54,7 @@ while IFS= read -r changed_path; do
   esac
 
   case "$changed_path" in
-    .github/* | infra/* | scripts/deploy-azure.sh | scripts/classify-deployment.sh | *.md)
+    .github/* | infra/* | scripts/deploy-azure.sh | scripts/deployment/* | scripts/classify-deployment.sh | *.md)
       ;;
     *)
       build_image=true

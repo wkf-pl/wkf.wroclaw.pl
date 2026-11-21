@@ -1,0 +1,145 @@
+.contentList.contentList-configuredColumns {
+  gap: 1rem;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(
+      min(
+        100%,
+        max(
+          var(--listing-minimum),
+          calc((100% - (var(--listing-columns) - 1) * 1rem) / var(--listing-columns))
+        )
+      ),
+      1fr
+    )
+  );
+}
+
+.contentList-cards.contentList-configuredColumns .contentCard {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+
+@media (max-width: 36rem) {
+  .contentList-cards.contentList-configuredColumns .contentCard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Configurable presentations retain the public card and tile styling. */
+.contentList .contentCard.contentCard--withoutImage {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.contentCardSecondaryAction {
+  margin-top: 1rem;
+}
+
+.contentTileTitleLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.contentTileTitleLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.contentTileContent a:not(.contentTileTitleLink) {
+  position: relative;
+  z-index: 1;
+}
+
+.contentTileLink:has(:focus-visible) {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+.contentList-compact .contentCardContent > :not(.contentCardMeta, h2) {
+  grid-column: 1 / -1;
+}
+
+.contentTileContent:has(.contentTileTitleLink) {
+  position: static;
+}
+
+.contentList-compact.contentList-configuredColumns .contentCardContent,
+.contentCarouselItem.contentList-compact .contentCardContent {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+}
+
+/* These components have their own dark backgrounds, including on inverse surfaces. */
+.contentCard,
+.contentTileLink,
+.contentCarousel {
+  --surface-accent: var(--gold-light);
+  --surface-focus: var(--gold-light);
+  --surface-line: var(--line);
+  --surface-muted: var(--muted);
+  --surface-text: var(--ivory);
+  color: var(--ivory);
+}
+
+/* A row Listing is one continuous surface, with dividers controlled by its frame. */
+.contentList.contentList-compact {
+  gap: 0;
+  border: var(--listing-row-border, 1px solid rgb(243 163 19 / 55%));
+  border-radius: var(--listing-row-radius, 0.75rem);
+  background: var(--listing-row-background, rgb(5 31 47 / 86%));
+}
+
+.contentList.contentList-compact > .contentCard {
+  --surface-accent: inherit;
+  --surface-focus: inherit;
+  --surface-line: inherit;
+  --surface-muted: inherit;
+  --surface-text: inherit;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--surface-text, var(--ivory));
+  box-shadow: calc(-1 * var(--listing-divider-width, 1px))
+    calc(-1 * var(--listing-divider-width, 1px)) 0 0 var(--surface-line, rgb(243 163 19 / 38%));
+}
+
+.contentList-compact h2 a,
+.contentList-compact .contentCardFacts p,
+.contentList-compact .contentCardMetaText,
+.contentList-compact .contentCardMeta time,
+.contentList-compact .contentCardMetaLink {
+  color: var(--surface-text, var(--ivory));
+}
+
+.contentList-compact .contentCardKind,
+.contentList-compact .contentCardFactIcon {
+  color: var(--surface-accent, var(--gold-light));
+}
+
+.contentList-compact .contentCardExcerpt,
+.contentList-compact .contentCardInterests {
+  color: var(--surface-muted, var(--muted));
+}
+
+.contentPresentation:has(
+  > .contentPresentationContent > .contentPresentationBody > .listingBlock > .contentList-compact
+) {
+  --listing-divider-width: 0px;
+  --listing-row-border: 0;
+  --listing-row-radius: 0;
+  --listing-row-background: transparent;
+}
+
+.contentPresentation[data-frame='outline']:has(
+    > .contentPresentationContent > .contentPresentationBody > .listingBlock > .contentList-compact
+  ) {
+  --listing-divider-width: 1px;
+  border-width: 2px;
+}
+
+.contentPresentation:has(
+    > .contentPresentationContent > .contentPresentationBody > .listingBlock > .contentList-compact
+  )
+  > .contentPresentationContent {
+  padding: 0;
+}

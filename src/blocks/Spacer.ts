@@ -1,6 +1,6 @@
 import type { Block } from 'payload'
 
-export const defaultSpacerSize = '32'
+const defaultSpacerSize = '32'
 
 const spacerSizeOptions = [
   { label: 'Bardzo mały', value: '16' },

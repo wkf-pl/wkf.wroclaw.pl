@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest'
 
 import { AdminNavIcon } from '@/components/admin/AdminNavIcon'
 
+import { readAdminStyles } from '../helpers/admin-styles'
+
 const visibleCollectionSlugs = [
   'categories',
   'documents',
@@ -60,7 +62,7 @@ describe('admin navigation icons', () => {
   })
 
   it('uses theme-specific icon colors', () => {
-    const adminStyles = readFileSync('src/app/(payload)/custom.scss', 'utf8')
+    const adminStyles = readAdminStyles()
 
     expect(adminStyles).toMatch(/\.nav__link-icon[\s\S]*?color: var\(--wkf-related-link-color\)/)
     expect(adminStyles).toMatch(

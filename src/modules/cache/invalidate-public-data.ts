@@ -130,10 +130,6 @@ const pageTemplateInvalidators = createCollectionCacheInvalidators([
 export const invalidatePageTemplatesAfterChange = pageTemplateInvalidators.afterChange
 export const invalidatePageTemplatesAfterDelete = pageTemplateInvalidators.afterDelete
 
-const sitemapInvalidators = createCollectionCacheInvalidators([publicCacheTags.sitemap])
-export const invalidateSitemapAfterChange = sitemapInvalidators.afterChange
-export const invalidateSitemapAfterDelete = sitemapInvalidators.afterDelete
-
 const urlAliasInvalidators = createCollectionCacheInvalidators([publicCacheTags.urlAliases])
 export const invalidateUrlAliasesAfterChange = urlAliasInvalidators.afterChange
 export const invalidateUrlAliasesAfterDelete = urlAliasInvalidators.afterDelete
@@ -156,10 +152,6 @@ export const invalidateSiteSettingsAfterChange: GlobalAfterChangeHook = ({ doc, 
   return doc
 }
 
-const homepageInvalidators = createCollectionCacheInvalidators([publicCacheTags.homepage])
-export const invalidateHomepageAfterChange = homepageInvalidators.afterChange
-export const invalidateHomepageAfterDelete = homepageInvalidators.afterDelete
-
 const partnerCacheTags = tagsBySource.partners
 
 const eventTypeCacheTags = [
@@ -176,10 +168,6 @@ export function getPartnerCacheTags(): string[] {
 
 export function getMemberProfileCacheTags(): string[] {
   return [...memberProfileCacheTags]
-}
-
-export function getEventTypeCacheTags(): string[] {
-  return [...eventTypeCacheTags]
 }
 
 const eventTypeInvalidators = createCollectionCacheInvalidators(eventTypeCacheTags)

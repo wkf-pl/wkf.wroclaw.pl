@@ -7,12 +7,9 @@ import {
   ReactSelect,
   RelationshipField,
   RelationshipInput,
-  useConfig,
   useField,
   useFieldPath,
   useFormFields,
-  usePayloadAPI,
-  useRowLabel,
 } from '@payloadcms/ui'
 import { mergeFieldStyles } from '@payloadcms/ui/shared'
 import type {
@@ -23,11 +20,9 @@ import type {
   UIFieldClientProps,
   ValueWithRelation,
 } from 'payload'
-import { formatAdminURL } from 'payload/shared'
 import type { ChangeEvent } from 'react'
-import { Fragment, useMemo } from 'react'
+import { useMemo } from 'react'
 
-import { getFormRelationshipId } from '@/lib/relationships'
 import {
   getApplicableListingSources,
   getTaxonomyTemplateCollection,
@@ -41,13 +36,15 @@ import {
   listingConditionFieldLabels,
   listingConditionFields,
   listingConditionOperatorsByField,
-  listingConditionSupportedSources,
   listingSourceLabels,
   type ListingConditionField,
-  type ListingConditionInput,
   type ListingConditionOperator,
   type ContentListingSource,
 } from '@/modules/content/listing-conditions'
+
+import { ListingConditionsSummary, readListingCondition } from './ListingConditionsSummary'
+
+export { ListingConditionRowLabel } from './ListingConditionsSummary'
 
 type SelectOption<T extends string> = {
   label: string
@@ -62,27 +59,9 @@ const fieldOptions = listingConditionFields.map<SelectOption<ListingConditionFie
 export function ListingConditionsField(properties: ArrayFieldClientProps) {
   const path = useFieldPath() || properties.path
   const conditions = useFormFields(([fields]) =>
-    (fields[path]?.rows ?? []).map((_, rowIndex) => {
-      const rowPath = `${path}.${rowIndex}`
-      return {
-        dateValue: fields[`${rowPath}.dateValue`]?.value as ListingConditionInput['dateValue'],
-        endDateValue: fields[`${rowPath}.endDateValue`]
-          ?.value as ListingConditionInput['endDateValue'],
-        eventTimeValue: fields[`${rowPath}.eventTimeValue`]
-          ?.value as ListingConditionInput['eventTimeValue'],
-        field: fields[`${rowPath}.field`]?.value as ListingConditionInput['field'],
-        numberValue: fields[`${rowPath}.numberValue`]
-          ?.value as ListingConditionInput['numberValue'],
-        operator: fields[`${rowPath}.operator`]?.value as ListingConditionInput['operator'],
-        relatedTargetMode: fields[`${rowPath}.relatedTargetMode`]
-          ?.value as ListingConditionInput['relatedTargetMode'],
-        relatedTargetValue: fields[`${rowPath}.relatedTargetValue`]
-          ?.value as ListingConditionInput['relatedTargetValue'],
-        relationshipValue: fields[`${rowPath}.relationshipValue`]
-          ?.value as ListingConditionInput['relationshipValue'],
-        textValue: fields[`${rowPath}.textValue`]?.value as ListingConditionInput['textValue'],
-      }
-    }),
+    (fields[path]?.rows ?? []).map((_, rowIndex) =>
+      readListingCondition(fields, `${path}.${rowIndex}`),
+    ),
   )
   const sources = useListingSources(path)
   return (
@@ -111,36 +90,6 @@ export function ListingConditionsField(properties: ArrayFieldClientProps) {
       </div>
       <ListingConditionsSummary conditions={conditions} sources={sources} />
     </div>
-  )
-}
-
-export function ListingConditionRowLabel() {
-  const { data, path } = useRowLabel<ListingConditionInput>()
-  const liveCondition = useFormFields(([fields]) => ({
-    dateValue: fields[`${path}.dateValue`]?.value as ListingConditionInput['dateValue'],
-    endDateValue: fields[`${path}.endDateValue`]?.value as ListingConditionInput['endDateValue'],
-    eventTimeValue: fields[`${path}.eventTimeValue`]
-      ?.value as ListingConditionInput['eventTimeValue'],
-    field: fields[`${path}.field`]?.value as ListingConditionInput['field'],
-    numberValue: fields[`${path}.numberValue`]?.value as ListingConditionInput['numberValue'],
-    operator: fields[`${path}.operator`]?.value as ListingConditionInput['operator'],
-    relatedTargetMode: fields[`${path}.relatedTargetMode`]
-      ?.value as ListingConditionInput['relatedTargetMode'],
-    relatedTargetValue: fields[`${path}.relatedTargetValue`]
-      ?.value as ListingConditionInput['relatedTargetValue'],
-    relationshipValue: fields[`${path}.relationshipValue`]
-      ?.value as ListingConditionInput['relationshipValue'],
-    textValue: fields[`${path}.textValue`]?.value as ListingConditionInput['textValue'],
-  }))
-  const condition = mergeConditionData(data ?? {}, liveCondition)
-  const description = useConditionDescription(condition, false)
-  const label = `Warunek: ${description}`
-
-  return (
-    <span className="wkf-listing-condition-row-label" title={label}>
-      <strong>Warunek:</strong>
-      <span>{description}</span>
-    </span>
   )
 }
 
@@ -450,231 +399,6 @@ export function ListingConditionScope(properties: UIFieldClientProps) {
         : null}
     </p>
   )
-}
-
-function ListingConditionsSummary({
-  conditions,
-  sources,
-}: {
-  conditions: ListingConditionInput[]
-  sources: ContentListingSource[]
-}) {
-  if (!conditions.length || !sources.length) return null
-
-  return (
-    <aside className="wkf-listing-conditions__summary">
-      <strong>Jak zadziała ten filtr</strong>
-      <ul>
-        {sources.map((source) => {
-          const applicableConditions = conditions.filter(
-            (condition) =>
-              isListingConditionField(condition.field) &&
-              listingConditionSupportedSources[condition.field].includes(source),
-          )
-
-          return (
-            <li key={source}>
-              {listingSourceLabels[source]}:{' '}
-              {applicableConditions.length ? (
-                <ListingConditionDescriptionList conditions={applicableConditions} />
-              ) : (
-                'bez dodatkowych warunków'
-              )}
-              .
-            </li>
-          )
-        })}
-      </ul>
-    </aside>
-  )
-}
-
-function ListingConditionDescriptionList({ conditions }: { conditions: ListingConditionInput[] }) {
-  return conditions.map((condition, conditionIndex) => (
-    <Fragment key={condition.id || `${condition.field}-${condition.operator}-${conditionIndex}`}>
-      {conditionIndex === 0 ? null : conditionIndex === conditions.length - 1 ? ' i ' : ', '}
-      <ListingConditionDescription condition={condition} />
-    </Fragment>
-  ))
-}
-
-function ListingConditionDescription({ condition }: { condition: ListingConditionInput }) {
-  return useConditionDescription(condition)
-}
-
-function useConditionDescription(condition: ListingConditionInput, lowercaseField = true): string {
-  const relationshipLabel = useConditionRelationshipLabel(condition)
-  return describeCondition(condition, lowercaseField, relationshipLabel)
-}
-
-function describeCondition(
-  condition: ListingConditionInput,
-  lowercaseField = true,
-  relationshipLabel?: string,
-): string {
-  if (
-    !isListingConditionField(condition.field) ||
-    !isListingConditionOperator(condition.operator)
-  ) {
-    return 'niepełny warunek'
-  }
-  const fieldLabel = lowercaseField
-    ? listingConditionFieldLabels[condition.field].toLocaleLowerCase('pl-PL')
-    : listingConditionFieldLabels[condition.field]
-  const operatorLabel = getListingConditionOperatorLabel(condition.field, condition.operator)
-  if (condition.field === 'relatedTo') {
-    const prefix = lowercaseField ? 'powiązane z' : 'Powiązane z'
-    return condition.relatedTargetMode === 'current'
-      ? `${prefix} bieżącym elementem`
-      : `${prefix} ${relationshipLabel ? `„${relationshipLabel}”` : '…'}`
-  }
-  const valueLabel = getConditionValueLabel(condition, relationshipLabel)
-  return `${fieldLabel} ${operatorLabel}${valueLabel ? ` ${valueLabel}` : ''}`
-}
-
-function mergeConditionData(
-  initialCondition: ListingConditionInput,
-  liveCondition: ListingConditionInput,
-): ListingConditionInput {
-  return {
-    dateValue:
-      liveCondition.dateValue === undefined ? initialCondition.dateValue : liveCondition.dateValue,
-    endDateValue:
-      liveCondition.endDateValue === undefined
-        ? initialCondition.endDateValue
-        : liveCondition.endDateValue,
-    eventTimeValue:
-      liveCondition.eventTimeValue === undefined
-        ? initialCondition.eventTimeValue
-        : liveCondition.eventTimeValue,
-    field: liveCondition.field === undefined ? initialCondition.field : liveCondition.field,
-    numberValue:
-      liveCondition.numberValue === undefined
-        ? initialCondition.numberValue
-        : liveCondition.numberValue,
-    operator:
-      liveCondition.operator === undefined ? initialCondition.operator : liveCondition.operator,
-    relationshipValue:
-      liveCondition.relationshipValue === undefined
-        ? initialCondition.relationshipValue
-        : liveCondition.relationshipValue,
-    relatedTargetMode:
-      liveCondition.relatedTargetMode === undefined
-        ? initialCondition.relatedTargetMode
-        : liveCondition.relatedTargetMode,
-    relatedTargetValue:
-      liveCondition.relatedTargetValue === undefined
-        ? initialCondition.relatedTargetValue
-        : liveCondition.relatedTargetValue,
-    textValue:
-      liveCondition.textValue === undefined ? initialCondition.textValue : liveCondition.textValue,
-  }
-}
-
-function getConditionValueLabel(
-  condition: ListingConditionInput,
-  relationshipLabel?: string,
-): string {
-  if (condition.operator === 'isEmpty') return ''
-  if (condition.field === 'title') return `„${condition.textValue?.trim() || '…'}”`
-  if (condition.field === 'eventTime') {
-    if (condition.eventTimeValue === 'past') return 'minione'
-    if (condition.eventTimeValue === 'upcoming') return 'trwające i nadchodzące'
-    return '…'
-  }
-  if (condition.operator === 'notOlderThan') return `${condition.numberValue ?? '…'} dni`
-  if (condition.operator === 'between') {
-    return `${condition.dateValue || '…'} a ${condition.endDateValue || '…'}`
-  }
-  if (condition.dateValue) return condition.dateValue
-
-  const relatedValue = condition.relationshipValue?.value
-  const relatedLabel = relationshipLabel || getRelationshipLabel(relatedValue)
-  return relatedLabel ? `„${relatedLabel}”` : '…'
-}
-
-function useConditionRelationshipLabel(condition: ListingConditionInput): string {
-  const identity = getConditionRelationshipIdentity(condition)
-  const {
-    config: {
-      routes: { api: apiRoute },
-      serverURL,
-    },
-  } = useConfig()
-  const relationshipURL = identity
-    ? formatAdminURL({
-        apiRoute,
-        path: `/${identity.collection}/${identity.id}`,
-        serverURL,
-      })
-    : ''
-  const [{ data: loadedDocument }] = usePayloadAPI(relationshipURL, {
-    initialParams: relationshipLabelQuery,
-  })
-
-  return getRelationshipLabel(loadedDocument) || getRelationshipLabel(identity?.value)
-}
-
-const relationshipTitleFields = {
-  locations: 'venueName',
-  categories: 'fullTitle',
-  documents: 'title',
-  'event-cycles': 'title',
-  events: 'title',
-  'member-profiles': 'publicName',
-  pages: 'fullTitle',
-  partners: 'name',
-  posts: 'title',
-  tags: 'name',
-} as const
-
-const relationshipLabelQuery = {
-  depth: 0,
-  select: {
-    fullTitle: true,
-    name: true,
-    publicName: true,
-    venueName: true,
-    slug: true,
-    title: true,
-  },
-}
-
-function getConditionRelationshipIdentity(condition: ListingConditionInput): {
-  collection: keyof typeof relationshipTitleFields
-  id: number | string
-  value: unknown
-} | null {
-  if (condition.operator === 'isEmpty') return null
-
-  const relationshipValue =
-    condition.field === 'relatedTo' ? condition.relatedTargetValue : condition.relationshipValue
-  if (!relationshipValue || !(relationshipValue.relationTo in relationshipTitleFields)) return null
-
-  const value = relationshipValue.value
-  const id = getFormRelationshipId(value)
-  return id === undefined ? null : { collection: relationshipValue.relationTo, id, value }
-}
-
-function getRelationshipLabel(value: unknown): string {
-  if (typeof value === 'string' && value.trim() && Number.isNaN(Number(value))) return value.trim()
-  if (!value || typeof value !== 'object') return ''
-  const record = value as Record<string, unknown>
-  for (const key of [
-    'fullTitle',
-    'title',
-    'name',
-    'publicName',
-    'venueName',
-    'label',
-    'slug',
-    'doc',
-    'value',
-  ]) {
-    const label = getRelationshipLabel(record[key])
-    if (label) return label
-  }
-  return ''
 }
 
 function useListingSources(path: string): ContentListingSource[] {

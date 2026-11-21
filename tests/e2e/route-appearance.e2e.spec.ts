@@ -392,31 +392,37 @@ const routes = [
 ] as const
 
 for (const route of routes) {
-  test(`preserves the legacy appearance of ${route.name}`, async ({ page }) => {
-    const pageErrors: Error[] = []
-    page.on('pageerror', (error) => pageErrors.push(error))
+  test(
+    `preserves the legacy appearance of ${route.name}`,
+    {
+      tag: route.name === 'event' ? '@visual' : ['@visual', '@full-visual'],
+    },
+    async ({ page }) => {
+      const pageErrors: Error[] = []
+      page.on('pageerror', (error) => pageErrors.push(error))
 
-    const response = await page.goto(route.path())
-    expect(response?.status()).toBe(200)
-    await expect(
-      page.getByRole('heading', { level: route.headingLevel, name: route.heading }),
-    ).toBeVisible()
-    await prepareRouteScreenshot(page)
+      const response = await page.goto(route.path())
+      expect(response?.status()).toBe(200)
+      await expect(
+        page.getByRole('heading', { level: route.headingLevel, name: route.heading }),
+      ).toBeVisible()
+      await prepareRouteScreenshot(page)
 
-    await expect(page.locator('body')).toHaveScreenshot(`${route.name}-desktop.png`, {
-      animations: 'disabled',
-      caret: 'hide',
-      scale: 'css',
-    })
+      await expect(page.locator('body')).toHaveScreenshot(`${route.name}-desktop.png`, {
+        animations: 'disabled',
+        caret: 'hide',
+        scale: 'css',
+      })
 
-    await page.setViewportSize({ height: 844, width: 390 })
-    await expect(page.locator('body')).toHaveScreenshot(`${route.name}-mobile.png`, {
-      animations: 'disabled',
-      caret: 'hide',
-      scale: 'css',
-    })
-    expect(pageErrors).toEqual([])
-  })
+      await page.setViewportSize({ height: 844, width: 390 })
+      await expect(page.locator('body')).toHaveScreenshot(`${route.name}-mobile.png`, {
+        animations: 'disabled',
+        caret: 'hide',
+        scale: 'css',
+      })
+      expect(pageErrors).toEqual([])
+    },
+  )
 }
 
 const templateMarker = 'Układ szablonu E2E'

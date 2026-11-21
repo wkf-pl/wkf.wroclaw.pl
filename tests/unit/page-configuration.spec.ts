@@ -616,15 +616,16 @@ describe('page configuration', () => {
 
   it('configures Listing conditions from selected sources', () => {
     const component = readFileSync('src/components/admin/ListingConditionsField.tsx', 'utf8')
+    const summary = readFileSync('src/components/admin/ListingConditionsSummary.tsx', 'utf8')
     const relatedTargetModeField = findField(ListingBlock.fields, 'relatedTargetMode')
     const relatedTargetValueField = findField(ListingBlock.fields, 'relatedTargetValue')
 
     expect(component).toContain('useFormFields')
-    expect(component).toContain('listingConditionSupportedSources')
+    expect(summary).toContain('listingConditionSupportedSources')
     expect(component).toContain('Ten warunek nie dotyczy żadnego wybranego źródła')
     expect(component).toContain('<RelationshipInput')
     expect(component).toContain("label: 'Bieżący element'")
-    expect(component).toContain('<ul>')
+    expect(summary).toContain('<ul>')
     expect(relatedTargetModeField).toMatchObject({
       admin: { width: '48%' },
       defaultValue: 'current',

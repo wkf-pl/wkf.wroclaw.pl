@@ -1,15 +1,8 @@
-import { readFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
 
-const styles = [
-  'foundation-shell-home',
-  'content-listings',
-  'content-carousel',
-  'content-composition',
-  'content-responsive',
-]
-  .map((name) => readFileSync(`src/app/(frontend)/styles/${name}.css`, 'utf8'))
-  .join('\n')
+import { readFrontendStyles } from '../helpers/frontend-styles'
+
+const styles = readFrontendStyles()
 
 type Surface = 'transparent' | 'default' | 'subtle' | 'inverse' | 'image'
 

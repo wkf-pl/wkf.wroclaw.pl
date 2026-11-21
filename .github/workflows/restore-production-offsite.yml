@@ -340,7 +340,7 @@ jobs:
         env:
           OPERATIONS_IMAGE_REFERENCE: ${{ steps.resources.outputs.operations_image }}
         run: |
-          bash scripts/run-production-database-operation.sh reconcile-grants "$OPERATIONS_IMAGE_REFERENCE"
+          bash scripts/run-production-database-operation.sh reconcile-grants "$OPERATIONS_IMAGE_REFERENCE" --analyze-after-restore
 
       - name: Start production and run smoke checks
         run: |

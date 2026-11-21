@@ -1,25 +1,16 @@
 import type { Access, AccessResult, PayloadRequest } from 'payload'
 
-import {
-  getContentAuthorReference,
-  isGroupAuthoredCollection,
-} from '@/modules/content/content-author'
+import { isGroupAuthoredCollection } from '@/modules/content/content-author'
 import { isPublicRequest } from '@/modules/content/public-access'
 import {
   combineAccessResults,
   getPermissionGrant,
   getUserIdentity,
   getUserRoleReferences,
-  relationshipValueMatches,
-  resolveCollectionRolePermission,
   resolveRolePermission,
   type RoleRecord,
 } from './permission-resolution'
-import {
-  permissionResources,
-  type PermissionOperation,
-  type PermissionResource,
-} from './permission-resources'
+import { type PermissionOperation, type PermissionResource } from './permission-resources'
 import { administratorRoleKey } from './role-configuration'
 import { getUserGroupIds } from './user-group-membership'
 
@@ -92,37 +83,6 @@ export function createRolePermissionAccess({
   }
 }
 
-export function createCollectionRolePermissionAccess({
-  collection,
-  operation,
-  publicAccess,
-}: {
-  collection: string
-  operation: PermissionOperation
-  publicAccess?: AccessResult
-}): Access {
-  return async ({ isReadingStaticFile, req }) => {
-    if (
-      operation === 'read' &&
-      publicAccess !== undefined &&
-      isPublicRequest(req, isReadingStaticFile)
-    ) {
-      return publicAccess
-    }
-
-    const userId = getUserIdentity(req.user)
-    if (userId === undefined) return false
-    const roles = await getRequestRoles(req)
-    return resolveCollectionRolePermission(
-      roles,
-      collection,
-      operation,
-      userId,
-      await getScopedGroupIds(req, roles, collection, operation),
-    )
-  }
-}
-
 async function getScopedGroupIds(
   req: PayloadRequest,
   roles: RoleRecord[],
@@ -138,49 +98,4 @@ async function getScopedGroupIds(
     }),
   )
   return hasOwnGrant ? getUserGroupIds(req) : []
-}
-
-export async function userCanPerformResourceOperation({
-  data,
-  operation,
-  req,
-  resource,
-}: {
-  data: Record<string, unknown>
-  operation: PermissionOperation
-  req: PayloadRequest
-  resource: PermissionResource
-}): Promise<boolean> {
-  const userId = getUserIdentity(req.user)
-  if (userId === undefined) return false
-
-  const definition = permissionResources[resource]
-  const ownershipField = 'ownershipField' in definition ? definition.ownershipField : undefined
-  const publishedField = 'publishedField' in definition ? definition.publishedField : undefined
-  const roles = await getRequestRoles(req)
-
-  const groupIds = await getScopedGroupIds(req, roles, resource, operation)
-  const author = isGroupAuthoredCollection(resource)
-    ? getContentAuthorReference(data.author)
-    : undefined
-  const ownsDocument =
-    author?.relationTo === 'user-groups'
-      ? groupIds.includes(author.value)
-      : relationshipValueMatches(
-          author?.value ?? (ownershipField ? data[ownershipField] : undefined),
-          userId,
-        )
-
-  return roles.some((role) =>
-    (role.permissions ?? []).some((permission) => {
-      if (permission.resource !== resource) return false
-      const grant = getPermissionGrant(permission, operation)
-      if (!grant.allowed) return false
-      if (grant.own && ownershipField && !ownsDocument) return false
-      if (grant.published && publishedField) {
-        if (data[publishedField] !== 'published') return false
-      }
-      return true
-    }),
-  )
 }

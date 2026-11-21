@@ -84,17 +84,6 @@ export function findCurrentAndUpcomingEvents(limit = 100, before?: Date): Promis
   return findCurrentAndUpcomingEventsCached(limit, before?.toISOString())
 }
 
-async function findHomepageEventsUncached(windowWeeks: number, limit: number): Promise<Event[]> {
-  const windowEnd = new Date(Date.now() + windowWeeks * 7 * 86_400_000)
-  const events = await findCurrentAndUpcomingEventsUncached(limit, windowEnd.toISOString())
-  return events.length ? events : findCurrentAndUpcomingEventsUncached(1)
-}
-
-export const findHomepageEvents = cachePublicData('homepage-events', findHomepageEventsUncached, {
-  revalidate: 300,
-  tags: [publicCacheTags.events, publicCacheTags.homepage],
-})
-
 const findPastEventsCached = cachePublicData(
   'past-events',
   async (page: number, limit: number) => {

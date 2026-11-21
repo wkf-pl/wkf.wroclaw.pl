@@ -18,7 +18,9 @@ const reportDirectory =
   process.env.PLAYWRIGHT_HTML_OUTPUT_DIR || join(tmpdir(), 'wkf-online-playwright-report')
 const shard = parseShard(process.env.PLAYWRIGHT_SHARD)
 const testPublicCache = process.env.PLAYWRIGHT_PUBLIC_CACHE === 'true'
+const testFullVisualMatrix = process.env.PLAYWRIGHT_FULL_VISUAL === 'true'
 const publicCacheTag = /@public-cache\b/
+const fullVisualTag = /@full-visual\b/
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -33,7 +35,11 @@ export default defineConfig({
   /* Fail CI when a test succeeds only on retry. */
   failOnFlakyTests: !!process.env.CI,
   grep: testPublicCache ? publicCacheTag : undefined,
-  grepInvert: testPublicCache ? undefined : publicCacheTag,
+  grepInvert: testPublicCache
+    ? undefined
+    : testFullVisualMatrix
+      ? publicCacheTag
+      : [publicCacheTag, fullVisualTag],
   /* Retry on CI only */
   retries: process.env.CI ? 1 : 0,
   /* Opt out of parallel tests on CI. */

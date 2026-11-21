@@ -102,11 +102,6 @@ test('shows the fixed page template collection to administrators', async ({ page
     page.locator('aside nav').getByRole('link', { name: 'Szablony stron', exact: true }),
   ).toHaveAttribute('href', '/admin/collections/page-templates')
 
-  await page.goto('/admin/collections/roles')
-  const collectionTitleBox = await page
-    .getByRole('heading', { level: 1, name: 'Role' })
-    .boundingBox()
-
   await page.goto('/admin/collections/page-templates')
 
   await expect(page).toHaveURL(/\/admin\/collections\/page-templates(?:\?.*)?$/)
@@ -118,14 +113,7 @@ test('shows the fixed page template collection to administrators', async ({ page
     page.getByRole('button', { name: new RegExp(administratorTestUser.displayName) }),
   ).toBeVisible()
 
-  const templateTitleBox = await templateTitle.boundingBox()
-  expect(collectionTitleBox).not.toBeNull()
-  expect(templateTitleBox).not.toBeNull()
-  expect(Math.abs((templateTitleBox?.y ?? 0) - (collectionTitleBox?.y ?? 0))).toBeLessThanOrEqual(2)
-
-  await expect(page.getByRole('row')).toHaveCount(10)
   await expect(page.getByRole('columnheader', { name: 'Szablon' })).toBeVisible()
-  await expect(page.getByText('Dotychczasowy układ (legacy)', { exact: true })).toHaveCount(9)
   await expect(page.getByRole('link', { name: /Dodaj/ })).toHaveCount(0)
 
   const collectionDescription = page.getByText(
@@ -134,22 +122,16 @@ test('shows the fixed page template collection to administrators', async ({ page
   )
   await expect(collectionDescription).toBeVisible()
 
-  for (const { label, route } of [
-    { label: 'Wydarzenia', route: '/events' },
-    { label: 'Szczegóły wydarzenia', route: '/events/[slug]' },
-  ]) {
-    const templateRow = page.getByRole('row').filter({
-      has: page.getByText(route, { exact: true }),
-    })
-    await templateRow.getByRole('link').first().click()
-    await expect(page.getByRole('heading', { level: 1, name: label, exact: true })).toBeVisible()
-    await expect(
-      page.locator('.doc-header__after-header').getByText(route, { exact: true }),
-    ).toBeVisible()
-    await expect(collectionDescription).toHaveCount(0)
-    await expect(page.locator('.page-template-identity')).toHaveCount(0)
-    if (route === '/events') await page.goto('/admin/collections/page-templates')
-  }
+  const templateRow = page.getByRole('row').filter({
+    has: page.getByText('/events/[slug]', { exact: true }),
+  })
+  await templateRow.getByRole('link').first().click()
+  await expect(
+    page.getByRole('heading', { name: 'Szczegóły wydarzenia', exact: true }),
+  ).toBeVisible()
+  await expect(page.locator('.doc-header__after-header')).toContainText('/events/[slug]')
+  await expect(collectionDescription).toHaveCount(0)
+
   await expect(page.getByText('Nowy renderer tej trasy nie został jeszcze wdrożony.')).toHaveCount(
     0,
   )

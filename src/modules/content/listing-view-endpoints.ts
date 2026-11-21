@@ -1,4 +1,4 @@
-import type { Endpoint, PaginatedDocs, PayloadRequest, DataFromCollectionSlug } from 'payload'
+import type { Endpoint, PayloadRequest } from 'payload'
 
 import { getFormRelationshipId } from '@/lib/relationships'
 import { findPublicContent } from '@/modules/content/content-listing'
@@ -160,17 +160,21 @@ export const listingViewPreviewEndpoint: Endpoint = {
   },
 }
 
-const listingCollections = [
-  'pages',
-  'posts',
-  'events',
-  'event-cycles',
-  'partners',
-  'page-templates',
-] as const
+const titledLayoutSelect = { title: true, layout: true } as const
+const listingUsageSelect = {
+  pages: titledLayoutSelect,
+  posts: titledLayoutSelect,
+  events: titledLayoutSelect,
+  'event-cycles': titledLayoutSelect,
+  partners: { name: true, layout: true },
+  'page-templates': { templateKey: true, hero: true, informationPanel: true, content: true },
+} as const
+
+type ListingUsageCollection = keyof typeof listingUsageSelect
+const listingCollections = Object.keys(listingUsageSelect) as ListingUsageCollection[]
 
 type ListingUse = {
-  collection: (typeof listingCollections)[number] | 'homepage-sections'
+  collection: ListingUsageCollection | 'homepage-sections'
   id?: number
   title: string
   status: 'published' | 'draft'
@@ -195,18 +199,19 @@ async function findListingUses(req: PayloadRequest, id: number): Promise<Listing
         const uses: ListingUse[] = []
         let page: number | null = 1
         while (page !== null) {
-          const result: PaginatedDocs<DataFromCollectionSlug<typeof collection>> =
-            await req.payload.find({
-              collection,
-              depth: 0,
-              draft: status === 'draft',
-              where: { _status: { equals: status } },
-              limit: 100,
-              page,
-              req,
-              disableErrors: true,
-              overrideAccess: false,
-            })
+          const currentPage: number = page
+          const result = await req.payload.find({
+            collection,
+            depth: 0,
+            draft: status === 'draft',
+            where: { _status: { equals: status } },
+            limit: 100,
+            page: currentPage,
+            req,
+            disableErrors: true,
+            overrideAccess: false,
+            select: listingUsageSelect[collection],
+          })
           for (const document of result.docs) {
             if (!containsListingView(document, id)) continue
             const title =
@@ -214,7 +219,9 @@ async function findListingUses(req: PayloadRequest, id: number): Promise<Listing
                 ? document.title
                 : 'name' in document
                   ? document.name
-                  : document.templateKey
+                  : 'templateKey' in document
+                    ? document.templateKey
+                    : undefined
             uses.push({ collection, id: document.id, title: title ?? String(document.id), status })
           }
           page = result.nextPage ?? null
@@ -232,6 +239,7 @@ async function findListingUses(req: PayloadRequest, id: number): Promise<Listing
       req,
       disableErrors: true,
       overrideAccess: false,
+      select: { _status: true, layout: true },
     })
     if (global?._status === status && containsListingView(global, id)) {
       uses.push({ collection: 'homepage-sections', title: 'Sekcje strony głównej', status })

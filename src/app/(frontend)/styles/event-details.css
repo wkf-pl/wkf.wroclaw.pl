@@ -1,0 +1,273 @@
+.eventDetails {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.25rem 2rem;
+  align-items: stretch;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid rgb(243 163 19 / 72%);
+  border-radius: 0.75rem;
+  background: rgb(3 29 46 / 96%);
+  box-shadow:
+    0 1.2rem 3rem rgb(0 0 0 / 30%),
+    0 0 1.5rem rgb(243 163 19 / 8%);
+}
+
+.eventFacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin: 0;
+}
+
+.eventFact {
+  min-width: 0;
+}
+
+.eventFact + .eventFact {
+  padding-left: 1.25rem;
+  border-left: 1px solid rgb(243 163 19 / 22%);
+}
+
+.eventFact > dt {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.eventFact > dt .rasterIcon {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--ivory);
+}
+
+.eventDetails dt {
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.eventDetails dd {
+  margin: 0.4rem 0 0;
+  color: var(--ivory);
+  line-height: 1.45;
+}
+
+.eventFact > dd {
+  padding-left: 1.95rem;
+}
+
+.eventFactPrimary,
+.eventFactSecondary,
+.eventFact time {
+  display: block;
+}
+
+.eventFactPrimary {
+  font-weight: 700;
+}
+
+.eventFactSecondary {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.eventFact--combined dt:nth-of-type(2) {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(243 163 19 / 18%);
+}
+
+.eventDetails dd a {
+  color: inherit;
+}
+
+.eventDetailActions {
+  display: flex;
+  min-width: 13rem;
+  flex-direction: column;
+  gap: 0.8rem;
+  justify-content: center;
+  padding-left: 2rem;
+  border-left: 1px solid rgb(243 163 19 / 52%);
+}
+
+.eventPrimaryAction,
+.eventSecondaryAction {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.4rem;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+}
+
+.eventPrimaryAction {
+  border: 1px solid var(--gold-light);
+  background: var(--gold-light);
+  color: var(--background-deep);
+}
+
+.eventSecondaryAction {
+  color: var(--ivory);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+}
+
+.eventPrimaryAction:hover,
+.eventPrimaryAction:focus-visible {
+  background: var(--ivory);
+  border-color: var(--ivory);
+}
+
+.eventSecondaryAction:hover,
+.eventSecondaryAction:focus-visible {
+  color: var(--gold-light);
+}
+
+.eventPrimaryAction:focus-visible,
+.eventSecondaryAction:focus-visible,
+.eventHeroLinks a:focus-visible,
+.eventSidebar a:focus-visible,
+.eventLinkList a:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+}
+
+.eventPrimaryAction .rasterIcon,
+.eventSecondaryAction .rasterIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.eventPageColumns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 21rem);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: start;
+}
+
+.eventPageMain,
+.eventPageSidebar {
+  min-width: 0;
+}
+
+.eventPageSidebar {
+  position: sticky;
+  top: 1.5rem;
+}
+
+.eventSidebar {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.eventSidebarSection {
+  padding: 1.35rem;
+  border: 1px solid rgb(243 163 19 / 30%);
+  border-radius: 0.75rem;
+  background: rgb(3 29 46 / 74%);
+  box-shadow: 0 0.7rem 1.6rem rgb(0 0 0 / 18%);
+}
+
+.eventSidebarSection h2 {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgb(243 163 19 / 38%);
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+}
+
+.eventSidebarList,
+.eventSidebarContactChannels,
+.eventLinkList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.eventSidebarList {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.eventSidebarList > li + li {
+  padding-top: 1.15rem;
+  border-top: 1px solid rgb(243 163 19 / 18%);
+}
+
+.eventSidebarList h3 {
+  margin-bottom: 0.35rem;
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.eventSidebarList h3 a {
+  color: var(--ivory);
+}
+
+.eventSidebarList p {
+  margin-bottom: 0.65rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.eventSidebarList .eventSidebarRole {
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eventSidebarContactChannels {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.eventSidebarContactChannels a,
+.eventLinkList a {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  color: var(--gold-light);
+  overflow-wrap: anywhere;
+}
+
+.eventSidebarContactChannels .rasterIcon,
+.eventLinkList .rasterIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.eventSupplementary {
+  display: grid;
+  gap: clamp(2.5rem, 6vw, 4rem);
+  margin-top: clamp(3rem, 7vw, 5rem);
+}
+
+.eventSupplementarySection > h2 {
+  margin-bottom: 1.25rem;
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+}
+
+.eventLinkList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.googleMapEmbed {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}

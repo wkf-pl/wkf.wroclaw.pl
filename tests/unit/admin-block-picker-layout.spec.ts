@@ -1,8 +1,8 @@
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
-const adminStyles = readFileSync('src/app/(payload)/custom.scss', 'utf8')
+import { readAdminStyles } from '../helpers/admin-styles'
+
+const adminStyles = readAdminStyles()
 
 describe('admin block picker layout', () => {
   it('shows eight block tiles per row on wide screens', () => {

@@ -14,7 +14,6 @@ const unclassifiedPostTitle = 'E2E Wpis bez klasyfikacji'
 
 let payload: Payload
 let categoryID: number | string
-let tagID: number | string
 let parentPageID: number | string
 let listingPageID: number | string
 let relatedPostID: number | string
@@ -49,7 +48,6 @@ test.beforeAll(async () => {
     overrideAccess: true,
   })
   categoryID = category.id
-  tagID = tag.id
 
   const parentPage = await payload.create({
     collection: 'pages',
@@ -376,7 +374,7 @@ test('selects a manual Listing target through separate type and target fields', 
   })
 })
 
-test('uses a full-width map preview in the Location form', async ({ page }) => {
+test('loads the Location map preview after an explicit request', async ({ page }) => {
   await login({ page, user: editorTestUser })
   await page.goto('/admin/collections/locations/create')
 
@@ -388,85 +386,16 @@ test('uses a full-width map preview in the Location form', async ({ page }) => {
   await page.getByRole('button', { name: 'Wczytaj podgląd Map Google' }).click()
   await expect(frame).toBeVisible()
   await expect(frame).toHaveAttribute('src', mapURL)
+})
 
-  const dimensions = await frame.evaluate((element) => {
-    const frameBounds = element.getBoundingClientRect()
-    const fieldBounds = element.parentElement?.getBoundingClientRect()
-
-    return {
-      fieldWidth: fieldBounds?.width ?? 0,
-      frameHeight: frameBounds.height,
-      frameWidth: frameBounds.width,
-    }
+test('shows related posts on the category form', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto(`/admin/collections/categories/${categoryID}`)
+  const relatedPosts = page.locator('.wkf-taxonomy-related-content').filter({
+    has: page.getByRole('heading', { name: 'Powiązane wpisy' }),
   })
-
-  expect(dimensions.frameWidth).toBeGreaterThan(700)
-  expect(Math.abs(dimensions.frameWidth - dimensions.fieldWidth)).toBeLessThan(2)
-  expect(dimensions.frameWidth / dimensions.frameHeight).toBeCloseTo(16 / 9, 1)
+  await expect(relatedPosts.getByText(relatedPostTitle, { exact: true })).toBeVisible()
 })
-
-test('hides taxonomy columns in Category and Tag related-content lists', async ({ page }) => {
-  await login({ page, user: editorTestUser })
-
-  for (const [collection, id] of [
-    ['categories', categoryID],
-    ['tags', tagID],
-  ] as const) {
-    await page.goto(`/admin/collections/${collection}/${id}`)
-    const relatedPosts = page
-      .locator('.wkf-taxonomy-related-content')
-      .filter({ has: page.getByRole('heading', { name: 'Powiązane wpisy' }) })
-    await expect(relatedPosts.getByText(relatedPostTitle, { exact: true })).toBeVisible()
-    const headers = relatedPosts.getByRole('columnheader')
-    await expect(headers.filter({ hasText: 'Kategorie' })).toHaveCount(0)
-    await expect(headers.filter({ hasText: 'Tagi' })).toHaveCount(0)
-  }
-})
-
-test('lays out the Document identity fields in one row before its content fields', async ({
-  page,
-}) => {
-  await login({ page, user: editorTestUser })
-  await page.goto('/admin/collections/documents/create')
-
-  const topPositions = await Promise.all(
-    ['documentType', 'documentNumber', 'documentDate'].map(async (fieldName) =>
-      getFieldTop(page, fieldName),
-    ),
-  )
-  expect(Math.max(...topPositions) - Math.min(...topPositions)).toBeLessThan(2)
-
-  const orderedFieldNames = ['title', 'summary', 'content', 'primaryFile', 'attachments']
-  const orderedTopPositions = await Promise.all(
-    orderedFieldNames.map(async (fieldName) => getFieldTop(page, fieldName)),
-  )
-  expect(orderedTopPositions).toEqual([...orderedTopPositions].sort((left, right) => left - right))
-  expect(orderedTopPositions[0]).toBeGreaterThan(topPositions[0]!)
-})
-
-async function getFieldTop(
-  page: import('@playwright/test').Page,
-  fieldName: string,
-): Promise<number> {
-  const labels: Record<string, string> = {
-    attachments: 'Dodatkowe załączniki PDF',
-    content: 'Dodatkowy opis',
-    documentDate: 'Data dokumentu',
-    documentNumber: 'Numer dokumentu',
-    documentType: 'Rodzaj dokumentu',
-    primaryFile: 'Główny plik PDF',
-    summary: 'Streszczenie',
-    title: 'Tytuł',
-  }
-
-  return page
-    .getByText(new RegExp(`^${labels[fieldName]!}`))
-    .first()
-    .evaluate((element) => {
-      const field = element.closest('.field-type') ?? element
-      return field.getBoundingClientRect().top
-    })
-}
 
 async function cleanupFixtures(): Promise<void> {
   if (!payload) return

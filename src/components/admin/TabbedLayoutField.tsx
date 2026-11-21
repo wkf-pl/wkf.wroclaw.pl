@@ -12,77 +12,23 @@ import {
   XIcon,
   useField,
   useFieldPath,
-  useForm,
   useFormFields,
-  useModal,
 } from '@payloadcms/ui'
 import { getFieldPaths } from 'payload/shared'
-import type {
-  ClientField,
-  FormState,
-  GroupFieldClientProps,
-  SanitizedFieldPermissions,
-  Validate,
-} from 'payload'
-import { useId, useRef, useState, type KeyboardEvent } from 'react'
+import type { ClientField, GroupFieldClientProps, SanitizedFieldPermissions } from 'payload'
+import { useId, useState } from 'react'
 
-const presentationTabID = 'presentation'
-const totalColumnWidth = 12
-const activeLayoutRowIDs = new Set<string>()
+import {
+  getClientValidation,
+  getColumnWidthError,
+  layoutDefinitions,
+  totalColumnWidth,
+  type LayoutDefinition,
+} from './tabbed-layout-definition'
+import { presentationTabID, useTabbedLayoutRows, type LayoutRow } from './useTabbedLayoutRows'
 
 type ArrayClientField = Extract<ClientField, { type: 'array' }>
-type LayoutKind = 'columns' | 'sections' | 'tabs'
-type LayoutRow = { id: string }
 type RenderedFieldPermissions = true | Record<string, SanitizedFieldPermissions>
-type RowFormValue = { blocks?: unknown }
-
-type LayoutDefinition = {
-  addLabel: string
-  arrayName: 'columns' | 'sections' | 'tabs'
-  itemAccusative: 'kolumnę' | 'sekcję' | 'zakładkę'
-  itemLabel: 'Kolumna' | 'Sekcja' | 'Zakładka'
-  kind: LayoutKind
-  maximumRows: number
-  minimumRows: number
-  rootTabLabel: string
-  tabListLabel: string
-}
-
-const layoutDefinitions: Record<LayoutKind, LayoutDefinition> = {
-  columns: {
-    addLabel: 'Dodaj kolumnę',
-    arrayName: 'columns',
-    itemAccusative: 'kolumnę',
-    itemLabel: 'Kolumna',
-    kind: 'columns',
-    maximumRows: 4,
-    minimumRows: 2,
-    rootTabLabel: 'Prezentacja',
-    tabListLabel: 'Ustawienia układu kolumnowego',
-  },
-  sections: {
-    addLabel: 'Dodaj sekcję',
-    arrayName: 'sections',
-    itemAccusative: 'sekcję',
-    itemLabel: 'Sekcja',
-    kind: 'sections',
-    maximumRows: 8,
-    minimumRows: 1,
-    rootTabLabel: 'Prezentacja',
-    tabListLabel: 'Ustawienia grupy sekcji',
-  },
-  tabs: {
-    addLabel: 'Dodaj zakładkę',
-    arrayName: 'tabs',
-    itemAccusative: 'zakładkę',
-    itemLabel: 'Zakładka',
-    kind: 'tabs',
-    maximumRows: 8,
-    minimumRows: 2,
-    rootTabLabel: 'Prezentacja',
-    tabListLabel: 'Ustawienia zakładek',
-  },
-}
 
 function isArrayField(field: ClientField): field is ArrayClientField {
   return field.type === 'array'
@@ -109,49 +55,6 @@ function getDataPath(path: string): (number | string)[] {
     .split('.')
     .filter((segment) => segment && !segment.startsWith('_index-'))
     .map((segment) => (/^\d+$/.test(segment) ? Number(segment) : segment))
-}
-
-function getClientValidation(definition: LayoutDefinition): Validate {
-  if (definition.kind === 'sections') {
-    return (value) =>
-      Array.isArray(value) &&
-      value.length >= definition.minimumRows &&
-      value.length <= definition.maximumRows
-        ? true
-        : 'Grupa sekcji musi zawierać od 1 do 8 sekcji.'
-  }
-
-  if (definition.kind === 'tabs') {
-    return (value) =>
-      Array.isArray(value) &&
-      value.length >= definition.minimumRows &&
-      value.length <= definition.maximumRows
-        ? true
-        : 'Blok musi zawierać od 2 do 8 zakładek.'
-  }
-
-  return (value) => {
-    if (
-      !Array.isArray(value) ||
-      value.length < definition.minimumRows ||
-      value.length > definition.maximumRows
-    ) {
-      return 'Układ kolumnowy musi zawierać od 2 do 4 kolumn.'
-    }
-
-    const widths = value.map((column) =>
-      column && typeof column === 'object' && 'width' in column ? column.width : undefined,
-    )
-    if (
-      widths.some((width) => !Number.isInteger(width) || Number(width) < 2 || Number(width) > 10)
-    ) {
-      return 'Szerokość każdej kolumny musi być liczbą całkowitą od 2 do 10.'
-    }
-
-    return widths.reduce((sum, width) => sum + Number(width), 0) === totalColumnWidth
-      ? true
-      : 'Szerokości kolumn muszą sumować się do 12.'
-  }
 }
 
 function TabErrorCount({ fields, path }: { fields: ClientField[]; path: string }) {
@@ -219,15 +122,21 @@ function TabbedLayoutField({
     validate: validation,
   })
   const typedRows = rows as LayoutRow[]
-  const rowIDs = typedRows.map((row) => row.id)
-  const { addFieldRow, getDataByPath, moveFieldRow, removeFieldRow } = useForm()
-  const { openModal } = useModal()
-  const [activeTabID, setActiveTabID] = useState(
-    () => rowIDs.find((rowID) => activeLayoutRowIDs.has(rowID)) ?? presentationTabID,
-  )
-  const [activateRowAtIndex, setActivateRowAtIndex] = useState<number | null>(null)
-  const [rowPendingRemoval, setRowPendingRemoval] = useState<number | null>(null)
-  const tabButtons = useRef<Record<string, HTMLButtonElement | null>>({})
+  const {
+    activeRowIndex,
+    addRow,
+    cancelRowRemoval,
+    confirmRowRemoval,
+    effectiveActiveTabID,
+    handleTabKeyDown,
+    modalSlug,
+    moveRow,
+    registerTabButton,
+    requestRowRemoval,
+    rowIDs,
+    rowPendingRemoval,
+    selectTab,
+  } = useTabbedLayoutRows(typedRows, arrayPaths, definition.kind)
   const componentID = useId().replaceAll(':', '')
   const effectiveReadOnly = Boolean(readOnly || disabled)
   const columnWidths = useFormFields(([fields]) =>
@@ -246,131 +155,10 @@ function TabbedLayoutField({
         })
       : [],
   )
-  const tabIDs = [presentationTabID, ...rowIDs]
-  const pendingActiveRow = activateRowAtIndex === null ? undefined : typedRows[activateRowAtIndex]
-  const resolvedActiveTabID = pendingActiveRow?.id ?? activeTabID
-  const effectiveActiveTabID =
-    resolvedActiveTabID === presentationTabID || rowIDs.includes(resolvedActiveTabID)
-      ? resolvedActiveTabID
-      : presentationTabID
-  const activeRowIndex = typedRows.findIndex((row) => row.id === effectiveActiveTabID)
   const widthSum =
     definition.kind === 'columns' ? columnWidths.reduce((sum, width) => sum + width, 0) : null
   const visibleValidationError =
-    definition.kind === 'columns' &&
-    columnWidths.some((width) => !Number.isInteger(width) || width < 2 || width > 10)
-      ? 'Szerokość każdej kolumny musi być liczbą całkowitą od 2 do 10.'
-      : definition.kind === 'columns' && widthSum !== totalColumnWidth
-        ? 'Szerokości kolumn muszą sumować się do 12.'
-        : undefined
-  const modalSlug = `${arrayPaths.path.replace(/[^a-zA-Z0-9_-]/g, '-')}-remove-row`
-
-  function selectTab(tabID: string, focus = false): void {
-    setActivateRowAtIndex(null)
-    setActiveTabID(tabID)
-    rowIDs.forEach((rowID) => activeLayoutRowIDs.delete(rowID))
-    if (tabID !== presentationTabID) activeLayoutRowIDs.add(tabID)
-    if (focus) {
-      requestAnimationFrame(() => tabButtons.current[tabID]?.focus())
-    }
-  }
-
-  function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, currentTabID: string): void {
-    const currentIndex = tabIDs.indexOf(currentTabID)
-    let nextIndex: number | undefined
-
-    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabIDs.length
-    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabIDs.length) % tabIDs.length
-    if (event.key === 'Home') nextIndex = 0
-    if (event.key === 'End') nextIndex = tabIDs.length - 1
-    if (nextIndex === undefined) return
-
-    event.preventDefault()
-    selectTab(tabIDs[nextIndex]!, true)
-  }
-
-  function addRow(): void {
-    const rowIndex = typedRows.length
-    const subFieldState: FormState = {
-      frame: { initialValue: 'none', passesCondition: true, valid: true, value: 'none' },
-      surface: {
-        initialValue: 'transparent',
-        passesCondition: true,
-        valid: true,
-        value: 'transparent',
-      },
-      ...(definition.kind === 'columns'
-        ? {
-            width: { initialValue: 2, passesCondition: true, valid: true, value: 2 },
-          }
-        : definition.kind === 'tabs'
-          ? {
-              label: {
-                initialValue: `Zakładka ${rowIndex + 1}`,
-                passesCondition: true,
-                valid: true,
-                value: `Zakładka ${rowIndex + 1}`,
-              },
-            }
-          : {}),
-    }
-
-    addFieldRow({
-      path: arrayPaths.path,
-      rowIndex,
-      schemaPath: arrayPaths.schemaPath,
-      subFieldState,
-    })
-    setActivateRowAtIndex(rowIndex)
-  }
-
-  function moveRow(moveFromIndex: number, moveToIndex: number): void {
-    if (
-      moveFromIndex === moveToIndex ||
-      moveFromIndex < 0 ||
-      moveToIndex < 0 ||
-      moveToIndex >= typedRows.length
-    ) {
-      return
-    }
-
-    moveFieldRow({ moveFromIndex, moveToIndex, path: arrayPaths.path })
-  }
-
-  function removeRowAndRestoreFocus(rowIndex: number): void {
-    const removedRowID = typedRows[rowIndex]?.id
-    const nextActiveTabID =
-      effectiveActiveTabID === removedRowID ? presentationTabID : effectiveActiveTabID
-
-    setActivateRowAtIndex(null)
-    setActiveTabID(nextActiveTabID)
-    activeLayoutRowIDs.delete(removedRowID ?? '')
-    removeFieldRow({ path: arrayPaths.path, rowIndex })
-    requestAnimationFrame(() => tabButtons.current[nextActiveTabID]?.focus())
-  }
-
-  function requestRowRemoval(rowIndex: number): void {
-    const row = getDataByPath<RowFormValue>(`${arrayPaths.path}.${rowIndex}`)
-    const hasBlocks = Array.isArray(row?.blocks)
-      ? row.blocks.length > 0
-      : typeof row?.blocks === 'number' && row.blocks > 0
-
-    if (!hasBlocks) {
-      removeRowAndRestoreFocus(rowIndex)
-      return
-    }
-
-    setRowPendingRemoval(rowIndex)
-    openModal(modalSlug)
-  }
-
-  function confirmRowRemoval(): void {
-    if (rowPendingRemoval === null) return
-
-    removeRowAndRestoreFocus(rowPendingRemoval)
-    setRowPendingRemoval(null)
-  }
-
+    definition.kind === 'columns' ? getColumnWidthError(columnWidths) : undefined
   const activeTabPanelID = `${componentID}-${effectiveActiveTabID}-panel`
   const activeTabButtonID = `${componentID}-${effectiveActiveTabID}-tab`
 
@@ -420,9 +208,7 @@ function TabbedLayoutField({
           id={`${componentID}-${presentationTabID}-tab`}
           onClick={() => selectTab(presentationTabID)}
           onKeyDown={(event) => handleTabKeyDown(event, presentationTabID)}
-          ref={(element) => {
-            tabButtons.current[presentationTabID] = element
-          }}
+          ref={(element) => registerTabButton(presentationTabID, element)}
           role="tab"
           tabIndex={effectiveActiveTabID === presentationTabID ? 0 : -1}
           type="button"
@@ -472,9 +258,7 @@ function TabbedLayoutField({
                       id={`${componentID}-${rowTabID}-tab`}
                       onClick={() => selectTab(rowTabID)}
                       onKeyDown={(event) => handleTabKeyDown(event, rowTabID)}
-                      ref={(element) => {
-                        tabButtons.current[rowTabID] = element
-                      }}
+                      ref={(element) => registerTabButton(rowTabID, element)}
                       role="tab"
                       tabIndex={effectiveActiveTabID === rowTabID ? 0 : -1}
                       type="button"
@@ -547,7 +331,7 @@ function TabbedLayoutField({
         confirmLabel="Usuń"
         heading={`Usunąć ${definition.itemAccusative} ${(rowPendingRemoval ?? 0) + 1}?`}
         modalSlug={modalSlug}
-        onCancel={() => setRowPendingRemoval(null)}
+        onCancel={cancelRowRemoval}
         onConfirm={confirmRowRemoval}
       />
     </div>

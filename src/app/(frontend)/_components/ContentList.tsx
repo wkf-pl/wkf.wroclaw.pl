@@ -9,7 +9,7 @@ import { ContentCarousel } from './ContentCarousel'
 import { ContentListingMeta } from './ContentListingMeta'
 import { ContentTile } from './ContentTile'
 
-export type ContentListView = 'cards' | 'carousel' | 'compact' | 'grid' | 'tiles'
+type ContentListView = 'cards' | 'carousel' | 'compact' | 'grid' | 'tiles'
 
 type ContentListProperties = {
   columns?: number

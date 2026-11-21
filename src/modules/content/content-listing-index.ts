@@ -3,10 +3,8 @@ import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, PayloadReque
 import { invalidateContentSource } from '@/modules/cache/invalidate-public-data'
 import { allListingSources, type ContentListingSource } from '@/modules/content/listing-conditions'
 
-import {
-  createContentListingIndexData,
-  findPublishedContentListingDocument,
-} from './content-listing-sources'
+import { createContentListingIndexData } from './content-listing-index-data'
+import { findPublishedContentListingDocument } from './content-listing-sources'
 
 export const contentListingSyncContextKey = 'skipContentListingSync'
 

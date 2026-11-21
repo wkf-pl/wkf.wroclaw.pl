@@ -178,6 +178,7 @@ describe('public media listing', () => {
     const findSpy = vi.spyOn(payload, 'find')
     try {
       const result = await findPublicMedia({
+        categoryId: category.id,
         kind: 'attachments',
         manualMedia: [documentFile.id, secondImage.id, firstImage.id],
         page: 2,
@@ -193,6 +194,9 @@ describe('public media listing', () => {
       expect(
         findSpy.mock.calls.filter(([arguments_]) => arguments_.collection === 'media'),
       ).toHaveLength(1)
+      expect(
+        findSpy.mock.calls.some(([arguments_]) => arguments_.collection === 'categories'),
+      ).toBe(false)
     } finally {
       findSpy.mockRestore()
     }

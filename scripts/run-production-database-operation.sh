@@ -4,9 +4,14 @@ set -Eeuo pipefail
 
 operation="${1:-}"
 operations_image_reference="${2:-}"
+analyze_after_restore=false
+if [[ "${3:-}" == '--analyze-after-restore' && "$operation" == 'reconcile-grants' ]]; then
+  analyze_after_restore=true
+fi
 
-if [[ "$operation" != "bootstrap" && "$operation" != "reconcile-grants" ]]; then
-  echo 'Usage: run-production-database-operation.sh <bootstrap|reconcile-grants> <operations-image-reference>' >&2
+if [[ ( "$operation" != 'bootstrap' && "$operation" != 'reconcile-grants' ) ||
+      ( $# -gt 2 && "$analyze_after_restore" == false ) || $# -gt 3 ]]; then
+  echo 'Usage: run-production-database-operation.sh <bootstrap|reconcile-grants> <operations-image-reference> [--analyze-after-restore]' >&2
   exit 1
 fi
 
@@ -114,7 +119,7 @@ else
     --name wkf-prod-reconcile-grants \
     --resource-group "$resource_group_name" \
     --template-file infra/azure/grants-job.bicep \
-    --parameters containerAppEnvironmentId="$container_app_environment_id" imageReference="$operations_image_reference" migratorDatabaseUrl="$migrator_database_url" registryIdentityId="$registry_identity_id" registryServer="$registry_server" \
+    --parameters analyzeAfterRestore="$analyze_after_restore" containerAppEnvironmentId="$container_app_environment_id" imageReference="$operations_image_reference" migratorDatabaseUrl="$migrator_database_url" registryIdentityId="$registry_identity_id" registryServer="$registry_server" \
     --output none
 fi
 

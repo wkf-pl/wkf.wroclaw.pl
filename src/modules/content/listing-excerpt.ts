@@ -26,12 +26,13 @@ function truncateAtWord(value: string, maximumLength: number): string {
 }
 
 export function extractFirstRichTextParagraph(layout: unknown): string | null {
-  const richTextBlock = [...walkContentLeafBlocks(layout)].find(
-    ({ block }) => block.blockType === 'richText',
-  )?.block
-  if (!richTextBlock) return null
+  for (const { block } of walkContentLeafBlocks(layout)) {
+    if (block.blockType === 'richText') return extractRichTextParagraph(block.content)
+  }
+  return null
+}
 
-  const content = richTextBlock.content
+function extractRichTextParagraph(content: unknown): string | null {
   if (!content || typeof content !== 'object') return null
   const root = (content as Record<string, unknown>).root
   if (!root || typeof root !== 'object') return null

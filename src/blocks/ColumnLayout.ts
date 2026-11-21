@@ -35,7 +35,7 @@ function containsNestedColumnLayout(blocks: unknown): boolean {
   )
 }
 
-export function getColumnLayoutValidationError(value: unknown): string | undefined {
+function getColumnLayoutValidationError(value: unknown): string | undefined {
   if (
     !Array.isArray(value) ||
     value.length < minimumColumnCount ||

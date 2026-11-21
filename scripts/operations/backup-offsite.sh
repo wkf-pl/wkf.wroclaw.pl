@@ -74,15 +74,9 @@ if [[ -z "$expected_public_key" || "$derived_public_key" != "$expected_public_ke
 fi
 signing_key_fingerprint="$(ssh-keygen -lf "$signing_public_key_file" -E sha256 | awk '{ print $2 }')"
 
-curl_config_escape() {
-  local value="$1"
-  value="${value//\\/\\\\}"
-  value="${value//\"/\\\"}"
-  printf '%s' "$value"
-}
-
+source "$(dirname -- "${BASH_SOURCE[0]}")/lib/ftps.sh"
 curl_config_file="$temporary_directory/curl.config"
-(umask 077 && printf 'user = "%s:%s"\n' "$(curl_config_escape "$FTPS_USER")" "$(curl_config_escape "$FTPS_PASSWORD")" >"$curl_config_file")
+write_ftps_curl_config "$curl_config_file"
 
 remote_root="${FTPS_REMOTE_ROOT%/}"
 if [[ -n "$remote_root" && "$remote_root" != /* ]]; then

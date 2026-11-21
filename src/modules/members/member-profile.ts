@@ -3,7 +3,7 @@ import type { PayloadRequest, Validate } from 'payload'
 import { formatSlug } from '@/modules/content/slug'
 import { getRequestRoles } from '@/modules/membership/role-access'
 
-export const memberRoleKey = 'member'
+const memberRoleKey = 'member'
 
 export const contactChannelOptions = [
   { label: 'E-mail', value: 'email' },
@@ -22,7 +22,7 @@ export const contactChannelOptions = [
 
 export type ContactChannelType = (typeof contactChannelOptions)[number]['value']
 
-export async function requestHasRole(req: PayloadRequest, roleKey: string): Promise<boolean> {
+async function requestHasRole(req: PayloadRequest, roleKey: string): Promise<boolean> {
   const roles = await getRequestRoles(req)
   return roles.some((role) => role.key === roleKey)
 }

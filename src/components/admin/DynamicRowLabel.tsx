@@ -124,33 +124,6 @@ export function TabbedContentTabRowLabel() {
   return <DynamicLabel prefix="Zakładka" value={useRowValue('label')} />
 }
 
-const surfaceLabels: Record<string, string> = {
-  default: 'domyślna',
-  image: 'obraz',
-  inverse: 'odwrócona',
-  subtle: 'subtelna',
-  transparent: 'przezroczysta',
-}
-
-export function SectionGroupSectionRowLabel() {
-  const { data, path, rowNumber } = useRowLabel<RowData>()
-  const liveData = useFormFields(([fields]) => {
-    const frame = fields[`${path}.frame`]?.value
-    const surface = fields[`${path}.surface`]?.value
-    return { frame, surface }
-  })
-  const surface = getText(liveData.surface) || getText(data.surface) || 'transparent'
-  const frame = liveData.frame ?? data.frame
-  const value = [
-    surfaceLabels[surface] ?? surface,
-    frame === true || frame === 'outline' ? 'obrys' : 'bez ramki',
-  ]
-    .filter(Boolean)
-    .join(' · ')
-
-  return <DynamicLabel prefix={`Sekcja ${(rowNumber ?? 0) + 1}`} value={value} />
-}
-
 export function ContactChannelRowLabel() {
   const channelType = useRowValue('type')
   const channelLabel = contactChannelLabels[channelType] || channelType

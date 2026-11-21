@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { validateListingConditions } from '@/blocks/listing-condition-fields'
 import { compileListingConditionWhere } from '@/modules/content/content-listing'
-import { createRelatedTargetSearchIndex } from '@/modules/content/content-listing-sources'
+import { createRelatedTargetSearchIndex } from '@/modules/content/content-listing-index-data'
 import {
   createListingTagSearchIndex,
   allListingSources,

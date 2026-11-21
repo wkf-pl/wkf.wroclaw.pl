@@ -12,6 +12,7 @@ import { sql } from '@payloadcms/db-postgres'
 import { findPublicContent } from '@/modules/content/content-listing'
 import { resolvePublicListingView } from '@/modules/content/public-listing-view'
 import { getContentListingPresentation } from '@/modules/content/content-listing-presentation'
+import { listingViewUsageEndpoint } from '@/modules/content/listing-view-endpoints'
 import type { ListingBlock, Post } from '@/payload-types'
 
 import {
@@ -31,6 +32,95 @@ afterAll(async () => {
 })
 
 describe('content listing and pagination', () => {
+  it(
+    'reports nested shared views in both published layouts and drafts',
+    { timeout: 20_000 },
+    async () => {
+      const { author, page, payload } = fixture
+      const {
+        docs: [administratorRole],
+      } = await payload.find({
+        collection: 'roles',
+        where: { key: { equals: 'administrator' } },
+        limit: 1,
+      })
+      const {
+        docs: [sharedView],
+      } = await payload.find({
+        collection: 'listing-views',
+        where: { presetKey: { equals: 'grid' } },
+        limit: 1,
+      })
+      if (!administratorRole || !sharedView) throw new Error('Missing migrated roles or views.')
+
+      const listing: ListingBlock = {
+        appearance: { preset: `shared:${sharedView.id}` },
+        blockType: 'listing',
+        pageSize: 4,
+        selectionMode: 'filters',
+        sort: 'newest',
+        sources: ['posts'],
+        view: 'grid',
+      }
+      const req = await createLocalReq(
+        {
+          req: { routeParams: { id: String(sharedView.id) } },
+          user: {
+            ...author,
+            collection: 'users',
+            roles: [...(author.roles ?? []), administratorRole.id],
+          },
+        },
+        payload,
+      )
+      const draft = await payload.create({
+        collection: 'pages',
+        data: {
+          _status: 'draft',
+          author: { relationTo: 'users', value: author.id },
+          layout: [listing],
+          slug: 'integration-listing-usage-draft',
+          title: 'Draft shared listing usage',
+        },
+        draft: true,
+      })
+
+      try {
+        await payload.update({
+          collection: 'pages',
+          id: page.id,
+          data: {
+            layout: [
+              {
+                blockType: 'sectionGroup',
+                sections: [{ blocks: [listing] }],
+              },
+            ],
+          },
+          draft: false,
+        })
+
+        const response = await listingViewUsageEndpoint.handler(req)
+        expect(response.status).toBe(200)
+        const usages = await response.json()
+        expect(usages).toEqual(
+          expect.arrayContaining([
+            { collection: 'pages', id: page.id, status: 'published', title: page.title },
+            { collection: 'pages', id: draft.id, status: 'draft', title: draft.title },
+          ]),
+        )
+      } finally {
+        await payload.delete({ collection: 'pages', id: draft.id })
+        await payload.update({
+          collection: 'pages',
+          id: page.id,
+          data: { layout: page.layout },
+          draft: false,
+        })
+      }
+    },
+  )
+
   it('publishes editable templates for every former built-in preset', async () => {
     const { docs } = await fixture.payload.find({
       collection: 'listing-views',
@@ -268,7 +358,10 @@ describe('content listing and pagination', () => {
       sources: ['pages'],
     })
     expect(childResult.items.map((item) => item.document.id)).toEqual([fixture.childPage.id])
-    expect(childResult.items[0]?.document).toHaveProperty('layout')
+    expect(childResult.items[0]?.document).toMatchObject({
+      listingExcerpt: fixture.childPage.listingExcerpt,
+    })
+    expect(childResult.items[0]?.document).not.toHaveProperty('layout')
 
     const mixedSourceResult = await findPublicContent({
       conditions: [
@@ -828,17 +921,17 @@ describe('content listing and pagination', () => {
               category: fixture.category.id,
               excerpt: `Pagination excerpt ${i}`,
               layout: [{ blockType: 'richText', content: createLexicalDocument(`Content ${i}`) }],
-              publishedAt: new Date(Date.UTC(2026, 7, 15 + i)).toISOString(),
+              publishedAt: new Date(Date.UTC(2026, 7, 15 + Math.min(i, 5))).toISOString(),
               slug: `integration-listing-pagination-${i}`,
               tags: [fixture.tag.id],
-              title: `Integration pagination ${i}`,
+              title: `Integration pagination ${Math.min(i, 5)}`,
             },
             overrideAccess: true,
           }),
         )
       }
 
-      const result = await findPublicContent({
+      const options = {
         conditions: [
           {
             field: 'category',
@@ -856,12 +949,20 @@ describe('content listing and pagination', () => {
         pagination: true,
         sort: 'newest',
         sources: ['posts', 'pages', 'posts'],
-      })
+      } satisfies Parameters<typeof findPublicContent>[0]
+      const result = await findPublicContent(options)
+      const firstPage = await findPublicContent({ ...options, page: 1 })
+      const unpaginated = await findPublicContent({ ...options, pagination: false })
 
       expect(result.items).toHaveLength(2)
       expect(result.page).toBe(4)
       expect(result.pageSize).toBe(2)
       expect(result.totalDocs).toBe(9)
+      expect(unpaginated).toMatchObject({ page: 1, pageSize: 2, totalDocs: null, totalPages: 1 })
+      expect(unpaginated.items).toEqual(firstPage.items)
+      expect(unpaginated.items.map(({ document }) => document.id)).toEqual(
+        createdPosts.slice(-2).map(({ id }) => id),
+      )
     } finally {
       for (const createdPost of createdPosts) {
         await fixture.payload.delete({

@@ -4,7 +4,7 @@ import { getContentListingPresentation } from '@/modules/content/content-listing
 import { PresentedContentItem } from './PresentedContentItem'
 
 export type ContentCardItem = PublicContentListItem
-export type ContentCardView = 'cards' | 'grid'
+type ContentCardView = 'cards' | 'grid'
 
 export function ContentCard({
   item,

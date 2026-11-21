@@ -17,6 +17,7 @@ local_checkpoint_root_input="${STAGING_PULL_LOCAL_CHECKPOINT_ROOT:-}"
 source_label="${STAGING_PULL_SOURCE_LABEL:-staging}"
 
 project_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$project_directory/scripts/lib/import-blob-names.sh"
 temporary_directory=""
 temporary_directory_owned=false
 local_rescue_directory=""
@@ -92,18 +93,13 @@ restore_database_from_dump() {
     || return 1
 }
 
-validate_blob_name() {
-  local blob_name="$1"
-
-  if [[ -z "$blob_name" || "$blob_name" == /* || "/$blob_name/" == *"/../"* ]]; then
-    echo "Unsafe blob name: $blob_name" >&2
-    return 1
-  fi
-
-  if [[ "$blob_name" == *$'\n'* || "$blob_name" == *$'\r'* ]]; then
-    echo "Blob names containing line breaks are not supported." >&2
-    return 1
-  fi
+analyze_local_database() {
+  local started_at=$SECONDS
+  echo 'Collecting PostgreSQL planner statistics after local restore.'
+  docker compose exec -T postgres sh -c \
+    'psql --no-psqlrc --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --set ON_ERROR_STOP=1 --command "ANALYZE"' \
+    || return 1
+  echo "PostgreSQL ANALYZE completed in $((SECONDS - started_at)) seconds."
 }
 
 validate_downloaded_blobs() {
@@ -121,7 +117,7 @@ validate_downloaded_blobs() {
 
   while IFS= read -r blob_record; do
     source_blob_name="$(jq -r '.name' <<<"$blob_record")"
-    validate_blob_name "$source_blob_name" || return 1
+    validate_import_blob_name "$source_blob_name" || return 1
 
     if [[ ! -f "$source_directory/$source_blob_name" ]]; then
       echo "Downloaded blob file is missing: $source_directory/$source_blob_name" >&2
@@ -160,7 +156,7 @@ upload_blobs_from_manifest() {
     fi
 
     destination_blob_name="${source_blob_name#"$source_prefix"}"
-    validate_blob_name "$destination_blob_name" || return 1
+    validate_import_blob_name "$destination_blob_name" || return 1
     source_file_path="$source_directory/$source_blob_name"
 
     if [[ ! -f "$source_file_path" ]]; then
@@ -289,6 +285,7 @@ cleanup() {
 
     if restore_database_from_dump "$local_rescue_directory/database.dump"; then
       rollback_database_succeeded=true
+      analyze_local_database || echo 'WARNING: Could not refresh PostgreSQL statistics after rollback.' >&2
     fi
     if replace_local_media \
       "$local_rescue_directory/media-blobs.json" \
@@ -572,6 +569,7 @@ docker compose run --rm --no-deps app pnpm payload migrate:status
 
 docker compose exec -T postgres sh -c \
   'psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --set ON_ERROR_STOP=1 --command "TRUNCATE TABLE users_sessions, payload_locked_documents CASCADE; UPDATE users SET reset_password_token = NULL, reset_password_expiration = NULL, login_attempts = 0, lock_until = NULL;"'
+analyze_local_database
 
 if [[ "$application_was_running" == "true" ]]; then
   docker compose up -d app
