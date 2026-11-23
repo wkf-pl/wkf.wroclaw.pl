@@ -1,3 +1,4 @@
+import { getRelationshipId } from '@/lib/relationships'
 import type { CollectionConfig } from 'payload'
 
 import {
@@ -28,13 +29,26 @@ export const Tags: CollectionConfig = {
   admin: {
     defaultColumns: ['name', 'slug', 'description', 'updatedAt'],
     group: 'Treści',
-    listSearchableFields: ['name', 'slug'],
-    useAsTitle: 'name',
+    listSearchableFields: ['name', 'slug', 'displayName'],
+    useAsTitle: 'displayName',
     pagination: {
       limits: [10, 25, 50],
     },
   },
+  forceSelect: { name: true, group: true },
   fields: [
+    {
+      name: 'displayName',
+      type: 'text',
+      admin: { hidden: true },
+    },
+    {
+      name: 'group',
+      type: 'relationship',
+      relationTo: 'tag-groups',
+      label: 'Grupa tagów',
+      index: true,
+    },
     {
       name: 'name',
       type: 'text',
@@ -64,6 +78,24 @@ export const Tags: CollectionConfig = {
     ...createRelatedContentJoinFields('tags'),
   ],
   hooks: {
+    beforeChange: [
+      async ({ data, originalDoc, req }) => {
+        const id = getRelationshipId(Object.hasOwn(data, 'group') ? data.group : originalDoc?.group)
+        const name = data.name ?? originalDoc?.name
+        const group =
+          id === undefined
+            ? null
+            : await req.payload.findByID({
+                collection: 'tag-groups',
+                id,
+                depth: 0,
+                overrideAccess: true,
+                req,
+                disableErrors: true,
+              })
+        return { ...data, displayName: group ? `${group.name} › ${name}` : name }
+      },
+    ],
     afterChange: [invalidateListingsAfterChange],
     afterDelete: [invalidateListingsAfterDelete],
   },

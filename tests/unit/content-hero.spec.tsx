@@ -6,11 +6,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   ContentHero,
-  ContentHeroCategory,
+  ContentHeroTopics,
   ContentHeroMeta,
 } from '@/app/(frontend)/_components/ContentHero'
 import { TaxonomyLinks } from '@/app/(frontend)/_components/TaxonomyLinks'
-import type { Category, Tag } from '@/payload-types'
+import type { Topic, Tag } from '@/payload-types'
 import { readFrontendStyles } from '../helpers/frontend-styles'
 
 describe('content hero', () => {
@@ -83,8 +83,8 @@ describe('content hero', () => {
     expect(markup).not.toContain('<time')
   })
 
-  it('shows a linked category above the title and only tags below it', () => {
-    const category = { id: 1, name: 'Spotkania klubowe', slug: 'spotkania' } as Category
+  it('shows a linked topic above the title and only tags below it', () => {
+    const topic = { id: 1, name: 'Spotkania klubowe', slug: 'spotkania' } as Topic
     const tag = { id: 2, name: 'RPG', slug: 'rpg' } as Tag
     const markup = renderToStaticMarkup(
       createElement(
@@ -95,7 +95,7 @@ describe('content hero', () => {
             { label: 'Aktualności', url: '/blog' },
             { label: 'Erpegowe wtorki 1', url: null },
           ],
-          eyebrow: createElement(ContentHeroCategory, { category }),
+          eyebrow: createElement(ContentHeroTopics, { topics: [topic] }),
           title: 'Erpegowe wtorki 1',
         },
         createElement(TaxonomyLinks, { tags: [tag] }),
@@ -103,22 +103,22 @@ describe('content hero', () => {
     )
 
     expect(markup).toContain('class="eyebrow contentHeroEyebrow"')
-    expect(markup).toContain('href="/category/spotkania"')
+    expect(markup).toContain('href="/topic/spotkania"')
     expect(markup).toContain('href="/tag/rpg"')
     expect(markup.match(/Erpegowe wtorki 1/g)).toHaveLength(1)
     expect(markup.match(/Spotkania klubowe/g)).toHaveLength(1)
   })
 
-  it('reserves the category line when no category is assigned', () => {
+  it('reserves the topic line when no topic is assigned', () => {
     const markup = renderToStaticMarkup(
       createElement(ContentHero, {
         breadcrumbs: [
           { label: 'Strona główna', url: '/' },
           { label: 'Aktualności', url: '/blog' },
-          { label: 'Wpis bez kategorii', url: null },
+          { label: 'Wpis bez temacie', url: null },
         ],
-        eyebrow: createElement(ContentHeroCategory, { category: null }),
-        title: 'Wpis bez kategorii',
+        eyebrow: createElement(ContentHeroTopics, { topics: null }),
+        title: 'Wpis bez temacie',
       }),
     )
 
@@ -180,7 +180,7 @@ describe('content hero', () => {
     const memberPage = readFileSync('src/app/(frontend)/members/[slug]/page.tsx', 'utf8')
 
     expect(sharedDocument).toContain('<ContentHero')
-    expect(sharedDocument).toContain('<ContentHeroCategory category={category} />')
+    expect(sharedDocument).toContain('<ContentHeroTopics topics={topics} />')
     expect(sharedDocument).toContain('<TaxonomyLinks tags={tags} />')
     expect(taxonomyPage).toContain('<ContentHero')
     expect(documentPage).toContain('<ContentHero')
@@ -188,7 +188,7 @@ describe('content hero', () => {
       'eyebrow={getDocumentDisplayLabel(document.documentType, document.documentNumber)}',
     )
     expect(documentPage).toContain(
-      '<TaxonomyLinks category={document.category} tags={document.tags} />',
+      '<TaxonomyLinks topics={document.topics} tags={document.tags} />',
     )
     expect(documentPage).toContain('<DocumentPdfPreview')
     expect(memberPage).toContain('<ContentHero')

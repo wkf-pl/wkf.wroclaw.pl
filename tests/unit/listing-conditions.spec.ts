@@ -52,19 +52,23 @@ describe('listing conditions', () => {
     })
     expect(listingConditionFields).toEqual([
       'title',
-      'category',
+      'topic',
       'tag',
       'parentPage',
+      'contentParent',
+      'tagGroup',
       'eventCycle',
       'eventTime',
       'relatedTo',
       'significantDate',
     ])
     expect(listingConditionOperatorsByField).toEqual({
-      category: ['inSubtree', 'equals', 'isEmpty'],
+      topic: ['inSubtree', 'equals', 'isEmpty'],
       eventCycle: ['equals', 'isEmpty'],
       eventTime: ['equals'],
       parentPage: ['equals', 'isEmpty'],
+      contentParent: ['equals', 'inSubtree', 'isEmpty'],
+      tagGroup: ['contains'],
       relatedTo: ['contains'],
       significantDate: ['notOlderThan', 'before', 'after', 'between'],
       tag: ['contains', 'isEmpty'],
@@ -84,35 +88,35 @@ describe('listing conditions', () => {
       'events',
       'documents',
     ])
-    expect(listingConditionSupportedSources.category).not.toContain('partners')
-    expect(listingConditionSupportedSources.category).not.toContain('member-profiles')
+    expect(listingConditionSupportedSources.topic).not.toContain('partners')
+    expect(listingConditionSupportedSources.topic).not.toContain('member-profiles')
     expect(listingConditionSupportedSources.title).toEqual(allListingSources)
     expect(getApplicableListingSources('title', ['pages', 'events'])).toEqual(['pages', 'events'])
   })
 
-  it('uses concise operator labels for titles and categories', () => {
+  it('uses concise operator labels for titles and topics', () => {
     expect(getListingConditionOperatorLabel('title', 'contains')).toBe('zawiera')
     expect(getListingConditionOperatorLabel('title', 'equals')).toBe('to')
-    expect(getListingConditionOperatorLabel('category', 'inSubtree')).toBe('to')
-    expect(getListingConditionOperatorLabel('category', 'equals')).toBe('to dokładnie')
-    expect(getListingConditionOperatorLabel('category', 'isEmpty')).toBe('jest puste')
+    expect(getListingConditionOperatorLabel('topic', 'inSubtree')).toBe('to lub ma podtemat')
+    expect(getListingConditionOperatorLabel('topic', 'equals')).toBe('to dokładnie')
+    expect(getListingConditionOperatorLabel('topic', 'isEmpty')).toBe('bez tematów')
   })
 
   it.each<ListingConditionInput>([
     { field: 'title', operator: 'contains', textValue: 'RPG' },
-    { field: 'category', operator: 'isEmpty' },
+    { field: 'topic', operator: 'isEmpty' },
     { field: 'tag', operator: 'isEmpty' },
     { field: 'parentPage', operator: 'isEmpty' },
     { field: 'eventCycle', operator: 'isEmpty' },
     {
-      field: 'category',
+      field: 'topic',
       operator: 'inSubtree',
-      relationshipValue: { relationTo: 'categories', value: 1 },
+      relationshipValue: { relationTo: 'topics', value: 1 },
     },
     {
-      field: 'category',
+      field: 'topic',
       operator: 'equals',
-      relationshipValue: { relationTo: 'categories', value: 1 },
+      relationshipValue: { relationTo: 'topics', value: 1 },
     },
     {
       field: 'tag',

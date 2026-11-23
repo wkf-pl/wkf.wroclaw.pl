@@ -81,6 +81,9 @@ import * as migration_20261118_095451_content_audit_version_links from './202611
 import * as migration_20261118_103310_listing_views from './20261118_103310_listing_views'
 import * as migration_20261119_160227_listing_view_templates from './20261119_160227_listing_view_templates'
 import * as migration_20261119_162628_listing_views_active from './20261119_162628_listing_views_active'
+import * as migration_20261121_193551_content_search from './20261121_193551_content_search'
+
+import * as migration_20261122_163000_topics_and_listing from './20261122_163000_topics_and_listing'
 
 export const migrations = [
   {
@@ -497,5 +500,15 @@ export const migrations = [
     up: migration_20261119_162628_listing_views_active.up,
     down: migration_20261119_162628_listing_views_active.down,
     name: '20261119_162628_listing_views_active',
+  },
+  {
+    up: migration_20261121_193551_content_search.up,
+    down: migration_20261121_193551_content_search.down,
+    name: '20261121_193551_content_search',
+  },
+  {
+    up: migration_20261122_163000_topics_and_listing.up,
+    down: migration_20261122_163000_topics_and_listing.down,
+    name: '20261122_163000_topics_and_listing',
   },
 ]

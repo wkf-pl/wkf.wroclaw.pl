@@ -1,30 +1,6 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
-import type { ContentListingSource } from '../src/modules/content/content-listing'
-import { syncContentListingItem } from '../src/modules/content/content-listing-index'
-
-const batchSize = 100
-const indexedCollections: ContentListingSource[] = ['pages', 'posts', 'events', 'event-cycles']
-
-async function findPublishedDocumentIDs(
-  db: MigrateUpArgs['db'],
-  collection: ContentListingSource,
-  lastDocumentID: number,
-): Promise<number[]> {
-  const query =
-    collection === 'pages'
-      ? sql`SELECT "id" FROM "pages" WHERE "id" > ${lastDocumentID} AND "_status" = 'published' ORDER BY "id" LIMIT ${batchSize}`
-      : collection === 'posts'
-        ? sql`SELECT "id" FROM "posts" WHERE "id" > ${lastDocumentID} AND "_status" = 'published' ORDER BY "id" LIMIT ${batchSize}`
-        : collection === 'events'
-          ? sql`SELECT "id" FROM "events" WHERE "id" > ${lastDocumentID} AND "_status" = 'published' ORDER BY "id" LIMIT ${batchSize}`
-          : sql`SELECT "id" FROM "event_cycles" WHERE "id" > ${lastDocumentID} AND "_status" = 'published' ORDER BY "id" LIMIT ${batchSize}`
-  const result = await db.execute(query)
-
-  return result.rows.map((row) => (row as { id: number }).id)
-}
-
-export async function up({ db, payload: _payload, req }: MigrateUpArgs): Promise<void> {
+export async function up({ db, payload: _payload, req: _req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
     DO $$
     DECLARE
@@ -454,25 +430,7 @@ export async function up({ db, payload: _payload, req }: MigrateUpArgs): Promise
   ALTER TABLE "media_rels" DROP COLUMN "categories_id";
   DELETE FROM "content_listing_items";`)
 
-  req.context = {
-    ...req.context,
-    skipContentListingSync: true,
-    skipPublicCacheInvalidation: true,
-  }
-
-  for (const collection of indexedCollections) {
-    let lastDocumentID = 0
-    while (true) {
-      const documentIDs = await findPublishedDocumentIDs(db, collection, lastDocumentID)
-
-      for (const documentID of documentIDs) {
-        lastDocumentID = documentID
-        await syncContentListingItem(req, collection, documentID)
-      }
-
-      if (documentIDs.length < batchSize) break
-    }
-  }
+  // The topic migration rebuilds the index after the current schema is available.
 }
 
 export async function down({ db, payload: _payload, req: _req }: MigrateDownArgs): Promise<void> {

@@ -38,7 +38,7 @@ describe('URL aliases', () => {
         'events',
         'event-cycles',
         'partners',
-        'categories',
+        'topics',
         'tags',
         'documents',
       ],
@@ -72,7 +72,7 @@ describe('URL aliases', () => {
     ['events', publishedDocument('spotkanie'), '/events/spotkanie'],
     ['event-cycles', publishedDocument('czwartki'), '/events/series/czwartki'],
     ['partners', publishedDocument('partner'), '/partners/partner'],
-    ['categories', { id: 1, slug: 'gry' }, '/category/gry'],
+    ['topics', { id: 1, slug: 'gry' }, '/topic/gry'],
     ['tags', { id: 1, slug: 'rpg' }, '/tag/rpg'],
   ] as const)('resolves %s to its canonical path', (relationTo, value, expected) => {
     expect(resolveUrlAliasTarget({ target: { relationTo, value } })).toBe(expected)
@@ -118,7 +118,7 @@ describe('URL aliases', () => {
       'api',
       'assets',
       'blog',
-      'category',
+      'topic',
       'content',
       'dokumenty',
       'events',

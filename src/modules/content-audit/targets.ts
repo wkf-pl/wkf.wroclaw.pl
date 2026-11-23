@@ -4,7 +4,7 @@ export const auditedCollections = {
   events: { label: 'Wydarzenie', titleFields: ['title'] },
   'event-cycles': { label: 'Cykl wydarzeń', titleFields: ['title'] },
   'event-types': { label: 'Rodzaj wydarzenia', titleFields: ['name'] },
-  categories: { label: 'Kategoria', titleFields: ['name'] },
+  topics: { label: 'Temat', titleFields: ['name'] },
   tags: { label: 'Tag', titleFields: ['name'] },
   media: { label: 'Media', titleFields: ['filename', 'alt'] },
   partners: { label: 'Partner', titleFields: ['name'] },

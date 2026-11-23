@@ -4,12 +4,7 @@ import { getContentAuthorName } from '@/modules/content/content-author'
 import type { Event, EventCycle, Page, Partner, Post } from '@/payload-types'
 import { createPageBreadcrumbs, type PublicBreadcrumb } from '@/modules/content/public-hierarchy'
 
-import {
-  ContentHero,
-  ContentHeroCategory,
-  ContentHeroMeta,
-  getContentHeroImage,
-} from './ContentHero'
+import { ContentHero, ContentHeroTopics, ContentHeroMeta, getContentHeroImage } from './ContentHero'
 import { ContentLayoutRenderer } from './ContentLayoutRenderer'
 import { TaxonomyLinks } from './TaxonomyLinks'
 
@@ -56,11 +51,11 @@ export async function CmsPageDocument({
   showHeroMeta = true,
 }: CmsPageDocumentProperties) {
   const authorName = getContentAuthorName(document.author)
-  const category = 'category' in document ? document.category : undefined
+  const topics = 'topics' in document ? document.topics : undefined
   const tags = 'tags' in document ? document.tags : undefined
   const title = 'title' in document ? document.title : document.name
   const heroEyebrow =
-    eyebrow ?? ('title' in document ? <ContentHeroCategory category={category} /> : 'Partner')
+    eyebrow ?? ('title' in document ? <ContentHeroTopics topics={topics} /> : 'Partner')
   const breadcrumbs = await getContentBreadcrumbs(document, providedBreadcrumbs, title)
   const image = getContentHeroImage(document.heroImage)
   const date =

@@ -4,9 +4,9 @@ import sharp from 'sharp'
 
 import config from '@/payload.config'
 import { findPublicMedia } from '@/modules/media/media-listing'
-import type { Category, Media, Tag } from '@/payload-types'
+import type { Topic, Media, Tag } from '@/payload-types'
 
-const categorySlug = 'integration-media-category'
+const topicSlug = 'integration-media-topic'
 const tagSlug = 'integration-media-tag'
 const filenames = [
   'integration-media-a.png',
@@ -19,7 +19,7 @@ const testPDF = Buffer.from(
 )
 
 let payload: Payload
-let category: Category
+let topic: Topic
 let tag: Tag
 let firstImage: Media
 let secondImage: Media
@@ -34,9 +34,9 @@ beforeAll(async () => {
   })
   await Promise.all([
     payload.delete({
-      collection: 'categories',
+      collection: 'topics',
       overrideAccess: true,
-      where: { slug: { equals: categorySlug } },
+      where: { slug: { equals: topicSlug } },
     }),
     payload.delete({
       collection: 'tags',
@@ -45,10 +45,10 @@ beforeAll(async () => {
     }),
   ])
 
-  ;[category, tag] = await Promise.all([
+  ;[topic, tag] = await Promise.all([
     payload.create({
-      collection: 'categories',
-      data: { name: 'Integration media category', slug: categorySlug },
+      collection: 'topics',
+      data: { name: 'Integration media topic', slug: topicSlug },
       overrideAccess: true,
     }),
     payload.create({
@@ -90,7 +90,7 @@ beforeAll(async () => {
 
   await payload.create({
     collection: 'media',
-    data: { alt: 'Outside image', category: category.id },
+    data: { alt: 'Outside image', topics: [topic.id] },
     file: {
       data: firstImageData,
       mimetype: 'image/png',
@@ -112,15 +112,15 @@ afterAll(async () => {
     where: { filename: { in: filenames } },
   })
   await Promise.all([
-    payload.delete({ collection: 'categories', id: category.id, overrideAccess: true }),
+    payload.delete({ collection: 'topics', id: topic.id, overrideAccess: true }),
     payload.delete({ collection: 'tags', id: tag.id, overrideAccess: true }),
   ])
 })
 
 describe('public media listing', () => {
-  it('combines category and tag filters and limits galleries to images', async () => {
+  it('combines topic and tag filters and limits galleries to images', async () => {
     const gallery = await findPublicMedia({
-      categoryId: category.id,
+      topicId: topic.id,
       kind: 'mediaGallery',
       page: 1,
       pageSize: 12,
@@ -130,7 +130,7 @@ describe('public media listing', () => {
       tagId: tag.id,
     })
     const attachments = await findPublicMedia({
-      categoryId: category.id,
+      topicId: topic.id,
       kind: 'attachments',
       page: 1,
       pageSize: 12,
@@ -148,7 +148,7 @@ describe('public media listing', () => {
     const results = await Promise.all(
       (['nameAscending', 'nameDescending', 'newest', 'oldest'] as const).map((sort) =>
         findPublicMedia({
-          categoryId: category.id,
+          topicId: topic.id,
           kind: 'attachments',
           page: 1,
           pageSize: 12,
@@ -178,7 +178,7 @@ describe('public media listing', () => {
     const findSpy = vi.spyOn(payload, 'find')
     try {
       const result = await findPublicMedia({
-        categoryId: category.id,
+        topicId: topic.id,
         kind: 'attachments',
         manualMedia: [documentFile.id, secondImage.id, firstImage.id],
         page: 2,
@@ -194,9 +194,9 @@ describe('public media listing', () => {
       expect(
         findSpy.mock.calls.filter(([arguments_]) => arguments_.collection === 'media'),
       ).toHaveLength(1)
-      expect(
-        findSpy.mock.calls.some(([arguments_]) => arguments_.collection === 'categories'),
-      ).toBe(false)
+      expect(findSpy.mock.calls.some(([arguments_]) => arguments_.collection === 'topics')).toBe(
+        false,
+      )
     } finally {
       findSpy.mockRestore()
     }
@@ -217,36 +217,36 @@ describe('public media listing', () => {
     expect(result.items.map((item) => item.filename)).toEqual(filenames.slice(1, 3).reverse())
   })
 
-  it('includes media assigned to a descendant category', async () => {
-    const childCategorySlug = 'integration-media-child-category'
+  it('includes media assigned to a descendant topic', async () => {
+    const childTopicSlug = 'integration-media-child-topic'
     const childFilename = 'integration-media-child.png'
     await payload.delete({
       collection: 'media',
       overrideAccess: true,
       where: { filename: { equals: childFilename } },
     })
-    const existingChildCategories = await payload.find({
-      collection: 'categories',
+    const existingChildTopics = await payload.find({
+      collection: 'topics',
       depth: 0,
       limit: 10,
       overrideAccess: true,
       pagination: false,
-      where: { slug: { equals: childCategorySlug } },
+      where: { slug: { equals: childTopicSlug } },
     })
-    for (const existingChildCategory of existingChildCategories.docs) {
+    for (const existingChildTopic of existingChildTopics.docs) {
       await payload.delete({
-        collection: 'categories',
-        id: existingChildCategory.id,
+        collection: 'topics',
+        id: existingChildTopic.id,
         overrideAccess: true,
       })
     }
 
-    const childCategory = await payload.create({
-      collection: 'categories',
+    const childTopic = await payload.create({
+      collection: 'topics',
       data: {
-        name: 'Integration media child category',
-        parent: category.id,
-        slug: childCategorySlug,
+        name: 'Integration media child topic',
+        parent: topic.id,
+        slug: childTopicSlug,
       },
       overrideAccess: true,
     })
@@ -258,7 +258,7 @@ describe('public media listing', () => {
         .toBuffer()
       await payload.create({
         collection: 'media',
-        data: { alt: childFilename, category: childCategory.id, tags: [tag.id] },
+        data: { alt: childFilename, topics: [childTopic.id], tags: [tag.id] },
         file: {
           data: imageData,
           mimetype: 'image/png',
@@ -269,7 +269,7 @@ describe('public media listing', () => {
       })
 
       const result = await findPublicMedia({
-        categoryId: category.id,
+        topicId: topic.id,
         kind: 'mediaGallery',
         page: 1,
         pageSize: 12,
@@ -287,8 +287,8 @@ describe('public media listing', () => {
         where: { filename: { equals: childFilename } },
       })
       await payload.delete({
-        collection: 'categories',
-        id: childCategory.id,
+        collection: 'topics',
+        id: childTopic.id,
         overrideAccess: true,
       })
     }
@@ -310,7 +310,7 @@ async function createMedia({
     collection: 'media',
     data: {
       alt: filename,
-      category: category.id,
+      topics: [topic.id],
       description,
       tags: [tag.id],
     },

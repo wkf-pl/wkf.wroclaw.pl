@@ -137,7 +137,7 @@ function validateRegion(
       listingUsesCurrentItem(candidate)
     ) {
       throw new APIError(
-        'Listing na trasie bez bieżącego elementu nie może używać wartości „Bieżący element”.',
+        'Blok na trasie bez bieżącego elementu nie może używać wartości „Bieżący element”.',
         400,
       )
     }
@@ -230,7 +230,8 @@ function listingUsesCurrentItem(block: Record<string, unknown>): boolean {
       block.conditions.some(
         (condition) =>
           isRecord(condition) &&
-          condition.field === 'relatedTo' &&
+          (condition.field === 'relatedTo' ||
+            (condition.field === 'contentParent' && condition.operator !== 'isEmpty')) &&
           condition.relatedTargetMode === 'current',
       ))
   )

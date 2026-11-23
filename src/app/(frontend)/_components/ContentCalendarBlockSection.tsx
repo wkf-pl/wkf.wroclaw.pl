@@ -13,7 +13,7 @@ import { ContentCalendar } from './EventCalendar'
 export async function ContentCalendarBlockSection({ block }: { block: ContentCalendarBlock }) {
   const sources = normalizeContentCalendarSources(block.sources ?? [])
   const filters = {
-    categoryId: getRelationshipId(block.category),
+    topicId: getRelationshipId(block.topic),
     eventCycleId: getRelationshipId(block.eventCycle),
     sources: sources.length ? sources : (['events', 'posts'] satisfies ContentCalendarSource[]),
     tagId: getRelationshipId(block.tag),

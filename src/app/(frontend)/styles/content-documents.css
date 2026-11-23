@@ -121,18 +121,18 @@
 }
 
 .hierarchyBreadcrumbs a,
-.childCategories a {
+.childTopics a {
   color: var(--gold-light);
 }
 
-.childCategories {
+.childTopics {
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
   margin-top: 1.5rem;
 }
 
-.childCategories a {
+.childTopics a {
   padding: 0.45rem 0.75rem;
   border: 1px solid rgb(243 163 19 / 45%);
   border-radius: 0.35rem;

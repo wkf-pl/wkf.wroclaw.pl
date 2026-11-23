@@ -1,4 +1,10 @@
 import {
+  lockContentHierarchyForWrite,
+  createContentParentField,
+  preventDeletingContentParent,
+} from '@/modules/content/content-parent'
+import { createPublicAuthorSignatureField } from '@/modules/content/content-author-field'
+import {
   confirmLegacyLocation,
   createLegacyLocationFields,
 } from '@/modules/locations/legacy-fields'
@@ -98,7 +104,7 @@ export const EventCycles: CollectionConfig = {
         ],
       },
     },
-    defaultColumns: ['title', 'slug', 'category', 'tags', '_status', 'publishedAt'],
+    defaultColumns: ['title', 'slug', 'topics', 'tags', '_status', 'publishedAt'],
     group: 'Treści',
     listSearchableFields: ['title', 'slug'],
     useAsTitle: 'title',
@@ -298,9 +304,11 @@ export const EventCycles: CollectionConfig = {
       ],
     },
     eventCycleSlugField,
-    getEditorialField(editorialFields, 'category'),
+    createContentParentField(),
+    getEditorialField(editorialFields, 'topics'),
     getEditorialField(editorialFields, 'tags'),
     getEditorialField(editorialFields, 'author'),
+    createPublicAuthorSignatureField(),
     {
       name: 'calendarFeedKey',
       type: 'text',
@@ -322,7 +330,12 @@ export const EventCycles: CollectionConfig = {
       setPublishedAt,
     ],
     beforeOperation: [markTrashMutation],
-    beforeValidate: [copyEventCycleContentToDefaults, validateMediaBlocks],
+    beforeDelete: [preventDeletingContentParent],
+    beforeValidate: [
+      lockContentHierarchyForWrite,
+      copyEventCycleContentToDefaults,
+      validateMediaBlocks,
+    ],
   },
   labels: { plural: 'Cykle wydarzeń', singular: 'Cykl wydarzeń' },
   versions: { drafts: true, maxPerDoc: 50 },

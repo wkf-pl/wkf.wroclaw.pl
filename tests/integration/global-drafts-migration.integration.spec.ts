@@ -23,6 +23,9 @@ import { down as downLocationIndex } from '../../migrations/20261115_212155_inde
 
 import { down as downAuditVersionLinks } from '../../migrations/20261118_095451_content_audit_version_links'
 
+import { restoreLegacyTopicPermissionName } from '../helpers/historical-topic-schema'
+import { restoreLegacyListingTopicReferences } from '../helpers/historical-topic-schema'
+
 const globalTables = [
   'site_settings',
   'navigation',
@@ -60,9 +63,17 @@ async function relatedContentSchemaExists(db: MigrateUpArgs['db']): Promise<bool
 
 async function moveToBeforeGlobalDrafts(args: MigrateUpArgs & MigrateDownArgs): Promise<void> {
   const { db } = args
+  await restoreLegacyTopicPermissionName(db)
+  await restoreLegacyListingTopicReferences(db)
   await downAuditVersionLinks(args)
   await downLocationIndex(args)
   await downLocations(args)
+  await db.execute(sql`
+    ALTER TABLE content_listing_items DROP COLUMN search_author_group_id;
+    ALTER TABLE _event_cycles_v ADD COLUMN version_event_defaults_category_id integer;
+    CREATE INDEX "_event_cycles_v_version_event_defaults_version_event_d_3_idx"
+      ON _event_cycles_v (version_event_defaults_category_id);
+  `)
   await downUserGroups(args)
   await restoreClubSections(args)
   await downContentAudit(args)

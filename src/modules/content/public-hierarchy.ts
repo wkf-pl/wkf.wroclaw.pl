@@ -20,10 +20,10 @@ export type PublicBreadcrumb = {
   url: null | string
 }
 
-export function createCategoryBreadcrumbs(
-  category: HierarchyDocumentWithBreadcrumbs,
+export function createTopicBreadcrumbs(
+  topic: HierarchyDocumentWithBreadcrumbs,
 ): PublicBreadcrumb[] {
-  return (category.breadcrumbs ?? []).flatMap((breadcrumb, index, breadcrumbs) => {
+  return (topic.breadcrumbs ?? []).flatMap((breadcrumb, index, breadcrumbs) => {
     if (!breadcrumb.label) return []
     return [
       {

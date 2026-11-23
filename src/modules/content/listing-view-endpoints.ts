@@ -36,7 +36,7 @@ export const listingViewPreviewEndpoint: Endpoint = {
     let currentTarget: CurrentListingTarget | undefined
     if (
       targetID !== undefined &&
-      (isListingSource(targetSource) || targetSource === 'categories' || targetSource === 'tags')
+      (isListingSource(targetSource) || targetSource === 'topics' || targetSource === 'tags')
     ) {
       currentTarget = { relationTo: targetSource, value: targetID }
     }

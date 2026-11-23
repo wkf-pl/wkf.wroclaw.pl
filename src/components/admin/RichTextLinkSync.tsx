@@ -68,8 +68,8 @@ export function RichTextLinkSync(properties: UIFieldClientProps) {
   const { value: eventCycle } = useField<unknown>({
     path: siblingPath('eventCycle'),
   })
-  const { value: category } = useField<unknown>({
-    path: siblingPath('category'),
+  const { value: topic } = useField<unknown>({
+    path: siblingPath('topic'),
   })
   const { value: tag } = useField<unknown>({ path: siblingPath('tag') })
   const { value: document } = useField<unknown>({
@@ -128,7 +128,7 @@ export function RichTextLinkSync(properties: UIFieldClientProps) {
     )
 
     const technicalValues = getRichTextLinkTechnicalValues({
-      category,
+      topic,
       customAddress,
       customScheme,
       document,
@@ -169,7 +169,7 @@ export function RichTextLinkSync(properties: UIFieldClientProps) {
       dispatchFields({ formState: nextFieldState, type: 'UPDATE_MANY' })
     }
   }, [
-    category,
+    topic,
     customAddress,
     customScheme,
     document,

@@ -1,4 +1,4 @@
-import { APIError, type FieldHook, type RelationshipField } from 'payload'
+import { APIError, type FieldHook, type RelationshipField, type TextField } from 'payload'
 
 import { invalidateContentSource } from '@/modules/cache/invalidate-public-data'
 import { createRolePermissionAccess, isAdministrator } from '@/modules/membership/role-access'
@@ -120,6 +120,23 @@ export function createContentAuthorField({ required = true } = {}): Relationship
       allowEdit: false,
       components: { Field: '/components/admin/ContentAuthorField#ContentAuthorField' },
       position: 'sidebar',
+    },
+  }
+}
+
+export function createPublicAuthorSignatureField(): TextField {
+  return {
+    name: 'publicAuthorSignature',
+    type: 'text',
+    label: 'Publiczny podpis autora',
+    maxLength: 160,
+    admin: {
+      position: 'sidebar',
+      description:
+        'Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.',
+    },
+    hooks: {
+      beforeValidate: [({ value }) => (typeof value === 'string' ? value.trim() || null : value)],
     },
   }
 }

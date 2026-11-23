@@ -1,21 +1,21 @@
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
-import type { Category, Page, Post, Tag, User } from '@/payload-types'
+import type { Topic, Page, Post, Tag, User } from '@/payload-types'
 
 import { createIntegrationAuthor, deleteIntegrationAuthor } from './integration-author'
 import { createLexicalDocument } from './lexical-document'
 
 export type ContentTaxonomyFixture = {
   author: User
-  category: Category
+  topic: Topic
   childPage: Page
   cleanup: () => Promise<void>
   page: Page
   payload: Payload
   post: Post
   slugs: {
-    category: string
+    topic: string
     childPage: string
     draftPost: string
     lifecyclePage: string
@@ -32,7 +32,7 @@ export async function createContentTaxonomyFixture(
   const payload = await getPayload({ config })
   const prefix = `integration-${fixtureKey}`
   const slugs = {
-    category: `${prefix}-category`,
+    topic: `${prefix}-topic`,
     childPage: `${prefix}-child-page`,
     draftPost: `${prefix}-draft-post`,
     lifecyclePage: `${prefix}-listing-lifecycle`,
@@ -43,10 +43,10 @@ export async function createContentTaxonomyFixture(
 
   await deleteFixtureContent(payload, slugs)
   const author = await createIntegrationAuthor(payload, `content-taxonomy-${fixtureKey}`)
-  const [category, tag] = await Promise.all([
+  const [topic, tag] = await Promise.all([
     payload.create({
-      collection: 'categories',
-      data: { name: 'Integration shared category', slug: slugs.category },
+      collection: 'topics',
+      data: { name: 'Integration shared topic', slug: slugs.topic },
       overrideAccess: true,
     }),
     payload.create({
@@ -62,7 +62,7 @@ export async function createContentTaxonomyFixture(
       data: {
         _status: 'published',
         author: { relationTo: 'users', value: author.id },
-        category: category.id,
+        topics: [topic.id],
         layout: [{ blockType: 'richText', content: createLexicalDocument('Page excerpt') }],
         publishedAt: '2026-08-12T12:00:00.000Z',
         slug: slugs.page,
@@ -76,7 +76,7 @@ export async function createContentTaxonomyFixture(
       data: {
         _status: 'published',
         author: { relationTo: 'users', value: author.id },
-        category: category.id,
+        topics: [topic.id],
         excerpt: 'Post excerpt',
         layout: [{ blockType: 'richText', content: createLexicalDocument('Post content') }],
         publishedAt: '2026-08-13T12:00:00.000Z',
@@ -93,7 +93,7 @@ export async function createContentTaxonomyFixture(
     data: {
       _status: 'draft',
       author: { relationTo: 'users', value: author.id },
-      category: category.id,
+      topics: [topic.id],
       excerpt: 'Draft excerpt',
       layout: [{ blockType: 'richText', content: createLexicalDocument('Draft content') }],
       publishedAt: '2026-08-14T12:00:00.000Z',
@@ -120,7 +120,7 @@ export async function createContentTaxonomyFixture(
 
   return {
     author,
-    category,
+    topic,
     childPage,
     page,
     payload,
@@ -138,23 +138,23 @@ async function deleteFixtureContent(
   payload: Payload,
   slugs: ContentTaxonomyFixture['slugs'],
 ): Promise<void> {
-  await Promise.all([
-    payload.delete({
+  await payload.delete({
+    collection: 'posts',
+    overrideAccess: true,
+    where: { slug: { in: [slugs.post, slugs.draftPost] } },
+  })
+  for (const slug of [slugs.childPage, slugs.lifecyclePage, slugs.page]) {
+    await payload.delete({
       collection: 'pages',
       overrideAccess: true,
-      where: { slug: { in: [slugs.page, slugs.childPage, slugs.lifecyclePage] } },
-    }),
-    payload.delete({
-      collection: 'posts',
-      overrideAccess: true,
-      where: { slug: { in: [slugs.post, slugs.draftPost] } },
-    }),
-  ])
+      where: { slug: { equals: slug } },
+    })
+  }
   await Promise.all([
     payload.delete({
-      collection: 'categories',
+      collection: 'topics',
       overrideAccess: true,
-      where: { slug: { equals: slugs.category } },
+      where: { slug: { equals: slugs.topic } },
     }),
     payload.delete({
       collection: 'tags',

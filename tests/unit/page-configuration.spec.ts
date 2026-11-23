@@ -15,7 +15,7 @@ import { TabbedContentBlock } from '@/blocks/TabbedContent'
 import { ListingBlock, validateListingSources, validateManualListingItems } from '@/blocks/Listing'
 import { validateListingConditions } from '@/blocks/listing-condition-fields'
 import { validateContentListingPageSize } from '@/blocks/listing-fields'
-import { Categories } from '@/collections/Categories'
+import { Topics } from '@/collections/Topics'
 import { Documents } from '@/collections/Documents'
 import { EventCycles } from '@/collections/EventCycles'
 import { Events } from '@/collections/Events'
@@ -26,11 +26,11 @@ import { Posts } from '@/collections/Posts'
 import { Tags } from '@/collections/Tags'
 import {
   populateHierarchyFullTitle,
-  preventDeletingCategoryWithChildren,
+  preventDeletingTopicWithChildren,
   validateHierarchy,
 } from '@/modules/content/hierarchy'
 
-function findField(fields: typeof Categories.fields, name: string) {
+function findField(fields: typeof Topics.fields, name: string) {
   const field = flattenFields(fields).find(
     (candidate) => 'name' in candidate && candidate.name === name,
   )
@@ -233,9 +233,13 @@ describe('page configuration', () => {
   it('arranges listing controls into the requested rows', () => {
     const [tabsField] = ListingBlock.fields
     if (tabsField?.type !== 'tabs') throw new Error('Missing Listing tabs')
-    const [contentTab, presentationTab] = tabsField.tabs
+    const [contentTab, , presentationTab] = tabsField.tabs
 
-    expect(tabsField.tabs.map(({ label }) => label)).toEqual(['Treści', 'Prezentacja'])
+    expect(tabsField.tabs.map(({ label }) => label)).toEqual([
+      'Treści',
+      'Wyszukiwanie',
+      'Prezentacja',
+    ])
     expect(tabsField.tabs.every((tab) => !('name' in tab))).toBe(true)
 
     const listingFields = contentTab.fields
@@ -304,7 +308,7 @@ describe('page configuration', () => {
 
     expect(describeFieldOrder(ContentCalendarBlock.fields.slice(3))).toEqual([
       'sources',
-      ['category', 'tag', 'eventCycle'],
+      ['topic', 'tag', 'eventCycle'],
     ])
     expect(sourceField).toMatchObject({
       defaultValue: ['events', 'posts'],
@@ -503,29 +507,56 @@ describe('page configuration', () => {
     expect(sidebarFieldNames(Pages)).toEqual([
       'slug',
       'hierarchyPath',
-      'category',
+      'parent',
+      'topics',
       'tags',
       'author',
+      'publicAuthorSignature',
       'publishedAt',
     ])
-    expect(sidebarFieldNames(Posts)).toEqual(['slug', 'category', 'tags', 'author', 'publishedAt'])
-    expect(sidebarFieldNames(Events)).toEqual(['slug', 'category', 'tags', 'author', 'publishedAt'])
-    expect(sidebarFieldNames(EventCycles)).toEqual([
+    expect(sidebarFieldNames(Posts)).toEqual([
       'slug',
-      'category',
+      'parent',
+      'topics',
       'tags',
       'author',
+      'publicAuthorSignature',
+      'publishedAt',
+    ])
+    expect(sidebarFieldNames(Events)).toEqual([
+      'slug',
+      'parent',
+      'eventCycleParentPath',
+      'topics',
+      'tags',
+      'author',
+      'publicAuthorSignature',
+      'publishedAt',
+    ])
+    expect(sidebarFieldNames(EventCycles)).toEqual([
+      'slug',
+      'parent',
+      'topics',
+      'tags',
+      'author',
+      'publicAuthorSignature',
       'publishedAt',
     ])
     expect(sidebarFieldNames(Documents)).toEqual([
       'slug',
-      'category',
+      'topics',
       'tags',
       'author',
+      'publicAuthorSignature',
       'publishedAt',
     ])
-    expect(sidebarFieldNames(Media)).toEqual(['category', 'tags', 'author', 'uploadedBy'])
-    expect(sidebarFieldNames(Partners)).toEqual(['slug', 'author', 'publishedAt'])
+    expect(sidebarFieldNames(Media)).toEqual(['topics', 'tags', 'author', 'uploadedBy'])
+    expect(sidebarFieldNames(Partners)).toEqual([
+      'slug',
+      'author',
+      'publicAuthorSignature',
+      'publishedAt',
+    ])
   })
 
   it('uses one polymorphic related-content field for Posts', () => {
@@ -548,8 +579,8 @@ describe('page configuration', () => {
     expect(() => findField(Posts.fields, 'relatedEventCycles')).toThrow('Missing field')
   })
 
-  it('keeps the agreed field order in Categories and Tags', () => {
-    expect(describeFieldOrder(Categories.fields)).toEqual([
+  it('keeps the agreed field order in Topics and Tags', () => {
+    expect(describeFieldOrder(Topics.fields)).toEqual([
       'name',
       'slug',
       'description',
@@ -564,6 +595,8 @@ describe('page configuration', () => {
       'hierarchyPath',
     ])
     expect(describeFieldOrder(Tags.fields)).toEqual([
+      'displayName',
+      'group',
       'name',
       'slug',
       'description',
@@ -576,7 +609,7 @@ describe('page configuration', () => {
   })
 
   it('places taxonomy URLs in the sidebar and uses the related-content renderer', () => {
-    for (const collection of [Categories, Tags]) {
+    for (const collection of [Topics, Tags]) {
       expect(findField(collection.fields, 'slug')).toMatchObject({
         admin: { position: 'sidebar' },
       })
@@ -608,7 +641,7 @@ describe('page configuration', () => {
         expect(relatedField.type).toBe('join')
         if (relatedField.type !== 'join') throw new Error(`Expected ${fieldName} to be a join`)
 
-        expect(relatedField.admin?.defaultColumns).not.toContain('category')
+        expect(relatedField.admin?.defaultColumns).not.toContain('topic')
         expect(relatedField.admin?.defaultColumns).not.toContain('tags')
       }
     }
@@ -638,7 +671,7 @@ describe('page configuration', () => {
   })
 
   it('hides plugin breadcrumbs and shows the readable hierarchy path in the sidebar', () => {
-    for (const collection of [Pages, Categories]) {
+    for (const collection of [Pages, Topics]) {
       expect(findField(collection.fields, 'breadcrumbs')).toMatchObject({
         admin: { hidden: true, readOnly: true },
         type: 'array',
@@ -722,9 +755,9 @@ describe('page configuration', () => {
     ).toMatchObject({ fullTitle: 'Gry › RPG › Warhammer' })
   })
 
-  it('prevents deleting a category that still has children', async () => {
+  it('prevents deleting a topic that still has children', async () => {
     await expect(
-      preventDeletingCategoryWithChildren({
+      preventDeletingTopicWithChildren({
         id: 1,
         req: {
           payload: {

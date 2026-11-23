@@ -9,7 +9,7 @@ type SitemapDocument = {
 
 export type PublicSitemapContent = {
   blogTemplateUpdatedAt?: string
-  categories: SitemapDocument[]
+  topics: SitemapDocument[]
   cycles: SitemapDocument[]
   events: SitemapDocument[]
   memberProfiles: SitemapDocument[]
@@ -39,9 +39,7 @@ export function createPublicSitemap(content: PublicSitemapContent): MetadataRout
     createSitemapEntry('/members'),
     ...content.pages.map((page) => createSitemapEntry(`/${page.slug}`, page.updatedAt)),
     ...content.posts.map((post) => createSitemapEntry(`/blog/${post.slug}`, post.updatedAt)),
-    ...content.categories.map((category) =>
-      createSitemapEntry(`/category/${category.slug}`, category.updatedAt),
-    ),
+    ...content.topics.map((topic) => createSitemapEntry(`/topic/${topic.slug}`, topic.updatedAt)),
     ...content.tags.map((tag) => createSitemapEntry(`/tag/${tag.slug}`, tag.updatedAt)),
     ...content.events.map((event) => createSitemapEntry(`/events/${event.slug}`, event.updatedAt)),
     ...content.cycles.map((cycle) =>

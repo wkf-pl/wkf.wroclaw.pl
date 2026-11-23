@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import { Fragment } from 'react'
 
 import type { PublicBreadcrumb } from '@/modules/content/public-hierarchy'
-import type { Category, Media } from '@/payload-types'
+import type { Topic, Media } from '@/payload-types'
 import { getMediaURL } from '@/modules/media/media-url'
 
 import { HierarchyBreadcrumbs } from './HierarchyBreadcrumbs'
@@ -109,12 +110,16 @@ export function ContentHero({
   )
 }
 
-export function ContentHeroCategory({ category }: { category?: Category | number | null }) {
-  if (!category || typeof category !== 'object') {
-    return <span aria-hidden="true">&nbsp;</span>
-  }
+export function ContentHeroTopics({ topics }: { topics?: (Topic | number)[] | null }) {
+  const populatedTopics = topics?.filter((topic): topic is Topic => typeof topic === 'object') ?? []
+  if (!populatedTopics.length) return <span aria-hidden="true">&nbsp;</span>
 
-  return <Link href={`/category/${category.slug}`}>{category.name}</Link>
+  return populatedTopics.map((topic, index) => (
+    <Fragment key={topic.id}>
+      {index > 0 ? ', ' : null}
+      <Link href={`/topic/${topic.slug}`}>{topic.name}</Link>
+    </Fragment>
+  ))
 }
 
 export function ContentHeroMeta({ authorName, collection, date }: ContentHeroMetaProperties) {

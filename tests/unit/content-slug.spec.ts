@@ -12,7 +12,7 @@ describe('content slugs', () => {
   })
 
   it('rejects application route names for pages', () => {
-    expect(validatePageSlug('category')).toBeTypeOf('string')
+    expect(validatePageSlug('topic')).toBeTypeOf('string')
     expect(validatePageSlug('members')).toBeTypeOf('string')
     expect(validatePageSlug('preview')).toBeTypeOf('string')
     expect(validatePageSlug('blog')).toBeTypeOf('string')

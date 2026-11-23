@@ -1,4 +1,4 @@
-export { Categories } from './Categories'
+export { Topics } from './Topics'
 export { ContentListingItems } from './ContentListingItems'
 export { DocumentFiles } from './DocumentFiles'
 export { Documents } from './Documents'
@@ -18,3 +18,5 @@ export { Users } from './Users'
 export { UrlAliases } from './UrlAliases'
 
 export { Locations } from './Locations'
+
+export { TagGroups } from './TagGroups'

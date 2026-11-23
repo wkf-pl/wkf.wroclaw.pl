@@ -3,13 +3,13 @@ import Link from 'next/link'
 
 import { CmsRichText } from '@/components/CmsRichText'
 import { getContentAuthorName } from '@/modules/content/content-author'
-import { findPublicCategoryByID } from '@/modules/content/public-content'
+import { findPublicTopicByID } from '@/modules/content/public-content'
 import { findPublicContent, type ContentListingSource } from '@/modules/content/content-listing'
 import { WARSAW_TIME_ZONE } from '@/modules/events/constants'
 import { getMemberProfileImageURL } from '@/modules/members/member-profile-image'
 import { resolvePresentedLinks } from '@/modules/navigation/links'
 import type { CurrentItemFieldSource } from '@/modules/page-templates/current-item-fields'
-import type { Category, Event, EventCycle, MemberProfile, Tag } from '@/payload-types'
+import type { Topic, Event, EventCycle, MemberProfile, Tag } from '@/payload-types'
 
 import { ActionLinksList } from './ActionLinksList'
 import { getContentHeroImage } from './ContentHero'
@@ -53,7 +53,7 @@ export function CurrentItemValue({
 
   switch (source.kind) {
     case 'join': {
-      if (currentTarget?.relationTo !== 'categories' && currentTarget?.relationTo !== 'tags')
+      if (currentTarget?.relationTo !== 'topics' && currentTarget?.relationTo !== 'tags')
         return null
       return (
         <RelatedContent collection={source.collection} target={currentTarget} variant={variant} />
@@ -121,12 +121,14 @@ export function CurrentItemValue({
         </Link>
       ) : null
     }
-    case 'category':
-      return <CategoryLink category={value as Category | number | null | undefined} />
+    case 'topics':
+      return <TaxonomyLinks topics={value as Topic[] | undefined} />
+    case 'topic':
+      return <TopicLink topic={value as Topic | number | null | undefined} />
     case 'tags':
       return <TaxonomyLinks tags={value as Tag[] | undefined} />
     case 'breadcrumbs': {
-      const breadcrumbs = (value as Category['breadcrumbs'])?.filter(({ label }) => label)
+      const breadcrumbs = (value as Topic['breadcrumbs'])?.filter(({ label }) => label)
       return breadcrumbs?.length ? (
         <CurrentItemList variant={variant}>
           {breadcrumbs.map(({ label }, index) => (
@@ -190,10 +192,9 @@ export function CurrentItemValue({
   }
 }
 
-async function CategoryLink({ category }: { category?: Category | number | null }) {
-  const populatedCategory =
-    typeof category === 'number' ? await findPublicCategoryByID(category) : category
-  return <TaxonomyLinks category={populatedCategory} />
+async function TopicLink({ topic }: { topic?: Topic | number | null }) {
+  const populatedTopic = typeof topic === 'number' ? await findPublicTopicByID(topic) : topic
+  return <TaxonomyLinks topics={populatedTopic ? [populatedTopic] : []} />
 }
 
 async function RelatedContent({
@@ -202,13 +203,13 @@ async function RelatedContent({
   variant,
 }: {
   collection: ContentListingSource
-  target: { relationTo: 'categories' | 'tags'; value: number | string }
+  target: { relationTo: 'topics' | 'tags'; value: number | string }
   variant: string
 }) {
   const { items } = await findPublicContent({
     conditions: [
-      target.relationTo === 'categories'
-        ? { field: 'category', operator: 'equals', relationshipValue: target }
+      target.relationTo === 'topics'
+        ? { field: 'topic', operator: 'equals', relationshipValue: target }
         : { field: 'tag', operator: 'contains', relationshipValue: target },
     ],
     page: 1,

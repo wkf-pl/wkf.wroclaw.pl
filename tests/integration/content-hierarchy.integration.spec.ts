@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { findPublicContent } from '@/modules/content/content-listing'
 import { createPageBreadcrumbs } from '@/modules/content/public-hierarchy'
-import type { Category, Page } from '@/payload-types'
+import type { Topic, Page } from '@/payload-types'
 
 import {
   createContentTaxonomyFixture,
@@ -62,68 +62,68 @@ describe('content hierarchy', () => {
     ).rejects.toMatchObject({ status: 400 })
   })
 
-  it('aggregates category descendants, excludes siblings and intersects the subtree with a tag', async () => {
-    const categorySlugs = {
-      child: 'integration-hierarchy-category-child',
-      grandchild: 'integration-hierarchy-category-grandchild',
-      root: 'integration-hierarchy-category-root',
-      sibling: 'integration-hierarchy-category-sibling',
+  it('aggregates topic descendants, excludes siblings and intersects the subtree with a tag', async () => {
+    const topicSlugs = {
+      child: 'integration-hierarchy-topic-child',
+      grandchild: 'integration-hierarchy-topic-grandchild',
+      root: 'integration-hierarchy-topic-root',
+      sibling: 'integration-hierarchy-topic-sibling',
     }
     const postSlugs = [
       'integration-hierarchy-grandchild-tagged',
       'integration-hierarchy-grandchild-untagged',
       'integration-hierarchy-sibling-tagged',
     ]
-    const createdCategories: Category[] = []
+    const createdTopics: Topic[] = []
 
     await fixture.payload.delete({
       collection: 'posts',
       overrideAccess: true,
       where: { slug: { in: postSlugs } },
     })
-    await deleteCategoriesBySlugs(Object.values(categorySlugs))
+    await deleteTopicsBySlugs(Object.values(topicSlugs))
 
     try {
       const root = await fixture.payload.create({
-        collection: 'categories',
-        data: { name: 'Integration category root', slug: categorySlugs.root },
+        collection: 'topics',
+        data: { name: 'Integration topic root', slug: topicSlugs.root },
         overrideAccess: true,
       })
-      createdCategories.push(root)
+      createdTopics.push(root)
       const child = await fixture.payload.create({
-        collection: 'categories',
-        data: { name: 'Integration category child', parent: root.id, slug: categorySlugs.child },
+        collection: 'topics',
+        data: { name: 'Integration topic child', parent: root.id, slug: topicSlugs.child },
         overrideAccess: true,
       })
-      createdCategories.push(child)
+      createdTopics.push(child)
       const grandchild = await fixture.payload.create({
-        collection: 'categories',
+        collection: 'topics',
         data: {
-          name: 'Integration category grandchild',
+          name: 'Integration topic grandchild',
           parent: child.id,
-          slug: categorySlugs.grandchild,
+          slug: topicSlugs.grandchild,
         },
         overrideAccess: true,
       })
-      createdCategories.push(grandchild)
+      createdTopics.push(grandchild)
       const sibling = await fixture.payload.create({
-        collection: 'categories',
+        collection: 'topics',
         data: {
-          name: 'Integration category sibling',
+          name: 'Integration topic sibling',
           parent: root.id,
-          slug: categorySlugs.sibling,
+          slug: topicSlugs.sibling,
         },
         overrideAccess: true,
       })
-      createdCategories.push(sibling)
+      createdTopics.push(sibling)
 
-      const createPost = (title: string, slug: string, categoryId: number, tags?: number[]) =>
+      const createPost = (title: string, slug: string, topicId: number, tags?: number[]) =>
         fixture.payload.create({
           collection: 'posts',
           data: {
             _status: 'published',
             author: { relationTo: 'users', value: fixture.author.id },
-            category: categoryId,
+            topics: [topicId],
             excerpt: title,
             layout: [{ blockType: 'richText', content: createLexicalDocument(title) }],
             publishedAt: '2026-08-20T12:00:00.000Z',
@@ -142,9 +142,9 @@ describe('content hierarchy', () => {
       const subtree = await findPublicContent({
         conditions: [
           {
-            field: 'category',
+            field: 'topic',
             operator: 'inSubtree',
-            relationshipValue: { relationTo: 'categories', value: child.id },
+            relationshipValue: { relationTo: 'topics', value: child.id },
           },
         ],
         page: 1,
@@ -156,9 +156,9 @@ describe('content hierarchy', () => {
       const taggedSubtree = await findPublicContent({
         conditions: [
           {
-            field: 'category',
+            field: 'topic',
             operator: 'inSubtree',
-            relationshipValue: { relationTo: 'categories', value: child.id },
+            relationshipValue: { relationTo: 'topics', value: child.id },
           },
           {
             field: 'tag',
@@ -180,23 +180,23 @@ describe('content hierarchy', () => {
       expect(taggedSubtree.items.map((item) => item.document.id)).toEqual([taggedGrandchildPost.id])
 
       const populatedGrandchild = await fixture.payload.findByID({
-        collection: 'categories',
+        collection: 'topics',
         depth: 0,
         id: grandchild.id,
         joins: { relatedPosts: { limit: 10 } },
         overrideAccess: true,
       })
       expect(populatedGrandchild.fullTitle).toBe(
-        'Integration category root › Integration category child › Integration category grandchild',
+        'Integration topic root › Integration topic child › Integration topic grandchild',
       )
       expect(populatedGrandchild.breadcrumbs?.map((breadcrumb) => breadcrumb.label)).toEqual([
-        'Integration category root',
-        'Integration category child',
-        'Integration category grandchild',
+        'Integration topic root',
+        'Integration topic child',
+        'Integration topic grandchild',
       ])
       expect(populatedGrandchild.relatedPosts?.docs).toHaveLength(2)
       await expect(
-        fixture.payload.delete({ collection: 'categories', id: child.id, overrideAccess: true }),
+        fixture.payload.delete({ collection: 'topics', id: child.id, overrideAccess: true }),
       ).rejects.toMatchObject({ status: 400 })
     } finally {
       await fixture.payload.delete({
@@ -204,10 +204,10 @@ describe('content hierarchy', () => {
         overrideAccess: true,
         where: { slug: { in: postSlugs } },
       })
-      for (const createdCategory of createdCategories.reverse()) {
+      for (const createdTopic of createdTopics.reverse()) {
         await fixture.payload.delete({
-          collection: 'categories',
-          id: createdCategory.id,
+          collection: 'topics',
+          id: createdTopic.id,
           overrideAccess: true,
         })
       }
@@ -326,22 +326,22 @@ describe('content hierarchy', () => {
   }, 20_000)
 })
 
-async function deleteCategoriesBySlugs(slugs: string[]): Promise<void> {
-  const categories = await fixture.payload.find({
-    collection: 'categories',
+async function deleteTopicsBySlugs(slugs: string[]): Promise<void> {
+  const topics = await fixture.payload.find({
+    collection: 'topics',
     depth: 0,
     limit: 100,
     overrideAccess: true,
     pagination: false,
     where: { slug: { in: slugs } },
   })
-  const deepestCategoriesFirst = categories.docs.sort(
+  const deepestTopicsFirst = topics.docs.sort(
     (first, second) => (second.breadcrumbs?.length ?? 0) - (first.breadcrumbs?.length ?? 0),
   )
-  for (const existingCategory of deepestCategoriesFirst) {
+  for (const existingTopic of deepestTopicsFirst) {
     await fixture.payload.delete({
-      collection: 'categories',
-      id: existingCategory.id,
+      collection: 'topics',
+      id: existingTopic.id,
       overrideAccess: true,
     })
   }

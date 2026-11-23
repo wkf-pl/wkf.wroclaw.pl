@@ -4,7 +4,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 
 import type {
-  Category,
+  Topic,
   Footer,
   HomepageHero,
   HomepageSection,
@@ -175,12 +175,12 @@ export function findPublishedPosts(limit: number): Promise<Post[]> {
   return findPublishedPostsCached(normalizedLimit)
 }
 
-const findCategoryBySlugCached = cachePublicData(
-  'category-by-slug',
-  async (slug: string): Promise<Category | null> => {
+const findTopicBySlugCached = cachePublicData(
+  'topic-by-slug',
+  async (slug: string): Promise<Topic | null> => {
     const payload = await getPayload({ config })
     const result = await payload.find({
-      collection: 'categories',
+      collection: 'topics',
       depth: 0,
       limit: 1,
       overrideAccess: false,
@@ -195,12 +195,12 @@ const findCategoryBySlugCached = cachePublicData(
   { revalidate: 3600, tags: [publicCacheTags.contentListings] },
 )
 
-export const findCategoryBySlug = cache(findCategoryBySlugCached)
+export const findTopicBySlug = cache(findTopicBySlugCached)
 
-export const findPublicCategoryByID = cache(async (id: number): Promise<Category | null> => {
+export const findPublicTopicByID = cache(async (id: number): Promise<Topic | null> => {
   const payload = await getPayload({ config })
   return payload.findByID({
-    collection: 'categories',
+    collection: 'topics',
     context: publicRequestContext,
     depth: 0,
     disableErrors: true,

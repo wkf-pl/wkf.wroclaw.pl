@@ -1,3 +1,4 @@
+import { createPublicAuthorSignatureField } from '@/modules/content/content-author-field'
 import type { CollectionConfig } from 'payload'
 
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
@@ -67,7 +68,7 @@ export const Documents: CollectionConfig = {
       'documentType',
       'documentNumber',
       'documentDate',
-      'category',
+      'topics',
       'tags',
       '_status',
     ],
@@ -182,6 +183,7 @@ export const Documents: CollectionConfig = {
         position: 'sidebar',
       },
     },
+    createPublicAuthorSignatureField(),
     {
       name: 'publishedAt',
       type: 'date',

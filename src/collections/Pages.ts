@@ -1,10 +1,12 @@
-import type { CollectionConfig, Field } from 'payload'
-
 import {
-  createEditorialFields,
-  getEditorialField,
-  withFieldWidth,
-} from '@/modules/content/editorial-fields'
+  lockContentHierarchyForWrite,
+  createContentParentField,
+  preventDeletingContentParent,
+} from '@/modules/content/content-parent'
+import { createPublicAuthorSignatureField } from '@/modules/content/content-author-field'
+import type { CollectionConfig } from 'payload'
+
+import { createEditorialFields, getEditorialField } from '@/modules/content/editorial-fields'
 import {
   removeContentListingAfterDelete,
   syncContentListingAfterChange,
@@ -55,16 +57,6 @@ const editorialFields = createEditorialFields({
   reserveApplicationSlugs: true,
 })
 
-const pageParentField: Field = {
-  name: 'parent',
-  type: 'relationship',
-  admin: {
-    placeholder: '<brak>',
-  },
-  label: 'Strona nadrzędna',
-  relationTo: 'pages',
-}
-
 export const Pages: CollectionConfig = {
   slug: 'pages',
   trash: true,
@@ -104,13 +96,7 @@ export const Pages: CollectionConfig = {
         {
           label: 'Treść',
           fields: [
-            {
-              type: 'row',
-              fields: [
-                withFieldWidth(getEditorialField(editorialFields, 'title'), '50%'),
-                withFieldWidth(pageParentField, '50%'),
-              ],
-            },
+            getEditorialField(editorialFields, 'title'),
             {
               name: 'fullTitle',
               type: 'text',
@@ -140,9 +126,11 @@ export const Pages: CollectionConfig = {
     },
     getEditorialField(editorialFields, 'slug'),
     ...createHierarchyDisplayFields('pages'),
-    getEditorialField(editorialFields, 'category'),
+    createContentParentField(),
+    getEditorialField(editorialFields, 'topics'),
     getEditorialField(editorialFields, 'tags'),
     getEditorialField(editorialFields, 'author'),
+    createPublicAuthorSignatureField(),
     getEditorialField(editorialFields, 'publishedAt'),
   ],
   hooks: {
@@ -150,7 +138,13 @@ export const Pages: CollectionConfig = {
     afterDelete: [removeContentListingAfterDelete],
     beforeChange: [populateHierarchyFullTitle, populateListingExcerptOnPublish, setPublishedAt],
     beforeOperation: [markTrashMutation],
-    beforeValidate: [validatePageAliasCollision, validateMediaBlocks, validateHierarchy],
+    beforeDelete: [preventDeletingContentParent],
+    beforeValidate: [
+      lockContentHierarchyForWrite,
+      validatePageAliasCollision,
+      validateMediaBlocks,
+      validateHierarchy,
+    ],
   },
   labels: {
     plural: 'Strony',

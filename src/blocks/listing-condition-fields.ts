@@ -33,7 +33,8 @@ const relationshipValueCondition = (_data: unknown, siblingData: Record<string, 
   getListingConditionRelationshipCollection(siblingData.field) !== undefined
 
 const relatedTargetModeCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
-  siblingData.field === 'relatedTo'
+  siblingData.field === 'relatedTo' ||
+  (siblingData.field === 'contentParent' && siblingData.operator !== 'isEmpty')
 
 const textValueCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.field === 'title'
@@ -51,9 +52,16 @@ const dateValueCondition = (_data: unknown, siblingData: Record<string, unknown>
 const endDateValueCondition = (_data: unknown, siblingData: Record<string, unknown>) =>
   siblingData.field === 'significantDate' && siblingData.operator === 'between'
 
-export const validateListingConditions: ArrayFieldValidation = (value, { data, siblingData }) => {
+export const validateListingConditions: ArrayFieldValidation = (value, options) =>
+  validateFilteredListingConditions(value, options, false)
+
+function validateFilteredListingConditions(
+  value: Parameters<ArrayFieldValidation>[0],
+  { data, siblingData }: Parameters<ArrayFieldValidation>[1],
+  alwaysFiltered: boolean,
+) {
   const listingSiblingData = siblingData as ListingConditionSiblingData
-  if (listingSiblingData.selectionMode !== 'filters') return true
+  if (!alwaysFiltered && listingSiblingData.selectionMode !== 'filters') return true
   if (value === null || value === undefined) return true
   // Payload's client-side ArrayField validator receives the row count, while server validation
   // receives the array itself.
@@ -120,7 +128,7 @@ const normalizeListingConditions: FieldHook = ({ value }) => {
   })
 }
 
-export function createListingConditionsField(): ArrayField {
+export function createListingConditionsField(alwaysFiltered = false): ArrayField {
   return {
     name: 'conditions',
     type: 'array',
@@ -129,7 +137,7 @@ export function createListingConditionsField(): ArrayField {
         Field: '/components/admin/ListingConditionsField#ListingConditionsField',
         RowLabel: '/components/admin/ListingConditionsField#ListingConditionRowLabel',
       },
-      condition: filtersCondition,
+      condition: alwaysFiltered ? undefined : filtersCondition,
       initCollapsed: false,
       isSortable: true,
     },
@@ -187,7 +195,7 @@ export function createListingConditionsField(): ArrayField {
               width: '48%',
             },
             label: 'Wartość',
-            relationTo: ['categories', 'tags', 'pages', 'event-cycles'],
+            relationTo: ['topics', 'tags', 'pages', 'event-cycles', 'tag-groups'],
           },
           {
             name: 'relatedTargetMode',
@@ -285,7 +293,9 @@ export function createListingConditionsField(): ArrayField {
     label: 'Warunki',
     labels: { plural: 'Warunki', singular: 'Warunek' },
     maxRows: 10,
-    validate: validateListingConditions,
+    validate: alwaysFiltered
+      ? (value, options) => validateFilteredListingConditions(value, options, true)
+      : validateListingConditions,
   }
 }
 
@@ -314,11 +324,18 @@ function validateConditionValue(condition: ListingConditionInput, position: numb
       : `Wybierz termin wydarzenia w warunku ${position}.`
   }
 
-  if (condition.field === 'relatedTo') {
+  if (condition.field === 'relatedTo' || condition.field === 'contentParent') {
     if (!isListingRelatedTargetMode(condition.relatedTargetMode)) {
       return `Wybierz źródło wartości w warunku ${position}.`
     }
     if (condition.relatedTargetMode === 'current') return null
+    if (
+      condition.field === 'contentParent' &&
+      condition.relatedTargetValue?.relationTo !== 'pages' &&
+      condition.relatedTargetValue?.relationTo !== 'event-cycles'
+    ) {
+      return `Wybierz Stronę lub Cykl w warunku ${position}.`
+    }
     if (
       !condition.relatedTargetValue ||
       !isListingSource(condition.relatedTargetValue.relationTo) ||
@@ -365,9 +382,10 @@ function getConditionSignature(condition: ListingConditionInput): string {
         condition.operator,
         normalizeListingTitle(condition.textValue ?? ''),
       ])
-    case 'category':
+    case 'topic':
     case 'eventCycle':
     case 'parentPage':
+    case 'tagGroup':
     case 'tag':
       return JSON.stringify([
         condition.field,
@@ -377,6 +395,7 @@ function getConditionSignature(condition: ListingConditionInput): string {
       ])
     case 'eventTime':
       return JSON.stringify([condition.field, condition.operator, condition.eventTimeValue])
+    case 'contentParent':
     case 'relatedTo':
       return JSON.stringify([
         condition.field,

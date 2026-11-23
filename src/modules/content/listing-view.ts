@@ -24,7 +24,7 @@ export const listingInformation = {
   venue: 'Miejsce wydarzenia',
   cycle: 'Cykl wydarzenia',
   excerpt: 'Opis',
-  taxonomy: 'Kategorie i tagi',
+  taxonomy: 'Tematy i tagi',
   context: 'Pozostałe',
   interests: 'Zainteresowania',
   calendar: 'Dodaj do kalendarza',

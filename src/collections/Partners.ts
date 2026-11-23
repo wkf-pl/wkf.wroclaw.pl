@@ -1,3 +1,4 @@
+import { createPublicAuthorSignatureField } from '@/modules/content/content-author-field'
 import type { CollectionConfig } from 'payload'
 
 import { createLocationRelationship } from '@/modules/locations/relationship'
@@ -121,6 +122,7 @@ export const Partners: CollectionConfig = {
       unique: true,
     },
     getEditorialField(editorialFields, 'author'),
+    createPublicAuthorSignatureField(),
     getEditorialField(editorialFields, 'publishedAt'),
   ],
   hooks: {

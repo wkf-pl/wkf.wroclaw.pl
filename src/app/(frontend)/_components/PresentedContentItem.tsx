@@ -39,7 +39,7 @@ export function PresentedContentDetails({
       {presentation.interests ? (
         <p className="contentCardInterests">{presentation.interests}</p>
       ) : null}
-      <TaxonomyLinks category={presentation.category} tags={presentation.tags} />
+      <TaxonomyLinks topics={presentation.topics} tags={presentation.tags} />
       {presentation.secondaryAction ? (
         <Link
           className="contentCarouselSecondaryAction contentCardSecondaryAction"

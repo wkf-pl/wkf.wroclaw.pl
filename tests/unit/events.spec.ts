@@ -268,7 +268,7 @@ describe('events model', () => {
     const taxonomyRow = flattenFields(EventCycles.fields).find(
       (field) =>
         field.type === 'row' &&
-        field.fields.some((item) => 'name' in item && item.name === 'category') &&
+        field.fields.some((item) => 'name' in item && item.name === 'topics') &&
         field.fields.some((item) => 'name' in item && item.name === 'tags'),
     )
     expect(taxonomyRow?.type).toBe('row')
@@ -279,7 +279,7 @@ describe('events model', () => {
         width: field.admin?.width,
       })),
     ).toEqual([
-      { name: 'category', width: '50%' },
+      { name: 'topics', width: '50%' },
       { name: 'tags', width: '50%' },
     ])
   })
@@ -304,8 +304,8 @@ describe('events model', () => {
   })
 
   it('keeps the main Cycle taxonomy in the sidebar and nested Event defaults in the form', () => {
-    const categoryFields = EventCycles.fields.flatMap((field) => {
-      if ('name' in field && field.name === 'category') return [field]
+    const topicFields = EventCycles.fields.flatMap((field) => {
+      if ('name' in field && field.name === 'topics') return [field]
       if (field.type !== 'tabs') return []
       return field.tabs.flatMap((tab) =>
         tab.fields.flatMap((tabField) => {
@@ -313,7 +313,7 @@ describe('events model', () => {
           return tabField.fields.flatMap((groupField) =>
             groupField.type === 'row'
               ? groupField.fields.filter(
-                  (rowField) => 'name' in rowField && rowField.name === 'category',
+                  (rowField) => 'name' in rowField && rowField.name === 'topics',
                 )
               : [],
           )
@@ -321,9 +321,9 @@ describe('events model', () => {
       )
     })
 
-    expect(categoryFields).toHaveLength(2)
-    expect(categoryFields.filter((field) => field.admin?.position === 'sidebar')).toHaveLength(1)
-    expect(categoryFields.filter((field) => field.admin?.position !== 'sidebar')).toHaveLength(1)
+    expect(topicFields).toHaveLength(2)
+    expect(topicFields.filter((field) => field.admin?.position === 'sidebar')).toHaveLength(1)
+    expect(topicFields.filter((field) => field.admin?.position !== 'sidebar')).toHaveLength(1)
   })
 
   it('uses expanded relationship rows, grammatical add labels and shared link targets', () => {
@@ -362,17 +362,7 @@ describe('events model', () => {
       ),
     ).toEqual([
       'label',
-      [
-        'targetType',
-        'eventCycle',
-        'document',
-        'category',
-        'partner',
-        'page',
-        'tag',
-        'post',
-        'event',
-      ],
+      ['targetType', 'eventCycle', 'document', 'topic', 'partner', 'page', 'tag', 'post', 'event'],
       ['customScheme', 'customAddress'],
       'openInNewTab',
     ])

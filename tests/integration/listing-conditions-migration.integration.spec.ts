@@ -20,6 +20,8 @@ import { down as downRelatedContent } from '../../migrations/20261102_114056_rel
 import { down as downPageTemplates } from '../../migrations/20261104_020601_page_templates_collection'
 import { setPageTemplateCompositionSchema } from '../helpers/page-template-composition-migration'
 
+import { restoreLegacyListingTopicReferences } from '../helpers/historical-topic-schema'
+
 const fixtureId = 9_300_001
 const fixtureVersionId = 9_300_002
 const listingBlockId = 'listing-conditions-migration-listing'
@@ -64,6 +66,7 @@ async function relatedContentSchemaExists(): Promise<boolean> {
 }
 
 async function moveToBeforeListingConditions(): Promise<void> {
+  await restoreLegacyListingTopicReferences(migrationDatabase)
   await setPageTemplateCompositionSchema(migrationArguments(), false)
   if (await tableExists('page_templates')) await downPageTemplates(migrationArguments())
   if (await relatedContentSchemaExists()) await downRelatedContent(migrationArguments())

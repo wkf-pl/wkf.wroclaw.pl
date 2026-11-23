@@ -1,13 +1,4 @@
-import type {
-  Category,
-  Document,
-  Event,
-  EventCycle,
-  Page,
-  Partner,
-  Post,
-  Tag,
-} from '@/payload-types'
+import type { Topic, Document, Event, EventCycle, Page, Partner, Post, Tag } from '@/payload-types'
 import {
   isSelectableRasterIconName,
   type SelectableRasterIconName,
@@ -15,7 +6,7 @@ import {
 import { buildCustomTarget, isCustomScheme } from './custom-target'
 
 export type LinkTarget = {
-  category?: Category | number | null
+  topic?: Topic | number | null
   customAddress?: null | string
   customScheme?: null | string
   document?: Document | number | null
@@ -53,9 +44,9 @@ export function resolveLink(
   if (item.targetType === 'page') {
     const page = getPublishedPage(item.page)
     href = page ? `/${page.slug}` : undefined
-  } else if (item.targetType === 'category') {
-    const category = getTaxonomyDocument(item.category)
-    href = category ? `/category/${category.slug}` : undefined
+  } else if (item.targetType === 'topic') {
+    const topic = getTaxonomyDocument(item.topic)
+    href = topic ? `/topic/${topic.slug}` : undefined
   } else if (item.targetType === 'tag') {
     const tag = getTaxonomyDocument(item.tag)
     href = tag ? `/tag/${tag.slug}` : undefined
@@ -153,7 +144,7 @@ export function resolveLinkTargetName(
   { siteContactEmail }: { siteContactEmail?: null | string } = {},
 ): string {
   if (item.targetType === 'page') return getDocumentName(item.page)
-  if (item.targetType === 'category') return getDocumentName(item.category)
+  if (item.targetType === 'topic') return getDocumentName(item.topic)
   if (item.targetType === 'tag') return getDocumentName(item.tag)
   if (item.targetType === 'event') return getDocumentName(item.event)
   if (item.targetType === 'eventCycle') return getDocumentName(item.eventCycle)
@@ -183,9 +174,7 @@ function getPublishedDocument<T extends Document | Event | EventCycle | Partner 
     : null
 }
 
-function getTaxonomyDocument(
-  value: Category | null | number | Tag | undefined,
-): Category | Tag | null {
+function getTaxonomyDocument(value: Topic | null | number | Tag | undefined): Topic | Tag | null {
   return value && typeof value === 'object' && value.slug ? value : null
 }
 

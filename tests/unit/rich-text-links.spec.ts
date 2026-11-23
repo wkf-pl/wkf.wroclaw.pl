@@ -51,9 +51,9 @@ describe('rich text internal links', () => {
       options: [
         { label: 'Cykl wydarzeń', value: 'eventCycle' },
         { label: 'Dokument', value: 'document' },
-        { label: 'Kategoria', value: 'category' },
         { label: 'Strona', value: 'page' },
         { label: 'Tag', value: 'tag' },
+        { label: 'Temat', value: 'topic' },
         { label: 'Własny adres', value: 'custom' },
         { label: 'Wpis', value: 'post' },
         { label: 'Wydarzenie', value: 'event' },
@@ -140,7 +140,7 @@ describe('rich text internal links', () => {
     ['posts', 'konwent', '/blog/konwent'],
     ['events', 'spotkanie', '/events/spotkanie'],
     ['event-cycles', 'planszowki', '/events/series/planszowki'],
-    ['categories', 'aktualnosci', '/category/aktualnosci'],
+    ['topics', 'aktualnosci', '/topic/aktualnosci'],
     ['tags', 'fantastyka', '/tag/fantastyka'],
     ['documents', 'regulamin', '/dokumenty/regulamin'],
   ])('maps %s to its public route', (relationTo, slug, expectedHref) => {

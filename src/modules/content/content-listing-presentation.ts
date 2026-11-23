@@ -1,6 +1,6 @@
 import { getListingComponents } from './listing-view'
 import { getPopulatedRelationship } from '@/lib/relationships'
-import type { Category, Event, EventCycle, Media, Tag } from '@/payload-types'
+import type { Topic, Event, EventCycle, Media, Tag } from '@/payload-types'
 import type { PublicContentListItem } from '@/modules/content/content-listing-sources'
 import { getDocumentTypeLabel } from '@/modules/documents/document-types'
 import {
@@ -31,7 +31,7 @@ export type ContentListingFact = {
 }
 
 export type ContentListingPresentation = {
-  category?: Category | number | null
+  topics?: (Topic | number)[] | null
   contextLabel?: string
   excerpt?: ContentListingExcerpt
   facts: ContentListingFact[]
@@ -79,7 +79,7 @@ export function getContentListingPresentation(
       }
     case 'documents':
       return {
-        category: item.document.category,
+        topics: item.document.topics,
         excerpt: createPlainExcerpt(item.document.summary),
         facts: [],
         kindLabel: getDocumentTypeLabel(item.document.documentType),
@@ -94,7 +94,7 @@ export function getContentListingPresentation(
       }
     case 'event-cycles':
       return {
-        category: item.document.category,
+        topics: item.document.topics,
         excerpt: createRichTextExcerpt(item.document.excerpt, view),
         facts: [],
         image: createMediaImage(item.document.heroImage),
@@ -126,7 +126,7 @@ export function getContentListingPresentation(
       }
 
       return {
-        category: event.category,
+        topics: event.topics,
         excerpt: createRichTextExcerpt(event.excerpt, view),
         facts,
         image: createMediaImage(event.heroImage),
@@ -181,7 +181,7 @@ export function getContentListingPresentation(
     }
     case 'pages':
       return {
-        category: item.document.category,
+        topics: item.document.topics,
         excerpt: createPlainExcerpt(item.document.listingExcerpt),
         facts: [],
         image: createMediaImage(item.document.heroImage),
@@ -208,7 +208,7 @@ export function getContentListingPresentation(
     }
     case 'posts':
       return {
-        category: item.document.category,
+        topics: item.document.topics,
         excerpt: createPlainExcerpt(item.document.excerpt),
         facts: [],
         image: createMediaImage(item.document.heroImage),
@@ -273,7 +273,7 @@ export function presentListingItem(
     hideTitle: !components.title,
     highlightKindLabel: components.kind === 'highlighted',
     actionStyle: view.components?.actions,
-    category: enabled.taxonomy ? presentation.category : undefined,
+    topics: enabled.taxonomy ? presentation.topics : undefined,
     contextLabel: components.other
       ? [presentation.contextLabel, partnerRoles, parent?.title].filter(Boolean).join(' · ') ||
         undefined

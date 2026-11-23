@@ -35,6 +35,6 @@ describe('documents', () => {
           : [],
     )
 
-    expect(names).toEqual(expect.arrayContaining(['category', 'tags']))
+    expect(names).toEqual(expect.arrayContaining(['topics', 'tags']))
   })
 })

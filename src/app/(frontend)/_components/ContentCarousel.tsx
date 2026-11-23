@@ -268,7 +268,7 @@ export function PresentedContentCarousel({
                     {presentation.interests ? (
                       <p className="contentCardInterests">{presentation.interests}</p>
                     ) : null}
-                    <TaxonomyLinks category={presentation.category} tags={presentation.tags} />
+                    <TaxonomyLinks topics={presentation.topics} tags={presentation.tags} />
                     {presentation.actionStyle !== 'none' ? (
                       <div className="contentCarouselActions">
                         {presentation.secondaryAction ? (

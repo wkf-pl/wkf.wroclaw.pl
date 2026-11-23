@@ -13,7 +13,7 @@ const targetTypeOptions: Array<{ label: string; value: UrlAliasTargetCollection 
   { label: 'Wydarzenie', value: 'events' },
   { label: 'Cykl wydarzeń', value: 'event-cycles' },
   { label: 'Partner', value: 'partners' },
-  { label: 'Kategoria', value: 'categories' },
+  { label: 'Temat', value: 'topics' },
   { label: 'Tag', value: 'tags' },
   { label: 'Dokument', value: 'documents' },
 ]

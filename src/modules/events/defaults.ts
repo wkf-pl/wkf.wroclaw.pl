@@ -39,7 +39,7 @@ function normalizeRelationshipRows(
 
 function normalizeLinkRows(value: unknown): unknown {
   if (!Array.isArray(value)) return value
-  const relationshipFields = ['category', 'event', 'eventCycle', 'page', 'partner', 'tag'] as const
+  const relationshipFields = ['topic', 'event', 'eventCycle', 'page', 'partner', 'tag'] as const
 
   return value.map((item) => {
     if (!item || typeof item !== 'object') return item
@@ -83,7 +83,11 @@ export function mergeEventCycleDefaults(currentData: Data, cycle: EventCycle): D
   applyIfEmpty(data, 'heroImage', getFormRelationshipId(defaults.heroImage) ?? defaults.heroImage)
   applyIfEmpty(data, 'excerpt', defaults.excerpt)
   applyIfEmpty(data, 'layout', cloneWithoutInlineIDs(defaults.layout))
-  applyIfEmpty(data, 'category', getFormRelationshipId(defaults.category) ?? defaults.category)
+  applyIfEmpty(
+    data,
+    'topics',
+    defaults.topics?.map((topic) => getFormRelationshipId(topic) ?? topic),
+  )
   applyIfEmpty(
     data,
     'tags',

@@ -43,7 +43,7 @@ export type ContentCalendarMonthPayload = {
 }
 
 export type ContentCalendarFilters = {
-  categoryId?: number
+  topicId?: number
   eventCycleId?: number
   sources: ContentCalendarSource[]
   tagId?: number
@@ -138,8 +138,8 @@ export function createContentCalendarEndpoint(filters: ContentCalendarFilters): 
   for (const source of normalizeContentCalendarSources(filters.sources)) {
     searchParameters.append('source', source)
   }
-  if (filters.categoryId !== undefined) {
-    searchParameters.set('category', String(filters.categoryId))
+  if (filters.topicId !== undefined) {
+    searchParameters.set('topic', String(filters.topicId))
   }
   if (filters.tagId !== undefined) {
     searchParameters.set('tag', String(filters.tagId))
@@ -164,16 +164,18 @@ export function parseContentCalendarSearchParams(
     return null
   }
 
-  const categoryId = parseOptionalRelationshipID(searchParameters.get('category'))
+  const topicId = parseOptionalRelationshipID(
+    searchParameters.get('topic') ?? searchParameters.get('category'),
+  )
   const tagId = parseOptionalRelationshipID(searchParameters.get('tag'))
   const eventCycleId = parseOptionalRelationshipID(searchParameters.get('eventCycle'))
-  if (categoryId === null || tagId === null || eventCycleId === null) {
+  if (topicId === null || tagId === null || eventCycleId === null) {
     return null
   }
 
   return {
     filters: {
-      ...(categoryId === undefined ? {} : { categoryId }),
+      ...(topicId === undefined ? {} : { topicId }),
       ...(eventCycleId === undefined ? {} : { eventCycleId }),
       sources,
       ...(tagId === undefined ? {} : { tagId }),

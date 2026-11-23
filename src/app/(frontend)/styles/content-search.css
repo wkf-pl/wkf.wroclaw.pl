@@ -1,0 +1,121 @@
+.contentSearchForm {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgb(243 163 19 / 35%);
+  border-radius: 0.75rem;
+  background: var(--panel);
+  color: var(--ivory);
+}
+
+.contentSearchFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 0.85rem 1rem;
+}
+
+.contentSearchField {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.contentSearchField > label,
+.contentSearchChoices > legend {
+  font-weight: 700;
+}
+
+.contentSearchField > :is(input, select) {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: var(--background);
+  color: inherit;
+  font: inherit;
+}
+
+.contentSearchField > select:disabled {
+  opacity: 0.7;
+}
+
+.contentSearchChoices {
+  min-width: 0;
+  margin: 0;
+  padding: 0.35rem 0.65rem 0.5rem;
+  border: 1px solid rgb(243 163 19 / 25%);
+  border-radius: 0.4rem;
+}
+
+.contentSearchChoices > legend {
+  padding-inline: 0.25rem;
+}
+
+.contentSearchChoices > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 1rem;
+  max-height: 12rem;
+  overflow: auto;
+  padding: 0.25rem;
+}
+
+.contentSearchChoices label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2rem;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.contentSearchChoices input {
+  flex: none;
+  margin: 0;
+  accent-color: var(--gold-light);
+}
+
+.contentSearchForm :focus-visible {
+  outline: 2px solid var(--gold-light);
+  outline-offset: 2px;
+}
+
+.contentSearchError {
+  margin: 0.15rem 0 0;
+  color: var(--gold-light);
+}
+
+.contentSearchActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.contentSearchActions button {
+  min-height: 2.75rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--gold-light);
+  border-radius: 0.4rem;
+  background: var(--gold-light);
+  color: var(--background-deep);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.contentSearchActions button:hover {
+  background: var(--ivory);
+}
+
+.contentSearchActions a {
+  padding-block: 0.55rem;
+  text-underline-offset: 0.2em;
+}
+
+.contentSearchActions a:hover {
+  color: var(--gold-light);
+}

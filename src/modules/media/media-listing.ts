@@ -5,7 +5,7 @@ import config from '@payload-config'
 import type { Media } from '@/payload-types'
 import { getRelationshipIds } from '@/lib/relationships'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
-import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
+import { findTopicSubtreeIDs } from '@/modules/content/topic-hierarchy'
 import {
   normalizeListingWindow,
   paginateInMemory,
@@ -36,7 +36,7 @@ export type PublicMediaListItem = {
 }
 
 export type FindPublicMediaOptions = {
-  categoryId?: number
+  topicId?: number
   kind: MediaListingKind
   manualMedia?: (Media | number)[]
   page: number
@@ -70,7 +70,7 @@ type MediaListDocument = Pick<
 >
 
 export type NormalizedPublicMediaOptions = Omit<FindPublicMediaOptions, 'manualMedia'> & {
-  categoryIds?: number[]
+  topicIds?: number[]
 }
 
 const mediaSelect = {
@@ -166,10 +166,10 @@ export async function findPublicMedia(options: FindPublicMediaOptions): Promise<
 
   return findFilteredPublicMediaCached({
     ...normalizedOptions,
-    categoryIds:
-      options.categoryId === undefined
+    topicIds:
+      options.topicId === undefined
         ? undefined
-        : await findCategorySubtreeIDs(options.categoryId),
+        : await findTopicSubtreeIDs(options.topicId),
   })
 }
 
@@ -177,7 +177,7 @@ export function normalizePublicMediaOptions(
   options: FindPublicMediaOptions,
 ): NormalizedPublicMediaOptions {
   return {
-    categoryId: options.categoryId,
+    topicId: options.topicId,
     kind: options.kind,
     ...normalizeListingWindow(options),
     selectionMode: options.selectionMode,
@@ -187,12 +187,12 @@ export function normalizePublicMediaOptions(
 }
 
 function createMediaWhere(
-  options: Pick<NormalizedPublicMediaOptions, 'categoryIds' | 'kind' | 'tagId'>,
+  options: Pick<NormalizedPublicMediaOptions, 'topicIds' | 'kind' | 'tagId'>,
 ): Where {
   const conditions: Where[] = []
 
-  if (options.categoryIds !== undefined) {
-    conditions.push({ category: { in: options.categoryIds } })
+  if (options.topicIds !== undefined) {
+    conditions.push({ topics: { in: options.topicIds } })
   }
 
   if (options.tagId !== undefined) {

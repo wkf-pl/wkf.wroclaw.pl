@@ -1,3 +1,4 @@
+import { sql } from '@payloadcms/db-postgres'
 import type { CollectionConfig, Field } from 'payload'
 
 import {
@@ -8,45 +9,46 @@ import { populateSlugFromName } from '@/modules/content/slug'
 import {
   createHierarchyDisplayFields,
   populateHierarchyFullTitle,
-  preventDeletingCategoryWithChildren,
+  preventDeletingTopicWithChildren,
   validateHierarchy,
 } from '@/modules/content/hierarchy'
+import { getTransactionExecutor } from '@/modules/content/lock-content-author'
 import { createRelatedContentJoinFields } from '@/modules/content/taxonomy-fields'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
-const createCategories = createRolePermissionAccess({
+const createTopics = createRolePermissionAccess({
   operation: 'create',
-  resource: 'categories',
+  resource: 'topics',
 })
-const deleteCategories = createRolePermissionAccess({
+const deleteTopics = createRolePermissionAccess({
   operation: 'delete',
-  resource: 'categories',
+  resource: 'topics',
 })
-const readCategories = createRolePermissionAccess({
+const readTopics = createRolePermissionAccess({
   anonymousAccess: true,
   operation: 'read',
-  resource: 'categories',
+  resource: 'topics',
 })
-const updateCategories = createRolePermissionAccess({
+const updateTopics = createRolePermissionAccess({
   operation: 'update',
-  resource: 'categories',
+  resource: 'topics',
 })
 
-const categoryParentField: Field = {
+const topicParentField: Field = {
   name: 'parent',
   type: 'relationship',
   admin: { placeholder: '<brak>' },
-  label: 'Kategoria nadrzędna',
-  relationTo: 'categories',
+  label: 'Temat nadrzędny',
+  relationTo: 'topics',
 }
 
-export const Categories: CollectionConfig = {
-  slug: 'categories',
+export const Topics: CollectionConfig = {
+  slug: 'topics',
   access: {
-    create: createCategories,
-    delete: deleteCategories,
-    read: readCategories,
-    update: updateCategories,
+    create: createTopics,
+    delete: deleteTopics,
+    read: readTopics,
+    update: updateTopics,
   },
   admin: {
     defaultColumns: ['fullTitle', 'description', 'slug', 'updatedAt'],
@@ -84,7 +86,7 @@ export const Categories: CollectionConfig = {
       type: 'textarea',
       label: 'Opis',
     },
-    categoryParentField,
+    topicParentField,
     {
       name: 'fullTitle',
       type: 'text',
@@ -92,18 +94,31 @@ export const Categories: CollectionConfig = {
       index: true,
       label: 'Pełna ścieżka',
     },
-    ...createRelatedContentJoinFields('category'),
-    ...createHierarchyDisplayFields('categories'),
+    ...createRelatedContentJoinFields('topics'),
+    ...createHierarchyDisplayFields('topics'),
   ],
   hooks: {
     afterChange: [invalidateListingsAfterChange],
     afterDelete: [invalidateListingsAfterDelete],
     beforeChange: [populateHierarchyFullTitle],
-    beforeDelete: [preventDeletingCategoryWithChildren],
+    beforeDelete: [
+      preventDeletingTopicWithChildren,
+      async ({ id, req }) => {
+        const execute = (await req.transactionID)
+          ? await getTransactionExecutor(req)
+          : req.payload.db.drizzle.execute.bind(req.payload.db.drizzle)
+        const token = `|${id}|`
+        await execute(sql`
+          UPDATE content_listing_items
+          SET topic_search_index = replace(topic_search_index, ${token}, '|')
+          WHERE topic_search_index LIKE ${`%${token}%`}
+        `)
+      },
+    ],
     beforeValidate: [validateHierarchy],
   },
   labels: {
-    plural: 'Kategorie',
-    singular: 'Kategoria',
+    plural: 'Tematy',
+    singular: 'Temat',
   },
 }

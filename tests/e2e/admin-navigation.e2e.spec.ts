@@ -19,7 +19,7 @@ test('groups editor navigation with the intended labels and order', async ({ pag
     'Wydarzenia',
     'Cykle wydarzeń',
     'Rodzaje wydarzeń',
-    'Kategorie',
+    'Tematy',
     'Tagi',
     'Media',
     'Aliasy adresów',

@@ -7,7 +7,7 @@ import {
   defaultBooleanSwitchLabels,
 } from '@/components/admin/boolean-switch-config'
 import {
-  Categories,
+  Topics,
   ContentListingItems,
   DocumentFiles,
   Documents,
@@ -32,7 +32,7 @@ const collections: CollectionConfig[] = [
   Events,
   EventCycles,
   EventTypes,
-  Categories,
+  Topics,
   Tags,
   Media,
   MemberProfiles,

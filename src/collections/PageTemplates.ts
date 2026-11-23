@@ -119,7 +119,7 @@ export const PageTemplates: CollectionConfig = {
           : true,
       label: 'Element używany w podglądzie',
       maxDepth: 1,
-      relationTo: ['tags', 'categories', 'events', 'event-cycles', 'partners', 'member-profiles'],
+      relationTo: ['tags', 'topics', 'events', 'event-cycles', 'partners', 'member-profiles'],
     },
     {
       name: 'heroImage',

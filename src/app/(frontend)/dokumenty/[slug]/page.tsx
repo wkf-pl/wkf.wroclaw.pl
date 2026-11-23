@@ -66,7 +66,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ slug:
           }
           title={document.title}
         >
-          <TaxonomyLinks category={document.category} tags={document.tags} />
+          <TaxonomyLinks topics={document.topics} tags={document.tags} />
           <ContentHeroMeta
             authorName={authorName}
             date={{

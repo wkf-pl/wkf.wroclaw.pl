@@ -1,4 +1,11 @@
 import {
+  lockContentHierarchyForWrite,
+  createContentParentField,
+  clearCyclicEventParent,
+  eventCycleParentPathField,
+} from '@/modules/content/content-parent'
+import { createPublicAuthorSignatureField } from '@/modules/content/content-author-field'
+import {
   confirmLegacyLocation,
   createLegacyLocationFields,
 } from '@/modules/locations/legacy-fields'
@@ -79,7 +86,7 @@ export const Events: CollectionConfig = {
         ],
       },
     },
-    defaultColumns: ['title', 'cycle', 'eventType', 'category', 'tags', 'startAt', '_status'],
+    defaultColumns: ['title', 'cycle', 'eventType', 'topics', 'tags', 'startAt', '_status'],
     group: 'Treści',
     listSearchableFields: ['title', 'cycle', 'slug'],
     useAsTitle: 'title',
@@ -143,9 +150,12 @@ export const Events: CollectionConfig = {
       ],
     },
     getEditorialField(editorialFields, 'slug'),
-    getEditorialField(editorialFields, 'category'),
+    createContentParentField(true),
+    eventCycleParentPathField,
+    getEditorialField(editorialFields, 'topics'),
     getEditorialField(editorialFields, 'tags'),
     getEditorialField(editorialFields, 'author'),
+    createPublicAuthorSignatureField(),
     {
       name: 'defaultsAppliedCycle',
       type: 'relationship',
@@ -174,7 +184,12 @@ export const Events: CollectionConfig = {
     afterDelete: [removeContentListingAfterDelete],
     beforeChange: [confirmLegacyLocation, updateEventCalendarMetadata, setPublishedAt],
     beforeOperation: [markTrashMutation],
-    beforeValidate: [applyEventCycleDefaults, validateMediaBlocks],
+    beforeValidate: [
+      lockContentHierarchyForWrite,
+      clearCyclicEventParent,
+      applyEventCycleDefaults,
+      validateMediaBlocks,
+    ],
   },
   labels: { plural: 'Wydarzenia', singular: 'Wydarzenie' },
   versions: { drafts: true, maxPerDoc: 50 },

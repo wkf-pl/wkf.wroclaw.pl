@@ -12,12 +12,22 @@
  */
 export type ListingCondition =
   | {
-      field: 'title' | 'category' | 'tag' | 'parentPage' | 'eventCycle' | 'eventTime' | 'relatedTo' | 'significantDate';
+      field:
+        | 'title'
+        | 'topic'
+        | 'tag'
+        | 'parentPage'
+        | 'contentParent'
+        | 'tagGroup'
+        | 'eventCycle'
+        | 'eventTime'
+        | 'relatedTo'
+        | 'significantDate';
       operator: 'contains' | 'equals' | 'inSubtree' | 'notOlderThan' | 'before' | 'after' | 'between' | 'isEmpty';
       relationshipValue?:
         | ({
-            relationTo: 'categories';
-            value: number | Category;
+            relationTo: 'topics';
+            value: number | Topic;
           } | null)
         | ({
             relationTo: 'tags';
@@ -30,6 +40,10 @@ export type ListingCondition =
         | ({
             relationTo: 'event-cycles';
             value: number | EventCycle;
+          } | null)
+        | ({
+            relationTo: 'tag-groups';
+            value: number | TagGroup;
           } | null);
       relatedTargetMode?: ('current' | 'selected') | null;
       relatedTargetValue?:
@@ -142,8 +156,9 @@ export interface Config {
     events: Event;
     'event-cycles': EventCycle;
     'event-types': EventType;
-    categories: Category;
+    topics: Topic;
     tags: Tag;
+    'tag-groups': TagGroup;
     media: Media;
     'member-profiles': MemberProfile;
     'document-files': DocumentFile;
@@ -161,7 +176,7 @@ export interface Config {
     'payload-migrations': PayloadMigration;
   };
   collectionsJoins: {
-    categories: {
+    topics: {
       relatedPages: 'pages';
       relatedPosts: 'posts';
       relatedEvents: 'events';
@@ -185,8 +200,9 @@ export interface Config {
     events: EventsSelect<false> | EventsSelect<true>;
     'event-cycles': EventCyclesSelect<false> | EventCyclesSelect<true>;
     'event-types': EventTypesSelect<false> | EventTypesSelect<true>;
-    categories: CategoriesSelect<false> | CategoriesSelect<true>;
+    topics: TopicsSelect<false> | TopicsSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
+    'tag-groups': TagGroupsSelect<false> | TagGroupsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'member-profiles': MemberProfilesSelect<false> | MemberProfilesSelect<true>;
     'document-files': DocumentFilesSelect<false> | DocumentFilesSelect<true>;
@@ -302,12 +318,18 @@ export interface ContentListingItem {
   excerpt?: string | null;
   hasSignificantDate?: boolean | null;
   isInactiveLocation?: boolean | null;
+  searchDate?: string | null;
+  searchAuthorSignature?: string | null;
+  searchAuthorGroup?: (number | null) | UserGroup;
   significantDate?: string | null;
   eventStartAt?: string | null;
   eventEndAt?: string | null;
   heroImage?: (number | null) | Media;
-  category?: (number | null) | Category;
+  topics?: (number | Topic)[] | null;
   tags?: (number | Tag)[] | null;
+  contentParent?: string | null;
+  ancestorSearchIndex?: string | null;
+  topicSearchIndex?: string | null;
   parentPage?: (number | null) | Page;
   eventCycle?: (number | null) | EventCycle;
 }
@@ -318,7 +340,6 @@ export interface ContentListingItem {
 export interface Page {
   id: number;
   title: string;
-  parent?: (number | null) | Page;
   fullTitle?: string | null;
   heroImage?: (number | null) | Media;
   /**
@@ -363,7 +384,17 @@ export interface Page {
         id?: string | null;
       }[]
     | null;
-  category?: (number | null) | Category;
+  /**
+   * Gdzie w serwisie ma się znaleźć ta treść?
+   */
+  parent?: (number | null) | Page;
+  /**
+   * Czego dotyczy ta treść? Możesz wybrać kilka tematów.
+   */
+  topics?: (number | Topic)[] | null;
+  /**
+   * Po jakich cechach czytelnik będzie szukać tej treści?
+   */
   tags?: (number | Tag)[] | null;
   author:
     | {
@@ -374,6 +405,10 @@ export interface Page {
         relationTo: 'user-groups';
         value: number | UserGroup;
       };
+  /**
+   * Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.
+   */
+  publicAuthorSignature?: string | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -394,7 +429,13 @@ export interface Media {
    */
   alt: string;
   description?: string | null;
-  category?: (number | null) | Category;
+  /**
+   * Czego dotyczy ta treść? Możesz wybrać kilka tematów.
+   */
+  topics?: (number | Topic)[] | null;
+  /**
+   * Po jakich cechach czytelnik będzie szukać tej treści?
+   */
   tags?: (number | Tag)[] | null;
   author?:
     | ({
@@ -421,9 +462,9 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "categories".
+ * via the `definition` "topics".
  */
-export interface Category {
+export interface Topic {
   id: number;
   name: string;
   /**
@@ -431,7 +472,7 @@ export interface Category {
    */
   slug: string;
   description?: string | null;
-  parent?: (number | null) | Category;
+  parent?: (number | null) | Topic;
   fullTitle?: string | null;
   relatedPages?: {
     docs?: (number | Page)[];
@@ -460,7 +501,7 @@ export interface Category {
   };
   breadcrumbs?:
     | {
-        doc?: (number | null) | Category;
+        doc?: (number | null) | Topic;
         url?: string | null;
         label?: string | null;
         id?: string | null;
@@ -550,7 +591,17 @@ export interface Post {
    * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
    */
   slug: string;
-  category?: (number | null) | Category;
+  /**
+   * Gdzie w serwisie ma się znaleźć ta treść?
+   */
+  parent?: (number | null) | Page;
+  /**
+   * Czego dotyczy ta treść? Możesz wybrać kilka tematów.
+   */
+  topics?: (number | Topic)[] | null;
+  /**
+   * Po jakich cechach czytelnik będzie szukać tej treści?
+   */
   tags?: (number | Tag)[] | null;
   author:
     | {
@@ -561,6 +612,10 @@ export interface Post {
         relationTo: 'user-groups';
         value: number | UserGroup;
       };
+  /**
+   * Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.
+   */
+  publicAuthorSignature?: string | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -649,10 +704,10 @@ export interface Event {
   externalLinks?:
     | {
         label: string;
-        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+        targetType: 'eventCycle' | 'document' | 'partner' | 'page' | 'tag' | 'topic' | 'custom' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
-        category?: (number | null) | Category;
+        topic?: (number | null) | Topic;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         tag?: (number | null) | Tag;
@@ -682,7 +737,17 @@ export interface Event {
    * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
    */
   slug: string;
-  category?: (number | null) | Category;
+  /**
+   * Gdzie w serwisie ma się znaleźć ta treść?
+   */
+  parent?: (number | null) | Page;
+  /**
+   * Czego dotyczy ta treść? Możesz wybrać kilka tematów.
+   */
+  topics?: (number | Topic)[] | null;
+  /**
+   * Po jakich cechach czytelnik będzie szukać tej treści?
+   */
   tags?: (number | Tag)[] | null;
   author:
     | {
@@ -693,6 +758,10 @@ export interface Event {
         relationTo: 'user-groups';
         value: number | UserGroup;
       };
+  /**
+   * Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.
+   */
+  publicAuthorSignature?: string | null;
   defaultsAppliedCycle?: (number | null) | EventCycle;
   calendarUID?: string | null;
   calendarRevision: number;
@@ -790,7 +859,13 @@ export interface EventCycle {
       | SectionGroupBlock
       | TabbedContentBlock
     )[];
-    category?: (number | null) | Category;
+    /**
+     * Czego dotyczy ta treść? Możesz wybrać kilka tematów.
+     */
+    topics?: (number | Topic)[] | null;
+    /**
+     * Po jakich cechach czytelnik będzie szukać tej treści?
+     */
     tags?: (number | Tag)[] | null;
     recurrenceType?: ('daily' | 'weekly' | 'monthlyDate' | 'monthlyWeekday') | null;
     weekInterval?: number | null;
@@ -835,10 +910,10 @@ export interface EventCycle {
     externalLinks?:
       | {
           label: string;
-          targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+          targetType: 'eventCycle' | 'document' | 'partner' | 'page' | 'tag' | 'topic' | 'custom' | 'post' | 'event';
           eventCycle?: (number | null) | EventCycle;
           document?: (number | null) | Document;
-          category?: (number | null) | Category;
+          topic?: (number | null) | Topic;
           partner?: (number | null) | Partner;
           page?: (number | null) | Page;
           tag?: (number | null) | Tag;
@@ -858,7 +933,17 @@ export interface EventCycle {
    * Adres jest tworzony automatycznie z tytułu, ale można go zmienić.
    */
   slug: string;
-  category?: (number | null) | Category;
+  /**
+   * Gdzie w serwisie ma się znaleźć ta treść?
+   */
+  parent?: (number | null) | Page;
+  /**
+   * Czego dotyczy ta treść? Możesz wybrać kilka tematów.
+   */
+  topics?: (number | Topic)[] | null;
+  /**
+   * Po jakich cechach czytelnik będzie szukać tej treści?
+   */
   tags?: (number | Tag)[] | null;
   author:
     | {
@@ -869,6 +954,10 @@ export interface EventCycle {
         relationTo: 'user-groups';
         value: number | UserGroup;
       };
+  /**
+   * Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.
+   */
+  publicAuthorSignature?: string | null;
   calendarFeedKey?: string | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
@@ -1152,16 +1241,16 @@ export interface ActionLinksBlock {
       | 'eventCycle'
       | 'document'
       | 'siteContactEmail'
-      | 'category'
       | 'partner'
       | 'page'
       | 'tag'
+      | 'topic'
       | 'custom'
       | 'post'
       | 'event';
     eventCycle?: (number | null) | EventCycle;
     document?: (number | null) | Document;
-    category?: (number | null) | Category;
+    topic?: (number | null) | Topic;
     partner?: (number | null) | Partner;
     page?: (number | null) | Page;
     tag?: (number | null) | Tag;
@@ -1216,9 +1305,19 @@ export interface Document {
   } | null;
   primaryFile: number | DocumentFile;
   attachments?: (number | DocumentFile)[] | null;
-  category?: (number | null) | Category;
+  /**
+   * Czego dotyczy ta treść? Możesz wybrać kilka tematów.
+   */
+  topics?: (number | Topic)[] | null;
+  /**
+   * Po jakich cechach czytelnik będzie szukać tej treści?
+   */
   tags?: (number | Tag)[] | null;
   author: number | User;
+  /**
+   * Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.
+   */
+  publicAuthorSignature?: string | null;
   publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -1308,7 +1407,7 @@ export interface Role {
           | 'partners'
           | 'documents'
           | 'url-aliases'
-          | 'categories'
+          | 'topics'
           | 'tags'
           | 'page-templates'
           | 'navigation'
@@ -1338,6 +1437,8 @@ export interface Role {
  */
 export interface Tag {
   id: number;
+  displayName?: string | null;
+  group?: (number | null) | TagGroup;
   name: string;
   /**
    * Adres jest tworzony automatycznie z nazwy.
@@ -1369,6 +1470,17 @@ export interface Tag {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tag-groups".
+ */
+export interface TagGroup {
+  id: number;
+  name: string;
+  slug: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -1422,6 +1534,10 @@ export interface Partner {
         relationTo: 'user-groups';
         value: number | UserGroup;
       };
+  /**
+   * Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.
+   */
+  publicAuthorSignature?: string | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -1565,16 +1681,16 @@ export interface CardBlock {
           | 'eventCycle'
           | 'document'
           | 'siteContactEmail'
-          | 'category'
           | 'partner'
           | 'page'
           | 'tag'
+          | 'topic'
           | 'custom'
           | 'post'
           | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
-        category?: (number | null) | Category;
+        topic?: (number | null) | Topic;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         tag?: (number | null) | Tag;
@@ -1653,6 +1769,16 @@ export interface ListingBlock {
   pagination?: boolean | null;
   hideWhenEmpty?: boolean | null;
   emptyMessage?: string | null;
+  searchEnabled?: boolean | null;
+  legacySearchParameters?: boolean | null;
+  filterPhrase?: boolean | null;
+  filterDate?: boolean | null;
+  filterTags?: boolean | null;
+  filterTopic?: boolean | null;
+  filterBranch?: boolean | null;
+  filterAuthor?: boolean | null;
+  filterContentType?: boolean | null;
+  filterTagGroups?: (number | TagGroup)[] | null;
   view: 'tiles' | 'cards' | 'carousel' | 'compact' | 'grid';
   frame?: ('none' | 'outline') | null;
   surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
@@ -1808,7 +1934,7 @@ export interface ContentCalendarBlock {
   surfaceHorizontalPosition?: ('left' | 'center' | 'right') | null;
   surfaceVerticalPosition?: ('top' | 'middle' | 'bottom') | null;
   sources: ('events' | 'posts')[];
-  category?: (number | null) | Category;
+  topic?: (number | null) | Topic;
   tag?: (number | null) | Tag;
   eventCycle?: (number | null) | EventCycle;
   id?: string | null;
@@ -1835,7 +1961,7 @@ export interface MediaGalleryBlock {
         id?: string | null;
       }[]
     | null;
-  category?: (number | null) | Category;
+  topic?: (number | null) | Topic;
   tag?: (number | null) | Tag;
   sort?: ('newest' | 'oldest' | 'nameAscending' | 'nameDescending') | null;
   view: 'cards' | 'list' | 'grid';
@@ -1866,7 +1992,7 @@ export interface AttachmentsBlock {
         id?: string | null;
       }[]
     | null;
-  category?: (number | null) | Category;
+  topic?: (number | null) | Topic;
   tag?: (number | null) | Tag;
   sort?: ('newest' | 'oldest' | 'nameAscending' | 'nameDescending') | null;
   view: 'cards' | 'list' | 'grid';
@@ -2090,16 +2216,16 @@ export interface TabbedContentBlock {
           | 'eventCycle'
           | 'document'
           | 'siteContactEmail'
-          | 'category'
           | 'partner'
           | 'page'
           | 'tag'
+          | 'topic'
           | 'custom'
           | 'post'
           | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
-        category?: (number | null) | Category;
+        topic?: (number | null) | Topic;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         tag?: (number | null) | Tag;
@@ -2220,16 +2346,16 @@ export interface TabbedContentBlock {
           | 'eventCycle'
           | 'document'
           | 'siteContactEmail'
-          | 'category'
           | 'partner'
           | 'page'
           | 'tag'
+          | 'topic'
           | 'custom'
           | 'post'
           | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
-        category?: (number | null) | Category;
+        topic?: (number | null) | Topic;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         tag?: (number | null) | Tag;
@@ -2350,16 +2476,16 @@ export interface TabbedContentBlock {
           | 'eventCycle'
           | 'document'
           | 'siteContactEmail'
-          | 'category'
           | 'partner'
           | 'page'
           | 'tag'
+          | 'topic'
           | 'custom'
           | 'post'
           | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
-        category?: (number | null) | Category;
+        topic?: (number | null) | Topic;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         tag?: (number | null) | Tag;
@@ -2525,7 +2651,7 @@ export interface PageTemplate {
     | 'events-index'
     | 'members-index'
     | 'tag-detail'
-    | 'category-detail'
+    | 'topic-detail'
     | 'event-detail'
     | 'event-cycle-detail'
     | 'partner-detail'
@@ -2543,8 +2669,8 @@ export interface PageTemplate {
         value: number | Tag;
       } | null)
     | ({
-        relationTo: 'categories';
-        value: number | Category;
+        relationTo: 'topics';
+        value: number | Topic;
       } | null)
     | ({
         relationTo: 'events';
@@ -2748,10 +2874,10 @@ export interface PageTemplateActionLinksBlock {
           | 'eventCycle'
           | 'document'
           | 'siteContactEmail'
-          | 'category'
           | 'partner'
           | 'page'
           | 'tag'
+          | 'topic'
           | 'custom'
           | 'post'
           | 'event'
@@ -2759,7 +2885,7 @@ export interface PageTemplateActionLinksBlock {
       | null;
     eventCycle?: (number | null) | EventCycle;
     document?: (number | null) | Document;
-    category?: (number | null) | Category;
+    topic?: (number | null) | Topic;
     partner?: (number | null) | Partner;
     page?: (number | null) | Page;
     tag?: (number | null) | Tag;
@@ -2817,7 +2943,7 @@ export interface CurrentItemFieldBlock {
     | 'layout'
     | 'author'
     | 'publishedAt'
-    | 'category'
+    | 'topics'
     | 'timeMode'
     | 'startAt'
     | 'endAt'
@@ -2842,7 +2968,7 @@ export interface CurrentItemFieldBlock {
     | 'eventDefaults.heroImage'
     | 'eventDefaults.excerpt'
     | 'eventDefaults.layout'
-    | 'eventDefaults.category'
+    | 'eventDefaults.topics'
     | 'eventDefaults.tags'
     | 'eventDefaults.recurrenceType'
     | 'eventDefaults.weekInterval'
@@ -3060,6 +3186,16 @@ export interface PageTemplateListingBlock {
   pagination?: boolean | null;
   hideWhenEmpty?: boolean | null;
   emptyMessage?: string | null;
+  searchEnabled?: boolean | null;
+  legacySearchParameters?: boolean | null;
+  filterPhrase?: boolean | null;
+  filterDate?: boolean | null;
+  filterTags?: boolean | null;
+  filterTopic?: boolean | null;
+  filterBranch?: boolean | null;
+  filterAuthor?: boolean | null;
+  filterContentType?: boolean | null;
+  filterTagGroups?: (number | TagGroup)[] | null;
   view: 'tiles' | 'cards' | 'carousel' | 'compact' | 'grid';
   frame?: ('none' | 'outline') | null;
   surface?: ('transparent' | 'default' | 'subtle' | 'inverse' | 'image') | null;
@@ -3302,16 +3438,16 @@ export interface PageTemplateTabbedContentBlock {
           | 'eventCycle'
           | 'document'
           | 'siteContactEmail'
-          | 'category'
           | 'partner'
           | 'page'
           | 'tag'
+          | 'topic'
           | 'custom'
           | 'post'
           | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
-        category?: (number | null) | Category;
+        topic?: (number | null) | Topic;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         tag?: (number | null) | Tag;
@@ -3432,16 +3568,16 @@ export interface PageTemplateTabbedContentBlock {
           | 'eventCycle'
           | 'document'
           | 'siteContactEmail'
-          | 'category'
           | 'partner'
           | 'page'
           | 'tag'
+          | 'topic'
           | 'custom'
           | 'post'
           | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
-        category?: (number | null) | Category;
+        topic?: (number | null) | Topic;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         tag?: (number | null) | Tag;
@@ -3562,16 +3698,16 @@ export interface PageTemplateTabbedContentBlock {
           | 'eventCycle'
           | 'document'
           | 'siteContactEmail'
-          | 'category'
           | 'partner'
           | 'page'
           | 'tag'
+          | 'topic'
           | 'custom'
           | 'post'
           | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
-        category?: (number | null) | Category;
+        topic?: (number | null) | Topic;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         tag?: (number | null) | Tag;
@@ -3771,8 +3907,8 @@ export interface UrlAlias {
         value: number | Partner;
       }
     | {
-        relationTo: 'categories';
-        value: number | Category;
+        relationTo: 'topics';
+        value: number | Topic;
       }
     | {
         relationTo: 'tags';
@@ -3802,7 +3938,7 @@ export interface ContentAuditLog {
     | 'events'
     | 'event-cycles'
     | 'event-types'
-    | 'categories'
+    | 'topics'
     | 'tags'
     | 'media'
     | 'partners'
@@ -3870,12 +4006,16 @@ export interface PayloadLockedDocument {
         value: number | EventType;
       } | null)
     | ({
-        relationTo: 'categories';
-        value: number | Category;
+        relationTo: 'topics';
+        value: number | Topic;
       } | null)
     | ({
         relationTo: 'tags';
         value: number | Tag;
+      } | null)
+    | ({
+        relationTo: 'tag-groups';
+        value: number | TagGroup;
       } | null)
     | ({
         relationTo: 'media';
@@ -3976,12 +4116,18 @@ export interface ContentListingItemsSelect<T extends boolean = true> {
   excerpt?: T;
   hasSignificantDate?: T;
   isInactiveLocation?: T;
+  searchDate?: T;
+  searchAuthorSignature?: T;
+  searchAuthorGroup?: T;
   significantDate?: T;
   eventStartAt?: T;
   eventEndAt?: T;
   heroImage?: T;
-  category?: T;
+  topics?: T;
   tags?: T;
+  contentParent?: T;
+  ancestorSearchIndex?: T;
+  topicSearchIndex?: T;
   parentPage?: T;
   eventCycle?: T;
 }
@@ -4114,7 +4260,7 @@ export interface PageTemplateActionLinksBlockSelect<T extends boolean = true> {
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -4194,7 +4340,7 @@ export interface CardBlockSelect<T extends boolean = true> {
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -4232,6 +4378,16 @@ export interface PageTemplateListingBlockSelect<T extends boolean = true> {
   pagination?: T;
   hideWhenEmpty?: T;
   emptyMessage?: T;
+  searchEnabled?: T;
+  legacySearchParameters?: T;
+  filterPhrase?: T;
+  filterDate?: T;
+  filterTags?: T;
+  filterTopic?: T;
+  filterBranch?: T;
+  filterAuthor?: T;
+  filterContentType?: T;
+  filterTagGroups?: T;
   view?: T;
   frame?: T;
   surface?: T;
@@ -4270,7 +4426,7 @@ export interface ContentCalendarBlockSelect<T extends boolean = true> {
   surfaceHorizontalPosition?: T;
   surfaceVerticalPosition?: T;
   sources?: T;
-  category?: T;
+  topic?: T;
   tag?: T;
   eventCycle?: T;
   id?: T;
@@ -4293,7 +4449,7 @@ export interface MediaGalleryBlockSelect<T extends boolean = true> {
         media?: T;
         id?: T;
       };
-  category?: T;
+  topic?: T;
   tag?: T;
   sort?: T;
   view?: T;
@@ -4320,7 +4476,7 @@ export interface AttachmentsBlockSelect<T extends boolean = true> {
         media?: T;
         id?: T;
       };
-  category?: T;
+  topic?: T;
   tag?: T;
   sort?: T;
   view?: T;
@@ -4443,7 +4599,7 @@ export interface PageTemplateTabbedContentBlockSelect<T extends boolean = true> 
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -4465,7 +4621,7 @@ export interface PageTemplateTabbedContentBlockSelect<T extends boolean = true> 
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -4487,7 +4643,7 @@ export interface PageTemplateTabbedContentBlockSelect<T extends boolean = true> 
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -4638,7 +4794,6 @@ export interface ListingViewsSelect<T extends boolean = true> {
  */
 export interface PagesSelect<T extends boolean = true> {
   title?: T;
-  parent?: T;
   fullTitle?: T;
   heroImage?: T;
   listingExcerpt?: T;
@@ -4675,9 +4830,11 @@ export interface PagesSelect<T extends boolean = true> {
         label?: T;
         id?: T;
       };
-  category?: T;
+  parent?: T;
+  topics?: T;
   tags?: T;
   author?: T;
+  publicAuthorSignature?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -4700,7 +4857,7 @@ export interface ActionLinksBlockSelect<T extends boolean = true> {
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -4737,6 +4894,16 @@ export interface ListingBlockSelect<T extends boolean = true> {
   pagination?: T;
   hideWhenEmpty?: T;
   emptyMessage?: T;
+  searchEnabled?: T;
+  legacySearchParameters?: T;
+  filterPhrase?: T;
+  filterDate?: T;
+  filterTags?: T;
+  filterTopic?: T;
+  filterBranch?: T;
+  filterAuthor?: T;
+  filterContentType?: T;
+  filterTagGroups?: T;
   view?: T;
   frame?: T;
   surface?: T;
@@ -4844,7 +5011,7 @@ export interface TabbedContentBlockSelect<T extends boolean = true> {
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -4866,7 +5033,7 @@ export interface TabbedContentBlockSelect<T extends boolean = true> {
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -4888,7 +5055,7 @@ export interface TabbedContentBlockSelect<T extends boolean = true> {
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -4960,9 +5127,11 @@ export interface PostsSelect<T extends boolean = true> {
         image?: T;
       };
   slug?: T;
-  category?: T;
+  parent?: T;
+  topics?: T;
   tags?: T;
   author?: T;
+  publicAuthorSignature?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -5031,7 +5200,7 @@ export interface EventsSelect<T extends boolean = true> {
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -5050,9 +5219,11 @@ export interface EventsSelect<T extends boolean = true> {
         image?: T;
       };
   slug?: T;
-  category?: T;
+  parent?: T;
+  topics?: T;
   tags?: T;
   author?: T;
+  publicAuthorSignature?: T;
   defaultsAppliedCycle?: T;
   calendarUID?: T;
   calendarRevision?: T;
@@ -5120,7 +5291,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
               sectionGroup?: T | SectionGroupBlockSelect<T>;
               tabs?: T | TabbedContentBlockSelect<T>;
             };
-        category?: T;
+        topics?: T;
         tags?: T;
         recurrenceType?: T;
         weekInterval?: T;
@@ -5161,7 +5332,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
               targetType?: T;
               eventCycle?: T;
               document?: T;
-              category?: T;
+              topic?: T;
               partner?: T;
               page?: T;
               tag?: T;
@@ -5174,9 +5345,11 @@ export interface EventCyclesSelect<T extends boolean = true> {
             };
       };
   slug?: T;
-  category?: T;
+  parent?: T;
+  topics?: T;
   tags?: T;
   author?: T;
+  publicAuthorSignature?: T;
   calendarFeedKey?: T;
   publishedAt?: T;
   updatedAt?: T;
@@ -5197,9 +5370,9 @@ export interface EventTypesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "categories_select".
+ * via the `definition` "topics_select".
  */
-export interface CategoriesSelect<T extends boolean = true> {
+export interface TopicsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   description?: T;
@@ -5226,6 +5399,8 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "tags_select".
  */
 export interface TagsSelect<T extends boolean = true> {
+  displayName?: T;
+  group?: T;
   name?: T;
   slug?: T;
   description?: T;
@@ -5239,12 +5414,22 @@ export interface TagsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tag-groups_select".
+ */
+export interface TagGroupsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   description?: T;
-  category?: T;
+  topics?: T;
   tags?: T;
   author?: T;
   uploadedBy?: T;
@@ -5334,9 +5519,10 @@ export interface DocumentsSelect<T extends boolean = true> {
   content?: T;
   primaryFile?: T;
   attachments?: T;
-  category?: T;
+  topics?: T;
   tags?: T;
   author?: T;
+  publicAuthorSignature?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -5408,6 +5594,7 @@ export interface PartnersSelect<T extends boolean = true> {
       };
   slug?: T;
   author?: T;
+  publicAuthorSignature?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -5657,16 +5844,16 @@ export interface Navigation {
           | 'eventCycle'
           | 'document'
           | 'siteContactEmail'
-          | 'category'
           | 'partner'
           | 'page'
           | 'tag'
+          | 'topic'
           | 'custom'
           | 'post'
           | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
-        category?: (number | null) | Category;
+        topic?: (number | null) | Topic;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         tag?: (number | null) | Tag;
@@ -5824,10 +6011,10 @@ export interface HomepageHero {
               | 'scroll'
             )
           | null;
-        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+        targetType: 'eventCycle' | 'document' | 'partner' | 'page' | 'tag' | 'topic' | 'custom' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
-        category?: (number | null) | Category;
+        topic?: (number | null) | Topic;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         tag?: (number | null) | Tag;
@@ -6008,10 +6195,10 @@ export interface Footer {
               | 'scroll'
             )
           | null;
-        targetType: 'eventCycle' | 'document' | 'category' | 'partner' | 'page' | 'tag' | 'custom' | 'post' | 'event';
+        targetType: 'eventCycle' | 'document' | 'partner' | 'page' | 'tag' | 'topic' | 'custom' | 'post' | 'event';
         eventCycle?: (number | null) | EventCycle;
         document?: (number | null) | Document;
-        category?: (number | null) | Category;
+        topic?: (number | null) | Topic;
         partner?: (number | null) | Partner;
         page?: (number | null) | Page;
         tag?: (number | null) | Tag;
@@ -6134,16 +6321,16 @@ export interface Footer {
                 | 'eventCycle'
                 | 'document'
                 | 'siteContactEmail'
-                | 'category'
                 | 'partner'
                 | 'page'
                 | 'tag'
+                | 'topic'
                 | 'custom'
                 | 'post'
                 | 'event';
               eventCycle?: (number | null) | EventCycle;
               document?: (number | null) | Document;
-              category?: (number | null) | Category;
+              topic?: (number | null) | Topic;
               partner?: (number | null) | Partner;
               page?: (number | null) | Page;
               tag?: (number | null) | Tag;
@@ -6194,7 +6381,7 @@ export interface NavigationSelect<T extends boolean = true> {
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -6229,7 +6416,7 @@ export interface HomepageHeroSelect<T extends boolean = true> {
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -6289,7 +6476,7 @@ export interface FooterSelect<T extends boolean = true> {
         targetType?: T;
         eventCycle?: T;
         document?: T;
-        category?: T;
+        topic?: T;
         partner?: T;
         page?: T;
         tag?: T;
@@ -6314,7 +6501,7 @@ export interface FooterSelect<T extends boolean = true> {
               targetType?: T;
               eventCycle?: T;
               document?: T;
-              category?: T;
+              topic?: T;
               partner?: T;
               page?: T;
               tag?: T;

@@ -73,10 +73,8 @@ async function handler(req: PayloadRequest): Promise<Response> {
           author: getContentAuthorReference(source.author),
           capacity: source.capacity,
           capacityMode: source.capacityMode,
-          category:
-            source.category && typeof source.category === 'object'
-              ? source.category.id
-              : source.category,
+          topics: source.topics?.map((topic) => getRelationshipId(topic) ?? topic),
+          parent: getRelationshipId(source.parent),
           endAt,
           eventType:
             source.eventType && typeof source.eventType === 'object'

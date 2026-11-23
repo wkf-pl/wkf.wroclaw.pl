@@ -171,7 +171,7 @@ describe('content listing index synchronization', () => {
 
     try {
       expect(await findListingIndex('partners', partner.id)).toMatchObject({
-        category: null,
+        topics: [],
         excerpt: 'Publiczne streszczenie partnera.',
         hasSignificantDate: false,
         heroImage: null,
@@ -180,7 +180,7 @@ describe('content listing index synchronization', () => {
         url: `/partners/${listingPartnerSlug}`,
       })
       expect(await findListingIndex('member-profiles', profile.id)).toMatchObject({
-        category: null,
+        topics: [],
         excerpt: 'Publiczny opis wizytówki.',
         hasSignificantDate: false,
         heroImage: null,
@@ -287,7 +287,7 @@ describe('content listing index synchronization', () => {
     }
   })
 
-  it('clears optional image, category and parent relationships from the index', async () => {
+  it('clears optional image, topic and parent relationships from the index', async () => {
     const imageData = await sharp({
       create: { background: '#d69524', channels: 4, height: 24, width: 32 },
     })
@@ -310,7 +310,7 @@ describe('content listing index synchronization', () => {
         collection: 'pages',
         data: {
           _status: 'published',
-          category: fixture.category.id,
+          topics: [fixture.topic.id],
           heroImage: image.id,
           parent: fixture.page.id,
         },
@@ -319,7 +319,7 @@ describe('content listing index synchronization', () => {
         overrideAccess: true,
       })
       expect(await findListingIndex('pages', fixture.childPage.id)).toMatchObject({
-        category: fixture.category.id,
+        topics: [fixture.topic.id],
         heroImage: image.id,
         parentPage: fixture.page.id,
       })
@@ -328,7 +328,7 @@ describe('content listing index synchronization', () => {
         collection: 'pages',
         data: {
           _status: 'published',
-          category: null,
+          topics: [],
           heroImage: null,
           parent: null,
         },
@@ -337,7 +337,7 @@ describe('content listing index synchronization', () => {
         overrideAccess: true,
       })
       expect(await findListingIndex('pages', fixture.childPage.id)).toMatchObject({
-        category: null,
+        topics: [],
         heroImage: null,
         parentPage: null,
       })

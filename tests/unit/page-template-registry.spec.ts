@@ -27,7 +27,7 @@ describe('page template registry', () => {
       '/events',
       '/members',
       '/tag/[slug]',
-      '/category/[slug]',
+      '/topic/[slug]',
       '/events/[slug]',
       '/events/series/[slug]',
       '/partners/[slug]',
@@ -63,7 +63,7 @@ describe('page template registry', () => {
       ],
       'member-detail': ['photo', 'interests', 'games', 'contactTopics'],
       'partner-detail': ['heroImage', 'layout', 'publishedAt'],
-      'category-detail': ['parent', 'fullTitle', 'relatedPages'],
+      'topic-detail': ['parent', 'fullTitle', 'relatedPages'],
       'tag-detail': ['description', 'relatedEvents', 'updatedAt'],
     } as const
 

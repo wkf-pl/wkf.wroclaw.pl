@@ -33,7 +33,7 @@ afterAll(async () => {
 
 describe('content listing and pagination', () => {
   it(
-    'reports nested shared views in both published layouts and drafts',
+    'reports nested Search and Listing usages in published layouts and drafts',
     { timeout: 20_000 },
     async () => {
       const { author, page, payload } = fixture
@@ -93,7 +93,21 @@ describe('content listing and pagination', () => {
             layout: [
               {
                 blockType: 'sectionGroup',
-                sections: [{ blocks: [listing] }],
+                sections: [
+                  {
+                    blocks: [
+                      {
+                        blockType: 'listing',
+                        selectionMode: 'filters',
+                        searchEnabled: true,
+                        appearance: listing.appearance,
+                        pageSize: listing.pageSize,
+                        sources: ['posts'],
+                        view: 'grid',
+                      },
+                    ],
+                  },
+                ],
               },
             ],
           },
@@ -319,9 +333,9 @@ describe('content listing and pagination', () => {
     const result = await findPublicContent({
       conditions: [
         {
-          field: 'category',
+          field: 'topic',
           operator: 'inSubtree',
-          relationshipValue: { relationTo: 'categories', value: fixture.category.id },
+          relationshipValue: { relationTo: 'topics', value: fixture.topic.id },
         },
         {
           field: 'tag',
@@ -383,8 +397,8 @@ describe('content listing and pagination', () => {
     ])
   })
 
-  it('distinguishes a category subtree from an exact category and combines repeated tags with AND', async () => {
-    const childCategorySlug = 'integration-listing-child-category'
+  it('distinguishes a topic subtree from an exact topic and combines repeated tags with AND', async () => {
+    const childTopicSlug = 'integration-listing-child-topic'
     const secondTagSlug = 'integration-listing-second-tag'
     const doublyTaggedPostSlug = 'integration-listing-doubly-tagged-post'
     await fixture.payload.delete({
@@ -393,9 +407,9 @@ describe('content listing and pagination', () => {
       where: { slug: { equals: doublyTaggedPostSlug } },
     })
     await fixture.payload.delete({
-      collection: 'categories',
+      collection: 'topics',
       overrideAccess: true,
-      where: { slug: { equals: childCategorySlug } },
+      where: { slug: { equals: childTopicSlug } },
     })
     await fixture.payload.delete({
       collection: 'tags',
@@ -403,12 +417,12 @@ describe('content listing and pagination', () => {
       where: { slug: { equals: secondTagSlug } },
     })
 
-    const childCategory = await fixture.payload.create({
-      collection: 'categories',
+    const childTopic = await fixture.payload.create({
+      collection: 'topics',
       data: {
-        name: 'Integration child category',
-        parent: fixture.category.id,
-        slug: childCategorySlug,
+        name: 'Integration child topic',
+        parent: fixture.topic.id,
+        slug: childTopicSlug,
       },
       overrideAccess: true,
     })
@@ -422,7 +436,7 @@ describe('content listing and pagination', () => {
       data: {
         _status: 'published',
         author: { relationTo: 'users', value: fixture.author.id },
-        category: childCategory.id,
+        topics: [childTopic.id],
         excerpt: 'Doubly tagged excerpt',
         layout: [{ blockType: 'richText', content: createLexicalDocument('Tagged content') }],
         publishedAt: '2026-08-20T12:00:00.000Z',
@@ -437,9 +451,9 @@ describe('content listing and pagination', () => {
       const subtreeResult = await findPublicContent({
         conditions: [
           {
-            field: 'category',
+            field: 'topic',
             operator: 'inSubtree',
-            relationshipValue: { relationTo: 'categories', value: fixture.category.id },
+            relationshipValue: { relationTo: 'topics', value: fixture.topic.id },
           },
         ],
         page: 1,
@@ -451,9 +465,9 @@ describe('content listing and pagination', () => {
       const exactResult = await findPublicContent({
         conditions: [
           {
-            field: 'category',
+            field: 'topic',
             operator: 'equals',
-            relationshipValue: { relationTo: 'categories', value: fixture.category.id },
+            relationshipValue: { relationTo: 'topics', value: fixture.topic.id },
           },
         ],
         page: 1,
@@ -494,8 +508,8 @@ describe('content listing and pagination', () => {
         overrideAccess: true,
       })
       await fixture.payload.delete({
-        collection: 'categories',
-        id: childCategory.id,
+        collection: 'topics',
+        id: childTopic.id,
         overrideAccess: true,
       })
       await fixture.payload.delete({
@@ -517,7 +531,7 @@ describe('content listing and pagination', () => {
             blockType: 'listing',
             conditions: [
               { field: 'parentPage', operator: 'isEmpty' },
-              { field: 'category', operator: 'isEmpty' },
+              { field: 'topic', operator: 'isEmpty' },
               {
                 field: 'tag',
                 operator: 'isEmpty',
@@ -553,14 +567,14 @@ describe('content listing and pagination', () => {
         })),
       ).toEqual([
         { field: 'parentPage', operator: 'isEmpty', relationshipValue: null },
-        { field: 'category', operator: 'isEmpty', relationshipValue: null },
+        { field: 'topic', operator: 'isEmpty', relationshipValue: null },
         { field: 'tag', operator: 'isEmpty', relationshipValue: null },
         { field: 'eventCycle', operator: 'isEmpty', relationshipValue: null },
       ])
 
       const cases = [
         ['parentPage', fixture.page.id],
-        ['category', fixture.childPage.id],
+        ['topic', fixture.childPage.id],
         ['tag', fixture.childPage.id],
       ] as const
       for (const [field, matchingPageID] of cases) {
@@ -896,16 +910,16 @@ describe('content listing and pagination', () => {
   })
 
   it('exposes both collection relations through reverse Join fields', async () => {
-    const populatedCategory = await fixture.payload.findByID({
-      collection: 'categories',
+    const populatedTopic = await fixture.payload.findByID({
+      collection: 'topics',
       depth: 0,
-      id: fixture.category.id,
+      id: fixture.topic.id,
       joins: { relatedPages: { limit: 10 }, relatedPosts: { limit: 10 } },
       overrideAccess: true,
     })
 
-    expect(populatedCategory.relatedPages?.docs).toHaveLength(1)
-    expect(populatedCategory.relatedPosts?.docs).toHaveLength(2)
+    expect(populatedTopic.relatedPages?.docs).toHaveLength(1)
+    expect(populatedTopic.relatedPosts?.docs).toHaveLength(2)
   })
 
   it('uses database pagination for a deep mixed listing page', async () => {
@@ -918,7 +932,7 @@ describe('content listing and pagination', () => {
             data: {
               _status: 'published',
               author: { relationTo: 'users', value: fixture.author.id },
-              category: fixture.category.id,
+              topics: [fixture.topic.id],
               excerpt: `Pagination excerpt ${i}`,
               layout: [{ blockType: 'richText', content: createLexicalDocument(`Content ${i}`) }],
               publishedAt: new Date(Date.UTC(2026, 7, 15 + Math.min(i, 5))).toISOString(),
@@ -934,9 +948,9 @@ describe('content listing and pagination', () => {
       const options = {
         conditions: [
           {
-            field: 'category',
+            field: 'topic',
             operator: 'inSubtree',
-            relationshipValue: { relationTo: 'categories', value: fixture.category.id },
+            relationshipValue: { relationTo: 'topics', value: fixture.topic.id },
           },
           {
             field: 'tag',

@@ -49,7 +49,7 @@ export function URLCell({ cellData }: DefaultCellComponentProps<TextFieldClient>
 }
 
 export function TaxonomyCell({ cellData, field }: DefaultCellComponentProps<TextFieldClient>) {
-  const relationTo = field.name === 'category' ? 'categories' : 'tags'
+  const relationTo = field.name === 'topics' ? 'topics' : 'tags'
   const values = Array.isArray(cellData) ? cellData : [cellData]
   const relationshipIDs = values.flatMap((value) => {
     if (typeof value === 'number' || typeof value === 'string') return [value]

@@ -14,20 +14,23 @@ export function createTaxonomyFields({
 
   return [
     {
-      name: 'category',
+      name: 'topics',
       type: 'relationship',
       admin: {
+        description: 'Czego dotyczy ta treść? Możesz wybrać kilka tematów.',
         ...adminPosition,
         ...adminWidth,
         placeholder: '<brak>',
       },
-      label: 'Kategoria',
-      relationTo: 'categories',
+      hasMany: true,
+      label: 'Tematy',
+      relationTo: 'topics',
     },
     {
       name: 'tags',
       type: 'relationship',
       admin: {
+        description: 'Po jakich cechach czytelnik będzie szukać tej treści?',
         ...adminPosition,
         ...adminWidth,
         placeholder: '<brak>',
@@ -39,7 +42,7 @@ export function createTaxonomyFields({
   ]
 }
 
-export function createRelatedContentJoinFields(taxonomyField: 'category' | 'tags'): Field[] {
+export function createRelatedContentJoinFields(taxonomyField: 'topics' | 'tags'): Field[] {
   return [
     {
       name: 'relatedPages',

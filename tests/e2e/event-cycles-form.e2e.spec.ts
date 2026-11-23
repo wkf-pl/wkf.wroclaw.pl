@@ -64,7 +64,7 @@ test('renders Cycle tabs, generated URL and grammatical creation labels', async 
   await expect(page.locator('#field-eventDefaults__defaultEndTime')).toHaveAttribute('type', 'time')
 
   expectSingleRow(
-    await getFieldLayout(page, '#field-eventDefaults__category, #field-eventDefaults__tags'),
+    await getFieldLayout(page, '#field-eventDefaults__topics, #field-eventDefaults__tags'),
     ['50%', '50%'],
   )
   expectSingleRow(

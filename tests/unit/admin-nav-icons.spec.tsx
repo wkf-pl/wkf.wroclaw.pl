@@ -8,7 +8,7 @@ import { AdminNavIcon } from '@/components/admin/AdminNavIcon'
 import { readAdminStyles } from '../helpers/admin-styles'
 
 const visibleCollectionSlugs = [
-  'categories',
+  'topics',
   'documents',
   'event-cycles',
   'events',

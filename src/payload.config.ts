@@ -9,7 +9,7 @@ import sharp from 'sharp'
 import { migrations } from '../migrations'
 
 import {
-  Categories,
+  Topics,
   ContentListingItems,
   DocumentFiles,
   Documents,
@@ -25,6 +25,7 @@ import {
   Posts,
   Roles,
   Tags,
+  TagGroups,
   UserGroups,
   Users,
   UrlAliases,
@@ -128,8 +129,9 @@ export default buildConfig({
     Events,
     EventCycles,
     EventTypes,
-    Categories,
+    Topics,
     Tags,
+    TagGroups,
     Media,
     MemberProfiles,
     DocumentFiles,

@@ -22,7 +22,7 @@ type HierarchyDocument = {
   title?: string | null
 }
 
-export function createHierarchyDisplayFields(collectionSlug: 'categories' | 'pages'): Field[] {
+export function createHierarchyDisplayFields(collectionSlug: 'topics' | 'pages'): Field[] {
   return [
     createBreadcrumbsField(collectionSlug, {
       admin: { hidden: true, readOnly: true },
@@ -42,14 +42,14 @@ export function createHierarchyDisplayFields(collectionSlug: 'categories' | 'pag
 }
 
 export const generateHierarchyLabel: GenerateLabel = (_documents, document, collection) => {
-  const labelField = collection.slug === 'categories' ? 'name' : 'title'
+  const labelField = collection.slug === 'topics' ? 'name' : 'title'
   const label = document[labelField]
   return typeof label === 'string' ? label : ''
 }
 
 export const generateHierarchyURL: GenerateURL = (_documents, document, collection) => {
   const slug = typeof document.slug === 'string' ? document.slug : ''
-  return collection.slug === 'categories' ? `/category/${slug}` : `/${slug}`
+  return collection.slug === 'topics' ? `/topic/${slug}` : `/${slug}`
 }
 
 export const populateHierarchyFullTitle = ({ data }: { data: HierarchyDocument }) => {
@@ -99,12 +99,9 @@ export const validateHierarchy: CollectionBeforeValidateHook = async ({
   return data
 }
 
-export const preventDeletingCategoryWithChildren: CollectionBeforeDeleteHook = async ({
-  id,
-  req,
-}) => {
+export const preventDeletingTopicWithChildren: CollectionBeforeDeleteHook = async ({ id, req }) => {
   const children = await req.payload.count({
-    collection: 'categories',
+    collection: 'topics',
     overrideAccess: true,
     req,
     where: { parent: { equals: id } },
@@ -112,7 +109,7 @@ export const preventDeletingCategoryWithChildren: CollectionBeforeDeleteHook = a
 
   if (children.totalDocs > 0) {
     throw new APIError(
-      'Nie można usunąć kategorii mającej podkategorie. Najpierw przenieś lub usuń podkategorie.',
+      'Nie można usunąć tematu mającego podtematy. Najpierw przenieś lub usuń podtematy.',
       400,
     )
   }

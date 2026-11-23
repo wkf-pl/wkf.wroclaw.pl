@@ -11,6 +11,8 @@ import {
 import { down as removeLocationIndex } from '../../migrations/20261115_212155_index_locations'
 import { reportLegacyLocationIssues } from '../../migrations/lib/legacy-locations'
 
+import { restoreLegacyTopicPermissionName } from '../helpers/historical-topic-schema'
+
 it('checks legacy data, deduplicates current locations and preserves incomplete historical versions', async () => {
   const payload = await getPayload({ config })
   const req = await createLocalReq({}, payload)
@@ -21,6 +23,7 @@ it('checks legacy data, deduplicates current locations and preserves incomplete 
     if (!transaction) throw new Error('Payload migration transaction was not initialized')
     const args = { db: transaction, req, payload } as MigrateUpArgs
     const { db } = args
+    await restoreLegacyTopicPermissionName(db)
     await removeLocationIndex(args)
     await restoreLegacyColumns(args)
 

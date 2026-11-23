@@ -6,7 +6,7 @@ import { getRelationshipId } from '@/lib/relationships'
 import { generateHierarchyLabel, generateHierarchyURL } from './hierarchy'
 
 const hierarchyConfig: NestedDocsPluginConfig = {
-  collections: ['pages', 'categories'],
+  collections: ['pages', 'topics'],
   generateLabel: generateHierarchyLabel,
   generateURL: generateHierarchyURL,
   parentFieldSlug: 'parent',
@@ -51,7 +51,7 @@ export const contentHierarchyPlugin: Plugin = async (config) => {
     ...configured,
     collections: configured.collections?.map((collection) => {
       const target = collection.slug
-      if (target !== 'pages' && target !== 'categories') return collection
+      if (target !== 'pages' && target !== 'topics') return collection
 
       // These are the two hooks prepended by the nested docs plugin.
       const [resaveChildren, resaveSelf, ...afterChange] = collection.hooks?.afterChange ?? []
@@ -83,7 +83,7 @@ export const contentHierarchyPlugin: Plugin = async (config) => {
               const nextPath = pathSignature(data.breadcrumbs)
               if (
                 saved &&
-                (target === 'categories' || saved._status === 'published') &&
+                (target === 'topics' || saved._status === 'published') &&
                 nextPath !== undefined &&
                 nextPath === pathSignature(saved.breadcrumbs)
               ) {

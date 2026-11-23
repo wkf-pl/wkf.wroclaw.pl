@@ -2,13 +2,13 @@ import { expect, test } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
-import type { Category, Page, Post, User } from '@/payload-types'
+import type { Topic, Page, Post, User } from '@/payload-types'
 
 import { createLexicalDocument } from '../helpers/lexical-document'
 import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
-const categorySlugs = [
+const topicSlugs = [
   'e2e-hierarchy-root',
   'e2e-hierarchy-child',
   'e2e-hierarchy-grandchild',
@@ -21,7 +21,7 @@ const pageSlugs = [
 const postSlug = 'e2e-hierarchy-post'
 
 let payload: Payload
-let categories: Category[] = []
+let topics: Topic[] = []
 let pages: Page[] = []
 let post: Post
 
@@ -38,30 +38,30 @@ test.beforeAll(async () => {
   const author = users.docs[0] as User | undefined
   if (!author) throw new Error('Missing E2E editor user.')
 
-  const rootCategory = await payload.create({
-    collection: 'categories',
-    data: { name: 'E2E Gry', slug: categorySlugs[0] },
+  const rootTopic = await payload.create({
+    collection: 'topics',
+    data: { name: 'E2E Gry', slug: topicSlugs[0] },
     overrideAccess: true,
   })
-  const childCategory = await payload.create({
-    collection: 'categories',
-    data: { name: 'E2E RPG', parent: rootCategory.id, slug: categorySlugs[1] },
+  const childTopic = await payload.create({
+    collection: 'topics',
+    data: { name: 'E2E RPG', parent: rootTopic.id, slug: topicSlugs[1] },
     overrideAccess: true,
   })
-  const grandchildCategory = await payload.create({
-    collection: 'categories',
-    data: { name: 'E2E Warhammer', parent: childCategory.id, slug: categorySlugs[2] },
+  const grandchildTopic = await payload.create({
+    collection: 'topics',
+    data: { name: 'E2E Warhammer', parent: childTopic.id, slug: topicSlugs[2] },
     overrideAccess: true,
   })
-  categories = [rootCategory, childCategory, grandchildCategory]
+  topics = [rootTopic, childTopic, grandchildTopic]
 
   post = await payload.create({
     collection: 'posts',
     data: {
       _status: 'published',
       author: { relationTo: 'users', value: author.id },
-      category: grandchildCategory.id,
-      excerpt: 'Treść z kategorii potomnej.',
+      topics: [grandchildTopic.id],
+      excerpt: 'Treść z podtematu.',
       layout: [{ blockType: 'richText', content: createLexicalDocument('Treść potomna') }],
       publishedAt: '2026-08-24T10:00:00.000Z',
       slug: postSlug,
@@ -114,22 +114,26 @@ test.afterAll(async () => {
   await cleanup()
 })
 
-test('shows category breadcrumbs, direct children and content from descendants', async ({
-  page,
-}) => {
-  await page.goto(`/category/${categorySlugs[1]}`)
+test('shows topic breadcrumbs, direct children and content from descendants', async ({ page }) => {
+  await page.goto(`/topic/${topicSlugs[1]}`)
 
   const breadcrumbs = page.getByRole('navigation', { name: 'Okruszki' })
   await expect(breadcrumbs.getByRole('link', { name: 'Strona główna' })).toHaveCount(0)
   await expect(breadcrumbs.getByRole('link', { name: 'E2E Gry' })).toHaveAttribute(
     'href',
-    `/category/${categorySlugs[0]}`,
+    `/topic/${topicSlugs[0]}`,
   )
   await expect(breadcrumbs.getByText('E2E RPG', { exact: true })).toHaveCount(0)
-  await expect(page.getByRole('navigation', { name: 'Podkategorie' })).toContainText(
-    'E2E Warhammer',
-  )
+  await expect(page.getByRole('navigation', { name: 'Podtematy' })).toContainText('E2E Warhammer')
   await expect(page.getByRole('link').filter({ hasText: post.title })).toBeVisible()
+})
+
+test('redirects a legacy topic address and preserves its query parameters', async ({ page }) => {
+  await page.goto(`/category/${topicSlugs[1]}?from=legacy&tag=rpg&tag=larp`)
+  const url = new URL(page.url())
+  expect(url.pathname).toBe(`/topic/${topicSlugs[1]}`)
+  expect(url.searchParams.get('from')).toBe('legacy')
+  expect(url.searchParams.getAll('tag')).toEqual(['rpg', 'larp'])
 })
 
 test('shows published page ancestors as links and unpublished ancestors as text', async ({
@@ -148,28 +152,28 @@ test('shows published page ancestors as links and unpublished ancestors as text'
   await expect(breadcrumbs.getByText('E2E Komisja', { exact: true })).toHaveCount(0)
 })
 
-test('uses one category selector and full hierarchy paths in admin relationships', async ({
+test('uses one topic selector and full hierarchy paths in admin relationships', async ({
   page,
 }) => {
   await login({ page, user: editorTestUser })
   await page.goto(`/admin/collections/posts/${post.id}`)
 
-  const categoryField = page.locator('#field-category')
-  await expect(categoryField.getByRole('combobox')).toHaveCount(1)
-  await expect(categoryField).toContainText('E2E Gry › E2E RPG › E2E Warhammer')
+  const topicField = page.locator('#field-topics')
+  await expect(topicField.getByRole('combobox')).toHaveCount(1)
+  await expect(topicField).toContainText('E2E Gry › E2E RPG › E2E Warhammer')
 
-  await page.goto(`/admin/collections/categories/${categories[2].id}`)
+  await page.goto(`/admin/collections/topics/${topics[2].id}`)
   await expect(page.locator('#field-parent')).toContainText('E2E Gry › E2E RPG')
-  const categoryPath = page.getByRole('navigation', { name: 'Ścieżka nawigacji dokumentu' })
-  await expect(categoryPath.getByRole('link', { name: 'E2E Gry' })).toHaveAttribute(
+  const topicPath = page.getByRole('navigation', { name: 'Ścieżka nawigacji dokumentu' })
+  await expect(topicPath.getByRole('link', { name: 'E2E Gry' })).toHaveAttribute(
     'href',
-    `/admin/collections/categories/${categories[0].id}`,
+    `/admin/collections/topics/${topics[0].id}`,
   )
-  await expect(categoryPath.getByText('E2E Warhammer', { exact: true })).toHaveJSProperty(
+  await expect(topicPath.getByText('E2E Warhammer', { exact: true })).toHaveJSProperty(
     'tagName',
     'STRONG',
   )
-  await expect(categoryPath.getByRole('link', { name: 'E2E Warhammer' })).toHaveCount(0)
+  await expect(topicPath.getByRole('link', { name: 'E2E Warhammer' })).toHaveCount(0)
   await expect(page.getByText('Breadcrumbs', { exact: true })).toHaveCount(0)
 
   await page.goto(`/admin/collections/pages/${pages[2].id}`)
@@ -201,6 +205,49 @@ test('uses one category selector and full hierarchy paths in admin relationships
   await expect(page.getByText('Breadcrumbs', { exact: true })).toHaveCount(0)
 })
 
+test('shows the inherited cycle path in the Event sidebar', async ({ page }) => {
+  const layout = [
+    { blockType: 'richText' as const, content: createLexicalDocument('Cycle hierarchy') },
+  ]
+  const cycle = await payload.create({
+    collection: 'event-cycles',
+    data: {
+      _status: 'published',
+      author: post.author,
+      title: 'E2E Cykl hierarchii',
+      slug: 'e2e-hierarchy-cycle',
+      parent: pages[0].id,
+      excerpt: layout[0].content,
+      layout,
+      eventDefaults: { eventType: 1, capacityMode: 'unlimited', participation: 'public', layout },
+    },
+  })
+  try {
+    const event = await payload.create({
+      collection: 'events',
+      draft: true,
+      data: {
+        _status: 'draft',
+        author: post.author,
+        cycle: cycle.id,
+        title: 'E2E Wydarzenie w cyklu',
+        slug: 'e2e-hierarchy-event',
+        startAt: '2026-12-01T17:00:00Z',
+      },
+    })
+    try {
+      await login({ page, user: editorTestUser })
+      await page.goto(`/admin/collections/events/${event.id}`)
+      await expect(page.getByText('E2E Klub › E2E Cykl hierarchii', { exact: true })).toBeVisible()
+      await expect(page.locator('#field-parent')).toHaveCount(0)
+    } finally {
+      await payload.delete({ collection: 'events', id: event.id })
+    }
+  } finally {
+    await payload.delete({ collection: 'event-cycles', id: cycle.id })
+  }
+})
+
 async function cleanup(): Promise<void> {
   if (!payload) return
 
@@ -217,9 +264,9 @@ async function cleanup(): Promise<void> {
       where: { slug: { equals: slug } },
     })
   }
-  for (const slug of [...categorySlugs].reverse()) {
+  for (const slug of [...topicSlugs].reverse()) {
     await payload.delete({
-      collection: 'categories',
+      collection: 'topics',
       overrideAccess: true,
       where: { slug: { equals: slug } },
     })

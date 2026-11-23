@@ -86,7 +86,7 @@ test('shows CMS resources but no administration collections to an editor', async
   await expect(page.locator(collectionNavigationLink('users'))).toHaveCount(0)
 })
 
-test('opens a media document without rendering the category tabs outside the list', async ({
+test('opens a media document without rendering the topic tabs outside the list', async ({
   page,
 }) => {
   const pageErrors: Error[] = []

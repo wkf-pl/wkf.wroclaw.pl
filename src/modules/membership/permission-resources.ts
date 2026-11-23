@@ -100,10 +100,10 @@ export const permissionResources = {
     kind: 'collection',
     label: 'Aliasy adresów',
   },
-  categories: {
-    collection: 'categories',
+  topics: {
+    collection: 'topics',
     kind: 'collection',
-    label: 'Kategorie',
+    label: 'Tematy',
   },
   tags: {
     collection: 'tags',

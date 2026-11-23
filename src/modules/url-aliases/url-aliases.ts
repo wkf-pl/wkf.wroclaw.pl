@@ -9,7 +9,7 @@ export const urlAliasTargetCollections = [
   'events',
   'event-cycles',
   'partners',
-  'categories',
+  'topics',
   'tags',
   'documents',
 ] as const
@@ -32,6 +32,7 @@ const reservedUrlAliasSlugs = new Set([
   'assets',
   'blog',
   'category',
+  'topic',
   'content',
   'dokumenty',
   'events',
@@ -147,8 +148,8 @@ export function resolveUrlAliasTarget(alias: UrlAliasData): null | string {
       return `/events/series/${document.slug}`
     case 'partners':
       return `/partners/${document.slug}`
-    case 'categories':
-      return `/category/${document.slug}`
+    case 'topics':
+      return `/topic/${document.slug}`
     case 'tags':
       return `/tag/${document.slug}`
     case 'documents': {

@@ -10,7 +10,7 @@ export type PageTemplateHeroImageRule = 'configurable' | 'currentItem' | 'none'
 export type PageTemplateRenderingMode = 'legacy' | 'template'
 
 export type PageTemplatePreviewCollection =
-  'categories' | 'event-cycles' | 'events' | 'member-profiles' | 'partners' | 'tags'
+  'topics' | 'event-cycles' | 'events' | 'member-profiles' | 'partners' | 'tags'
 
 export type PageTemplateFieldVariant = {
   label: string
@@ -64,7 +64,7 @@ export type PageTemplateDefinition = {
 
 export type PageTemplateID =
   | 'blog-index'
-  | 'category-detail'
+  | 'topic-detail'
   | 'event-cycle-detail'
   | 'event-detail'
   | 'events-index'
@@ -184,19 +184,19 @@ const basePageTemplateRegistry: readonly PageTemplateDefinition[] = [
   },
   {
     allowedBlocks: standardContentBlocks,
-    currentItemLabel: 'Kategoria',
+    currentItemLabel: 'Temat',
     dynamicFields: [
       createDynamicField('name', 'Nazwa', pageTemplateRegions, headingVariants),
       createDynamicField('description', 'Opis', pageTemplateRegions, textVariants),
-      createDynamicField('hierarchy', 'Hierarchia kategorii', pageTemplateRegions, listVariants),
+      createDynamicField('hierarchy', 'Hierarchia tematów', pageTemplateRegions, listVariants),
     ],
     heroImageRule: 'none',
-    id: 'category-detail',
-    label: 'Wpisy z kategorii',
-    previewCollection: 'categories',
+    id: 'topic-detail',
+    label: 'Wpisy na temat',
+    previewCollection: 'topics',
     regions: pageTemplateRegions,
     rendererAvailable: true,
-    route: '/category/[slug]',
+    route: '/topic/[slug]',
     routeKind: 'collectionItem',
   },
   {
@@ -300,9 +300,15 @@ export const pageTemplateRegistry = basePageTemplateRegistry.map((definition) =>
     dynamicFields: [
       ...definition.dynamicFields.map((field) => ({ ...field, regions: definition.regions })),
       ...fields.map(({ key, label, source }) => {
-        const isList = ['tags', 'join', 'breadcrumbs', 'games', 'organizers', 'links'].includes(
-          source.kind,
-        )
+        const isList = [
+          'topics',
+          'tags',
+          'join',
+          'breadcrumbs',
+          'games',
+          'organizers',
+          'links',
+        ].includes(source.kind)
         const inline = !isList && !['image', 'photo', 'layout', 'richText'].includes(source.kind)
         return {
           ...createDynamicField(

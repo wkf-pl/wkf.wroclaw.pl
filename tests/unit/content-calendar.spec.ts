@@ -67,21 +67,21 @@ describe('content calendar presentation', () => {
 
   it('round-trips normalized calendar filters through the public endpoint', () => {
     const endpoint = createContentCalendarEndpoint({
-      categoryId: 4,
+      topicId: 4,
       eventCycleId: 8,
       sources: ['posts', 'events', 'posts'],
       tagId: 6,
     })
 
     expect(endpoint).toBe(
-      '/content/calendar.json?source=events&source=posts&category=4&tag=6&eventCycle=8',
+      '/content/calendar.json?source=events&source=posts&topic=4&tag=6&eventCycle=8',
     )
     expect(
       parseContentCalendarSearchParams(
         new URL(`http://localhost${endpoint}&month=2026-08`).searchParams,
       ),
     ).toEqual({
-      filters: { categoryId: 4, eventCycleId: 8, sources: ['events', 'posts'], tagId: 6 },
+      filters: { topicId: 4, eventCycleId: 8, sources: ['events', 'posts'], tagId: 6 },
       month: '2026-08',
     })
     expect(
