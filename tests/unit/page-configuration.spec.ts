@@ -511,7 +511,7 @@ describe('page configuration', () => {
       'topics',
       'tags',
       'author',
-      'publicAuthorSignature',
+      'owners',
       'publishedAt',
     ])
     expect(sidebarFieldNames(Posts)).toEqual([
@@ -520,7 +520,7 @@ describe('page configuration', () => {
       'topics',
       'tags',
       'author',
-      'publicAuthorSignature',
+      'owners',
       'publishedAt',
     ])
     expect(sidebarFieldNames(Events)).toEqual([
@@ -530,7 +530,7 @@ describe('page configuration', () => {
       'topics',
       'tags',
       'author',
-      'publicAuthorSignature',
+      'owners',
       'publishedAt',
     ])
     expect(sidebarFieldNames(EventCycles)).toEqual([
@@ -539,7 +539,7 @@ describe('page configuration', () => {
       'topics',
       'tags',
       'author',
-      'publicAuthorSignature',
+      'owners',
       'publishedAt',
     ])
     expect(sidebarFieldNames(Documents)).toEqual([
@@ -547,16 +547,11 @@ describe('page configuration', () => {
       'topics',
       'tags',
       'author',
-      'publicAuthorSignature',
+      'owners',
       'publishedAt',
     ])
-    expect(sidebarFieldNames(Media)).toEqual(['topics', 'tags', 'author', 'uploadedBy'])
-    expect(sidebarFieldNames(Partners)).toEqual([
-      'slug',
-      'author',
-      'publicAuthorSignature',
-      'publishedAt',
-    ])
+    expect(sidebarFieldNames(Media)).toEqual(['topics', 'tags', 'author', 'owners', 'uploadedBy'])
+    expect(sidebarFieldNames(Partners)).toEqual(['slug', 'author', 'owners', 'publishedAt'])
   })
 
   it('uses one polymorphic related-content field for Posts', () => {
@@ -595,9 +590,9 @@ describe('page configuration', () => {
       'hierarchyPath',
     ])
     expect(describeFieldOrder(Tags.fields)).toEqual([
+      'groupIcon',
       'displayName',
-      'group',
-      'name',
+      ['name', 'group'],
       'slug',
       'description',
       'relatedPages',
@@ -606,10 +601,17 @@ describe('page configuration', () => {
       'relatedEventCycles',
       'relatedDocuments',
     ])
+    expect(Tags.admin?.defaultColumns).toContain('group')
+    expect(findField(Tags.fields, 'name').admin?.width).toBe('66.667%')
+    expect(findField(Tags.fields, 'group').admin?.width).toBe('33.333%')
   })
 
   it('places taxonomy URLs in the sidebar and uses the related-content renderer', () => {
     for (const collection of [Topics, Tags]) {
+      expect(findField(collection.fields, 'relatedDocuments')).toMatchObject({
+        type: 'join',
+        admin: { hidden: true },
+      })
       expect(findField(collection.fields, 'slug')).toMatchObject({
         admin: { position: 'sidebar' },
       })
@@ -634,7 +636,6 @@ describe('page configuration', () => {
         'relatedPosts',
         'relatedEvents',
         'relatedEventCycles',
-        'relatedDocuments',
       ]) {
         const relatedField = findField(collection.fields, fieldName)
 

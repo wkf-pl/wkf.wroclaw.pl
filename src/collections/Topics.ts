@@ -12,7 +12,7 @@ import {
   preventDeletingTopicWithChildren,
   validateHierarchy,
 } from '@/modules/content/hierarchy'
-import { getTransactionExecutor } from '@/modules/content/lock-content-author'
+import { getTransactionExecutor } from '@/modules/content/lock-content-owners'
 import { createRelatedContentJoinFields } from '@/modules/content/taxonomy-fields'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
@@ -53,7 +53,7 @@ export const Topics: CollectionConfig = {
   admin: {
     defaultColumns: ['fullTitle', 'description', 'slug', 'updatedAt'],
     group: 'Treści',
-    listSearchableFields: ['fullTitle', 'name', 'slug'],
+    listSearchableFields: ['fullTitle', 'slug', 'description'],
     useAsTitle: 'fullTitle',
     pagination: {
       limits: [10, 25, 50],

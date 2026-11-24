@@ -59,7 +59,7 @@ function eventFixture(overrides: Partial<Event> = {}): Event {
     capacityMode: 'unlimited',
 
     slug: 'erpegowy-wtorek',
-    author: { relationTo: 'users', value: 1 },
+    author: 1,
     calendarUID: 'event@example.test',
     calendarRevision: 2,
     updatedAt: '2026-08-18T12:00:00.000Z',

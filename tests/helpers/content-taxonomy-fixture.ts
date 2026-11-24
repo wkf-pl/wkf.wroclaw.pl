@@ -61,7 +61,7 @@ export async function createContentTaxonomyFixture(
       collection: 'pages',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         topics: [topic.id],
         layout: [{ blockType: 'richText', content: createLexicalDocument('Page excerpt') }],
         publishedAt: '2026-08-12T12:00:00.000Z',
@@ -75,7 +75,7 @@ export async function createContentTaxonomyFixture(
       collection: 'posts',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         topics: [topic.id],
         excerpt: 'Post excerpt',
         layout: [{ blockType: 'richText', content: createLexicalDocument('Post content') }],
@@ -92,7 +92,7 @@ export async function createContentTaxonomyFixture(
     collection: 'posts',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       topics: [topic.id],
       excerpt: 'Draft excerpt',
       layout: [{ blockType: 'richText', content: createLexicalDocument('Draft content') }],
@@ -109,7 +109,7 @@ export async function createContentTaxonomyFixture(
     collection: 'pages',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [{ blockType: 'richText', content: createLexicalDocument('Child page') }],
       parent: page.id,
       slug: slugs.childPage,

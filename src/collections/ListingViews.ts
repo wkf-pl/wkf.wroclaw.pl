@@ -6,8 +6,10 @@ import { publicCacheTags } from '@/modules/cache/public-data-cache'
 import { listingPresets, resolveListingView } from '@/modules/content/listing-view'
 import {
   listingViewPreviewEndpoint,
+  listingViewReassignmentEndpoint,
   listingViewUsageEndpoint,
 } from '@/modules/content/listing-view-endpoints'
+import { preventDeletingUsedListingView } from '@/modules/content/listing-view-usage'
 import { clientUserHasRole } from '@/modules/membership/permission-resolution'
 import { administratorRoleKey } from '@/modules/membership/role-configuration'
 import { isAdministrator } from '@/modules/membership/role-access'
@@ -24,17 +26,28 @@ export const ListingViews: CollectionConfig = {
   access: {
     create: ({ req }) => isAdministrator(req),
     update: ({ req }) => isAdministrator(req),
-    delete: () => false,
+    delete: ({ req }) => isAdministrator(req),
     read: async ({ req }) =>
       (await isAdministrator(req)) || (req.user ? { _status: { equals: 'published' } } : false),
     readVersions: ({ req }) => isAdministrator(req),
   },
-  endpoints: [listingViewPreviewEndpoint, listingViewUsageEndpoint],
+  endpoints: [
+    listingViewPreviewEndpoint,
+    listingViewUsageEndpoint,
+    listingViewReassignmentEndpoint,
+  ],
   versions: { drafts: true },
   hooks: {
+    beforeDelete: [preventDeletingUsedListingView],
     afterChange: [
       ({ doc }) => {
         if (doc._status === 'published') invalidatePublicCacheTags([publicCacheTags.listingViews])
+      },
+    ],
+    afterDelete: [
+      ({ doc }) => {
+        invalidatePublicCacheTags([publicCacheTags.listingViews])
+        return doc
       },
     ],
   },

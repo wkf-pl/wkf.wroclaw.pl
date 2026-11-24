@@ -1,7 +1,5 @@
 import type { Payload, Where } from 'payload'
 
-import { collectPayloadPages } from '@/lib/payload-pagination'
-
 import { findTopicSubtreeIDs } from './topic-hierarchy'
 import type { ContentSearchFilters } from './content-search-filters'
 import {
@@ -9,7 +7,6 @@ import {
   getWarsawDayStartISOString,
   normalizeListingTitle,
 } from './listing-conditions'
-import { publicRequestContext } from './public-access'
 
 export async function createContentSearchPredicates(
   payload: Payload,
@@ -46,25 +43,22 @@ export async function createContentSearchPredicates(
   if (filters.branch) {
     predicates.push({ ancestorSearchIndex: { contains: `|${filters.branch}|` } })
   }
-  if (filters.author) {
-    const name = escapeLikePattern(filters.author)
-    const groups = await collectPayloadPages((page) =>
-      payload.find({
-        collection: 'user-groups',
-        context: publicRequestContext,
-        depth: 0,
-        limit: 100,
-        overrideAccess: false,
-        page,
-        select: { name: true },
-        where: { name: { contains: name } },
-      }),
-    )
-    const signature = { searchAuthorSignature: { contains: name } }
+  if (filters.authorId !== undefined) {
+    predicates.push({ searchAuthor: { equals: filters.authorId } })
+  } else if (filters.author) {
+    const { docs: authors } = await payload.find({
+      collection: 'users',
+      depth: 0,
+      limit: 0,
+      overrideAccess: true,
+      pagination: false,
+      select: { displayName: true },
+      where: { displayName: { contains: escapeLikePattern(filters.author) } },
+    })
     predicates.push(
-      groups.length
-        ? { or: [signature, { searchAuthorGroup: { in: groups.map(({ id }) => id) } }] }
-        : signature,
+      authors.length
+        ? { searchAuthor: { in: authors.map(({ id }) => id) } }
+        : { id: { equals: 0 } },
     )
   }
   if (filters.sources?.length) predicates.push({ source: { in: filters.sources } })

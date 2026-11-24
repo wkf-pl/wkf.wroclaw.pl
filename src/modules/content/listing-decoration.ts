@@ -15,7 +15,6 @@ import {
 import type { ListingView } from './listing-view'
 
 export type ListingSpacing = 'none' | 'small' | 'large'
-type ListingGap = ListingSpacing | 'legacyTile' | 'legacyColumns'
 type ListingPadding = ListingSpacing | 'legacyBlock' | 'legacyCarousel'
 
 export type ListingDecoration = {
@@ -24,10 +23,10 @@ export type ListingDecoration = {
   surfaceImage: number | null
   surfaceHorizontalPosition: SurfaceHorizontalPosition
   surfaceVerticalPosition: SurfaceVerticalPosition
-  gap: ListingGap
+  gap: ListingSpacing
   padding: ListingPadding
   itemBorder: ContentFrameStyle
-  fill: ContentSurfaceName | 'legacy'
+  fill: ContentSurfaceName
   fillImage: number | null
   fillHorizontalPosition: SurfaceHorizontalPosition
   fillVerticalPosition: SurfaceVerticalPosition
@@ -59,10 +58,10 @@ export function parseListingDecoration(value: unknown): ListingDecorationOverrid
     surface: contentSurfaceNames,
     surfaceHorizontalPosition: surfaceHorizontalPositions,
     surfaceVerticalPosition: surfaceVerticalPositions,
-    gap: [...spacing, 'legacyTile', 'legacyColumns'],
+    gap: spacing,
     padding: [...spacing, 'legacyBlock', 'legacyCarousel'],
     itemBorder: ['none', 'outline'],
-    fill: [...contentSurfaceNames, 'legacy'],
+    fill: contentSurfaceNames,
     fillHorizontalPosition: surfaceHorizontalPositions,
     fillVerticalPosition: surfaceVerticalPositions,
     fallback: ['default', 'custom', 'none'],
@@ -73,6 +72,9 @@ export function parseListingDecoration(value: unknown): ListingDecorationOverrid
       Object.assign(result, { [key]: option })
     }
   }
+  if (data.gap === 'legacyColumns') result.gap = 'small'
+  if (data.gap === 'legacyTile') result.gap = 'large'
+  if (data.fill === 'legacy') result.fill = 'default'
   for (const key of ['surfaceImage', 'fillImage', 'fallbackImage'] as const) {
     const id = parseListingMediaId(data[key])
     if (data[key] === null || id !== null) result[key] = id
@@ -90,14 +92,7 @@ export function getDefaultListingDecoration(view: ListingView): ListingDecoratio
     surfaceImage: null,
     surfaceHorizontalPosition: 'center',
     surfaceVerticalPosition: 'middle',
-    gap:
-      row && !carousel
-        ? 'none'
-        : carousel || view.columns !== nativeColumns
-          ? 'legacyColumns'
-          : view.form === 'tile'
-            ? 'legacyTile'
-            : 'large',
+    gap: row && !carousel ? 'none' : carousel || view.columns !== nativeColumns ? 'small' : 'large',
     padding:
       carousel && (view.form !== 'horizontal' || view.columns > 1 || !view.information.image)
         ? 'legacyCarousel'
@@ -108,7 +103,7 @@ export function getDefaultListingDecoration(view: ListingView): ListingDecoratio
           ? 'none'
           : 'outline'
         : 'none',
-    fill: row ? 'transparent' : 'legacy',
+    fill: row ? 'transparent' : 'default',
     fillImage: null,
     fillHorizontalPosition: 'center',
     fillVerticalPosition: 'middle',

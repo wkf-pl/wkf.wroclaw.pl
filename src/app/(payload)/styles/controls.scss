@@ -137,3 +137,27 @@
     transition: none;
   }
 }
+
+.wkf-listing-search-filters > .row__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--base) / 2) var(--base);
+  margin-inline: 0;
+
+  > .wkf-boolean-switch {
+    flex: 0 1 max-content;
+    max-width: 100%;
+    margin-inline: 0;
+  }
+}
+.wkf-tag-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+
+  > .rasterIcon {
+    width: 1em;
+    height: 1em;
+    flex: none;
+  }
+}

@@ -123,7 +123,7 @@ test.beforeAll(async () => {
     collection: 'partners',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       excerpt: 'Partner wspierający spotkania i wydarzenia Wrocławskiego Klubu Fantastyki.',
       heroImage: heroImage.id,
       layout: [
@@ -151,7 +151,7 @@ test.beforeAll(async () => {
     collection: 'event-cycles',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       eventDefaults: {
         capacity: 12,
         capacityMode: 'exact',
@@ -214,7 +214,7 @@ test.beforeAll(async () => {
     collection: 'events',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       calendarRevision: 0,
       capacity: 12,
       capacityMode: 'exact',
@@ -301,7 +301,7 @@ test.beforeAll(async () => {
     collection: 'posts',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       topics: [childTopic.id],
       excerpt: 'Przewodnik po pierwszym spotkaniu i przygotowaniu do klubowej sesji RPG.',
       heroImage: heroImage.id,

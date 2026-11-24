@@ -44,6 +44,7 @@ import {
 } from './lib/env'
 import { createStoragePlugins } from './storage/create-storage-plugins'
 import { contentHierarchyPlugin } from './modules/content/hierarchy-plugin'
+import { adminRelationshipSearchPlugin } from './modules/content/admin-relationship-search'
 import {
   createRichTextLinkFields,
   resolveRichTextInternalLink,
@@ -181,7 +182,12 @@ export default buildConfig({
     ...(runProductionMigrations ? { prodMigrations: migrations } : {}),
   }),
   sharp,
-  plugins: [contentHierarchyPlugin, ...createStoragePlugins(), contentAuditPlugin],
+  plugins: [
+    contentHierarchyPlugin,
+    ...createStoragePlugins(),
+    adminRelationshipSearchPlugin,
+    contentAuditPlugin,
+  ],
 })
 
 function getTrustedOrigins(configuredServerURL: string | undefined): string[] {

@@ -5,8 +5,11 @@ import type { DefaultCellComponentProps, NumberFieldClient, TextFieldClient } fr
 import { formatAdminURL } from 'payload/shared'
 import { useEffect } from 'react'
 
+import { TagLabel } from '@/components/TagLabel'
+
 type TaxonomyDocument = {
   fullTitle?: string
+  groupIcon?: string | null
   id?: number | string
   name?: string
 }
@@ -93,7 +96,11 @@ export function TaxonomyCell({ cellData, field }: DefaultCellComponentProps<Text
           <span key={id}>
             {index ? ', ' : null}
             <a href={href} onClick={(event) => event.stopPropagation()}>
-              {document?.fullTitle ?? document?.name ?? 'Ładowanie…'}
+              {relationTo === 'tags' && document?.name ? (
+                <TagLabel name={document.name} groupIcon={document.groupIcon} />
+              ) : (
+                (document?.fullTitle ?? document?.name ?? 'Ładowanie…')
+              )}
             </a>
           </span>
         )

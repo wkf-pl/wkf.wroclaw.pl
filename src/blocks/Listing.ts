@@ -1,4 +1,4 @@
-import type { Block, Field, FieldHook, Validate } from 'payload'
+import { APIError, type Block, type Field, type FieldHook, type Validate } from 'payload'
 
 import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import {
@@ -6,6 +6,7 @@ import {
   getSharedListingViewId,
   parseListingAppearance,
 } from '@/modules/content/listing-view'
+import { detachListingView, lockListingViewTemplate } from '@/modules/content/listing-view-usage'
 import { getFormRelationshipId } from '@/lib/relationships'
 import { createContentPresentationFields } from '@/modules/content/content-presentation'
 import {
@@ -315,10 +316,20 @@ function createListingBlock({
       admin: { components: { Field: '/components/admin/ListingViewField#ListingViewField' } },
       hooks: {
         beforeValidate: [
-          async ({ value, siblingData, req }) => {
+          async ({ value, siblingData, req, context, previousValue }) => {
             const reference = getListingViewReference(value, siblingData.view)
             const appearance = parseListingAppearance(value)
-            if (!reference || 'id' in reference) return value == null ? value : appearance
+            if (!reference) return value == null ? value : appearance
+            if ('id' in reference) {
+              if (await lockListingViewTemplate(req, reference.id, 'use')) return appearance
+              if (
+                context.isRestoringVersion ||
+                getSharedListingViewId(previousValue) === reference.id
+              ) {
+                return detachListingView({ ...siblingData, appearance: value }, undefined)
+              }
+              throw new APIError('Wybierz dostępny szablon widoku.', 400)
+            }
             const { docs } = await req.payload.find({
               collection: 'listing-views',
               where: {
@@ -330,7 +341,8 @@ function createListingBlock({
               req,
               overrideAccess: true,
             })
-            return docs[0] ? { ...appearance, preset: `shared:${docs[0].id}` } : value
+            const template = docs[0] && (await lockListingViewTemplate(req, docs[0].id, 'use'))
+            return template ? { ...appearance, preset: `shared:${template.id}` } : value
           },
         ],
       },
@@ -414,21 +426,25 @@ function createSearchFilterFields(): Field[] {
       defaultValue: false,
       admin: { ...createBooleanSwitchAdmin(), hidden: true },
     },
-    ...contentSearchFilterNames.map((name): Field => ({
-      name: `filter${name[0].toUpperCase()}${name.slice(1)}`,
-      type: 'checkbox',
-      defaultValue: name !== 'branch',
-      label: contentSearchFilterLabels[name],
-      admin: {
-        ...createBooleanSwitchAdmin(),
-        condition: (data, siblingData) =>
-          searchOptionsCondition(data, siblingData) &&
-          supportsContentSearchFilter(
-            name,
-            Array.isArray(siblingData.sources) ? siblingData.sources.filter(isListingSource) : [],
-          ),
-      },
-    })),
+    {
+      type: 'row',
+      admin: { className: 'wkf-listing-search-filters' },
+      fields: contentSearchFilterNames.map((name): Field => ({
+        name: `filter${name[0].toUpperCase()}${name.slice(1)}`,
+        type: 'checkbox',
+        defaultValue: name !== 'branch',
+        label: contentSearchFilterLabels[name],
+        admin: {
+          ...createBooleanSwitchAdmin(),
+          condition: (data, siblingData) =>
+            searchOptionsCondition(data, siblingData) &&
+            supportsContentSearchFilter(
+              name,
+              Array.isArray(siblingData.sources) ? siblingData.sources.filter(isListingSource) : [],
+            ),
+        },
+      })),
+    },
     {
       name: 'filterTagGroups',
       type: 'relationship',

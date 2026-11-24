@@ -6,7 +6,7 @@ import config from '../../src/payload.config.js'
 import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
-test('shows a user group in the single author selector and lists its assigned post', async ({
+test('selects a group as an owner separately from the author and lists its assigned post', async ({
   page,
 }) => {
   const payload = await getPayload({ config })
@@ -27,16 +27,21 @@ test('shows a user group in the single author selector and lists its assigned po
     await page.goto('/admin/collections/posts/create')
     const author = page.locator('#field-author')
     await expect(author.getByText(editorTestUser.displayName)).toBeVisible()
-    const selector = author.getByRole('combobox')
+    const owners = page.locator('#field-owners')
+    await expect(owners.getByText(editorTestUser.displayName)).toBeVisible()
+    await expect(page.getByText('Publiczny podpis autora', { exact: true })).toHaveCount(0)
+    const selector = owners.getByRole('combobox')
     await selector.fill('Planszówki E2E')
     await page.getByRole('option', { name: 'Planszówki E2E', exact: true }).click()
-    await expect(author.getByText('Planszówki E2E', { exact: true })).toBeVisible()
+    await expect(owners.getByText('Planszówki E2E', { exact: true })).toBeVisible()
+    await expect(owners.getByText(editorTestUser.displayName)).toBeVisible()
+    await expect(author.getByText(editorTestUser.displayName)).toBeVisible()
 
     const createdPost = await page.request.post('/api/posts?draft=true', {
       headers: { 'Sec-Fetch-Site': 'same-origin' },
       data: {
         title: 'Wpis planszówkowy E2E',
-        author: { relationTo: 'user-groups', value: group.id },
+        owners: [{ relationTo: 'user-groups', value: group.id }],
       },
     })
     await expect(createdPost).toBeOK()

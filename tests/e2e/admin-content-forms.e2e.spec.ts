@@ -53,7 +53,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       slug: `${fixturePrefix}-parent`,
       title: parentPageTitle,
     },
@@ -65,7 +65,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [
         {
           blockType: 'listing',
@@ -89,7 +89,7 @@ test.beforeAll(async () => {
     collection: 'posts',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       topics: [topic.id],
       excerpt: 'Wpis używany do sprawdzenia kolumn relacji.',
       layout: [
@@ -111,7 +111,7 @@ test.beforeAll(async () => {
     collection: 'posts',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       excerpt: 'Wpis używany do sprawdzenia pustych wartości.',
       slug: `${fixturePrefix}-unclassified-post`,
       title: unclassifiedPostTitle,
@@ -239,26 +239,23 @@ test('lays out Listing presentation fields and persists labeled relationship con
   await expect(connector).toBeVisible()
 
   await conditionRow.locator('.rs__control').first().click()
-  await page
-    .locator('.rs__menu')
-    .getByText('Strona nadrzędna (dotychczasowy warunek)', { exact: true })
-    .click()
-  await expect(conditionRow.getByText('to lub ma podtemat', { exact: true })).toBeVisible()
+  const fieldOptions = page.locator('.rs__menu')
+  await expect(fieldOptions.getByText(/Strona nadrzędna|dotychczasowy/i)).toHaveCount(0)
+  await fieldOptions.getByText('Element nadrzędny', { exact: true }).click()
+  await expect(conditionRow.getByText('bezpośrednio pod', { exact: true })).toBeVisible()
 
-  await page.keyboard.press('Escape')
   const relationshipInput = conditionRow.getByRole('combobox').nth(2)
   await relationshipInput.fill(parentPageTitle)
-  await expect(page.locator('.rs__menu').getByText('Strony', { exact: true })).not.toBeVisible()
   await page.locator('.rs__menu').getByText(parentPageTitle, { exact: true }).click()
   await expect(conditionRow).toContainText(parentPageTitle)
   await expect(conditionRow).toContainText('Dotyczy wszystkich źródeł: Strony.')
   const conditionLabel = conditionRow.locator('.wkf-listing-condition-row-label')
   await expect(conditionLabel).toHaveText(
-    `Warunek:Strona nadrzędna (dotychczasowy warunek) to „${parentPageTitle}”`,
+    `Warunek:Element nadrzędny bezpośrednio pod „${parentPageTitle}”`,
   )
   await expect(conditionLabel).toHaveAttribute(
     'title',
-    `Warunek: Strona nadrzędna (dotychczasowy warunek) to „${parentPageTitle}”`,
+    `Warunek: Element nadrzędny bezpośrednio pod „${parentPageTitle}”`,
   )
 
   await conditionsField.getByRole('button', { name: /Dodaj Warunek/i }).click()
@@ -317,9 +314,10 @@ test('lays out Listing presentation fields and persists labeled relationship con
   const listing = savedPage.layout?.find((block) => block.blockType === 'listing')
   expect(listing?.conditions).toMatchObject([
     {
-      field: 'parentPage',
+      field: 'contentParent',
       operator: 'equals',
-      relationshipValue: { relationTo: 'pages', value: parentPageID },
+      relatedTargetMode: 'selected',
+      relatedTargetValue: { relationTo: 'pages', value: parentPageID },
     },
     {
       field: 'topic',

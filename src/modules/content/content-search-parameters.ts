@@ -77,7 +77,13 @@ export function parseContentSearchFilters({
   }
 
   const phrase = readText('phrase')
-  const author = readText('author')
+  const authorValue = readText('author')
+  const selectedAuthor = authorValue !== undefined && authorValue.startsWith('id:')
+  const authorId = selectedAuthor ? readIdentifier(authorValue?.slice(3) ?? '') : undefined
+  if (selectedAuthor && !options.authors?.some(({ id }) => id === authorId)) {
+    errors.author = 'Wybierz autora dostępnego w tym listingu.'
+  }
+  const author = selectedAuthor ? undefined : authorValue
   const dateFrom = readSingle('dateFrom', enabled.date)
   const dateTo = readSingle('dateTo', enabled.date)
   if (dateFrom && !isCalendarDate(dateFrom)) errors.dateFrom = 'Podaj poprawną datę.'
@@ -128,6 +134,7 @@ export function parseContentSearchFilters({
   const filters: ContentSearchFilters = {
     ...(phrase ? { phrase } : {}),
     ...(author ? { author } : {}),
+    ...(authorId !== undefined && !errors.author ? { authorId } : {}),
     ...(dateFrom && !errors.dateFrom ? { dateFrom } : {}),
     ...(dateTo && !errors.dateTo ? { dateTo } : {}),
     ...(topicIds.length ? { topicIds } : {}),

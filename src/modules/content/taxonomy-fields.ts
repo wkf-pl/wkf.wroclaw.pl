@@ -103,12 +103,7 @@ export function createRelatedContentJoinFields(taxonomyField: 'topics' | 'tags')
     {
       name: 'relatedDocuments',
       type: 'join',
-      admin: {
-        components: {
-          Field: '/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin',
-        },
-        defaultColumns: ['title', 'documentType', 'documentNumber', 'documentDate', '_status'],
-      },
+      admin: { hidden: true },
       collection: 'documents',
       defaultLimit: 20,
       label: 'Powiązane dokumenty',

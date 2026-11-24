@@ -1,3 +1,4 @@
+import { createContentOwnersField } from '@/modules/content/content-owners-field'
 import type { CollectionConfig, Where } from 'payload'
 
 import {
@@ -43,7 +44,7 @@ export const Media: CollectionConfig = {
       'uploadedBy',
     ],
     group: 'Treści',
-    listSearchableFields: ['filename', 'description'],
+    listSearchableFields: ['filename', 'description', 'author', 'topics'],
     pagination: {
       limits: [10, 25, 50],
     },
@@ -125,7 +126,8 @@ export const Media: CollectionConfig = {
       label: 'Tagi',
       relationTo: 'tags',
     },
-    createContentAuthorField({ required: false }),
+    createContentAuthorField(),
+    createContentOwnersField(),
     {
       name: 'uploadedBy',
       type: 'relationship',

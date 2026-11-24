@@ -95,7 +95,7 @@ test('filters a catalogue on its own page and preserves two independent searches
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         eventDefaults: {
           eventType: eventType.id,
           capacityMode: 'unlimited',
@@ -113,7 +113,7 @@ test('filters a catalogue on its own page and preserves two independent searches
       collection: 'events',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         calendarRevision: 0,
         capacityMode: 'unlimited',
         eventType: eventType.id,
@@ -139,9 +139,18 @@ test('filters a catalogue on its own page and preserves two independent searches
     }
     const catalogue = publicPage.getByRole('search')
     await expect(catalogue.getByLabel('Data od')).toHaveCount(0)
+    await expect(catalogue.getByRole('button', { name: 'Szukaj' })).toHaveCount(0)
+    await catalogue.getByLabel('Autor', { exact: true }).selectOption({ label: author.displayName })
+    await expect(publicPage).toHaveURL(/_author=id%3A\d+/)
+    await catalogue.getByLabel('Autor', { exact: true }).selectOption('')
+    await expect(publicPage).not.toHaveURL(/_author=/)
+    await catalogue.locator('summary').filter({ hasText: 'Tematy' }).click()
+    await catalogue.getByRole('checkbox', { name: topic.name, exact: true }).check()
+    await expect(publicPage).toHaveURL(/_category=\d+/)
+    await catalogue.locator('summary').filter({ hasText: 'Tematy' }).click()
+    await catalogue.locator('summary').filter({ hasText: 'Tagi' }).click()
     await catalogue.getByRole('checkbox', { name: 'Dark Sun E2E search' }).check()
     await catalogue.getByRole('checkbox', { name: 'Opowiadanie E2E search' }).check()
-    await catalogue.getByRole('button', { name: 'Szukaj' }).click()
     await expect(
       publicPage.locator('.listingBlock a').filter({ hasText: 'Zasoby RPG' }),
     ).toBeVisible()
@@ -153,6 +162,13 @@ test('filters a catalogue on its own page and preserves two independent searches
     await expect(filterTab).toBeVisible({ timeout: 15_000 })
     await filterTab.click()
     await expect(page.getByText('Typ treści', { exact: true })).toBeVisible()
+    const filterRow = page.locator('.wkf-listing-search-filters > .row__fields')
+    await expect(filterRow).toHaveCSS('display', 'flex')
+    await expect(filterRow).toHaveCSS('flex-wrap', 'wrap')
+    await expect(filterRow.getByRole('switch')).not.toHaveCount(0)
+    await expect(
+      filterRow.getByRole('switch', { name: 'Pozwól czytelnikowi przeszukiwać listę' }),
+    ).toHaveCount(0)
 
     await payload.update({
       collection: 'page-templates',
@@ -170,14 +186,18 @@ test('filters a catalogue on its own page and preserves two independent searches
     const second = blocks.nth(1)
     await expect(blocks).toHaveCount(2)
     await expect(second.getByRole('group', { name: 'Tematy' })).toHaveCount(0)
+    await second.getByLabel('Fraza w tytule lub zajawce').fill('Po')
+    await publicPage.waitForTimeout(400)
+    await expect(publicPage).not.toHaveURL(/_q=/)
     await second.getByLabel('Fraza w tytule lub zajawce').fill('Post excerpt')
-    await second.getByRole('button', { name: 'Szukaj' }).click()
+    await expect(publicPage).toHaveURL(/_q=Post\+excerpt/)
+    await expect(second.getByRole('link', { name: 'Wyczyść filtry' })).toBeVisible()
     await first.getByRole('link', { name: 'Następna' }).click()
     await expect(first.getByText('Strona 2 z 2')).toBeVisible()
     await expect(second.getByLabel('Fraza w tytule lub zajawce')).toHaveValue('Post excerpt')
 
     await first.getByLabel('Fraza w tytule lub zajawce').fill('brak takiego wyniku')
-    await first.getByRole('button', { name: 'Szukaj' }).click()
+    await expect(first.getByText('Brak treści pasujących do filtrów.')).toBeVisible()
     const sharedUrl = publicPage.url()
     await publicPage.goto(sharedUrl)
     await expect(first.getByText('Brak treści pasujących do filtrów.')).toBeVisible()

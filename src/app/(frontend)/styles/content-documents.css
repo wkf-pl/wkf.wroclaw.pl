@@ -52,6 +52,18 @@
   margin: 1rem 0;
 }
 
+.wkf-tag-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.wkf-tag-label > .rasterIcon {
+  width: 1em;
+  height: 1em;
+  flex: none;
+}
+
 .taxonomyLinks a {
   display: inline-flex;
   min-height: 2rem;

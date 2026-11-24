@@ -112,7 +112,7 @@ export const listingConditionFieldLabels: Record<ListingConditionField, string> 
   topic: 'Temat',
   eventCycle: 'Cykl wydarzeń',
   eventTime: 'Termin wydarzenia',
-  parentPage: 'Strona nadrzędna (dotychczasowy warunek)',
+  parentPage: 'Strona nadrzędna',
   contentParent: 'Element nadrzędny',
   tagGroup: 'Grupa tagów',
   relatedTo: 'Powiązane z',

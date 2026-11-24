@@ -4,7 +4,7 @@ import {
   clearCyclicEventParent,
   eventCycleParentPathField,
 } from '@/modules/content/content-parent'
-import { createPublicAuthorSignatureField } from '@/modules/content/content-author-field'
+import { createContentOwnersField } from '@/modules/content/content-owners-field'
 import {
   confirmLegacyLocation,
   createLegacyLocationFields,
@@ -88,7 +88,7 @@ export const Events: CollectionConfig = {
     },
     defaultColumns: ['title', 'cycle', 'eventType', 'topics', 'tags', 'startAt', '_status'],
     group: 'Treści',
-    listSearchableFields: ['title', 'cycle', 'slug'],
+    listSearchableFields: ['title', 'cycle', 'slug', 'eventType', 'author', 'topics', 'location'],
     useAsTitle: 'title',
     pagination: {
       limits: [10, 25, 50],
@@ -155,7 +155,7 @@ export const Events: CollectionConfig = {
     getEditorialField(editorialFields, 'topics'),
     getEditorialField(editorialFields, 'tags'),
     getEditorialField(editorialFields, 'author'),
-    createPublicAuthorSignatureField(),
+    createContentOwnersField(),
     {
       name: 'defaultsAppliedCycle',
       type: 'relationship',

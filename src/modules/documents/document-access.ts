@@ -3,7 +3,7 @@ import type { Access, PayloadRequest } from 'payload'
 
 import { collectPayloadPages } from '@/lib/payload-pagination'
 import { getRelationshipId, type RelationshipID } from '@/lib/relationships'
-import { getTransactionExecutor } from '@/modules/content/lock-content-author'
+import { getTransactionExecutor } from '@/modules/content/lock-content-owners'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import {
   isPublicRequest,

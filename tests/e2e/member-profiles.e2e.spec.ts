@@ -138,7 +138,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: owner.id },
+      author: owner.id,
       layout: [
         {
           blockType: 'heading',

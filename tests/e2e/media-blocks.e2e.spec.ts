@@ -61,7 +61,7 @@ test.beforeAll(async () => {
       collection: 'pages',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         layout: [
           {
             blockType: 'heading',
@@ -99,7 +99,7 @@ test.beforeAll(async () => {
       collection: 'posts',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         excerpt: 'E2E media block pagination.',
         layout: [
           {

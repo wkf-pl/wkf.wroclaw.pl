@@ -190,6 +190,9 @@ export interface Config {
       relatedEventCycles: 'event-cycles';
       relatedDocuments: 'documents';
     };
+    'tag-groups': {
+      tags: 'tags';
+    };
   };
   collectionsSelect: {
     'content-listing-items': ContentListingItemsSelect<false> | ContentListingItemsSelect<true>;
@@ -319,8 +322,7 @@ export interface ContentListingItem {
   hasSignificantDate?: boolean | null;
   isInactiveLocation?: boolean | null;
   searchDate?: string | null;
-  searchAuthorSignature?: string | null;
-  searchAuthorGroup?: (number | null) | UserGroup;
+  searchAuthor?: (number | null) | User;
   significantDate?: string | null;
   eventStartAt?: string | null;
   eventEndAt?: string | null;
@@ -396,19 +398,25 @@ export interface Page {
    * Po jakich cechach czytelnik będzie szukać tej treści?
    */
   tags?: (number | Tag)[] | null;
-  author:
-    | {
-        relationTo: 'users';
-        value: number | User;
-      }
-    | {
-        relationTo: 'user-groups';
-        value: number | UserGroup;
-      };
   /**
-   * Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.
+   * Użytkownik, któremu przypisujesz autorstwo treści.
    */
-  publicAuthorSignature?: string | null;
+  author?: (number | null) | User;
+  /**
+   * Użytkownicy i grupy objęci uprawnieniami „tylko własne”.
+   */
+  owners?:
+    | (
+        | {
+            relationTo: 'users';
+            value: number | User;
+          }
+        | {
+            relationTo: 'user-groups';
+            value: number | UserGroup;
+          }
+      )[]
+    | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -437,15 +445,25 @@ export interface Media {
    * Po jakich cechach czytelnik będzie szukać tej treści?
    */
   tags?: (number | Tag)[] | null;
-  author?:
-    | ({
-        relationTo: 'users';
-        value: number | User;
-      } | null)
-    | ({
-        relationTo: 'user-groups';
-        value: number | UserGroup;
-      } | null);
+  /**
+   * Użytkownik, któremu przypisujesz autorstwo treści.
+   */
+  author?: (number | null) | User;
+  /**
+   * Użytkownicy i grupy objęci uprawnieniami „tylko własne”.
+   */
+  owners?:
+    | (
+        | {
+            relationTo: 'users';
+            value: number | User;
+          }
+        | {
+            relationTo: 'user-groups';
+            value: number | UserGroup;
+          }
+      )[]
+    | null;
   uploadedBy?: (number | null) | User;
   _objectKey?: string | null;
   updatedAt: string;
@@ -603,19 +621,25 @@ export interface Post {
    * Po jakich cechach czytelnik będzie szukać tej treści?
    */
   tags?: (number | Tag)[] | null;
-  author:
-    | {
-        relationTo: 'users';
-        value: number | User;
-      }
-    | {
-        relationTo: 'user-groups';
-        value: number | UserGroup;
-      };
   /**
-   * Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.
+   * Użytkownik, któremu przypisujesz autorstwo treści.
    */
-  publicAuthorSignature?: string | null;
+  author?: (number | null) | User;
+  /**
+   * Użytkownicy i grupy objęci uprawnieniami „tylko własne”.
+   */
+  owners?:
+    | (
+        | {
+            relationTo: 'users';
+            value: number | User;
+          }
+        | {
+            relationTo: 'user-groups';
+            value: number | UserGroup;
+          }
+      )[]
+    | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -749,19 +773,25 @@ export interface Event {
    * Po jakich cechach czytelnik będzie szukać tej treści?
    */
   tags?: (number | Tag)[] | null;
-  author:
-    | {
-        relationTo: 'users';
-        value: number | User;
-      }
-    | {
-        relationTo: 'user-groups';
-        value: number | UserGroup;
-      };
   /**
-   * Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.
+   * Użytkownik, któremu przypisujesz autorstwo treści.
    */
-  publicAuthorSignature?: string | null;
+  author?: (number | null) | User;
+  /**
+   * Użytkownicy i grupy objęci uprawnieniami „tylko własne”.
+   */
+  owners?:
+    | (
+        | {
+            relationTo: 'users';
+            value: number | User;
+          }
+        | {
+            relationTo: 'user-groups';
+            value: number | UserGroup;
+          }
+      )[]
+    | null;
   defaultsAppliedCycle?: (number | null) | EventCycle;
   calendarUID?: string | null;
   calendarRevision: number;
@@ -825,7 +855,21 @@ export interface EventCycle {
     image?: (number | null) | Media;
   };
   eventDefaults: {
-    authorGroup?: (number | null) | UserGroup;
+    /**
+     * Domyślni właściciele wydarzeń tworzonych z tego cyklu.
+     */
+    owners?:
+      | (
+          | {
+              relationTo: 'users';
+              value: number | User;
+            }
+          | {
+              relationTo: 'user-groups';
+              value: number | UserGroup;
+            }
+        )[]
+      | null;
     title?: string | null;
     eventType: number | EventType;
     heroImage?: (number | null) | Media;
@@ -945,19 +989,25 @@ export interface EventCycle {
    * Po jakich cechach czytelnik będzie szukać tej treści?
    */
   tags?: (number | Tag)[] | null;
-  author:
-    | {
-        relationTo: 'users';
-        value: number | User;
-      }
-    | {
-        relationTo: 'user-groups';
-        value: number | UserGroup;
-      };
   /**
-   * Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.
+   * Użytkownik, któremu przypisujesz autorstwo treści.
    */
-  publicAuthorSignature?: string | null;
+  author?: (number | null) | User;
+  /**
+   * Użytkownicy i grupy objęci uprawnieniami „tylko własne”.
+   */
+  owners?:
+    | (
+        | {
+            relationTo: 'users';
+            value: number | User;
+          }
+        | {
+            relationTo: 'user-groups';
+            value: number | UserGroup;
+          }
+      )[]
+    | null;
   calendarFeedKey?: string | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
@@ -1313,11 +1363,25 @@ export interface Document {
    * Po jakich cechach czytelnik będzie szukać tej treści?
    */
   tags?: (number | Tag)[] | null;
-  author: number | User;
   /**
-   * Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.
+   * Użytkownik, któremu przypisujesz autorstwo treści.
    */
-  publicAuthorSignature?: string | null;
+  author?: (number | null) | User;
+  /**
+   * Użytkownicy i grupy objęci uprawnieniami „tylko własne”.
+   */
+  owners?:
+    | (
+        | {
+            relationTo: 'users';
+            value: number | User;
+          }
+        | {
+            relationTo: 'user-groups';
+            value: number | UserGroup;
+          }
+      )[]
+    | null;
   publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -1437,9 +1501,10 @@ export interface Role {
  */
 export interface Tag {
   id: number;
+  groupIcon?: string | null;
   displayName?: string | null;
-  group?: (number | null) | TagGroup;
   name: string;
+  group?: (number | null) | TagGroup;
   /**
    * Adres jest tworzony automatycznie z nazwy.
    */
@@ -1480,7 +1545,116 @@ export interface Tag {
 export interface TagGroup {
   id: number;
   name: string;
+  iconName?:
+    | (
+        | 'camera'
+        | 'astronaut'
+        | 'ticket'
+        | 'bluesky'
+        | 'mace'
+        | 'bottle-mana'
+        | 'cthulhu'
+        | 'time'
+        | 'skull'
+        | 'dnd5'
+        | 'discord'
+        | 'document'
+        | 'pumpkin-halloween'
+        | 'mail'
+        | 'facebook'
+        | 'guitar'
+        | 'globe'
+        | 'board-game'
+        | 'star'
+        | 'instagram'
+        | 'calendar'
+        | 'hat'
+        | 'gun'
+        | 'cards'
+        | 'playing-cards'
+        | 'collection'
+        | 'compass'
+        | 'confetti'
+        | 'dice'
+        | 'd10'
+        | 'd12'
+        | 'd20'
+        | 'd4'
+        | 'd6'
+        | 'd8'
+        | 'water-drop'
+        | 'crystal-ball'
+        | 'book'
+        | 'fireball'
+        | 'larp'
+        | 'external-link'
+        | 'linkedin'
+        | 'location'
+        | 'bow'
+        | 'mage'
+        | 'pirate-map'
+        | 'vendetta'
+        | 'messenger'
+        | 'sword'
+        | 'potion'
+        | 'music'
+        | 'image'
+        | 'announcement'
+        | 'eye'
+        | 'partner'
+        | 'pdf'
+        | 'seal'
+        | 'pawn'
+        | 'quill'
+        | 'flame'
+        | 'download'
+        | 'review'
+        | 'wand'
+        | 'sf'
+        | 'seance'
+        | 'arrows'
+        | 'slack'
+        | 'users'
+        | 'star-trek'
+        | 'star-wars-empire'
+        | 'star-wars-rebel-alliance'
+        | 'steampunk'
+        | 'home'
+        | 'arrow'
+        | 'arrow-left'
+        | 'arrow-right'
+        | 'superhero'
+        | 'stormtrooper'
+        | 'soundtrack'
+        | 'tag'
+        | 'shield'
+        | 'axe'
+        | 'twitch'
+        | 'shuttle'
+        | 'fighter'
+        | 'event'
+        | 'filled-star'
+        | 'youtube'
+        | 'scroll'
+      )
+    | null;
   slug: string;
+  tags?: {
+    docs?: (number | Tag)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "user-groups".
+ */
+export interface UserGroup {
+  id: number;
+  name: string;
+  members?: (number | User)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1525,19 +1699,25 @@ export interface Partner {
    * Adres jest tworzony automatycznie z nazwy, ale można go zmienić.
    */
   slug: string;
-  author:
-    | {
-        relationTo: 'users';
-        value: number | User;
-      }
-    | {
-        relationTo: 'user-groups';
-        value: number | UserGroup;
-      };
   /**
-   * Podpis używany w publicznej wyszukiwarce. Przy braku podpisu wyszukiwarka użyje nazwy grupy redakcyjnej, jeśli jest autorem.
+   * Użytkownik, któremu przypisujesz autorstwo treści.
    */
-  publicAuthorSignature?: string | null;
+  author?: (number | null) | User;
+  /**
+   * Użytkownicy i grupy objęci uprawnieniami „tylko własne”.
+   */
+  owners?:
+    | (
+        | {
+            relationTo: 'users';
+            value: number | User;
+          }
+        | {
+            relationTo: 'user-groups';
+            value: number | UserGroup;
+          }
+      )[]
+    | null;
   /**
    * Ustawiana automatycznie przy pierwszej publikacji.
    */
@@ -2525,17 +2705,6 @@ export interface TabbedContentBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'tabs';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "user-groups".
- */
-export interface UserGroup {
-  id: number;
-  name: string;
-  members?: (number | User)[] | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -4117,8 +4286,7 @@ export interface ContentListingItemsSelect<T extends boolean = true> {
   hasSignificantDate?: T;
   isInactiveLocation?: T;
   searchDate?: T;
-  searchAuthorSignature?: T;
-  searchAuthorGroup?: T;
+  searchAuthor?: T;
   significantDate?: T;
   eventStartAt?: T;
   eventEndAt?: T;
@@ -4834,7 +5002,7 @@ export interface PagesSelect<T extends boolean = true> {
   topics?: T;
   tags?: T;
   author?: T;
-  publicAuthorSignature?: T;
+  owners?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -5131,7 +5299,7 @@ export interface PostsSelect<T extends boolean = true> {
   topics?: T;
   tags?: T;
   author?: T;
-  publicAuthorSignature?: T;
+  owners?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -5223,7 +5391,7 @@ export interface EventsSelect<T extends boolean = true> {
   topics?: T;
   tags?: T;
   author?: T;
-  publicAuthorSignature?: T;
+  owners?: T;
   defaultsAppliedCycle?: T;
   calendarUID?: T;
   calendarRevision?: T;
@@ -5269,7 +5437,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
   eventDefaults?:
     | T
     | {
-        authorGroup?: T;
+        owners?: T;
         title?: T;
         eventType?: T;
         heroImage?: T;
@@ -5349,7 +5517,7 @@ export interface EventCyclesSelect<T extends boolean = true> {
   topics?: T;
   tags?: T;
   author?: T;
-  publicAuthorSignature?: T;
+  owners?: T;
   calendarFeedKey?: T;
   publishedAt?: T;
   updatedAt?: T;
@@ -5399,9 +5567,10 @@ export interface TopicsSelect<T extends boolean = true> {
  * via the `definition` "tags_select".
  */
 export interface TagsSelect<T extends boolean = true> {
+  groupIcon?: T;
   displayName?: T;
-  group?: T;
   name?: T;
+  group?: T;
   slug?: T;
   description?: T;
   relatedPages?: T;
@@ -5418,7 +5587,9 @@ export interface TagsSelect<T extends boolean = true> {
  */
 export interface TagGroupsSelect<T extends boolean = true> {
   name?: T;
+  iconName?: T;
   slug?: T;
+  tags?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -5432,6 +5603,7 @@ export interface MediaSelect<T extends boolean = true> {
   topics?: T;
   tags?: T;
   author?: T;
+  owners?: T;
   uploadedBy?: T;
   _objectKey?: T;
   updatedAt?: T;
@@ -5522,7 +5694,7 @@ export interface DocumentsSelect<T extends boolean = true> {
   topics?: T;
   tags?: T;
   author?: T;
-  publicAuthorSignature?: T;
+  owners?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -5594,7 +5766,7 @@ export interface PartnersSelect<T extends boolean = true> {
       };
   slug?: T;
   author?: T;
-  publicAuthorSignature?: T;
+  owners?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;

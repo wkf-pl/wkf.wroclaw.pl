@@ -64,9 +64,7 @@ export async function findPublishedContentListingDocument(
     where,
   }
 
-  const authorSelection = includeSearchMetadata
-    ? ({ author: true, publicAuthorSignature: true } as const)
-    : {}
+  const authorSelection = includeSearchMetadata ? ({ author: true } as const) : {}
   const publicationSelection = includeSearchMetadata ? ({ publishedAt: true } as const) : {}
 
   switch (source) {

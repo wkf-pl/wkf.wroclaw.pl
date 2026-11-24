@@ -105,7 +105,7 @@ test.beforeAll(async () => {
     collection: 'events',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: editor.id },
+      author: editor.id,
       calendarRevision: 0,
       capacityMode: 'unlimited',
       eventType: eventType.id,
@@ -197,7 +197,7 @@ test.beforeAll(async () => {
   const draftPage = await payload.create({
     collection: 'pages',
     data: {
-      author: { relationTo: 'users', value: editor.id },
+      author: editor.id,
       layout: [
         {
           blockType: 'heading',
@@ -216,7 +216,7 @@ test.beforeAll(async () => {
   const invalidDraftPage = await payload.create({
     collection: 'pages',
     data: {
-      author: { relationTo: 'users', value: editor.id },
+      author: editor.id,
       layout: [
         {
           blockType: 'listing',
@@ -239,7 +239,7 @@ test.beforeAll(async () => {
   const draftPost = await payload.create({
     collection: 'posts',
     data: {
-      author: { relationTo: 'users', value: editor.id },
+      author: editor.id,
       excerpt: 'Streszczenie testowego szkicu wpisu.',
       layout: [
         {

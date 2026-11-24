@@ -1,6 +1,6 @@
 import type { Access, AccessResult, PayloadRequest } from 'payload'
 
-import { isGroupAuthoredCollection } from '@/modules/content/content-author'
+import { supportsContentOwners } from '@/modules/content/content-owners'
 import { isPublicRequest } from '@/modules/content/public-access'
 import {
   combineAccessResults,
@@ -89,7 +89,7 @@ async function getScopedGroupIds(
   resource: string,
   operation: PermissionOperation,
 ): Promise<number[]> {
-  if (!isGroupAuthoredCollection(resource)) return []
+  if (!supportsContentOwners(resource)) return []
   const hasOwnGrant = roles.some((role) =>
     role.permissions?.some((permission) => {
       if (permission.resource !== resource) return false

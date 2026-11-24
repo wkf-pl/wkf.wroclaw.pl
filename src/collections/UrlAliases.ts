@@ -41,7 +41,7 @@ export const UrlAliases: CollectionConfig = {
   },
   admin: {
     defaultColumns: ['slug', 'target', 'documentDestination', 'updatedAt'],
-    group: 'Treści',
+    group: 'Administracja',
     hidden: ({ user }) => !clientUserHasCollectionPermission(user, 'url-aliases', 'read'),
     useAsTitle: 'slug',
   },

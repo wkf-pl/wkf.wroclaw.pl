@@ -13,7 +13,7 @@ import {
   type RelationshipReference,
 } from '@/lib/relationships'
 
-import { getTransactionExecutor } from './lock-content-author'
+import { getTransactionExecutor } from './lock-content-owners'
 
 export const contentParentSources = ['pages', 'posts', 'events', 'event-cycles'] as const
 

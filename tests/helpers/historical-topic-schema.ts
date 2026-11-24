@@ -6,7 +6,7 @@ export async function restoreLegacyTopicPermissionName(db: MigrateUpArgs['db']):
     DO $fixture$
     BEGIN
       IF to_regclass('public._event_cycles_v_version_event_defaults_version_event_d_4_idx') IS NULL THEN
-        ALTER INDEX "_event_cycles_v_version_event_defaults_version_event_d_3_idx"
+        ALTER INDEX "_event_cycles_v_version_event_defaults_version_event_d_2_idx"
           RENAME TO "_event_cycles_v_version_event_defaults_version_event_d_4_idx";
       END IF;
     END

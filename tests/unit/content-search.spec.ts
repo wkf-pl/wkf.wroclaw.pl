@@ -37,11 +37,17 @@ describe('content search', () => {
       'Wyszukiwanie',
       'Prezentacja',
     ])
-    expect(tabsField.tabs[1].fields).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: 'searchEnabled', defaultValue: false }),
+    const searchFields = tabsField.tabs[1].fields
+    expect(searchFields[0]).toMatchObject({ name: 'searchEnabled', defaultValue: false })
+    expect(searchFields[2]).toMatchObject({
+      type: 'row',
+      admin: { className: 'wkf-listing-search-filters' },
+      fields: expect.arrayContaining([
+        expect.objectContaining({ name: 'filterPhrase', type: 'checkbox' }),
+        expect.objectContaining({ name: 'filterBranch', type: 'checkbox' }),
       ]),
-    )
+    })
+    expect(searchFields[3]).toMatchObject({ name: 'filterTagGroups' })
     expect(JSON.stringify(tabsField.tabs[0].fields)).toContain('"member-profiles"')
     expect(JSON.stringify(tabsField.tabs[0].fields)).toContain('"locations"')
     expect(JSON.stringify(tabsField.tabs[0].fields)).toContain('"partners"')
@@ -106,6 +112,23 @@ describe('content search', () => {
       ['search_other_tag', '7'],
       ['search_other_tag', '2'],
     ])
+  })
+
+  it('validates the author selected from the scoped options and accepts old text links', () => {
+    const parseAuthor = (author: string) =>
+      parseContentSearchFilters({
+        enabled,
+        names,
+        options: { ...options, authors: [{ id: 2, label: 'Anna' }] },
+        sources: ['pages'],
+        parameters: { [names.author]: author },
+      })
+    expect(parseAuthor('id:2').filters).toEqual({ authorId: 2 })
+    expect(parseAuthor('id:9')).toMatchObject({
+      filters: {},
+      errors: { author: expect.any(String) },
+    })
+    expect(parseAuthor('Ann').filters).toEqual({ author: 'Ann' })
   })
 
   it('uses local calendar boundaries on the day when clocks change', () => {

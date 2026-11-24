@@ -28,7 +28,7 @@ describe('content parent and search taxonomy', () => {
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         title: 'Hierarchy test cycle',
         slug: 'hierarchy-test-cycle',
         parent: childPage.id,
@@ -42,7 +42,7 @@ describe('content parent and search taxonomy', () => {
       collection: 'events',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         title: 'Hierarchy test event',
         slug: 'hierarchy-test-event',
         parent: page.id,

@@ -46,7 +46,7 @@ export async function AdminNav(properties: AdminNavProperties) {
   const groups = groupNavItems(
     [
       ...collections
-        .filter(({ slug }) => visibleEntities.collections.includes(slug))
+        .filter(({ slug }) => slug !== 'documents' && visibleEntities.collections.includes(slug))
         .map(
           (collection) =>
             ({ type: EntityType.collection, entity: collection }) satisfies EntityToGroup,

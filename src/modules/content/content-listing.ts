@@ -570,11 +570,12 @@ function getPayloadSort(sort: ContentListingSort): string[] {
   }
 }
 
-export type ContentSearchOption = { id: number; label: string }
+export type ContentSearchOption = { id: number; label: string; groupIcon?: string }
 
 export type ContentSearchOptions = {
   topics: ContentSearchOption[]
   tags: ContentSearchOption[]
+  authors?: ContentSearchOption[]
   tagGroups?: { id: number; label: string; tags: ContentSearchOption[] }[]
   branches?: { value: string; label: string }[]
   sources?: ContentListingSource[]
@@ -583,6 +584,7 @@ export type ContentSearchOptions = {
 type SearchOptionsEnabled = {
   topics: boolean
   tags: boolean
+  author?: boolean
   branches?: boolean
   contentType?: boolean
   groups?: number[]
@@ -594,7 +596,7 @@ type ContentSearchOptionsScope = Pick<
 >
 
 const loadContentSearchOptions = cachePublicData(
-  'public-content-search-options-v1',
+  'public-content-search-options-v2',
   async (
     scope: Pick<
       CachedFindPublicContentOptions,
@@ -611,16 +613,20 @@ const loadContentSearchOptions = cachePublicData(
       overrideAccess: false,
       where,
     }
-    const [topicMatches, tagMatches, branchMatches, sourceMatches] = await Promise.all([
-      enabled.topics ? payload.findDistinct({ ...distinctQuery, field: 'topicSearchIndex' }) : null,
-      enabled.tags || enabled.groups?.length
-        ? payload.findDistinct({ ...distinctQuery, field: 'tagSearchIndex' })
-        : null,
-      enabled.branches
-        ? payload.findDistinct({ ...distinctQuery, field: 'ancestorSearchIndex' })
-        : null,
-      enabled.contentType ? payload.findDistinct({ ...distinctQuery, field: 'source' }) : null,
-    ])
+    const [topicMatches, tagMatches, branchMatches, sourceMatches, authorMatches] =
+      await Promise.all([
+        enabled.topics
+          ? payload.findDistinct({ ...distinctQuery, field: 'topicSearchIndex' })
+          : null,
+        enabled.tags || enabled.groups?.length
+          ? payload.findDistinct({ ...distinctQuery, field: 'tagSearchIndex' })
+          : null,
+        enabled.branches
+          ? payload.findDistinct({ ...distinctQuery, field: 'ancestorSearchIndex' })
+          : null,
+        enabled.contentType ? payload.findDistinct({ ...distinctQuery, field: 'source' }) : null,
+        enabled.author ? payload.findDistinct({ ...distinctQuery, field: 'searchAuthor' }) : null,
+      ])
 
     const topicIds = [
       ...new Set(
@@ -636,7 +642,11 @@ const loadContentSearchOptions = cachePublicData(
         ),
       ),
     ]
-    const [topics, tags, groups, branches] = await Promise.all([
+    const authorIds = (authorMatches?.values ?? []).flatMap(({ searchAuthor }) => {
+      const id = getRelationshipId(searchAuthor)
+      return typeof id === 'number' ? [id] : []
+    })
+    const [topics, tags, groups, branches, authors] = await Promise.all([
       loadSearchTopics(payload, topicIds),
       tagIds.length
         ? collectPayloadPages((page) =>
@@ -648,7 +658,7 @@ const loadContentSearchOptions = cachePublicData(
               limit: 100,
               overrideAccess: false,
               page,
-              select: { name: true, group: true },
+              select: { name: true, group: true, groupIcon: true },
               sort: 'id',
               where: { id: { in: tagIds } },
             }),
@@ -672,13 +682,32 @@ const loadContentSearchOptions = cachePublicData(
             ),
           )
         : undefined,
+      authorIds.length
+        ? payload.find({
+            collection: 'users',
+            depth: 0,
+            limit: 0,
+            pagination: false,
+            overrideAccess: true,
+            select: { displayName: true },
+            where: { id: { in: authorIds } },
+          })
+        : undefined,
     ])
     const sortedTags = tags
-      .map(({ id, name, group }) => ({ id, label: name, group: getRelationshipId(group) }))
+      .map(({ id, name, group, groupIcon }) => ({
+        id,
+        label: name,
+        group: getRelationshipId(group),
+        ...(groupIcon ? { groupIcon } : {}),
+      }))
       .sort(compareSearchOptions)
     return {
       topics,
-      tags: enabled.tags ? sortedTags.map(({ id, label }) => ({ id, label })) : [],
+      authors: authors?.docs
+        .map(({ id, displayName }) => ({ id, label: displayName }))
+        .sort(compareSearchOptions),
+      tags: enabled.tags ? sortedTags.map(({ group: _group, ...tag }) => tag) : [],
       tagGroups: groups?.docs.flatMap(({ id, name }) => {
         const choices = sortedTags.filter(({ group }) => group === id)
         return choices.length ? [{ id, label: name, tags: choices }] : []
@@ -697,6 +726,7 @@ export async function findContentSearchOptions(
   if (
     !enabled.topics &&
     !enabled.tags &&
+    !enabled.author &&
     !enabled.branches &&
     !enabled.groups?.length &&
     !enabled.contentType

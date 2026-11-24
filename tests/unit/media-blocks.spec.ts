@@ -139,6 +139,7 @@ describe('media blocks', () => {
       'topics',
       'tags',
       'author',
+      'owners',
       'uploadedBy',
     ])
     expect(Media.admin?.defaultColumns).toEqual([

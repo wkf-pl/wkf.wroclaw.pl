@@ -135,17 +135,18 @@ export function ListingConditionFieldSelect(properties: SelectFieldClientProps) 
   const selectedField = isListingConditionField(value) ? value : undefined
   const availableOptions = fieldOptions.filter(
     (option) =>
-      option.value === selectedField ||
-      getApplicableListingSources(option.value, sources, taxonomyContext).length > 0,
+      option.value !== 'parentPage' &&
+      (option.value === selectedField ||
+        getApplicableListingSources(option.value, sources, taxonomyContext).length > 0),
   )
-  const selectedOption = availableOptions.find((option) => option.value === selectedField)
+  const selectedOption = fieldOptions.find((option) => option.value === selectedField)
   const styles = useMemo(() => mergeFieldStyles(properties.field), [properties.field])
 
   function handleChange(option: unknown) {
     if (Array.isArray(option) || !option || typeof option !== 'object' || !('value' in option)) {
       return
     }
-    if (!isListingConditionField(option.value)) return
+    if (!isListingConditionField(option.value) || option.value === 'parentPage') return
 
     setValue(option.value)
     operator.setValue(listingConditionOperatorsByField[option.value][0])

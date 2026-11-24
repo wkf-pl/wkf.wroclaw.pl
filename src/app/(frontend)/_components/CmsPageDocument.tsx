@@ -50,7 +50,7 @@ export async function CmsPageDocument({
   heroDate,
   showHeroMeta = true,
 }: CmsPageDocumentProperties) {
-  const authorName = getContentAuthorName(document.author)
+  const authorName = await getContentAuthorName(document.author)
   const topics = 'topics' in document ? document.topics : undefined
   const tags = 'tags' in document ? document.tags : undefined
   const title = 'title' in document ? document.title : document.name

@@ -105,7 +105,7 @@ export function CurrentItemValue({
       )
     }
     case 'author':
-      return <CurrentItemText text={getContentAuthorName(value)} variant={variant} />
+      return <CurrentItemAuthor author={value} variant={variant} />
     case 'name': {
       const related = value as { name?: string } | null
       return <CurrentItemText text={related?.name} variant={variant} />
@@ -190,6 +190,10 @@ export function CurrentItemValue({
         />
       )
   }
+}
+
+async function CurrentItemAuthor({ author, variant }: { author: unknown; variant: string }) {
+  return <CurrentItemText text={await getContentAuthorName(author)} variant={variant} />
 }
 
 async function TopicLink({ topic }: { topic?: Topic | number | null }) {

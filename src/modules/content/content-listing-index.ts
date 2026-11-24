@@ -1,6 +1,6 @@
 import { contentParentKey, getContentParent } from './content-parent'
 import { refreshListingAncestry } from './listing-ancestry-sql'
-import { getTransactionExecutor } from './lock-content-author'
+import { getTransactionExecutor } from './lock-content-owners'
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, PayloadRequest } from 'payload'
 
 import { getRelationshipId } from '@/lib/relationships'
@@ -33,7 +33,7 @@ export async function syncContentListingItem(
       select: {
         sourceUpdatedAt: true,
         contentParent: true,
-        searchAuthorGroup: true,
+        searchAuthor: true,
       },
       where: {
         and: [{ source: { equals: source } }, { sourceDocumentId: { equals: documentID } }],
@@ -60,7 +60,7 @@ export async function syncContentListingItem(
   if (
     !options.rebuild &&
     existingItem?.sourceUpdatedAt === publishedDocument.updatedAt &&
-    (getRelationshipId(existingItem.searchAuthorGroup) ?? null) === searchMetadata.searchAuthorGroup
+    (getRelationshipId(existingItem.searchAuthor) ?? null) === searchMetadata.searchAuthor
   )
     return false
   const parent = getContentParent({

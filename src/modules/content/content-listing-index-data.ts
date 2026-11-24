@@ -1,4 +1,3 @@
-import { getContentAuthorReference } from './content-author'
 import { getRelationshipId } from '@/lib/relationships'
 import { buildGoogleMapsURL } from '@/modules/events/map-embed'
 import { formatEventLocationAddress } from '@/modules/events/presentation'
@@ -256,9 +255,7 @@ function createTaxonomizableIndexData(
 }
 
 export function createContentSearchIndexData(document: ContentListingDocument) {
-  const author = 'author' in document ? getContentAuthorReference(document.author) : undefined
-  const signature =
-    'publicAuthorSignature' in document ? document.publicAuthorSignature?.trim() : null
+  const author = 'author' in document ? getRelationshipId(document.author) : undefined
   const searchDate =
     'startAt' in document
       ? document.startAt
@@ -270,7 +267,6 @@ export function createContentSearchIndexData(document: ContentListingDocument) {
 
   return {
     searchDate: searchDate ?? null,
-    searchAuthorSignature: signature || null,
-    searchAuthorGroup: !signature && author?.relationTo === 'user-groups' ? author.value : null,
+    searchAuthor: author ?? null,
   }
 }

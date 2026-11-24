@@ -231,7 +231,7 @@ async function ensurePost(seedPost: SeedPost, author: User, media: Media): Promi
     collection: 'posts',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [createRichTextBlock(seedPost.paragraphs)],
       excerpt: seedPost.excerpt,
       heroImage: media.id,
@@ -261,7 +261,7 @@ async function ensureAboutPage(author: User): Promise<Page> {
     collection: 'pages',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [
         createRichTextBlock([
           'Wrocławski Klub Fantastyki to społeczność osób, które łączy wyobraźnia oraz zamiłowanie do gier fabularnych, literatury i planszówek.',
@@ -294,7 +294,7 @@ async function ensureJoinPage(author: User): Promise<Page> {
     collection: 'pages',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [
         {
           blockType: 'sectionGroup',

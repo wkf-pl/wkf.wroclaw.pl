@@ -3,14 +3,14 @@ import {
   createContentParentField,
   preventDeletingContentParent,
 } from '@/modules/content/content-parent'
-import { createPublicAuthorSignatureField } from '@/modules/content/content-author-field'
+import { createContentOwnersField } from '@/modules/content/content-owners-field'
 import {
   confirmLegacyLocation,
   createLegacyLocationFields,
 } from '@/modules/locations/legacy-fields'
 import { randomUUID } from 'node:crypto'
 
-import { APIError, type CollectionConfig, type Field } from 'payload'
+import { type CollectionConfig, type Field } from 'payload'
 
 import { createEditorialFields, getEditorialField } from '@/modules/content/editorial-fields'
 import {
@@ -30,7 +30,6 @@ import {
   validateDefaultEndTime,
 } from '@/modules/events/fields'
 import { copyEventCycleContentToDefaults } from '@/modules/events/hooks'
-import { getUserGroupIds } from '@/modules/membership/user-group-membership'
 import { createEventFromCycleEndpoint } from '@/modules/events/create-event-from-cycle'
 import {
   recurrenceTypeOptions,
@@ -44,7 +43,7 @@ import {
   createTrashUpdateAccess,
   markTrashMutation,
 } from '@/modules/content/trash-access'
-import { createRolePermissionAccess, isAdministrator } from '@/modules/membership/role-access'
+import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 const createCycles = createRolePermissionAccess({ operation: 'create', resource: 'event-cycles' })
 const deleteCycles = createTrashDeleteAccess(
@@ -106,7 +105,7 @@ export const EventCycles: CollectionConfig = {
     },
     defaultColumns: ['title', 'slug', 'topics', 'tags', '_status', 'publishedAt'],
     group: 'Treści',
-    listSearchableFields: ['title', 'slug'],
+    listSearchableFields: ['title', 'slug', 'topics'],
     useAsTitle: 'title',
     pagination: {
       limits: [10, 25, 50],
@@ -140,29 +139,7 @@ export const EventCycles: CollectionConfig = {
               type: 'group',
               label: false,
               fields: [
-                {
-                  name: 'authorGroup',
-                  type: 'relationship',
-                  label: 'Grupa autora wydarzenia',
-                  relationTo: 'user-groups',
-                  filterOptions: async ({ req }) =>
-                    (await isAdministrator(req)) || { id: { in: await getUserGroupIds(req) } },
-                  validate: (): true => true,
-                  hooks: {
-                    beforeValidate: [
-                      async ({ overrideAccess, previousValue, req, value }) => {
-                        if (value == null || value === previousValue || overrideAccess) return value
-                        if (
-                          (await isAdministrator(req)) ||
-                          (await getUserGroupIds(req)).includes(Number(value))
-                        ) {
-                          return value
-                        }
-                        throw new APIError('Wybierz grupę, do której należysz.', 403)
-                      },
-                    ],
-                  },
-                },
+                createContentOwnersField({ eventDefaults: true }),
                 {
                   type: 'row',
                   fields: [
@@ -308,7 +285,7 @@ export const EventCycles: CollectionConfig = {
     getEditorialField(editorialFields, 'topics'),
     getEditorialField(editorialFields, 'tags'),
     getEditorialField(editorialFields, 'author'),
-    createPublicAuthorSignatureField(),
+    createContentOwnersField(),
     {
       name: 'calendarFeedKey',
       type: 'text',

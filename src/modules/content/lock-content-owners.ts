@@ -1,29 +1,29 @@
 import { sql } from '@payloadcms/db-postgres'
 import { APIError, type CollectionSlug, type PayloadRequest } from 'payload'
 
-import { getContentAuthorReference, type ContentAuthorReference } from './content-author'
+import { getContentOwners, type ContentOwner } from './content-owners'
 
-export async function lockContentAuthor(
+export async function lockContentOwners(
   req: PayloadRequest,
   collection: CollectionSlug,
   id: number | string,
-): Promise<ContentAuthorReference | undefined> {
+): Promise<ContentOwner[]> {
   const executeInTransaction = await getTransactionExecutor(req)
   const adapter = req.payload.db
   const table = collection.replaceAll('-', '_')
   await executeInTransaction(
     sql`SELECT id FROM ${sql.identifier(table)} WHERE id = ${id} FOR UPDATE`,
   )
-  const doc = await adapter.findOne<{ id: number; author?: unknown }>({
+  const doc = await adapter.findOne<{ id: number; owners?: unknown }>({
     collection,
     req,
     where: { id: { equals: id } },
   })
   if (!doc) throw new APIError('Dokument został usunięty.', 409)
-  return getContentAuthorReference(doc.author)
+  return getContentOwners(doc.owners)
 }
 
-export async function lockAuthorGroup(
+export async function lockOwnerGroup(
   req: PayloadRequest,
   id: number,
   forDeletion = false,

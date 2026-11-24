@@ -94,6 +94,7 @@ export async function resolveListingBlockSection({
     ? await findContentSearchOptions(scope, {
         topics: enabled.topic,
         tags: enabled.tags,
+        author: enabled.author,
         branches: enabled.branch,
         contentType: enabled.contentType,
         groups,
@@ -153,6 +154,7 @@ export async function resolveListingBlockSection({
           names={names}
           options={options}
           pathname={pathname}
+          pageParameter={parameterName}
           preservedParameters={getPreservedSearchParameters(searchParams, names, parameterName)}
           selection={selection}
           sources={availableSources}

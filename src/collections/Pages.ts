@@ -3,7 +3,7 @@ import {
   createContentParentField,
   preventDeletingContentParent,
 } from '@/modules/content/content-parent'
-import { createPublicAuthorSignatureField } from '@/modules/content/content-author-field'
+import { createContentOwnersField } from '@/modules/content/content-owners-field'
 import type { CollectionConfig } from 'payload'
 
 import { createEditorialFields, getEditorialField } from '@/modules/content/editorial-fields'
@@ -81,7 +81,7 @@ export const Pages: CollectionConfig = {
     },
     defaultColumns: ['fullTitle', 'slug', '_status', 'publishedAt', 'updatedAt'],
     group: 'Treści',
-    listSearchableFields: ['fullTitle', 'title', 'slug', 'listingExcerpt'],
+    listSearchableFields: ['fullTitle', 'slug', 'listingExcerpt', 'author', 'topics'],
     useAsTitle: 'fullTitle',
     pagination: {
       limits: [10, 25, 50],
@@ -130,7 +130,7 @@ export const Pages: CollectionConfig = {
     getEditorialField(editorialFields, 'topics'),
     getEditorialField(editorialFields, 'tags'),
     getEditorialField(editorialFields, 'author'),
-    createPublicAuthorSignatureField(),
+    createContentOwnersField(),
     getEditorialField(editorialFields, 'publishedAt'),
   ],
   hooks: {

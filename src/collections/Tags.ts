@@ -1,5 +1,5 @@
 import { getRelationshipId } from '@/lib/relationships'
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, PayloadRequest } from 'payload'
 
 import {
   invalidateListingsAfterChange,
@@ -17,6 +17,28 @@ const readTags = createRolePermissionAccess({
   resource: 'tags',
 })
 const updateTags = createRolePermissionAccess({ operation: 'update', resource: 'tags' })
+const groupIconsByRequest = new WeakMap<PayloadRequest, Map<number, Promise<string | null>>>()
+
+function loadGroupIcon(req: PayloadRequest, id: number): Promise<string | null> {
+  let icons = groupIconsByRequest.get(req)
+  if (!icons) groupIconsByRequest.set(req, (icons = new Map()))
+  const cachedIcon = icons.get(id)
+  if (cachedIcon) return cachedIcon
+
+  const icon = req.payload
+    .findByID({
+      collection: 'tag-groups',
+      id,
+      depth: 0,
+      disableErrors: true,
+      overrideAccess: false,
+      req,
+      select: { iconName: true },
+    })
+    .then((group) => group?.iconName ?? null)
+  icons.set(id, icon)
+  return icon
+}
 
 export const Tags: CollectionConfig = {
   slug: 'tags',
@@ -27,33 +49,60 @@ export const Tags: CollectionConfig = {
     update: updateTags,
   },
   admin: {
-    defaultColumns: ['name', 'slug', 'description', 'updatedAt'],
+    defaultColumns: ['name', 'group', 'slug', 'description', 'updatedAt'],
     group: 'Treści',
-    listSearchableFields: ['name', 'slug', 'displayName'],
+    listSearchableFields: ['displayName', 'slug'],
     useAsTitle: 'displayName',
     pagination: {
       limits: [10, 25, 50],
     },
   },
-  forceSelect: { name: true, group: true },
+  forceSelect: { name: true, group: true, groupIcon: true },
   fields: [
+    {
+      name: 'groupIcon',
+      type: 'text',
+      virtual: true,
+      admin: { hidden: true },
+      hooks: {
+        afterRead: [
+          ({ req, siblingData }) => {
+            const group = siblingData?.group
+            if (group && typeof group === 'object' && 'iconName' in group) return group.iconName
+            const id = getRelationshipId(group)
+            return typeof id === 'number' ? loadGroupIcon(req, id) : null
+          },
+        ],
+      },
+    },
     {
       name: 'displayName',
       type: 'text',
+      label: 'Pełna nazwa',
       admin: { hidden: true },
     },
     {
-      name: 'group',
-      type: 'relationship',
-      relationTo: 'tag-groups',
-      label: 'Grupa tagów',
-      index: true,
-    },
-    {
-      name: 'name',
-      type: 'text',
-      label: 'Nazwa',
-      required: true,
+      type: 'row',
+      fields: [
+        {
+          name: 'name',
+          type: 'text',
+          admin: {
+            width: '66.667%',
+            components: { Cell: '/components/admin/TagNameCell#TagNameCell' },
+          },
+          label: 'Nazwa',
+          required: true,
+        },
+        {
+          name: 'group',
+          type: 'relationship',
+          admin: { width: '33.333%' },
+          relationTo: 'tag-groups',
+          label: 'Grupa tagów',
+          index: true,
+        },
+      ],
     },
     {
       name: 'slug',

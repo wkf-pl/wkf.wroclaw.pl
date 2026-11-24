@@ -89,12 +89,13 @@ export const PageTemplates: CollectionConfig = {
         },
         description:
           'Zmiana wpłynie na stronę publiczną dopiero po opublikowaniu tej wersji szablonu.',
+        disableListFilter: true,
         isClearable: false,
       },
       defaultValue: 'legacy',
       label: 'Tryb renderowania',
       options: [
-        { label: 'Dotychczasowy układ (legacy)', value: 'legacy' },
+        { label: 'Układ wbudowany', value: 'legacy' },
         { label: 'Układ z szablonu', value: 'template' },
       ],
       required: true,

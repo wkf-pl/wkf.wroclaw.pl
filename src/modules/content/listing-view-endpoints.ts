@@ -1,4 +1,10 @@
-import type { Endpoint, PayloadRequest } from 'payload'
+import {
+  APIError,
+  commitTransaction,
+  initTransaction,
+  killTransaction,
+  type Endpoint,
+} from 'payload'
 
 import { getFormRelationshipId } from '@/lib/relationships'
 import { findPublicContent } from '@/modules/content/content-listing'
@@ -10,11 +16,18 @@ import {
   type CurrentListingTarget,
   type ListingConditionInput,
 } from '@/modules/content/listing-conditions'
+import { getListingViewReference, resolveListingView } from '@/modules/content/listing-view'
+import { invalidatePublicCacheTags } from '@/modules/cache/invalidate-public-data'
+import { publicCacheTags } from '@/modules/cache/public-data-cache'
+import { recordContentAuditChange } from '@/modules/content-audit/plugin'
+import { isAuditedCollection, isAuditedGlobal } from '@/modules/content-audit/targets'
+import { isAdministrator } from '@/modules/membership/role-access'
 import {
-  getListingViewReference,
-  getSharedListingViewId,
-  resolveListingView,
-} from '@/modules/content/listing-view'
+  findListingViewUses,
+  lockListingViewTemplate,
+  reassignListingViewUses,
+  type ListingViewUsageResult,
+} from '@/modules/content/listing-view-usage'
 import { resolvePageTemplateListingItems } from '@/modules/page-templates/page-template-context'
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -160,104 +173,96 @@ export const listingViewPreviewEndpoint: Endpoint = {
   },
 }
 
-const titledLayoutSelect = { title: true, layout: true } as const
-const listingUsageSelect = {
-  pages: titledLayoutSelect,
-  posts: titledLayoutSelect,
-  events: titledLayoutSelect,
-  'event-cycles': titledLayoutSelect,
-  partners: { name: true, layout: true },
-  'page-templates': { templateKey: true, hero: true, informationPanel: true, content: true },
-} as const
-
-type ListingUsageCollection = keyof typeof listingUsageSelect
-const listingCollections = Object.keys(listingUsageSelect) as ListingUsageCollection[]
-
-type ListingUse = {
-  collection: ListingUsageCollection | 'homepage-sections'
-  id?: number
-  title: string
-  status: 'published' | 'draft'
-}
-
-function containsListingView(document: unknown, id: number): boolean {
-  if (Array.isArray(document)) return document.some((child) => containsListingView(child, id))
-  const block = asRecord(document)
-  return (
-    (block.blockType === 'listing' && getSharedListingViewId(block.appearance) === id) ||
-    Object.values(block).some(
-      (child) => typeof child === 'object' && child !== null && containsListingView(child, id),
-    )
-  )
-}
-
-async function findListingUses(req: PayloadRequest, id: number): Promise<ListingUse[]> {
-  const statuses = ['published', 'draft'] as const
-  const results = await Promise.all(
-    listingCollections.flatMap((collection) =>
-      statuses.map(async (status) => {
-        const uses: ListingUse[] = []
-        let page: number | null = 1
-        while (page !== null) {
-          const currentPage: number = page
-          const result = await req.payload.find({
-            collection,
-            depth: 0,
-            draft: status === 'draft',
-            where: { _status: { equals: status } },
-            limit: 100,
-            page: currentPage,
-            req,
-            disableErrors: true,
-            overrideAccess: false,
-            select: listingUsageSelect[collection],
-          })
-          for (const document of result.docs) {
-            if (!containsListingView(document, id)) continue
-            const title =
-              'title' in document
-                ? document.title
-                : 'name' in document
-                  ? document.name
-                  : 'templateKey' in document
-                    ? document.templateKey
-                    : undefined
-            uses.push({ collection, id: document.id, title: title ?? String(document.id), status })
-          }
-          page = result.nextPage ?? null
-        }
-        return uses
-      }),
-    ),
-  )
-  const uses = results.flat()
-  for (const status of statuses) {
-    const global = await req.payload.findGlobal({
-      slug: 'homepage-sections',
-      draft: status === 'draft',
-      depth: 0,
-      req,
-      disableErrors: true,
-      overrideAccess: false,
-      select: { _status: true, layout: true },
-    })
-    if (global?._status === status && containsListingView(global, id)) {
-      uses.push({ collection: 'homepage-sections', title: 'Sekcje strony głównej', status })
-    }
-  }
-  return uses
+function parseTemplateId(value: unknown): number | undefined {
+  const id = typeof value === 'string' && /^[1-9][0-9]*$/.test(value) ? Number(value) : value
+  return typeof id === 'number' && Number.isSafeInteger(id) && id > 0 ? id : undefined
 }
 
 export const listingViewUsageEndpoint: Endpoint = {
   path: '/:id/usage',
   method: 'get',
   handler: async (req) => {
-    const { isAdministrator } = await import('@/modules/membership/role-access')
     if (!(await isAdministrator(req))) return Response.json(null, { status: 403 })
-    const id = Number(req.routeParams?.id)
-    if (!Number.isSafeInteger(id) || id < 1) return Response.json(null, { status: 400 })
-    return Response.json(await findListingUses(req, id), {
-      headers: { 'Cache-Control': 'private, no-store' },
-    })
+    const id = parseTemplateId(req.routeParams?.id)
+    if (!id) return Response.json(null, { status: 400 })
+    const template = await lockListingViewTemplate(req, id, 'use')
+    if (!template) return Response.json(null, { status: 404 })
+    const [uses, { docs }] = await Promise.all([
+      findListingViewUses(req, template),
+      req.payload.find({
+        collection: 'listing-views',
+        req,
+        overrideAccess: false,
+        depth: 0,
+        limit: 0,
+        pagination: false,
+        sort: 'name',
+        select: { name: true, _status: true },
+        where: { id: { not_equals: id } },
+      }),
+    ])
+    return Response.json(
+      {
+        uses,
+        templates: docs.map(({ id, name, _status }) => ({
+          id,
+          name,
+          published: _status === 'published',
+        })),
+      } satisfies ListingViewUsageResult,
+      {
+        headers: { 'Cache-Control': 'private, no-store' },
+      },
+    )
+  },
+}
+
+export const listingViewReassignmentEndpoint: Endpoint = {
+  path: '/:id/usage',
+  method: 'post',
+  handler: async (req) => {
+    if (!(await isAdministrator(req))) return Response.json(null, { status: 403 })
+    const id = parseTemplateId(req.routeParams?.id)
+    const { keys, target } = asRecord(await req.json?.().catch(() => null))
+    const targetId = target === null ? null : parseTemplateId(target)
+    if (
+      !id ||
+      targetId === undefined ||
+      targetId === id ||
+      !Array.isArray(keys) ||
+      keys.length < 1 ||
+      keys.some((key: unknown) => typeof key !== 'string' || key.length > 1024)
+    ) {
+      return Response.json(null, { status: 400 })
+    }
+
+    const startedTransaction = await initTransaction(req)
+    try {
+      const template = await lockListingViewTemplate(req, id, 'use')
+      if (!template) throw new APIError('Nie znaleziono szablonu.', 404)
+      if (targetId !== null) {
+        const replacement = await lockListingViewTemplate(req, targetId, 'use')
+        if (replacement?._status !== 'published') {
+          throw new APIError('Wybierz opublikowany szablon.', 400)
+        }
+      }
+      const changed = await reassignListingViewUses(req, template, keys, targetId)
+      for (const { collection, id, status, title } of changed) {
+        if (!isAuditedCollection(collection) && !isAuditedGlobal(collection)) continue
+        await recordContentAuditChange(req, {
+          action: 'update',
+          target: collection,
+          targetId: id === null ? undefined : String(id),
+          title,
+          saveMode: status === 'published' ? 'publish' : 'draft',
+        })
+      }
+      if (startedTransaction) await commitTransaction(req)
+    } catch (error) {
+      if (startedTransaction) await killTransaction(req)
+      throw error
+    }
+    invalidatePublicCacheTags(Object.values(publicCacheTags))
+    return Response.json({ updated: new Set(keys).size })
   },
 }

@@ -1,10 +1,10 @@
 import { APIError, type Access, type CollectionConfig } from 'payload'
 
 import { invalidateAllPublicDataAfterChange } from '@/modules/cache/invalidate-public-data'
-import { groupAuthoredCollections } from '@/modules/content/content-author'
-import { lockAuthorGroup } from '@/modules/content/lock-content-author'
+import { contentOwnerCollections } from '@/modules/content/content-owners'
+import { lockOwnerGroup } from '@/modules/content/lock-content-owners'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
-import { groupAuthorWhere } from '@/modules/membership/user-group-assignments'
+import { groupOwnerWhere } from '@/modules/membership/user-group-assignments'
 import { getUserGroupIds } from '@/modules/membership/user-group-membership'
 
 const readGroups = createRolePermissionAccess({
@@ -35,6 +35,7 @@ export const UserGroups: CollectionConfig = {
   admin: {
     defaultColumns: ['name', 'updatedAt'],
     group: 'Administracja',
+    listSearchableFields: ['name', 'members'],
     useAsTitle: 'name',
   },
   defaultPopulate: { name: true },
@@ -62,15 +63,27 @@ export const UserGroups: CollectionConfig = {
     afterChange: [invalidateAllPublicDataAfterChange],
     beforeDelete: [
       async ({ id, req }) => {
-        await lockAuthorGroup(req, Number(id), true)
+        await lockOwnerGroup(req, Number(id), true)
         const counts = await Promise.all(
-          groupAuthoredCollections.map((collection) =>
+          contentOwnerCollections.map((collection) =>
             req.payload.count({
               collection,
               req,
               overrideAccess: true,
               trash: true,
-              where: groupAuthorWhere(id),
+              where:
+                collection === 'event-cycles'
+                  ? {
+                      or: [
+                        groupOwnerWhere(id),
+                        {
+                          'eventDefaults.owners': {
+                            equals: { relationTo: 'user-groups', value: id },
+                          },
+                        },
+                      ],
+                    }
+                  : groupOwnerWhere(id),
             }),
           ),
         )

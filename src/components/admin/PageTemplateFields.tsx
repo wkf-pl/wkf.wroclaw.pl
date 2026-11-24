@@ -25,7 +25,7 @@ import type {
   SelectFieldClientProps,
 } from 'payload'
 import { formatAdminURL } from 'payload/shared'
-import { Fragment, useEffect, useId, useMemo, useState, type ComponentProps } from 'react'
+import { Fragment, useEffect, useId, useMemo, type ComponentProps } from 'react'
 
 import { extractRichTextText } from '@/modules/content/rich-text'
 import {
@@ -38,17 +38,13 @@ import {
   getPageTemplateDynamicField,
   getPageTemplateRegionFromPath,
   isPageTemplateID,
-  type PageTemplateRenderingMode,
 } from '@/modules/page-templates/page-template-registry'
 
 import { BlockLabel } from './ContentBlockLabelClient'
 
 type SelectOption = { label: string; value: string }
 
-const renderingModeOptions: Array<SelectOption & { value: PageTemplateRenderingMode }> = [
-  { label: 'Dotychczasowy układ (legacy)', value: 'legacy' },
-  { label: 'Układ z szablonu', value: 'template' },
-]
+const templateRenderingOption = { label: 'Układ z szablonu', value: 'template' }
 
 export function PageTemplateRenderingModeField(properties: SelectFieldClientProps) {
   const { errorMessage, path, setValue, showError, value } = useField<string>({
@@ -56,36 +52,29 @@ export function PageTemplateRenderingModeField(properties: SelectFieldClientProp
   })
   const { openModal } = useModal()
   const modalSlug = `page-template-mode-${useId().replaceAll(':', '')}`
-  const [pendingMode, setPendingMode] = useState<PageTemplateRenderingMode | null>(null)
   const templateKey = useTemplateKey()
   const definition = templateKey ? getPageTemplateDefinition(templateKey) : undefined
-  const currentMode: PageTemplateRenderingMode = value === 'template' ? 'template' : 'legacy'
-  const selectedOption = renderingModeOptions.find(({ value }) => value === currentMode)
+  const usesTemplate = value === 'template'
+  const selectedOption = usesTemplate
+    ? templateRenderingOption
+    : { label: 'Układ wbudowany', value: 'legacy' }
   const styles = useMemo(() => mergeFieldStyles(properties.field), [properties.field])
 
   function requestModeChange(option: unknown): void {
-    if (!isSelectOption(option) || option.value === currentMode) return
-    if (option.value !== 'legacy' && option.value !== 'template') return
-    setPendingMode(option.value)
+    if (!isSelectOption(option) || option.value !== 'template' || usesTemplate) return
     openModal(modalSlug)
-  }
-
-  function confirmModeChange(): void {
-    if (!pendingMode) return
-    setValue(pendingMode)
-    setPendingMode(null)
   }
 
   return (
     <div className="field-type select" style={styles}>
       <FieldLabel label={properties.field.label} path={path} required />
       <ReactSelect
-        disabled={properties.readOnly}
+        disabled={properties.readOnly || usesTemplate}
         inputId={path}
         isClearable={false}
         isSearchable={false}
         onChange={requestModeChange}
-        options={renderingModeOptions}
+        options={[templateRenderingOption]}
         showError={showError}
         value={selectedOption}
       />
@@ -99,21 +88,12 @@ export function PageTemplateRenderingModeField(properties: SelectFieldClientProp
         path={path}
       />
       <ConfirmationModal
-        body={
-          pendingMode === 'template'
-            ? 'Po opublikowaniu tej wersji dotychczasowy układ strony zostanie zastąpiony konfiguracją regionów. Publiczna strona nie zmieni się do chwili publikacji.'
-            : 'Po opublikowaniu tej wersji strona wróci do dotychczasowego układu. Konfiguracja nowego szablonu zostanie zachowana.'
-        }
+        body="Po opublikowaniu tej wersji strona użyje regionów skonfigurowanych w szablonie."
         cancelLabel="Anuluj"
         confirmLabel="Zmień tryb"
-        heading={
-          pendingMode === 'template'
-            ? 'Przełączyć na układ z szablonu?'
-            : 'Przywrócić dotychczasowy układ?'
-        }
+        heading="Przełączyć na układ z szablonu?"
         modalSlug={modalSlug}
-        onCancel={() => setPendingMode(null)}
-        onConfirm={confirmModeChange}
+        onConfirm={() => setValue('template')}
       />
     </div>
   )

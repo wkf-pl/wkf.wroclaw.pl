@@ -1,9 +1,8 @@
-import { sql } from '@payloadcms/db-postgres'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { findContentSearchOptions, findPublicContent } from '@/modules/content/content-listing'
 import type { ContentSearchFilters } from '@/modules/content/content-search-filters'
-import { backfillContentSearchIndex } from '../../migrations/20261121_193551_content_search'
+import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/integration-author'
 import {
   createContentTaxonomyFixture,
   type ContentTaxonomyFixture,
@@ -40,9 +39,13 @@ function search(filters?: ContentSearchFilters) {
 describe('public content search', () => {
   it('intersects tag and topic filters, then paginates the matching types', async () => {
     const { topic, childPage, page, payload, post, tag } = fixture
+    const group = await payload.create({
+      collection: 'tag-groups',
+      data: { name: 'Search formats', slug: 'search-formats', iconName: 'book' },
+    })
     const story = await payload.create({
       collection: 'tags',
-      data: { name: 'Search story', slug: 'search-story' },
+      data: { name: 'Search story', slug: 'search-story', group: group.id },
     })
     const excluded = await payload.create({
       collection: 'tags',
@@ -78,13 +81,20 @@ describe('public content search', () => {
           ],
           sources: ['pages', 'posts'],
         },
-        { topics: true, tags: true },
+        { topics: true, tags: true, groups: [group.id], author: true },
       )
       expect(options.topics).toEqual([
         { id: topic.id, label: topic.name },
         { id: childTopic.id, label: `${topic.name} / ${childTopic.name}` },
       ])
       expect(options.tags.map(({ id }) => id)).toEqual([tag.id, story.id])
+      expect(options.authors).toEqual([
+        { id: fixture.author.id, label: fixture.author.displayName },
+      ])
+      expect(options.tags).toContainEqual({ id: story.id, label: story.name, groupIcon: 'book' })
+      expect(
+        await payload.findByID({ collection: 'tag-groups', id: group.id, depth: 1 }),
+      ).toMatchObject({ tags: { docs: [{ id: story.id, name: story.name }] } })
 
       expect(
         (
@@ -116,71 +126,61 @@ describe('public content search', () => {
       await payload.update({ collection: 'pages', id: childPage.id, data: { tags: [] } })
       await payload.delete({ collection: 'topics', id: childTopic.id })
       await payload.delete({ collection: 'tags', id: story.id })
+      await payload.delete({ collection: 'tag-groups', id: group.id })
       await payload.delete({ collection: 'tags', id: excluded.id })
     }
   })
 
-  it('matches public signatures and the current group name across publishing and trash', async () => {
+  it('searches the published attribution and ignores owners', async () => {
     const { author, page, payload } = fixture
+    const alternativeAuthor = await createIntegrationAuthor(payload, 'search-alternative')
     const group = await payload.create({
       collection: 'user-groups',
       data: { name: 'Public Search Group' },
     })
-    const documentAuthor = { relationTo: 'users', value: author.id } as const
+    const date = { dateFrom: '2026-08-12', dateTo: '2026-08-12' }
     try {
-      expect((await search({ author: author.displayName })).items).toEqual([])
-      await payload.update({
-        collection: 'pages',
-        id: page.id,
-        data: { author: { relationTo: 'user-groups', value: group.id } },
-      })
-      await payload.db.drizzle.execute(sql`
-        UPDATE content_listing_items SET search_date = NULL, search_author_group_id = NULL
-        WHERE source = 'pages' AND source_document_id = ${page.id}
-      `)
-      await backfillContentSearchIndex(payload.db.drizzle)
-      expect(
-        (await search({ author: 'search group', dateFrom: '2026-08-12', dateTo: '2026-08-12' }))
-          .items,
-      ).toMatchObject([{ kind: 'pages', document: { id: page.id } }])
-      await payload.update({
-        collection: 'user-groups',
-        id: group.id,
-        data: { name: 'Renamed contributors' },
-      })
-      expect((await search({ author: 'search group' })).items).toEqual([])
-      expect((await search({ author: 'renamed contributors' })).items).toHaveLength(1)
-
+      expect((await search({ ...date, author: author.displayName })).items).toMatchObject([
+        { kind: 'pages', document: { id: page.id } },
+      ])
       await payload.update({
         collection: 'pages',
         id: page.id,
         draft: true,
-        data: { publicAuthorSignature: 'Draft signature' },
+        data: {
+          author: alternativeAuthor.id,
+          owners: [{ relationTo: 'user-groups', value: group.id }],
+        },
       })
-      expect((await search({ author: 'draft signature' })).items).toEqual([])
+      expect((await search({ author: alternativeAuthor.displayName })).items).toHaveLength(0)
+      expect((await search({ authorId: alternativeAuthor.id })).items).toHaveLength(0)
+      expect((await search({ ...date, author: author.displayName })).items).toHaveLength(1)
+      expect((await search({ author: group.name })).items).toHaveLength(0)
       await payload.update({
         collection: 'pages',
         id: page.id,
         draft: false,
-        data: { _status: 'published', publicAuthorSignature: 'Public signature' },
+        data: { _status: 'published', author: alternativeAuthor.id },
       })
-      expect((await search({ author: 'renamed contributors' })).items).toEqual([])
-      expect((await search({ author: 'public signature' })).items).toHaveLength(1)
-
+      expect((await search({ ...date, author: author.displayName })).items).toHaveLength(0)
+      expect((await search({ author: alternativeAuthor.displayName })).items).toHaveLength(1)
+      expect((await search({ authorId: alternativeAuthor.id })).items).toMatchObject([
+        { kind: 'pages', document: { id: page.id } },
+      ])
       await payload.update({
-        collection: 'pages',
-        id: page.id,
-        data: { _status: 'draft' },
-        unpublishAllLocales: true,
+        collection: 'users',
+        id: alternativeAuthor.id,
+        data: { displayName: 'Renamed search author' },
       })
-      expect((await search({ author: 'public signature' })).items).toEqual([])
-      await payload.update({ collection: 'pages', id: page.id, data: { _status: 'published' } })
+      expect((await search({ author: alternativeAuthor.displayName })).items).toHaveLength(0)
+      expect((await search({ author: 'Renamed search author' })).items).toHaveLength(1)
+
       await payload.update({
         collection: 'pages',
         id: page.id,
         data: { deletedAt: new Date().toISOString() },
       })
-      expect((await search({ author: 'public signature' })).items).toEqual([])
+      expect((await search({ author: 'Renamed search author' })).items).toHaveLength(0)
     } finally {
       await payload.update({
         collection: 'pages',
@@ -191,9 +191,10 @@ describe('public content search', () => {
       await payload.update({
         collection: 'pages',
         id: page.id,
-        data: { author: documentAuthor, publicAuthorSignature: null },
+        data: { author: author.id, owners: [] },
       })
       await payload.delete({ collection: 'user-groups', id: group.id })
+      await deleteIntegrationAuthor(payload, alternativeAuthor)
     }
   })
 })

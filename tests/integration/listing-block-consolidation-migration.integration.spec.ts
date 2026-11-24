@@ -238,7 +238,7 @@ afterAll(async () => {
       await args.db.execute(sql`
         ALTER TYPE enum_roles_permissions_resource RENAME VALUE 'categories' TO 'topics';
         ALTER INDEX "_event_cycles_v_version_event_defaults_version_event_d_4_idx"
-          RENAME TO "_event_cycles_v_version_event_defaults_version_event_d_3_idx";
+          RENAME TO "_event_cycles_v_version_event_defaults_version_event_d_2_idx";
       `)
     })
     await runMigrationInTransaction(upLocationIndex)

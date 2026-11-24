@@ -51,5 +51,6 @@ export type ContentSearchFilters = {
   tagGroups?: number[][]
   branch?: string
   author?: string
+  authorId?: number
   sources?: ContentListingSource[]
 }

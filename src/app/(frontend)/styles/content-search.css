@@ -1,6 +1,7 @@
 .contentSearchForm {
   display: grid;
   gap: 1rem;
+  margin-block-end: clamp(1.5rem, 3vw, 2rem);
   padding: 1rem;
   border: 1px solid rgb(243 163 19 / 35%);
   border-radius: 0.75rem;
@@ -26,7 +27,8 @@
   font-weight: 700;
 }
 
-.contentSearchField > :is(input, select) {
+.contentSearchField > :is(input, select),
+.contentSearchSelect > summary {
   width: 100%;
   min-width: 0;
   min-height: 2.75rem;
@@ -40,6 +42,46 @@
 
 .contentSearchField > select:disabled {
   opacity: 0.7;
+}
+
+.contentSearchSelect {
+  min-width: 0;
+}
+
+.contentSearchSelect > summary {
+  font-weight: 700;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.contentSearchSelect > summary::marker {
+  color: var(--gold-light);
+}
+
+.contentSearchSelect > summary > :last-child {
+  float: inline-end;
+  margin-inline-start: 0.4rem;
+  font-weight: 400;
+  color: var(--ivory);
+}
+
+.contentSearchSelect[open] > summary {
+  border-color: var(--gold-light);
+}
+
+.contentSearchSelect > fieldset {
+  margin-block-start: 0.35rem;
+  background: var(--background);
+}
+
+.contentSearchStatus {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .contentSearchChoices {
@@ -93,22 +135,6 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem 1rem;
-}
-
-.contentSearchActions button {
-  min-height: 2.75rem;
-  padding: 0.55rem 1rem;
-  border: 1px solid var(--gold-light);
-  border-radius: 0.4rem;
-  background: var(--gold-light);
-  color: var(--background-deep);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.contentSearchActions button:hover {
-  background: var(--ivory);
 }
 
 .contentSearchActions a {

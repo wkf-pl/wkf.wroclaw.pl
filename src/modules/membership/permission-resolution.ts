@@ -1,6 +1,6 @@
 import type { AccessResult, Where } from 'payload'
 
-import { isGroupAuthoredCollection } from '@/modules/content/content-author'
+import { supportsContentOwners } from '@/modules/content/content-owners'
 import type { RelationshipReference } from '@/lib/relationships'
 import {
   getCollectionPermissionResources,
@@ -139,10 +139,10 @@ function combineWithAnd(...conditions: (true | Where)[]): true | Where {
   return filters.length === 1 ? filters[0] : { and: filters }
 }
 
-export function buildContentAuthorScope(
+export function buildContentOwnerScope(
   userId: number | string,
   groupIds: readonly number[],
-  path = 'author',
+  path = 'owners',
 ): Where {
   return {
     or: [
@@ -166,8 +166,8 @@ function buildScope(
 
   if (grant.own && ownershipField) {
     conditions.push(
-      isGroupAuthoredCollection(resource)
-        ? buildContentAuthorScope(userId, groupIds, versions ? 'parent.author' : ownershipField)
+      supportsContentOwners(resource)
+        ? buildContentOwnerScope(userId, groupIds, versions ? 'parent.owners' : ownershipField)
         : { [ownershipField]: { equals: userId } },
     )
   }

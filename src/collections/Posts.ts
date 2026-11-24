@@ -2,7 +2,7 @@ import {
   lockContentHierarchyForWrite,
   createContentParentField,
 } from '@/modules/content/content-parent'
-import { createPublicAuthorSignatureField } from '@/modules/content/content-author-field'
+import { createContentOwnersField } from '@/modules/content/content-owners-field'
 import type { CollectionConfig } from 'payload'
 
 import { createEditorialFields, getEditorialField } from '@/modules/content/editorial-fields'
@@ -70,7 +70,7 @@ export const Posts: CollectionConfig = {
     },
     defaultColumns: ['title', 'slug', 'topics', 'tags', '_status', 'publishedAt', 'updatedAt'],
     group: 'Treści',
-    listSearchableFields: ['title', 'slug', 'excerpt'],
+    listSearchableFields: ['title', 'slug', 'excerpt', 'author', 'topics'],
     useAsTitle: 'title',
     pagination: {
       limits: [10, 25, 50],
@@ -112,7 +112,7 @@ export const Posts: CollectionConfig = {
     getEditorialField(editorialFields, 'topics'),
     getEditorialField(editorialFields, 'tags'),
     getEditorialField(editorialFields, 'author'),
-    createPublicAuthorSignatureField(),
+    createContentOwnersField(),
     getEditorialField(editorialFields, 'publishedAt'),
   ],
   hooks: {

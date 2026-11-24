@@ -158,7 +158,7 @@ beforeAll(async () => {
     collection: 'partners',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       excerpt: 'Integration events partner',
       layout: layout(),
       name: 'Integration events partner',
@@ -183,7 +183,7 @@ function eventData(
 ) {
   return {
     _status: status,
-    author: { relationTo: 'users' as const, value: author.id },
+    author: author.id,
     calendarRevision: 0,
     capacityMode: 'unlimited' as const,
     eventType: 1,
@@ -199,6 +199,59 @@ function eventData(
 }
 
 describe('events integration', () => {
+  it('finds a draft as the editor types Wikin in the events list', async () => {
+    const topic = await payload.create({
+      collection: 'topics',
+      data: { name: 'Edda', slug: 'admin-search-edda' },
+    })
+    const venue = await createLocationFixture(payload, {
+      venueName: 'Hala Asgard',
+      streetAddress: 'ul. Testowa 49',
+    })
+    const eventType = await payload.findByID({ collection: 'event-types', id: 1 })
+    const event = await payload.create({
+      collection: 'events',
+      draft: true,
+      data: {
+        ...eventData('integration-admin-search', 'public', 'draft'),
+        title: 'Wikingowie',
+        topics: [topic.id],
+        location: venue.id,
+      },
+    })
+    try {
+      const editor = { ...author, collection: 'users' as const }
+      for (const search of ['W', 'Wikin', eventType.name, author.displayName, 'Edda', 'Asgard']) {
+        const where = mergeListSearchAndWhere({
+          collectionConfig: payload.collections.events.config,
+          search,
+        })
+        const { docs } = await payload.find({
+          collection: 'events',
+          draft: true,
+          depth: 0,
+          overrideAccess: false,
+          user: editor,
+          where,
+        })
+        expect(docs.map(({ id }) => id)).toContain(event.id)
+      }
+      const where = mergeListSearchAndWhere({
+        collectionConfig: payload.collections.events.config,
+        search: 'nonexistent-admin-query-92bb',
+      })
+      await expect(
+        payload.find({ collection: 'events', draft: true, where }),
+      ).resolves.toMatchObject({
+        totalDocs: 0,
+      })
+    } finally {
+      await payload.delete({ collection: 'events', id: event.id, trash: true })
+      await payload.delete({ collection: 'topics', id: topic.id })
+      await deleteLocationFixture(payload, venue.venueName)
+    }
+  })
+
   it('keeps the published event and its dates in the calendar after it ends', async () => {
     const event = await payload.create({
       collection: 'events',
@@ -242,7 +295,7 @@ describe('events integration', () => {
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         eventDefaults: {
           capacityMode: 'unlimited',
           eventType: 1,
@@ -344,9 +397,9 @@ describe('events integration', () => {
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         eventDefaults: {
-          authorGroup: group.id,
+          owners: [{ relationTo: 'user-groups', value: group.id }],
           capacityMode: 'unlimited',
           defaultDayCount: 1,
           defaultEndTime: '22:00',
@@ -394,7 +447,11 @@ describe('events integration', () => {
         overrideAccess: true,
       })
 
-      expect(createdEvent.author).toEqual({ relationTo: 'user-groups', value: group.id })
+      expect(createdEvent.author).toBe(author.id)
+      expect(createdEvent.owners).toEqual([
+        { relationTo: 'users', value: author.id },
+        { relationTo: 'user-groups', value: group.id },
+      ])
       expect(createdEvent.startAt).toBe('2030-03-26T17:00:00.000Z')
       expect(createdEvent.endAt).toBe('2030-03-26T21:00:00.000Z')
       expect(JSON.stringify(createdEvent.layout)).toContain('Integration event content')
@@ -694,7 +751,7 @@ describe('events integration', () => {
       overrideAccess: true,
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         excerpt: createRichTextDocument(['Integration cycle']),
         layout: layout(),
         slug: slugs.cycle,
@@ -791,3 +848,4 @@ describe('events integration', () => {
     await payload.delete({ collection: 'events', id: secondEvent.id, overrideAccess: true })
   })
 })
+import { mergeListSearchAndWhere } from 'payload/shared'

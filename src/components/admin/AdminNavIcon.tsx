@@ -3,6 +3,7 @@ import type { RasterIconName } from '@/modules/icons/icon-registry'
 
 const adminIconNames: Record<string, RasterIconName> = {
   account: 'profile',
+  'content-audit-log': 'eye',
   topics: 'category',
   'tag-groups': 'tag',
   documents: 'document',
@@ -11,7 +12,8 @@ const adminIconNames: Record<string, RasterIconName> = {
   events: 'event',
   footer: 'footer',
   'homepage-hero': 'image',
-  'homepage-sections': 'home',
+  'homepage-sections': 'document',
+  locations: 'location',
   media: 'image',
   navigation: 'globe',
   'page-templates': 'collection',
@@ -24,6 +26,7 @@ const adminIconNames: Record<string, RasterIconName> = {
   tags: 'tag',
   'user-groups': 'users',
   users: 'users',
+  'url-aliases': 'external-link',
 }
 
 export function AdminNavIcon({ name }: { name: string }) {

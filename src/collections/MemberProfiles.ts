@@ -134,6 +134,7 @@ export const MemberProfiles: CollectionConfig = {
     group: 'Klubowe',
     hidden: ({ user }) =>
       !clientUserHasUnrestrictedResourcePermission(user, 'member-profiles', 'read'),
+    listSearchableFields: ['publicName', 'clubFunction'],
     useAsTitle: 'publicName',
   },
   fields: [

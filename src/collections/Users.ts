@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
+import { invalidateAllPublicDataAfterChange } from '@/modules/cache/invalidate-public-data'
 import { administratorOrFirstUser } from '@/access/administratorOrFirstUser'
 import { createRolePermissionAccess, isAdministrator } from '@/modules/membership/role-access'
 import { clientUserHasResourcePermission } from '@/modules/membership/permission-resolution'
@@ -34,6 +35,7 @@ export const Users: CollectionConfig = {
     defaultColumns: ['displayName', 'email', 'roles', 'updatedAt'],
     group: 'Administracja',
     hidden: ({ user }) => !clientUserHasResourcePermission(user, 'users', 'read'),
+    listSearchableFields: ['displayName', 'roles'],
     useAsTitle: 'displayName',
   },
   auth: {
@@ -77,7 +79,15 @@ export const Users: CollectionConfig = {
     },
   ],
   hooks: {
-    afterChange: [unpublishProfileWithoutMemberRole],
+    afterChange: [
+      unpublishProfileWithoutMemberRole,
+      async (arguments_) => {
+        if (arguments_.doc.displayName !== arguments_.previousDoc?.displayName) {
+          await invalidateAllPublicDataAfterChange(arguments_)
+        }
+        return arguments_.doc
+      },
+    ],
     beforeDelete: [deleteUserMemberData],
     beforeValidate: [assignDefaultUserRole],
   },

@@ -16,7 +16,16 @@ export function getSpacerHeight(size: string | null | undefined): number {
 
 export const SpacerBlock: Block = {
   slug: 'spacer',
-  admin: { disableBlockName: true, group: 'Układ' },
+  admin: {
+    disableBlockName: true,
+    group: 'Układ',
+    images: {
+      thumbnail: {
+        alt: 'Dwie linie rozdzielone pionowym odstępem',
+        url: '/assets/block-thumbnails/spacer.png',
+      },
+    },
+  },
   fields: [
     {
       name: 'size',

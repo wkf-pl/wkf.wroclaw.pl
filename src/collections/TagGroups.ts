@@ -2,11 +2,12 @@ import { sql } from '@payloadcms/db-postgres'
 import { APIError, type CollectionConfig } from 'payload'
 
 import {
-  invalidateListingsAfterChange,
-  invalidateListingsAfterDelete,
+  invalidateAllPublicDataAfterChange,
+  invalidateAllPublicDataAfterDelete,
 } from '@/modules/cache/invalidate-public-data'
-import { getTransactionExecutor } from '@/modules/content/lock-content-author'
+import { getTransactionExecutor } from '@/modules/content/lock-content-owners'
 import { populateSlugFromName } from '@/modules/content/slug'
+import { createRasterIconField } from '@/modules/icons/fields'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 
 async function tagGroupExecutor(req: import('payload').PayloadRequest) {
@@ -38,9 +39,11 @@ export const TagGroups: CollectionConfig = {
     update: createRolePermissionAccess({ operation: 'update', resource: 'tags' }),
   },
   admin: { group: 'Treści', useAsTitle: 'name' },
+  defaultPopulate: { name: true, iconName: true },
   labels: { singular: 'Grupa tagów', plural: 'Grupy tagów' },
   fields: [
     { name: 'name', type: 'text', label: 'Nazwa', required: true },
+    createRasterIconField({ label: 'Ikona grupy' }),
     {
       name: 'slug',
       type: 'text',
@@ -48,6 +51,18 @@ export const TagGroups: CollectionConfig = {
       required: true,
       unique: true,
       hooks: { beforeValidate: [populateSlugFromName] },
+    },
+    {
+      name: 'tags',
+      type: 'join',
+      collection: 'tags',
+      on: 'group',
+      label: 'Tagi w grupie',
+      defaultSort: 'name',
+      admin: {
+        allowCreate: false,
+        defaultColumns: ['name', 'slug', 'description'],
+      },
     },
   ],
   hooks: {
@@ -81,8 +96,8 @@ export const TagGroups: CollectionConfig = {
         }
         return doc
       },
-      invalidateListingsAfterChange,
+      invalidateAllPublicDataAfterChange,
     ],
-    afterDelete: [invalidateListingsAfterDelete],
+    afterDelete: [invalidateAllPublicDataAfterDelete],
   },
 }

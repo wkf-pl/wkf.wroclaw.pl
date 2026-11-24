@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import { TagLabel } from '@/components/TagLabel'
 import type { Topic, Tag } from '@/payload-types'
 
 type TaxonomyLinksProperties = {
@@ -32,7 +33,7 @@ export function TaxonomyLinks({ topics, tags }: TaxonomyLinksProperties) {
           href={`/tag/${tag.slug}`}
           key={`tag-${tag.id}`}
         >
-          {tag.name}
+          <TagLabel name={tag.name} groupIcon={tag.groupIcon} />
         </Link>
       ))}
     </div>

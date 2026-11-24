@@ -59,7 +59,7 @@ test.beforeAll(async () => {
     collection: 'posts',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       topics: [grandchildTopic.id],
       excerpt: 'Treść z podtematu.',
       layout: [{ blockType: 'richText', content: createLexicalDocument('Treść potomna') }],
@@ -74,7 +74,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [{ blockType: 'richText', content: createLexicalDocument('Root page') }],
       slug: pageSlugs[0],
       title: 'E2E Klub',
@@ -86,7 +86,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       parent: rootPage.id,
       slug: pageSlugs[1],
       title: 'E2E Nieopublikowany zarząd',
@@ -98,7 +98,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [{ blockType: 'richText', content: createLexicalDocument('Leaf page') }],
       parent: draftPage.id,
       slug: pageSlugs[2],

@@ -22,7 +22,10 @@ type AuditEntry = {
   versionId?: string
 }
 
-async function recordChange(req: PayloadRequest, entry: AuditEntry): Promise<void> {
+export async function recordContentAuditChange(
+  req: PayloadRequest,
+  entry: AuditEntry,
+): Promise<void> {
   const user = req.user
   // Local create clears req.file even when it creates a non-upload document.
   const file = req.file
@@ -141,7 +144,7 @@ export const contentAuditPlugin: Plugin = (config) => ({
               return doc
             }
 
-            await recordChange(req, {
+            await recordContentAuditChange(req, {
               action,
               target,
               targetId,
@@ -165,7 +168,7 @@ export const contentAuditPlugin: Plugin = (config) => ({
           ...(collection.hooks?.afterDelete ?? []),
           async ({ doc, id, req }) => {
             const targetId = String(id)
-            await recordChange(req, {
+            await recordContentAuditChange(req, {
               action: 'delete',
               target,
               targetId,
@@ -197,7 +200,7 @@ export const contentAuditPlugin: Plugin = (config) => ({
             clearSaveOperation(req, target)
             if (saveOperation === 'autosave' && doc._status === 'draft') return doc
             const action = saveOperation === 'restore-version' ? saveOperation : 'update'
-            await recordChange(req, {
+            await recordContentAuditChange(req, {
               action,
               target,
               title: auditedGlobals[target].title,

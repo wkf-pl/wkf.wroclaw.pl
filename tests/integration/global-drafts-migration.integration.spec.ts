@@ -69,7 +69,32 @@ async function moveToBeforeGlobalDrafts(args: MigrateUpArgs & MigrateDownArgs): 
   await downLocationIndex(args)
   await downLocations(args)
   await db.execute(sql`
-    ALTER TABLE content_listing_items DROP COLUMN search_author_group_id;
+    ALTER TABLE documents_rels DROP COLUMN user_groups_id;
+    ALTER TABLE _documents_v_rels DROP COLUMN user_groups_id;
+    ALTER TABLE pages DROP COLUMN author_id;
+    ALTER TABLE _pages_v DROP COLUMN version_author_id;
+    ALTER TABLE posts DROP COLUMN author_id;
+    ALTER TABLE _posts_v DROP COLUMN version_author_id;
+    ALTER TABLE events DROP COLUMN author_id;
+    ALTER TABLE _events_v DROP COLUMN version_author_id;
+    ALTER TABLE event_cycles DROP COLUMN author_id;
+    ALTER TABLE _event_cycles_v DROP COLUMN version_author_id;
+    ALTER TABLE partners DROP COLUMN author_id;
+    ALTER TABLE _partners_v DROP COLUMN version_author_id;
+    ALTER INDEX "_event_cycles_v_version_event_defaults_version_event_d_1_idx"
+      RENAME TO "_event_cycles_v_version_event_defaults_version_event_d_2_idx";
+    ALTER INDEX "_event_cycles_v_version_event_defaults_version_event_def_idx"
+      RENAME TO "_event_cycles_v_version_event_defaults_version_event_d_1_idx";
+    ALTER TABLE event_cycles ADD COLUMN event_defaults_author_group_id integer;
+    ALTER TABLE _event_cycles_v ADD COLUMN version_event_defaults_author_group_id integer;
+    ALTER TABLE event_cycles ADD CONSTRAINT "event_cycles_event_defaults_author_group_id_user_groups_id_fk"
+      FOREIGN KEY (event_defaults_author_group_id) REFERENCES user_groups(id);
+    ALTER TABLE _event_cycles_v ADD CONSTRAINT "_event_cycles_v_version_event_defaults_author_group_id_user_groups_id_fk"
+      FOREIGN KEY (version_event_defaults_author_group_id) REFERENCES user_groups(id);
+    CREATE INDEX "event_cycles_event_defaults_event_defaults_author_group_idx"
+      ON event_cycles (event_defaults_author_group_id);
+    CREATE INDEX "_event_cycles_v_version_event_defaults_version_event_def_idx"
+      ON _event_cycles_v (version_event_defaults_author_group_id);
     ALTER TABLE _event_cycles_v ADD COLUMN version_event_defaults_category_id integer;
     CREATE INDEX "_event_cycles_v_version_event_defaults_version_event_d_3_idx"
       ON _event_cycles_v (version_event_defaults_category_id);

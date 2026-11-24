@@ -26,8 +26,6 @@ export function ListingPresentation({
     none: '0px',
     small: '0.75rem',
     large: '1.5rem',
-    legacyTile: '1.25rem',
-    legacyColumns: '1rem',
   }
   const padding = {
     none: '0px',
@@ -92,7 +90,7 @@ export function ListingItemSurface({
   if (!view.decoration) return children
   return (
     <ContentPresentation
-      className={`listingItemSurface${view.decoration.fill === 'legacy' ? ' listingItemSurface--legacy' : ''}`}
+      className="listingItemSurface"
       placement="block"
       presentation={resolveListingSurface(view.decoration, 'fill', media?.fill)}
     >

@@ -30,7 +30,7 @@ describe('content calendar', () => {
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         eventDefaults: {
           capacityMode: 'unlimited',
           eventType: 1,
@@ -56,7 +56,7 @@ describe('content calendar', () => {
         collection: 'events',
         data: {
           _status: 'published',
-          author: { relationTo: 'users', value: fixture.author.id },
+          author: fixture.author.id,
           calendarRevision: 0,
           capacityMode: 'unlimited',
           topics: [fixture.topic.id],
@@ -85,7 +85,7 @@ describe('content calendar', () => {
       collection: 'pages',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         layout: [
           {
             blockType: 'contentCalendar',
