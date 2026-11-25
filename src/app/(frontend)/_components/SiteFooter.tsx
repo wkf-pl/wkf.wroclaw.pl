@@ -50,6 +50,7 @@ export function SiteFooter({
                     className="socialLink"
                     item={item}
                     key={`${item.link.href}-${itemIndex}`}
+                    prefetch={false}
                   />
                 ))}
               </nav>
@@ -73,6 +74,7 @@ export function SiteFooter({
                     className="footerMenuItem"
                     item={item}
                     key={`${item.link.href}-${itemIndex}`}
+                    prefetch={false}
                   />
                 ))}
               </nav>

@@ -21,6 +21,7 @@ const loadPublishedSettings = cachePublicData(
       depth: 0,
       limit: 1,
       overrideAccess: true,
+      pagination: false,
     })
     return docs[0]?.settings
   },

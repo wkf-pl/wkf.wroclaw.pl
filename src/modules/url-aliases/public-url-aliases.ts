@@ -5,6 +5,7 @@ import config from '@payload-config'
 
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import { publicRequestContext } from '@/modules/content/public-access'
+import { publicLinkTargetPopulate } from '@/modules/content/public-content'
 
 import { resolveUrlAliasTarget } from './url-aliases'
 
@@ -19,6 +20,10 @@ const findPublicUrlAliasDestinationCached = cachePublicData(
       limit: 1,
       overrideAccess: false,
       pagination: false,
+      populate: {
+        ...publicLinkTargetPopulate,
+        documents: { ...publicLinkTargetPopulate.documents, primaryFile: true },
+      },
       user: null,
       where: { slug: { equals: slug } },
     })

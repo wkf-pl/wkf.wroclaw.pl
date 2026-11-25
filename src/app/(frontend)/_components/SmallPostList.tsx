@@ -7,7 +7,9 @@ export function SmallPostList({ posts }: { posts: Post[] }) {
     <ul>
       {posts.map((post) => (
         <li key={post.id}>
-          <Link href={`/blog/${post.slug}`}>{post.title}</Link>
+          <Link href={`/blog/${post.slug}`} prefetch={false}>
+            {post.title}
+          </Link>
         </li>
       ))}
     </ul>

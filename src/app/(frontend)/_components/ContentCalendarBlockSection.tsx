@@ -8,7 +8,7 @@ import {
 } from '@/modules/content/content-calendar-presentation'
 import { getWarsawCalendarMonth } from '@/modules/events/calendar-presentation'
 
-import { ContentCalendar } from './EventCalendar'
+import { LazyContentCalendar } from './LazyContentCalendar'
 
 export async function ContentCalendarBlockSection({ block }: { block: ContentCalendarBlock }) {
   const sources = normalizeContentCalendarSources(block.sources ?? [])
@@ -22,7 +22,7 @@ export async function ContentCalendarBlockSection({ block }: { block: ContentCal
   const initialData = await findContentCalendarMonth(initialMonth, filters)
 
   return (
-    <ContentCalendar
+    <LazyContentCalendar
       endpoint={createContentCalendarEndpoint(filters)}
       fallbackURL={getFallbackURL(filters.sources)}
       initialData={initialData}

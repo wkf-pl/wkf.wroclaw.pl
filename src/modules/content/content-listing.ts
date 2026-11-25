@@ -8,7 +8,11 @@ import { getPayload, type Payload, type Where } from 'payload'
 import config from '@payload-config'
 
 import { getFormRelationshipId, getRelationshipId, type RelationshipID } from '@/lib/relationships'
-import { normalizeListingWindow, paginateInMemory } from '@/modules/content/listing-window'
+import {
+  normalizeListingWindow,
+  paginateInMemory,
+  type ListingWindow,
+} from '@/modules/content/listing-window'
 import { findTopicSubtreeIDs } from '@/modules/content/topic-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
@@ -68,6 +72,13 @@ export type ManualContentReference = {
   value: ContentListingDocument | RelationshipID
 }
 
+type ManualListingReference = {
+  contextLabel?: null | string
+  id: RelationshipID
+  partnerRoles?: readonly PartnerRole[]
+  source: ContentListingSource
+}
+
 export type PublicContentResult = {
   items: PublicContentListItem[]
   page: number
@@ -105,7 +116,7 @@ async function findPublicContentUncached(
   const result = await payload.find({
     collection: 'content-listing-items',
     context: publicRequestContext,
-    depth: 1,
+    depth: 0,
     limit: pageSize,
     overrideAccess: false,
     page,
@@ -142,14 +153,17 @@ export async function findPublicContent(
   options: FindPublicContentOptions,
 ): Promise<PublicContentResult> {
   if (options.selectionMode === 'manual') {
-    return findManualPublicContent(options)
+    const references = getManualContentReferences(options.manualItems)
+    const window = normalizeListingWindow(options)
+    return references.length
+      ? findManualPublicContentCached(references, window)
+      : paginateInMemory([], window)
   }
 
   const conditions = await prepareListingConditions(options.conditions ?? [], options.currentTarget)
   const { page, pageSize } = normalizeListingWindow(options)
   const query = {
     conditions,
-    manualItems: options.manualItems,
     includeInactiveLocations: options.includeInactiveLocations,
     page,
     pageSize,
@@ -164,11 +178,9 @@ export async function findPublicContent(
 }
 
 async function findManualPublicContent(
-  options: FindPublicContentOptions,
+  references: ManualListingReference[],
+  window: ListingWindow,
 ): Promise<PublicContentResult> {
-  const references = getManualContentReferences(options.manualItems)
-  if (!references.length) return paginateInMemory([], options)
-
   const idsBySource = new Map<ContentListingSource, Set<RelationshipID>>()
   for (const { id, source } of references) {
     const ids = idsBySource.get(source) ?? new Set<RelationshipID>()
@@ -206,7 +218,7 @@ async function findManualPublicContent(
       return item ? [{ ...item, contextLabel, partnerRoles }] : []
     },
   )
-  const paginatedItems = paginateInMemory(selectedItems, options)
+  const paginatedItems = paginateInMemory(selectedItems, window)
 
   return {
     ...paginatedItems,
@@ -214,12 +226,15 @@ async function findManualPublicContent(
   }
 }
 
-function getManualContentReferences(values: readonly ManualContentReference[] | null | undefined): {
-  contextLabel?: null | string
-  id: RelationshipID
-  partnerRoles?: readonly PartnerRole[]
-  source: ContentListingSource
-}[] {
+const findManualPublicContentCached = cachePublicData(
+  'public-manual-content-listing',
+  findManualPublicContent,
+  { revalidate: 300, tags: [publicCacheTags.contentListings] },
+)
+
+function getManualContentReferences(
+  values: readonly ManualContentReference[] | null | undefined,
+): ManualListingReference[] {
   return (
     values?.flatMap((value) => {
       const id = getFormRelationshipId(value.value)

@@ -6,10 +6,12 @@ import type { ResolvedPresentedLink } from '@/modules/navigation/links'
 export function PresentedLink({
   className,
   item,
+  prefetch,
   trailingIconName,
 }: {
   className?: string
   item: ResolvedPresentedLink
+  prefetch?: false
   trailingIconName?: 'arrow-right'
 }) {
   const classes = [
@@ -25,6 +27,7 @@ export function PresentedLink({
     <Link
       aria-label={item.iconOnly ? item.accessibleName : undefined}
       className={classes}
+      prefetch={prefetch}
       {...item.link}
     >
       {item.iconName ? (

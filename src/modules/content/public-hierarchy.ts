@@ -2,6 +2,7 @@ import { getPayload } from 'payload'
 
 import config from '@payload-config'
 
+import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import { publicRequestContext } from './public-access'
 
 type StoredBreadcrumb = {
@@ -34,6 +35,30 @@ export function createTopicBreadcrumbs(
   })
 }
 
+const findPublishedAncestorSlugs = cachePublicData(
+  'public-page-ancestor-slugs',
+  async (slugs: string[]): Promise<string[]> => {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'pages',
+      context: publicRequestContext,
+      depth: 0,
+      draft: false,
+      limit: slugs.length,
+      overrideAccess: false,
+      pagination: false,
+      select: { slug: true },
+      user: null,
+      where: {
+        and: [{ slug: { in: slugs } }, { _status: { equals: 'published' } }],
+      },
+    })
+
+    return result.docs.map(({ slug }) => slug)
+  },
+  { revalidate: 300, tags: [publicCacheTags.pages] },
+)
+
 export async function createPageBreadcrumbs(
   page: HierarchyDocumentWithBreadcrumbs,
 ): Promise<PublicBreadcrumb[]> {
@@ -43,26 +68,10 @@ export async function createPageBreadcrumbs(
     const slug = breadcrumb.url?.match(/^\/([^/]+)$/)?.[1]
     return slug ? [slug] : []
   })
-  const publishedAncestorURLs = new Set<string>()
-
-  if (ancestorSlugs.length) {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'pages',
-      context: publicRequestContext,
-      depth: 0,
-      draft: false,
-      limit: ancestorSlugs.length,
-      overrideAccess: false,
-      pagination: false,
-      select: { slug: true },
-      user: null,
-      where: {
-        and: [{ slug: { in: ancestorSlugs } }, { _status: { equals: 'published' } }],
-      },
-    })
-    for (const ancestor of result.docs) publishedAncestorURLs.add(`/${ancestor.slug}`)
-  }
+  const publishedSlugs = ancestorSlugs.length
+    ? await findPublishedAncestorSlugs([...new Set(ancestorSlugs)].sort())
+    : []
+  const publishedAncestorURLs = new Set(publishedSlugs.map((slug) => `/${slug}`))
 
   const breadcrumbs: PublicBreadcrumb[] = [{ label: 'Strona główna', url: '/' }]
   for (const [index, breadcrumb] of storedBreadcrumbs.entries()) {

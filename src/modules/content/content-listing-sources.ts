@@ -430,6 +430,7 @@ async function findPublishedPages(payload: Payload, ids: readonly number[]): Pro
     draft: false,
     overrideAccess: false,
     pagination: false,
+    populate: { pages: { title: true } },
     select: {
       topics: true,
       heroImage: true,
