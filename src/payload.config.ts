@@ -44,7 +44,7 @@ import {
 } from './lib/env'
 import { createStoragePlugins } from './storage/create-storage-plugins'
 import { contentHierarchyPlugin } from './modules/content/hierarchy-plugin'
-import { adminRelationshipSearchPlugin } from './modules/content/admin-relationship-search'
+import { adminListSearchPlugin } from './modules/content/admin-list-search'
 import {
   createRichTextLinkFields,
   resolveRichTextInternalLink,
@@ -185,7 +185,7 @@ export default buildConfig({
   plugins: [
     contentHierarchyPlugin,
     ...createStoragePlugins(),
-    adminRelationshipSearchPlugin,
+    adminListSearchPlugin,
     contentAuditPlugin,
   ],
 })

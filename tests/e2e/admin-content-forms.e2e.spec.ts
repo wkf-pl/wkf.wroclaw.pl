@@ -129,7 +129,9 @@ test('shows complete search labels and concise missing-value fallbacks', async (
   await login({ page, user: editorTestUser })
   await page.goto('/admin/collections/posts')
 
-  await expect(page.getByPlaceholder('Szukaj według: Tytuł, Streszczenie lub Slug')).toBeVisible()
+  await expect(
+    page.getByPlaceholder('Szukaj według: Tytuł, Streszczenie, Slug, Tematy lub Autor'),
+  ).toBeVisible()
   const row = page.getByRole('row').filter({ hasText: unclassifiedPostTitle })
   await expect(row).toBeVisible()
   await expect(row.getByText('<brak>', { exact: true })).toHaveCount(2)
@@ -173,7 +175,10 @@ test('lays out Listing presentation fields and persists labeled relationship con
     columnsSelect.locator('xpath=ancestor::div[contains(@class, "field-type")][1]'),
   ).toContainText('1')
   await expect(listingRow.locator('select')).toHaveCount(0)
-  await expect(page.getByRole('heading', { name: 'Podgląd wyników' })).toBeVisible()
+  const previewToggle = listingRow.locator('summary').filter({ hasText: 'Podgląd wyników' })
+  await expect(previewToggle).toBeVisible()
+  await expect(listingRow.locator('iframe[title="Podgląd wyników Listingu"]')).toHaveCount(0)
+  await previewToggle.click()
   const listingPreview = listingRow.frameLocator('iframe[title="Podgląd wyników Listingu"]')
   await expect(listingPreview.locator('.listingBlock')).toBeVisible()
   await expect(listingPreview.locator('html')).toHaveCSS('--gold', '#f3a313')

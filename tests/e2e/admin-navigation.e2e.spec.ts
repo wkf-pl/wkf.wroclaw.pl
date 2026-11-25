@@ -18,7 +18,8 @@ test('searches the events list while typing and by the linked venue name', async
 
   try {
     await login({ page, user: editorTestUser })
-    await page.goto('/admin/collections/events')
+    const filter = new URLSearchParams({ 'where[id][equals]': String(event.id) })
+    await page.goto(`/admin/collections/events?${filter}`)
     const input = page.locator('#search-filter-input')
     await expect(input).toHaveAttribute('aria-label', /Autor/)
     await expect(input).toHaveAttribute('aria-label', /Tematy/)
@@ -248,6 +249,49 @@ test('shows the fixed page template collection to administrators', async ({ page
   ).toBeVisible()
   await confirmation.getByRole('button', { name: 'Anuluj' }).click()
   await expect(page.getByText('Układ wbudowany', { exact: true }).first()).toBeVisible()
+})
+
+test('searches page templates by display name and key', async ({ page }) => {
+  await login({ page, user: administratorTestUser })
+  await page.goto('/admin/collections/page-templates')
+
+  const search = page.locator('#search-filter-input')
+  const template = page.getByRole('link', { name: /Szczegóły wydarzenia/ })
+  const unrelatedTemplate = page.getByRole('link', { name: /Profil klubowicza/ })
+  await expect(template).toBeVisible()
+  await expect(unrelatedTemplate).toBeVisible()
+
+  for (const term of ['szczegoly wydarzenia', 'event-detail']) {
+    await search.fill(term)
+    await expect(page).toHaveURL((url) => url.searchParams.get('search') === term)
+    await expect(template).toBeVisible()
+    await expect(unrelatedTemplate).toHaveCount(0)
+  }
+
+  await search.fill('missing-template-e2e')
+  await expect(page).toHaveURL((url) => url.searchParams.get('search') === 'missing-template-e2e')
+  await expect(template).toHaveCount(0)
+})
+
+test('restores a navigation group preference after reloading the panel', async ({ page }) => {
+  await login({ page, user: administratorTestUser })
+  const group = page.locator('aside nav').getByRole('button', { name: 'Treści', exact: true })
+  const savePreference = async (open: boolean) => {
+    const response = await page.request.post('/api/payload-preferences/nav', {
+      data: { value: { open: true, groups: { Treści: { open } } } },
+      headers: { Origin: new URL(page.url()).origin },
+    })
+    expect(response.ok()).toBe(true)
+  }
+
+  await expect(group).toHaveClass(/nav-group__toggle--open/)
+  await savePreference(false)
+  try {
+    await page.reload()
+    await expect(group).toHaveClass(/nav-group__toggle--collapsed/)
+  } finally {
+    await savePreference(true)
+  }
 })
 
 test('denies non-administrators access to the page template collection', async ({ page }) => {

@@ -87,6 +87,7 @@ export const Events: CollectionConfig = {
       },
     },
     defaultColumns: ['title', 'cycle', 'eventType', 'topics', 'tags', 'startAt', '_status'],
+    enableListViewSelectAPI: true,
     group: 'Treści',
     listSearchableFields: ['title', 'cycle', 'slug', 'eventType', 'author', 'topics', 'location'],
     useAsTitle: 'title',

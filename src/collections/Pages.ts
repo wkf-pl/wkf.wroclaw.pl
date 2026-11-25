@@ -80,6 +80,7 @@ export const Pages: CollectionConfig = {
       },
     },
     defaultColumns: ['fullTitle', 'slug', '_status', 'publishedAt', 'updatedAt'],
+    enableListViewSelectAPI: true,
     group: 'Treści',
     listSearchableFields: ['fullTitle', 'slug', 'listingExcerpt', 'author', 'topics'],
     useAsTitle: 'fullTitle',

@@ -54,6 +54,7 @@ export const PageTemplates: CollectionConfig = {
     group: 'Administracja',
     hidden: ({ user }) =>
       !clientUserHasUnrestrictedResourcePermission(user, 'page-templates', 'read'),
+    listSearchableFields: ['templateKey'],
     preview: (document) => createPageTemplateDraftPreviewURL(document.templateKey),
     useAsTitle: 'templateKey',
   },

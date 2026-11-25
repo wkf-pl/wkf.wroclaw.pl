@@ -103,17 +103,14 @@
   background: var(--theme-elevation-50);
 }
 
-.previewHeader {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
+.previewSummary {
+  cursor: pointer;
+  font-weight: 600;
 }
 
-.previewHeader h4 {
-  margin: 0;
+.previewModes {
+  justify-content: flex-end;
+  margin-block: 1rem;
 }
 
 .previewCanvas {

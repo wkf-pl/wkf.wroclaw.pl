@@ -1,4 +1,5 @@
-import type { Access, AccessResult, PayloadRequest } from 'payload'
+import type { Access, AccessResult, Payload, PayloadRequest } from 'payload'
+import { cache } from 'react'
 
 import { supportsContentOwners } from '@/modules/content/content-owners'
 import { isPublicRequest } from '@/modules/content/public-access'
@@ -16,28 +17,39 @@ import { getUserGroupIds } from './user-group-membership'
 
 const rolesByRequest = new WeakMap<PayloadRequest, Promise<RoleRecord[]>>()
 
+async function loadRoles(payload: Payload, ...roleIds: (number | string)[]): Promise<RoleRecord[]> {
+  const { docs } = await payload.find({
+    collection: 'roles',
+    depth: 0,
+    limit: roleIds.length,
+    overrideAccess: true,
+    pagination: false,
+    select: { key: true, permissions: true },
+    where: { id: { in: roleIds } },
+  })
+  return docs
+}
+
+// Payload creates separate request objects for layout, page, and relationship operations.
+// React shares this read only within the current server render.
+const loadRenderRoles = cache(loadRoles)
+
 export async function getRequestRoles(req: PayloadRequest): Promise<RoleRecord[]> {
   if (!req.user) return []
 
   const cachedRoles = rolesByRequest.get(req)
   if (cachedRoles) return cachedRoles
 
-  const roleIds = getUserRoleReferences(req.user).flatMap((role) => {
-    if (typeof role === 'number' || typeof role === 'string') return [role]
-    return [role.id]
-  })
+  const roleIds = [
+    ...new Set(
+      getUserRoleReferences(req.user).map((role) => (typeof role === 'object' ? role.id : role)),
+    ),
+  ].sort()
   if (roleIds.length === 0) return []
 
-  const rolesPromise = req.payload
-    .find({
-      collection: 'roles',
-      depth: 0,
-      limit: roleIds.length,
-      overrideAccess: true,
-      pagination: false,
-      where: { id: { in: roleIds } },
-    })
-    .then(({ docs }) => docs as RoleRecord[])
+  const readRoles =
+    req.transactionID || req.headers?.has('next-action') ? loadRoles : loadRenderRoles
+  const rolesPromise = readRoles(req.payload, ...roleIds)
 
   rolesByRequest.set(req, rolesPromise)
   return rolesPromise

@@ -130,6 +130,40 @@ test.afterAll(async () => {
   }
 })
 
+test('opens the media index with the image filter and searches within the selected category', async ({
+  page,
+}) => {
+  await login({ page, user: editorTestUser })
+
+  const indexPath = '/admin/collections/media'
+  const listRequests: string[] = []
+  page.on('request', (request) => {
+    const url = new URL(request.url())
+    if (url.pathname === indexPath && request.headers().rsc === '1') {
+      listRequests.push(request.url())
+    }
+  })
+  await page.goto(`${indexPath}?search=e2e-`)
+  const table = page.getByRole('table')
+  const categoryTabs = page.getByLabel('Typ pliku')
+  await expect(table.getByText(firstImage.filename!, { exact: true })).toBeVisible()
+  await expect(table.getByText(attachment.filename!, { exact: true })).toHaveCount(0)
+  await expect(page).toHaveURL((url) =>
+    [...url.searchParams.keys()].some((name) => name.startsWith('where[mimeType]')),
+  )
+  expect(listRequests).toHaveLength(0)
+
+  await categoryTabs.getByRole('button', { name: 'Dokumenty' }).click()
+  await expect(table.getByText(attachment.filename!, { exact: true })).toBeVisible()
+  await expect(table.getByText(firstImage.filename!, { exact: true })).toHaveCount(0)
+
+  await page.locator('#search-filter-input').fill('e2e-attachment')
+  await expect(page).toHaveURL((url) => url.searchParams.get('search') === 'e2e-attachment')
+  await expect(table.getByText(attachment.filename!, { exact: true })).toBeVisible()
+  await page.reload()
+  await expect(table.getByText(attachment.filename!, { exact: true })).toBeVisible()
+})
+
 test('opens gallery images in a captioned and zoomable lightbox', async ({ page }) => {
   await page.goto(`/${pageSlug}`)
 

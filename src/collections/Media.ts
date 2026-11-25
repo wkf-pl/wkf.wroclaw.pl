@@ -7,7 +7,11 @@ import {
 } from '@/modules/cache/invalidate-public-data'
 import { createContentAuthorField } from '@/modules/content/content-author-field'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
-import { mediaDocumentMimeTypes, webRasterImageMimeTypes } from '@/modules/media/media-categories'
+import {
+  getMediaCategoryWhere,
+  mediaDocumentMimeTypes,
+  webRasterImageMimeTypes,
+} from '@/modules/media/media-categories'
 
 const createMedia = createRolePermissionAccess({ operation: 'create', resource: 'media' })
 const deleteMedia = createRolePermissionAccess({ operation: 'delete', resource: 'media' })
@@ -31,6 +35,7 @@ export const Media: CollectionConfig = {
     components: {
       Description: '/components/admin/MediaCategoryTabs#MediaCategoryTabs',
     },
+    custom: { defaultListWhere: getMediaCategoryWhere('images') },
     defaultColumns: [
       'filename',
       'description',
