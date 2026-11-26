@@ -1,4 +1,4 @@
-import type { Block, Field, FieldHook, Validate } from 'payload'
+import { APIError, type Block, type Field, type FieldHook, type Validate } from 'payload'
 
 import { createBooleanSwitchAdmin } from '@/components/admin/boolean-switch-config'
 import {
@@ -6,9 +6,19 @@ import {
   getSharedListingViewId,
   parseListingAppearance,
 } from '@/modules/content/listing-view'
+import { detachListingView, lockListingViewTemplate } from '@/modules/content/listing-view-usage'
 import { getFormRelationshipId } from '@/lib/relationships'
 import { createContentPresentationFields } from '@/modules/content/content-presentation'
-import { allListingSources, listingSourceLabels } from '@/modules/content/listing-conditions'
+import {
+  contentSearchFilterLabels,
+  contentSearchFilterNames,
+  supportsContentSearchFilter,
+} from '@/modules/content/content-search-filters'
+import {
+  allListingSources,
+  isListingSource,
+  listingSourceLabels,
+} from '@/modules/content/listing-conditions'
 import { pageTemplateRegistry } from '@/modules/page-templates/page-template-registry'
 
 import { createListingConditionsField } from './listing-condition-fields'
@@ -97,6 +107,10 @@ export const validateListingSources: Validate<unknown, unknown, ListingSiblingDa
     return true
   }
 
+  return validateSources(value)
+}
+
+function validateSources(value: unknown): true | string {
   if (!Array.isArray(value) || value.length === 0) {
     return 'Wybierz co najmniej jedno źródło treści.'
   }
@@ -116,29 +130,36 @@ function createListingBlock({
   includeContextRelations: boolean
   interfaceName: string
 }): Block {
+  const selectByFilters = filtersCondition
   const contentFields: Field[] = [
     {
       type: 'row',
       fields: [
-        {
-          name: 'selectionMode',
-          type: 'select',
-          admin: { isClearable: false, width: '33.333%' },
-          defaultValue: 'filters',
-          label: 'Tryb wyboru',
-          options: [
-            { label: 'Ręczny', value: 'manual' },
-            { label: 'Filtry', value: 'filters' },
-            ...(includeContextRelations
-              ? [{ label: 'Relacja bieżącego elementu', value: 'contextRelation' }]
-              : []),
-          ],
-          required: true,
-        },
+        ...([
+          {
+            name: 'selectionMode',
+            type: 'select',
+            admin: { isClearable: false, width: '33.333%' },
+            defaultValue: 'filters',
+            label: 'Tryb wyboru',
+            options: [
+              { label: 'Ręczny', value: 'manual' },
+              { label: 'Filtry', value: 'filters' },
+              ...(includeContextRelations
+                ? [{ label: 'Relacja bieżącego elementu', value: 'contextRelation' }]
+                : []),
+            ],
+            required: true,
+          },
+        ] satisfies Field[]),
         {
           name: 'sources',
           type: 'select',
-          admin: { condition: filtersCondition, isClearable: false, width: '66.667%' },
+          admin: {
+            condition: selectByFilters,
+            isClearable: false,
+            width: '66.667%',
+          },
           hasMany: true,
           label: 'Źródła',
           options: allListingSources.map((source) => ({
@@ -184,57 +205,59 @@ function createListingBlock({
       defaultValue: false,
       admin: {
         ...createBooleanSwitchAdmin(),
-        condition: (_data, siblingData) =>
-          siblingData.selectionMode === 'filters' && siblingData.sources?.includes('locations'),
+        condition: (data, siblingData) =>
+          selectByFilters(data, siblingData) && siblingData.sources?.includes('locations'),
       },
     },
-    {
-      name: 'items',
-      type: 'array',
-      admin: {
-        condition: (_data, siblingData) => siblingData.selectionMode === 'manual',
-        initCollapsed: false,
-      },
-      fields: [
-        {
-          name: 'item',
-          type: 'relationship',
-          admin: {
-            components: {
-              Field: '/components/admin/ListingManualItemField#ListingManualItemField',
+    ...([
+      {
+        name: 'items',
+        type: 'array',
+        admin: {
+          condition: (_data, siblingData) => siblingData.selectionMode === 'manual',
+          initCollapsed: false,
+        },
+        fields: [
+          {
+            name: 'item',
+            type: 'relationship',
+            admin: {
+              components: {
+                Field: '/components/admin/ListingManualItemField#ListingManualItemField',
+              },
             },
+            filterOptions: { _status: { equals: 'published' } },
+            label: 'Treść',
+            relationTo: [...allListingSources],
+            required: true,
           },
-          filterOptions: { _status: { equals: 'published' } },
-          label: 'Treść',
-          relationTo: [...allListingSources],
-          required: true,
-        },
-        {
-          name: 'contextLabel',
-          type: 'text',
-          admin: {
-            condition: memberProfileContextCondition,
-            description: 'Opcjonalna funkcja w kontekście tej strony, np. „Prezes Zarządu”.',
+          {
+            name: 'contextLabel',
+            type: 'text',
+            admin: {
+              condition: memberProfileContextCondition,
+              description: 'Opcjonalna funkcja w kontekście tej strony, np. „Prezes Zarządu”.',
+            },
+            hooks: { beforeValidate: [normalizeContextLabel] },
+            label: 'Podpis funkcji',
+            maxLength: 160,
           },
-          hooks: { beforeValidate: [normalizeContextLabel] },
-          label: 'Podpis funkcji',
-          maxLength: 160,
+        ],
+        label: 'Treści',
+        labels: {
+          plural: 'Treści',
+          singular: 'Treść',
         },
-      ],
-      label: 'Treści',
-      labels: {
-        plural: 'Treści',
-        singular: 'Treść',
+        validate: validateManualListingItems,
       },
-      validate: validateManualListingItems,
-    },
+    ] satisfies Field[]),
     createListingConditionsField(),
     createListingPaginationRow({
       contentListing: true,
       secondaryLeadingField: {
         name: 'sort',
         type: 'select',
-        admin: { condition: filtersCondition, isClearable: false, width: '33.333%' },
+        admin: { condition: selectByFilters, isClearable: false, width: '33.333%' },
         defaultValue: 'newest',
         label: 'Sortowanie',
         options: [
@@ -256,8 +279,11 @@ function createListingBlock({
     {
       name: 'emptyMessage',
       type: 'text',
-      admin: { condition: (_data, siblingData) => siblingData.hideWhenEmpty !== true },
-      label: 'Komunikat pustego listingu',
+      admin: {
+        condition: (_data, siblingData) =>
+          siblingData.hideWhenEmpty !== true || siblingData.searchEnabled === true,
+      },
+      label: 'Komunikat o braku wyników',
     },
   ]
   const presentationFields: Field[] = [
@@ -290,10 +316,20 @@ function createListingBlock({
       admin: { components: { Field: '/components/admin/ListingViewField#ListingViewField' } },
       hooks: {
         beforeValidate: [
-          async ({ value, siblingData, req }) => {
+          async ({ value, siblingData, req, context, previousValue }) => {
             const reference = getListingViewReference(value, siblingData.view)
             const appearance = parseListingAppearance(value)
-            if (!reference || 'id' in reference) return value == null ? value : appearance
+            if (!reference) return value == null ? value : appearance
+            if ('id' in reference) {
+              if (await lockListingViewTemplate(req, reference.id, 'use')) return appearance
+              if (
+                context.isRestoringVersion ||
+                getSharedListingViewId(previousValue) === reference.id
+              ) {
+                return detachListingView({ ...siblingData, appearance: value }, undefined)
+              }
+              throw new APIError('Wybierz dostępny szablon widoku.', 400)
+            }
             const { docs } = await req.payload.find({
               collection: 'listing-views',
               where: {
@@ -305,7 +341,8 @@ function createListingBlock({
               req,
               overrideAccess: true,
             })
-            return docs[0] ? { ...appearance, preset: `shared:${docs[0].id}` } : value
+            const template = docs[0] && (await lockListingViewTemplate(req, docs[0].id, 'use'))
+            return template ? { ...appearance, preset: `shared:${template.id}` } : value
           },
         ],
       },
@@ -348,6 +385,7 @@ function createListingBlock({
         type: 'tabs',
         tabs: [
           { label: 'Treści', fields: contentFields },
+          { label: 'Wyszukiwanie', fields: createSearchFilterFields() },
           { label: 'Prezentacja', fields: presentationFields },
         ],
       },
@@ -369,6 +407,61 @@ export const PageTemplateListingBlock = createListingBlock({
   includeContextRelations: true,
   interfaceName: 'PageTemplateListingBlock',
 })
+
+function createSearchFilterFields(): Field[] {
+  const searchOptionsCondition = (data: unknown, siblingData: Record<string, unknown>) =>
+    filtersCondition(data, siblingData) && siblingData.searchEnabled === true
+
+  return [
+    {
+      name: 'searchEnabled',
+      type: 'checkbox',
+      label: 'Pozwól czytelnikowi przeszukiwać listę',
+      defaultValue: false,
+      admin: { ...createBooleanSwitchAdmin(), condition: filtersCondition },
+    },
+    {
+      name: 'legacySearchParameters',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { ...createBooleanSwitchAdmin(), hidden: true },
+    },
+    {
+      type: 'row',
+      admin: { className: 'wkf-listing-search-filters' },
+      fields: contentSearchFilterNames.map((name): Field => ({
+        name: `filter${name[0].toUpperCase()}${name.slice(1)}`,
+        type: 'checkbox',
+        defaultValue: name !== 'branch',
+        label: contentSearchFilterLabels[name],
+        admin: {
+          ...createBooleanSwitchAdmin(),
+          condition: (data, siblingData) =>
+            searchOptionsCondition(data, siblingData) &&
+            supportsContentSearchFilter(
+              name,
+              Array.isArray(siblingData.sources) ? siblingData.sources.filter(isListingSource) : [],
+            ),
+        },
+      })),
+    },
+    {
+      name: 'filterTagGroups',
+      type: 'relationship',
+      relationTo: 'tag-groups',
+      hasMany: true,
+      label: 'Grupy tagów',
+      admin: {
+        condition: (data, siblingData) =>
+          searchOptionsCondition(data, siblingData) &&
+          supportsContentSearchFilter(
+            'tags',
+            Array.isArray(siblingData.sources) ? siblingData.sources.filter(isListingSource) : [],
+          ),
+      },
+    },
+  ]
+}
 
 function uniquePageTemplateContextListingRelations(): Array<{ label: string; value: string }> {
   const relations = new Map<string, string>()

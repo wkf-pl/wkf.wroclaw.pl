@@ -58,7 +58,7 @@ function useRowValue(fieldName: string): string {
 }
 
 const presentedLinkTargetLabels: Record<string, string> = {
-  category: 'Kategoria',
+  topic: 'Temat',
   custom: 'Własny adres',
   document: 'Dokument',
   event: 'Wydarzenie',
@@ -74,7 +74,7 @@ function usePresentedLinkDescription(): string {
   const visibleLabel = useRowValue('label')
   const targetType = useRowValue('targetType')
   const customAddress = useRowValue('customAddress')
-  const category = useRowFieldValue('category')
+  const topic = useRowFieldValue('topic')
   const document = useRowFieldValue('document')
   const event = useRowFieldValue('event')
   const eventCycle = useRowFieldValue('eventCycle')
@@ -86,7 +86,7 @@ function usePresentedLinkDescription(): string {
   if (visibleLabel) return visibleLabel
 
   const targetValues: Record<string, unknown> = {
-    category,
+    topic,
     custom: customAddress,
     document,
     event,

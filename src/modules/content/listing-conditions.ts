@@ -34,21 +34,21 @@ export type ContentListingReference = {
 }
 
 export type CurrentListingTarget =
-  ContentListingReference | { relationTo: 'categories' | 'tags'; value: RelationshipID }
+  ContentListingReference | { relationTo: 'topics' | 'tags'; value: RelationshipID }
 
-export function getTaxonomyTemplateCollection(
-  templateKey: unknown,
-): 'categories' | 'tags' | undefined {
-  if (templateKey === 'category-detail') return 'categories'
+export function getTaxonomyTemplateCollection(templateKey: unknown): 'topics' | 'tags' | undefined {
+  if (templateKey === 'topic-detail') return 'topics'
   if (templateKey === 'tag-detail') return 'tags'
   return undefined
 }
 
 export const listingConditionFields = [
   'title',
-  'category',
+  'topic',
   'tag',
   'parentPage',
+  'contentParent',
+  'tagGroup',
   'eventCycle',
   'eventTime',
   'relatedTo',
@@ -72,7 +72,7 @@ export type ListingConditionOperator = (typeof listingConditionOperators)[number
 export type ListingEventTimeValue = 'past' | 'upcoming'
 export type ListingRelatedTargetMode = 'current' | 'selected'
 export type ListingConditionRelationshipCollection =
-  'categories' | 'event-cycles' | 'pages' | 'tags'
+  'topics' | 'event-cycles' | 'pages' | 'tags' | 'tag-groups'
 
 export type ListingConditionRelationshipValue = {
   relationTo: ListingConditionRelationshipCollection
@@ -109,10 +109,12 @@ export type NormalizedListingCondition = {
 }
 
 export const listingConditionFieldLabels: Record<ListingConditionField, string> = {
-  category: 'Kategoria',
+  topic: 'Temat',
   eventCycle: 'Cykl wydarzeń',
   eventTime: 'Termin wydarzenia',
   parentPage: 'Strona nadrzędna',
+  contentParent: 'Element nadrzędny',
+  tagGroup: 'Grupa tagów',
   relatedTo: 'Powiązane z',
   significantDate: 'Data treści',
   tag: 'Tag',
@@ -145,10 +147,12 @@ export const listingConditionSupportedSources: Record<
   ListingConditionField,
   readonly ContentListingSource[]
 > = {
-  category: taxonomizableListingSources,
+  topic: taxonomizableListingSources,
   eventCycle: ['events'],
   eventTime: ['events'],
   parentPage: ['pages'],
+  contentParent: ['pages', 'posts', 'event-cycles', 'events'],
+  tagGroup: taxonomizableListingSources,
   relatedTo: relatedListingSources,
   significantDate: ['posts', 'events', 'documents'],
   tag: taxonomizableListingSources,
@@ -159,10 +163,12 @@ export const listingConditionOperatorsByField: Record<
   ListingConditionField,
   readonly ListingConditionOperator[]
 > = {
-  category: ['inSubtree', 'equals', 'isEmpty'],
+  topic: ['inSubtree', 'equals', 'isEmpty'],
   eventCycle: ['equals', 'isEmpty'],
   eventTime: ['equals'],
   parentPage: ['equals', 'isEmpty'],
+  contentParent: ['equals', 'inSubtree', 'isEmpty'],
+  tagGroup: ['contains'],
   relatedTo: ['contains'],
   significantDate: ['notOlderThan', 'before', 'after', 'between'],
   tag: ['contains', 'isEmpty'],
@@ -184,7 +190,17 @@ export function getListingConditionOperatorLabel(
   field: ListingConditionField,
   operator: ListingConditionOperator,
 ): string {
-  if (field === 'category' && operator === 'equals') return 'to dokładnie'
+  if (field === 'topic') {
+    if (operator === 'equals') return 'to dokładnie'
+    if (operator === 'inSubtree') return 'to lub ma podtemat'
+    if (operator === 'isEmpty') return 'bez tematów'
+  }
+  if (field === 'contentParent') {
+    if (operator === 'equals') return 'bezpośrednio pod'
+    if (operator === 'inSubtree') return 'w całej gałęzi'
+    if (operator === 'isEmpty') return 'bez rodzica'
+  }
+  if (field === 'tagGroup') return 'ma dowolny tag z'
   return listingConditionOperatorLabels[operator]
 }
 
@@ -192,12 +208,14 @@ export function getListingConditionRelationshipCollection(
   field: ListingConditionField,
 ): ListingConditionRelationshipCollection | undefined {
   switch (field) {
-    case 'category':
-      return 'categories'
+    case 'topic':
+      return 'topics'
     case 'eventCycle':
       return 'event-cycles'
     case 'parentPage':
       return 'pages'
+    case 'tagGroup':
+      return 'tag-groups'
     case 'tag':
       return 'tags'
     default:

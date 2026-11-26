@@ -79,7 +79,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [
         {
           blockType: 'columnLayout',
@@ -103,7 +103,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [
         {
           blockType: 'columnLayout',
@@ -125,7 +125,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [richTextBlock('Existing content')],
       slug: addedFixtureSlug,
       title: 'E2E added column layout admin',
@@ -137,7 +137,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [
         {
           blockType: 'columnLayout',
@@ -174,7 +174,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [
         {
           blockType: 'columnLayout',

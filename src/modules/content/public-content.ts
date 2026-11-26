@@ -1,10 +1,10 @@
 import { cache } from 'react'
-import { getPayload } from 'payload'
+import { createLocalReq, getPayload, type PopulateType } from 'payload'
 
 import config from '@payload-config'
 
 import type {
-  Category,
+  Topic,
   Footer,
   HomepageHero,
   HomepageSection,
@@ -15,6 +15,28 @@ import type {
 } from '@/payload-types'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import { publicRequestContext } from '@/modules/content/public-access'
+
+const publishedLinkTarget = { _status: true, slug: true, title: true } as const
+export const publicLinkTargetPopulate = {
+  documents: publishedLinkTarget,
+  'event-cycles': publishedLinkTarget,
+  events: publishedLinkTarget,
+  pages: { ...publishedLinkTarget, fullTitle: true },
+  partners: { _status: true, name: true, slug: true },
+  posts: publishedLinkTarget,
+  tags: { name: true, slug: true },
+  topics: { name: true, slug: true },
+} satisfies PopulateType
+
+const publicMenuPopulate = {
+  ...publicLinkTargetPopulate,
+  media: { _objectKey: true, alt: true, filename: true, url: true },
+} satisfies PopulateType
+const publicMenuCacheTags = [
+  publicCacheTags.navigation,
+  publicCacheTags.contentListings,
+  publicCacheTags.media,
+]
 
 const findPublishedPageBySlugCached = cachePublicData(
   'published-page-by-slug',
@@ -27,6 +49,7 @@ const findPublishedPageBySlugCached = cachePublicData(
       draft: false,
       limit: 1,
       overrideAccess: false,
+      pagination: false,
       user: null,
       where: {
         and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }],
@@ -40,22 +63,35 @@ const findPublishedPageBySlugCached = cachePublicData(
 
 export const findPublishedPageBySlug = cache(findPublishedPageBySlugCached)
 
-const getPublicNavigationCached = cachePublicData(
-  'public-navigation',
-  async (): Promise<Navigation> => {
-    const payload = await getPayload({ config })
-    return payload.findGlobal({
-      slug: 'navigation',
-      context: publicRequestContext,
-      depth: 2,
-      overrideAccess: false,
-      user: null,
-    })
-  },
-  { revalidate: 300, tags: [publicCacheTags.navigation, publicCacheTags.homepage] },
+const getPublicMenus = cache(
+  cachePublicData(
+    'public-site-menus',
+    async (): Promise<{ footer: Footer; navigation: Navigation }> => {
+      const payload = await getPayload({ config })
+      const request = await createLocalReq({ context: publicRequestContext }, payload)
+      const options = {
+        depth: 1,
+        overrideAccess: false,
+        populate: publicMenuPopulate,
+        req: request,
+      }
+      const [navigation, footer] = await Promise.all([
+        payload.findGlobal({ ...options, slug: 'navigation' }),
+        payload.findGlobal({ ...options, slug: 'footer' }),
+      ])
+      return { footer, navigation }
+    },
+    { revalidate: 300, tags: publicMenuCacheTags },
+  ),
 )
 
-export const getPublicNavigation = cache(getPublicNavigationCached)
+export async function getPublicNavigation(): Promise<Navigation> {
+  return (await getPublicMenus()).navigation
+}
+
+export async function getPublicFooter(): Promise<Footer> {
+  return (await getPublicMenus()).footer
+}
 
 const getPublicHomepageHeroCached = cachePublicData(
   'public-homepage-hero',
@@ -91,23 +127,6 @@ const getPublicHomepageSectionsCached = cachePublicData(
 
 export const getPublicHomepageSections = cache(getPublicHomepageSectionsCached)
 
-const getPublicFooterCached = cachePublicData(
-  'public-footer',
-  async (): Promise<Footer> => {
-    const payload = await getPayload({ config })
-    return payload.findGlobal({
-      slug: 'footer',
-      context: publicRequestContext,
-      depth: 2,
-      overrideAccess: false,
-      user: null,
-    })
-  },
-  { revalidate: 300, tags: [publicCacheTags.navigation] },
-)
-
-export const getPublicFooter = cache(getPublicFooterCached)
-
 const getPublicSiteSettingsCached = cachePublicData(
   'public-site-settings',
   async (): Promise<SiteSetting> => {
@@ -136,6 +155,7 @@ const findPublishedPostBySlugCached = cachePublicData(
       draft: false,
       limit: 1,
       overrideAccess: false,
+      pagination: false,
       user: null,
       where: {
         and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }],
@@ -160,6 +180,7 @@ const findPublishedPostsCached = cachePublicData(
       draft: false,
       limit,
       overrideAccess: false,
+      pagination: false,
       sort: ['-publishedAt', '-createdAt'],
       user: null,
       where: { _status: { equals: 'published' } },
@@ -175,15 +196,16 @@ export function findPublishedPosts(limit: number): Promise<Post[]> {
   return findPublishedPostsCached(normalizedLimit)
 }
 
-const findCategoryBySlugCached = cachePublicData(
-  'category-by-slug',
-  async (slug: string): Promise<Category | null> => {
+const findTopicBySlugCached = cachePublicData(
+  'topic-by-slug',
+  async (slug: string): Promise<Topic | null> => {
     const payload = await getPayload({ config })
     const result = await payload.find({
-      collection: 'categories',
+      collection: 'topics',
       depth: 0,
       limit: 1,
       overrideAccess: false,
+      pagination: false,
       user: null,
       where: {
         slug: { equals: slug },
@@ -195,12 +217,12 @@ const findCategoryBySlugCached = cachePublicData(
   { revalidate: 3600, tags: [publicCacheTags.contentListings] },
 )
 
-export const findCategoryBySlug = cache(findCategoryBySlugCached)
+export const findTopicBySlug = cache(findTopicBySlugCached)
 
-export const findPublicCategoryByID = cache(async (id: number): Promise<Category | null> => {
+export const findPublicTopicByID = cache(async (id: number): Promise<Topic | null> => {
   const payload = await getPayload({ config })
   return payload.findByID({
-    collection: 'categories',
+    collection: 'topics',
     context: publicRequestContext,
     depth: 0,
     disableErrors: true,
@@ -220,6 +242,7 @@ const findTagBySlugCached = cachePublicData(
       depth: 0,
       limit: 1,
       overrideAccess: false,
+      pagination: false,
       user: null,
       where: {
         slug: { equals: slug },

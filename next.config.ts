@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   output: 'standalone',
   redirects: () => [
+    { source: '/category/:slug', destination: '/topic/:slug', permanent: true },
     {
       destination: 'https://wkf.wroclaw.pl/:path*',
       has: [

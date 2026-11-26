@@ -15,8 +15,8 @@ import { login } from '../helpers/login'
 import { administratorTestUser, editorTestUser } from '../helpers/seedUser'
 
 const fixture = {
-  categoryChildSlug: 'route-appearance-category-child-e2e',
-  categorySlug: 'route-appearance-category-e2e',
+  topicChildSlug: 'route-appearance-topic-child-e2e',
+  topicSlug: 'route-appearance-topic-e2e',
   eventSlug: 'route-appearance-event-e2e',
   memberActivities: 'Prowadzę dyżury informacyjne oraz wspieram wydarzenia otwarte.',
   memberEmail: 'route-appearance-member-e2e@example.invalid',
@@ -123,7 +123,7 @@ test.beforeAll(async () => {
     collection: 'partners',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       excerpt: 'Partner wspierający spotkania i wydarzenia Wrocławskiego Klubu Fantastyki.',
       heroImage: heroImage.id,
       layout: [
@@ -151,7 +151,7 @@ test.beforeAll(async () => {
     collection: 'event-cycles',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       eventDefaults: {
         capacity: 12,
         capacityMode: 'exact',
@@ -214,7 +214,7 @@ test.beforeAll(async () => {
     collection: 'events',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       calendarRevision: 0,
       capacity: 12,
       capacityMode: 'exact',
@@ -268,22 +268,22 @@ test.beforeAll(async () => {
     overrideAccess: true,
   })
 
-  const parentCategory = await payload.create({
-    collection: 'categories',
+  const parentTopic = await payload.create({
+    collection: 'topics',
     data: {
       description: 'Treści poświęcone klubowym grom fabularnym.',
       name: 'Gry fabularne E2E',
-      slug: fixture.categorySlug,
+      slug: fixture.topicSlug,
     },
     overrideAccess: true,
   })
-  const childCategory = await payload.create({
-    collection: 'categories',
+  const childTopic = await payload.create({
+    collection: 'topics',
     data: {
       description: 'Materiały dla osób rozpoczynających przygodę z RPG.',
       name: 'Dla początkujących E2E',
-      parent: parentCategory.id,
-      slug: fixture.categoryChildSlug,
+      parent: parentTopic.id,
+      slug: fixture.topicChildSlug,
     },
     overrideAccess: true,
   })
@@ -301,8 +301,8 @@ test.beforeAll(async () => {
     collection: 'posts',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
-      category: childCategory.id,
+      author: author.id,
+      topics: [childTopic.id],
       excerpt: 'Przewodnik po pierwszym spotkaniu i przygotowaniu do klubowej sesji RPG.',
       heroImage: heroImage.id,
       layout: [
@@ -362,8 +362,8 @@ const routes = [
   {
     heading: 'Gry fabularne E2E',
     headingLevel: 1,
-    name: 'category',
-    path: () => `/category/${fixture.categorySlug}`,
+    name: 'topic',
+    path: () => `/topic/${fixture.topicSlug}`,
   },
   {
     heading: 'Pierwsza wyprawa E2E',
@@ -625,14 +625,14 @@ const templateRoutes: TemplateRoute[] = [
     expectedLinks: [taggedPostLink],
   },
   {
-    route: 'category',
-    key: 'category-detail',
-    target: 'categories',
+    route: 'topic',
+    key: 'topic-detail',
+    target: 'topics',
     hero: [currentItemField('name', 'primaryHeading'), currentItemField('hierarchy', 'pills')],
     content: [taxonomyListing, listing(['pages'], { conditions: [currentItemCondition] })],
     expectedLinks: [
       taggedPostLink,
-      { name: 'Dla początkujących E2E', path: () => `/category/${fixture.categoryChildSlug}` },
+      { name: 'Dla początkujących E2E', path: () => `/topic/${fixture.topicChildSlug}` },
     ],
   },
 ]
@@ -737,7 +737,7 @@ for (const scenario of templateRoutes) {
           /^\/events\/calendar\.ics\?series=.+/,
         )
       }
-      if (target === 'tags' || target === 'categories') {
+      if (target === 'tags' || target === 'topics') {
         await expect(
           document
             .locator('.listingBlock article')
@@ -769,7 +769,9 @@ for (const scenario of templateRoutes) {
       const response = await page.goto(`/preview?pageTemplate=${scenario.key}`)
       expect(response?.status()).toBe(200)
       expect(new URL(page.url()).pathname).toBe(pathname)
-      await expect(page.getByRole('status')).toContainText('Podglądasz roboczy układ szablonu.')
+      await expect(
+        page.getByRole('status').filter({ hasText: 'Podglądasz roboczy układ szablonu.' }),
+      ).toBeVisible()
       await expectTemplate(page)
       await expectLegacy()
 
@@ -843,14 +845,14 @@ async function cleanupFixtures(): Promise<void> {
     where: { email: { equals: fixture.memberEmail } },
   })
   await payload.delete({
-    collection: 'categories',
+    collection: 'topics',
     overrideAccess: true,
-    where: { slug: { equals: fixture.categoryChildSlug } },
+    where: { slug: { equals: fixture.topicChildSlug } },
   })
   await payload.delete({
-    collection: 'categories',
+    collection: 'topics',
     overrideAccess: true,
-    where: { slug: { equals: fixture.categorySlug } },
+    where: { slug: { equals: fixture.topicSlug } },
   })
   await payload.delete({
     collection: 'tags',

@@ -7,7 +7,7 @@ import {
 } from 'payload'
 
 import type { Location } from '@/payload-types'
-import { getTransactionExecutor } from '@/modules/content/lock-content-author'
+import { getTransactionExecutor } from '@/modules/content/lock-content-owners'
 
 const relationshipTables = [
   'page_templates',

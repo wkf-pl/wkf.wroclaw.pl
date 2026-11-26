@@ -5,6 +5,7 @@ import type { HomepageHero as HomepageHeroData } from '@/payload-types'
 import { getMediaURL } from '@/modules/media/media-url'
 import { resolvePresentedLinks } from '@/modules/navigation/links'
 
+import { CmsImage } from './CmsImage'
 import { PresentedLink } from './PresentedLink'
 
 const homepageTitleConverters: JSXConvertersFunction = ({ defaultConverters }) => ({
@@ -20,8 +21,7 @@ export function HomepageHero({ hero }: { hero: HomepageHeroData }) {
     <section className="homeHero">
       {imageURL ? (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element -- CMS media can use a runtime-configured Azure host. */}
-          <img alt="" className="homeHeroImage" src={imageURL} />
+          <CmsImage alt="" className="homeHeroImage" media={hero.image} priority sizes="100vw" />
           <span aria-hidden="true" className="homeHeroImageShade" />
         </>
       ) : null}

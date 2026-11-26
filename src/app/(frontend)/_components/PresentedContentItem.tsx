@@ -39,11 +39,12 @@ export function PresentedContentDetails({
       {presentation.interests ? (
         <p className="contentCardInterests">{presentation.interests}</p>
       ) : null}
-      <TaxonomyLinks category={presentation.category} tags={presentation.tags} />
+      <TaxonomyLinks topics={presentation.topics} tags={presentation.tags} />
       {presentation.secondaryAction ? (
         <Link
           className="contentCarouselSecondaryAction contentCardSecondaryAction"
           href={presentation.secondaryAction.href}
+          prefetch={false}
         >
           <ListingActionContent
             style={presentation.actionStyle}
@@ -103,7 +104,7 @@ export function PresentedContentItem({
           {showTileOverlay ? <span aria-hidden="true" className="contentTileOverlay" /> : null}
           <div className="contentTileContent">
             <h2 className={presentation.hideTitle ? 'listingHiddenTitle' : undefined}>
-              <Link className="contentTileTitleLink" href={presentation.url}>
+              <Link className="contentTileTitleLink" href={presentation.url} prefetch={false}>
                 {presentation.hideTitle ? (
                   <span className="srOnly">{presentation.title}</span>
                 ) : (
@@ -128,14 +129,19 @@ export function PresentedContentItem({
       className={`contentCard${grid ? ' contentCard--grid' : ''}${!showImage || row ? ' contentCard--withoutImage' : ''}`}
     >
       {showImage && !row ? (
-        <Link aria-label={presentation.title} className="contentCardImage" href={presentation.url}>
+        <Link
+          aria-label={presentation.title}
+          className="contentCardImage"
+          href={presentation.url}
+          prefetch={false}
+        >
           <PresentedImage presentation={presentation} />
         </Link>
       ) : null}
       <div className="contentCardContent">
         <PresentedContentMeta presentation={presentation} />
         <h2 className={presentation.hideTitle ? 'listingHiddenTitle' : undefined}>
-          <Link href={presentation.url}>
+          <Link href={presentation.url} prefetch={false}>
             {presentation.hideTitle ? (
               <span className="srOnly">{presentation.title}</span>
             ) : (

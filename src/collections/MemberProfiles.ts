@@ -134,6 +134,7 @@ export const MemberProfiles: CollectionConfig = {
     group: 'Klubowe',
     hidden: ({ user }) =>
       !clientUserHasUnrestrictedResourcePermission(user, 'member-profiles', 'read'),
+    listSearchableFields: ['publicName', 'clubFunction'],
     useAsTitle: 'publicName',
   },
   fields: [
@@ -204,6 +205,7 @@ export const MemberProfiles: CollectionConfig = {
                     },
                     mimeType: { type: 'string' },
                     remove: { type: 'boolean' },
+                    removeImageMetadata: { type: 'boolean' },
                   },
                 }),
               ],

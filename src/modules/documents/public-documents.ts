@@ -14,6 +14,7 @@ export async function findPublishedDocumentBySlug(slug: string): Promise<Documen
     draft: false,
     limit: 1,
     overrideAccess: false,
+    pagination: false,
     user: null,
     where: { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] },
   })

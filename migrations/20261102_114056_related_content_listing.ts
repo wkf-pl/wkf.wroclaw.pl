@@ -138,6 +138,21 @@ async function rebuildContentListingIndex({
     skipContentListingSync: true,
     skipPublicCacheInvalidation: true,
   }
+  const currentSchema = await db.execute(sql`
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'content_listing_items' AND column_name = 'topic_search_index'
+  `)
+  if (currentSchema.rows.length) await rebuildCurrentIndex(db, req)
+  await db.execute(sql`
+    ALTER TABLE "content_listing_items"
+    ALTER COLUMN "related_target_search_index" DROP DEFAULT;
+  `)
+}
+
+async function rebuildCurrentIndex(
+  db: MigrateUpArgs['db'],
+  req: MigrateUpArgs['req'],
+): Promise<void> {
   const publishedDocuments = await db.execute(sql`
     SELECT 'pages' AS "source", "id" AS "source_document_id"
       FROM "pages" WHERE "_status" = 'published' AND "deleted_at" IS NULL
@@ -193,10 +208,6 @@ async function rebuildContentListingIndex({
       })
     }
   }
-  await db.execute(sql`
-    ALTER TABLE "content_listing_items"
-    ALTER COLUMN "related_target_search_index" DROP DEFAULT;
-  `)
 }
 
 export async function up({ db, payload: _payload, req }: MigrateUpArgs): Promise<void> {

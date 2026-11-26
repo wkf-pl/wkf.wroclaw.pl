@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import { Fragment } from 'react'
 
 import type { PublicBreadcrumb } from '@/modules/content/public-hierarchy'
-import type { Category, Media } from '@/payload-types'
-import { getMediaURL } from '@/modules/media/media-url'
+import type { Topic, Media } from '@/payload-types'
+import { getResponsiveMedia } from '@/modules/media/media-url'
 
 import { HierarchyBreadcrumbs } from './HierarchyBreadcrumbs'
 import { RasterIcon } from '@/components/RasterIcon'
@@ -12,21 +13,29 @@ export type ContentHeroImage = {
   alt: string
   height?: number
   src: string
+  srcSet?: string
   variant?: 'landscape' | 'portrait'
   width?: number
 }
 
 export function getContentHeroImage(
-  media: Pick<Media, 'alt' | 'height' | 'url' | 'width'> | number | null | undefined,
+  media:
+    | (Pick<Media, 'alt' | 'height' | 'url' | 'width'> &
+        Partial<Pick<Media, 'id' | 'imageVariants'>>)
+    | number
+    | null
+    | undefined,
 ): ContentHeroImage | undefined {
-  const src = getMediaURL(media)
-  if (!src || !media || typeof media !== 'object') return undefined
+  if (!media || typeof media !== 'object') return undefined
+  const { src, srcSet, height, width } = getResponsiveMedia(media)
+  if (!src) return undefined
 
   return {
     alt: media.alt,
-    height: media.height || undefined,
+    height,
     src,
-    width: media.width || undefined,
+    srcSet,
+    width,
   }
 }
 
@@ -99,7 +108,13 @@ export function ContentHero({
               decoding="async"
               fetchPriority="high"
               height={image.height}
+              sizes={
+                image.srcSet
+                  ? '(max-width: 760px) 100vw, (max-width: 1200px) 50vw, 680px'
+                  : undefined
+              }
               src={image.src}
+              srcSet={image.srcSet}
               width={image.width}
             />
           </div>
@@ -109,12 +124,16 @@ export function ContentHero({
   )
 }
 
-export function ContentHeroCategory({ category }: { category?: Category | number | null }) {
-  if (!category || typeof category !== 'object') {
-    return <span aria-hidden="true">&nbsp;</span>
-  }
+export function ContentHeroTopics({ topics }: { topics?: (Topic | number)[] | null }) {
+  const populatedTopics = topics?.filter((topic): topic is Topic => typeof topic === 'object') ?? []
+  if (!populatedTopics.length) return <span aria-hidden="true">&nbsp;</span>
 
-  return <Link href={`/category/${category.slug}`}>{category.name}</Link>
+  return populatedTopics.map((topic, index) => (
+    <Fragment key={topic.id}>
+      {index > 0 ? ', ' : null}
+      <Link href={`/topic/${topic.slug}`}>{topic.name}</Link>
+    </Fragment>
+  ))
 }
 
 export function ContentHeroMeta({ authorName, collection, date }: ContentHeroMetaProperties) {

@@ -14,13 +14,13 @@ export const richTextInternalLinkCollections = [
   'posts',
   'events',
   'event-cycles',
-  'categories',
+  'topics',
   'tags',
   'documents',
 ] as const satisfies CollectionSlug[]
 
 const publicPathPrefixes: Record<(typeof richTextInternalLinkCollections)[number], string> = {
-  categories: '/category/',
+  topics: '/topic/',
   documents: '/dokumenty/',
   'event-cycles': '/events/series/',
   events: '/events/',
@@ -30,7 +30,7 @@ const publicPathPrefixes: Record<(typeof richTextInternalLinkCollections)[number
 }
 
 const internalTargetConfiguration = {
-  category: { fieldName: 'category', relationTo: 'categories' },
+  topic: { fieldName: 'topic', relationTo: 'topics' },
   document: { fieldName: 'document', relationTo: 'documents' },
   event: { fieldName: 'event', relationTo: 'events' },
   eventCycle: { fieldName: 'eventCycle', relationTo: 'event-cycles' },
@@ -60,7 +60,7 @@ export type RichTextLinkTechnicalValues = {
 export const richTextLinkConditionalFieldNames = [
   'eventCycle',
   'document',
-  'category',
+  'topic',
   'page',
   'tag',
   'post',

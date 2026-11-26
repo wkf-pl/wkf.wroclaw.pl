@@ -1,3 +1,5 @@
+import { createContentAuthorField } from '@/modules/content/content-author-field'
+import { createContentOwnersField } from '@/modules/content/content-owners-field'
 import type { CollectionConfig } from 'payload'
 
 import { setPublishedAt } from '@/modules/content/hooks/set-published-at'
@@ -67,7 +69,7 @@ export const Documents: CollectionConfig = {
       'documentType',
       'documentNumber',
       'documentDate',
-      'category',
+      'topics',
       'tags',
       '_status',
     ],
@@ -167,21 +169,8 @@ export const Documents: CollectionConfig = {
       relationTo: 'document-files',
     },
     ...taxonomyFields,
-    {
-      name: 'author',
-      type: 'relationship',
-      defaultValue: ({ user }) => user?.id,
-      label: 'Autor wpisu',
-      relationTo: 'users',
-      required: true,
-      admin: {
-        components: {
-          Cell: '/components/admin/UserIdentity#UserRelationshipCell',
-          Field: '/components/admin/UserRelationshipField#UserRelationshipField',
-        },
-        position: 'sidebar',
-      },
-    },
+    createContentAuthorField(),
+    createContentOwnersField(),
     {
       name: 'publishedAt',
       type: 'date',

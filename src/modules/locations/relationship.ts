@@ -1,5 +1,5 @@
 import { sql } from '@payloadcms/db-postgres'
-import { getTransactionExecutor } from '@/modules/content/lock-content-author'
+import { getTransactionExecutor } from '@/modules/content/lock-content-owners'
 import { APIError, type Field, type PayloadRequest, type Where } from 'payload'
 
 import { getFormRelationshipId } from '@/lib/relationships'

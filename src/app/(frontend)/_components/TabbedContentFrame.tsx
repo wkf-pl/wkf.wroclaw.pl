@@ -1,6 +1,20 @@
 'use client'
 
-import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
+
+const TabHasOpenedContext = createContext(true)
+
+export function useTabHasOpened(): boolean {
+  return useContext(TabHasOpenedContext)
+}
 
 export type TabbedContentFrameTab = {
   content: ReactNode
@@ -22,12 +36,19 @@ export function TabbedContentFrame({
   tabs: TabbedContentFrameTab[]
 }) {
   const [activeTabIndex, setActiveTabIndex] = useState(0)
+  const [openedTabIDs, setOpenedTabIDs] = useState<string[]>([])
   const tabButtons = useRef<Array<HTMLButtonElement | null>>([])
   const componentID = useId().replaceAll(':', '')
 
   if (!tabs.length) return null
 
   function selectTab(tabIndex: number, focus = false): void {
+    const previouslyActiveTabID = tabs[activeTabIndex]?.id
+    if (previouslyActiveTabID !== undefined) {
+      setOpenedTabIDs((opened) =>
+        opened.includes(previouslyActiveTabID) ? opened : [...opened, previouslyActiveTabID],
+      )
+    }
     setActiveTabIndex(tabIndex)
     if (focus) {
       tabButtons.current[tabIndex]?.focus()
@@ -102,7 +123,13 @@ export function TabbedContentFrame({
               role="tabpanel"
               tabIndex={0}
             >
-              <div className="tabbedContentPanelInner">{tab.content}</div>
+              <div className="tabbedContentPanelInner">
+                <TabHasOpenedContext
+                  value={activeTabIndex === tabIndex || openedTabIDs.includes(tab.id)}
+                >
+                  {tab.content}
+                </TabHasOpenedContext>
+              </div>
             </div>
           )
         })}

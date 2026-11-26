@@ -1,9 +1,9 @@
 import type { PayloadRequest } from 'payload'
 
-import { groupAuthoredCollections } from '@/modules/content/content-author'
+import { contentOwnerCollections } from '@/modules/content/content-owners'
 
-export function groupAuthorWhere(id: number | string) {
-  return { author: { equals: { relationTo: 'user-groups', value: id } } }
+export function groupOwnerWhere(id: number | string) {
+  return { owners: { equals: { relationTo: 'user-groups', value: id } } }
 }
 
 export async function findUserGroupAssignments(
@@ -12,7 +12,7 @@ export async function findUserGroupAssignments(
   limit: number,
 ) {
   return Promise.all(
-    groupAuthoredCollections.map(async (collection) => ({
+    contentOwnerCollections.map(async (collection) => ({
       collection,
       ...(await req.payload.find({
         collection,
@@ -22,7 +22,7 @@ export async function findUserGroupAssignments(
         overrideAccess: false,
         req,
         trash: true,
-        where: groupAuthorWhere(id),
+        where: groupOwnerWhere(id),
       })),
     })),
   )

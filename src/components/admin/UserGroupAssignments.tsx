@@ -13,8 +13,8 @@ export async function UserGroupAssignments({ id, req }: UIFieldServerProps) {
     formatAdminURL({ adminRoute, path: `/collections/${collection}${suffix}` })
 
   const filter = new URLSearchParams({
-    'where[author.value][equals]': String(id),
-    'where[author.relationTo][equals]': 'user-groups',
+    'where[owners.value][equals]': String(id),
+    'where[owners.relationTo][equals]': 'user-groups',
   })
 
   if (assignments.every(({ totalDocs }) => totalDocs === 0)) {

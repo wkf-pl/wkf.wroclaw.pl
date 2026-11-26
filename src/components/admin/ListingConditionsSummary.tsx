@@ -154,7 +154,9 @@ function getConditionValueLabel(
   }
   if (condition.dateValue) return condition.dateValue
 
-  const relatedValue = condition.relationshipValue?.value
+  if (condition.field === 'contentParent' && condition.relatedTargetMode === 'current')
+    return 'bieżącym elementem'
+  const relatedValue = condition.relatedTargetValue?.value ?? condition.relationshipValue?.value
   const relatedLabel = relationshipLabel || getRelationshipLabel(relatedValue)
   return relatedLabel ? `„${relatedLabel}”` : '…'
 }
@@ -183,7 +185,7 @@ function useConditionRelationshipLabel(condition: ListingConditionInput): string
 
 const relationshipTitleFields = {
   locations: 'venueName',
-  categories: 'fullTitle',
+  topics: 'fullTitle',
   documents: 'title',
   'event-cycles': 'title',
   events: 'title',
@@ -192,6 +194,7 @@ const relationshipTitleFields = {
   partners: 'name',
   posts: 'title',
   tags: 'name',
+  'tag-groups': 'name',
 } as const
 
 const relationshipLabelQuery = {
@@ -214,7 +217,9 @@ function getConditionRelationshipIdentity(condition: ListingConditionInput): {
   if (condition.operator === 'isEmpty') return null
 
   const relationshipValue =
-    condition.field === 'relatedTo' ? condition.relatedTargetValue : condition.relationshipValue
+    condition.field === 'relatedTo' || condition.field === 'contentParent'
+      ? condition.relatedTargetValue
+      : condition.relationshipValue
   if (!relationshipValue || !(relationshipValue.relationTo in relationshipTitleFields)) return null
 
   const value = relationshipValue.value

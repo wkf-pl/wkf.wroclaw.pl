@@ -13,7 +13,7 @@ const sitemapDocumentSelect = { slug: true, updatedAt: true } as const
 
 export async function loadPublicSitemap() {
   const payload = await getPayload({ config })
-  const [blogTemplate, pages, posts, categories, tags, events, cycles, partners, memberProfiles] =
+  const [blogTemplate, pages, posts, topics, tags, events, cycles, partners, memberProfiles] =
     await Promise.all([
       findPublishedPageTemplateMetadata('blog-index'),
       collectPayloadPages((page) =>
@@ -46,7 +46,7 @@ export async function loadPublicSitemap() {
       ),
       collectPayloadPages((page) =>
         payload.find({
-          collection: 'categories',
+          collection: 'topics',
           context: publicRequestContext,
           depth: 0,
           limit: 100,
@@ -129,7 +129,7 @@ export async function loadPublicSitemap() {
   return createPublicSitemap({
     blogTemplateUpdatedAt:
       blogTemplate?.renderingMode === 'template' ? blogTemplate.updatedAt : undefined,
-    categories,
+    topics,
     cycles,
     events,
     memberProfiles,

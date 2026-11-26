@@ -11,7 +11,7 @@ import {
 import type { RelationshipFieldClientProps } from 'payload'
 import { formatAdminURL } from 'payload/shared'
 import type { FocusEvent, MouseEvent } from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { getFormRelationshipId } from '@/lib/relationships'
 
@@ -31,45 +31,20 @@ const userLabelSelector = [
   '.rs__option',
 ].join(', ')
 
-export function UserRelationshipField({
-  defaultToCurrentUser = false,
-  ...properties
-}: RelationshipFieldClientProps & { defaultToCurrentUser?: boolean }) {
+export function UserRelationshipField(properties: RelationshipFieldClientProps) {
   const [hoveredUser, setHoveredUser] = useState<{
     displayName: string
     id?: number | string
   } | null>(null)
   const { user: authenticatedUser } = useAuth()
-  const { formInitializing, setValue, value } = useField<unknown>({
+  const { value } = useField<unknown>({
     potentiallyStalePath: properties.path,
   })
-  const shouldInitializeAuthor = useRef(defaultToCurrentUser)
   const isPolymorphic = Array.isArray(properties.field.relationTo)
   const selectedUserID =
     !isPolymorphic || (isRecord(value) && value.relationTo === 'users')
       ? getFormRelationshipId(value)
       : undefined
-  useEffect(() => {
-    if (
-      !formInitializing &&
-      shouldInitializeAuthor.current &&
-      authenticatedUser?.id !== undefined
-    ) {
-      shouldInitializeAuthor.current = false
-      if (value == null) {
-        setValue({ relationTo: 'users', value: authenticatedUser.id }, true)
-      }
-      return
-    }
-    if (
-      !isPolymorphic &&
-      selectedUserID === undefined &&
-      value === null &&
-      authenticatedUser?.id !== undefined
-    ) {
-      setValue(authenticatedUser.id)
-    }
-  }, [authenticatedUser?.id, formInitializing, isPolymorphic, selectedUserID, setValue, value])
 
   const {
     config: {

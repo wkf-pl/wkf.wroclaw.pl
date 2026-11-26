@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
+import { getContentAuthorName } from '@/modules/content/content-author'
+
 import { CmsRichText } from '@/components/CmsRichText'
 import { getDocumentDisplayLabel } from '@/modules/documents/document-types'
 import { findPublishedDocumentBySlug } from '@/modules/documents/public-documents'
-import type { DocumentFile, User } from '@/payload-types'
+import type { DocumentFile } from '@/payload-types'
 
 import { ContentHero, ContentHeroMeta } from '../../_components/ContentHero'
 import { DocumentPdfPreview } from '../../_components/DocumentPdfPreview'
@@ -46,7 +48,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ slug:
       const populatedFile = getPopulatedFile(file)
       return populatedFile ? [populatedFile] : []
     }) ?? []
-  const authorName = getAuthorName(document.author)
+  const authorName = await getContentAuthorName(document.author)
   const primaryFileHref = primaryFile ? `/dokumenty/${document.slug}/plik/${primaryFile.id}` : null
 
   return (
@@ -66,7 +68,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ slug:
           }
           title={document.title}
         >
-          <TaxonomyLinks category={document.category} tags={document.tags} />
+          <TaxonomyLinks topics={document.topics} tags={document.tags} />
           <ContentHeroMeta
             authorName={authorName}
             date={{
@@ -106,8 +108,4 @@ function FileLink({ file, slug }: { file: DocumentFile; slug: string }) {
 
 function getPopulatedFile(value: DocumentFile | number): DocumentFile | null {
   return typeof value === 'object' ? value : null
-}
-
-function getAuthorName(author: null | number | User): null | string {
-  return author && typeof author === 'object' ? author.displayName || null : null
 }

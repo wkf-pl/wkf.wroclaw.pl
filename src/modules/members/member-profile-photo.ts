@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
+import { readFile, rm } from 'node:fs/promises'
 import { Readable } from 'node:stream'
 import { isDeepStrictEqual } from 'node:util'
 
@@ -13,14 +13,14 @@ import {
   type FieldAccess,
   type PayloadRequest,
 } from 'payload'
-import sharp from 'sharp'
 
-import { getEnvironmentBoolean } from '@/lib/env'
 import { getRelationshipId } from '@/lib/relationships'
+import { createProfileImageSet, ImageInputError } from '@/modules/media/image-set'
 import { getUserIdentity } from '@/modules/membership/permission-resolution'
 import { createRolePermissionAccess } from '@/modules/membership/role-access'
 import type { MemberProfile } from '@/payload-types'
 import { getStorageContainerClient } from '@/storage/get-storage-container-client'
+import { storeImageSet } from '@/storage/store-image-set'
 
 import {
   memberProfilePhotoMimeTypes,
@@ -124,71 +124,22 @@ export const deleteMemberProfilePhotos: CollectionAfterDeleteHook = async ({ doc
   return doc
 }
 
-const allowedFormats = new Set(['avif', 'heif', 'jpeg', 'png', 'webp'])
-
-async function storePhoto(input: Buffer): Promise<StoredPhoto> {
+async function storePhoto(input: Buffer, removeImageMetadata: boolean): Promise<StoredPhoto> {
   if (!input.length || input.length > memberProfilePhotoSizeLimit) {
     throw new APIError('Zdjęcie profilowe może mieć najwyżej 5 MiB.', 400)
   }
 
-  let image: ReturnType<typeof sharp>
-  try {
-    image = sharp(input)
-    const metadata = await image.metadata()
-    if (
-      !metadata.format ||
-      !allowedFormats.has(metadata.format) ||
-      (metadata.format === 'heif' && metadata.compression !== 'av1')
-    ) {
-      throw new Error('Unsupported image format')
-    }
-    if ((metadata.pages ?? 1) > 1) {
-      throw new APIError('Animowane zdjęcia profilowe nie są obsługiwane.', 400)
-    }
-  } catch (error) {
-    if (error instanceof APIError) throw error
-    throw new APIError('Wybierz prawidłowy plik JPEG, PNG, WebP lub AVIF.', 400)
-  }
-
   const photoID = randomUUID()
   const filenames = { card: `${photoID}-card.webp`, profile: `${photoID}-profile.webp` }
-  const sizes = await Promise.all(
-    (
-      [
-        ['card', 192, 82],
-        ['profile', 512, 86],
-      ] as const
-    ).map(async ([variant, size, quality]) => {
-      try {
-        const buffer = await image
-          .clone()
-          .autoOrient()
-          .resize(size, size)
-          .webp({ quality })
-          .toBuffer()
-        return { filename: filenames[variant], buffer }
-      } catch {
-        throw new APIError('Nie udało się odczytać zdjęcia profilowego.', 400)
-      }
-    }),
-  )
-  const container = getStorageContainerClient()
-  if (getEnvironmentBoolean('AZURE_STORAGE_ALLOW_CONTAINER_CREATE')) {
-    await container.createIfNotExists()
-  }
-  const blobs = sizes.map(({ filename, buffer }) => ({
-    client: container.getBlockBlobClient(`member-profiles/${filename}`),
-    buffer,
-  }))
-  const writes = await Promise.allSettled(
-    blobs.map(({ client, buffer }) =>
-      client.uploadData(buffer, { blobHTTPHeaders: { blobContentType: 'image/webp' } }),
-    ),
-  )
-  const failedWrite = writes.find((write) => write.status === 'rejected')
-  if (failedWrite) {
-    await Promise.allSettled(blobs.map(({ client }) => client.deleteIfExists()))
-    throw failedWrite.reason
+  try {
+    const { card, profile } = await createProfileImageSet(input, removeImageMetadata)
+    await storeImageSet([
+      { key: `member-profiles/${filenames.card}`, buffer: card.buffer },
+      { key: `member-profiles/${filenames.profile}`, buffer: profile.buffer },
+    ])
+  } catch (error) {
+    if (error instanceof ImageInputError) throw new APIError(error.message, 400)
+    throw error
   }
 
   return {
@@ -244,7 +195,16 @@ export const saveMemberProfilePhoto: CollectionBeforeChangeHook<MemberProfile> =
     const input = file?.tempFilePath
       ? await readFile(file.tempFilePath)
       : (file?.data ?? Buffer.from(encoded ?? '', 'base64'))
-    draftPhoto = await storePhoto(input)
+    if (file?.tempFilePath) {
+      try {
+        draftPhoto = await storePhoto(input, photoChange?.removeImageMetadata !== false)
+      } finally {
+        await rm(file.tempFilePath, { force: true })
+        delete req.file
+      }
+    } else {
+      draftPhoto = await storePhoto(input, photoChange?.removeImageMetadata !== false)
+    }
   }
 
   if (status === 'published') {

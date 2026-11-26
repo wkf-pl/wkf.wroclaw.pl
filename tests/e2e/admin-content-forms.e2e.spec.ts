@@ -6,14 +6,14 @@ import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
 
 const fixturePrefix = 'e2e-admin-content-forms'
-const categoryTitle = 'E2E Kategoria formularzy'
+const topicTitle = 'E2E Temat formularzy'
 const parentPageTitle = 'E2E Strona nadrzędna listingu'
 const listingPageTitle = 'E2E Strona z listingiem'
 const relatedPostTitle = 'E2E Powiązany wpis'
 const unclassifiedPostTitle = 'E2E Wpis bez klasyfikacji'
 
 let payload: Payload
-let categoryID: number | string
+let topicID: number | string
 let parentPageID: number | string
 let listingPageID: number | string
 let relatedPostID: number | string
@@ -37,9 +37,9 @@ test.beforeAll(async () => {
     throw new Error('Missing the editor E2E user.')
   }
 
-  const category = await payload.create({
-    collection: 'categories',
-    data: { name: categoryTitle, slug: `${fixturePrefix}-category` },
+  const topic = await payload.create({
+    collection: 'topics',
+    data: { name: topicTitle, slug: `${fixturePrefix}-topic` },
     overrideAccess: true,
   })
   const tag = await payload.create({
@@ -47,13 +47,13 @@ test.beforeAll(async () => {
     data: { name: 'E2E Tag formularzy', slug: `${fixturePrefix}-tag` },
     overrideAccess: true,
   })
-  categoryID = category.id
+  topicID = topic.id
 
   const parentPage = await payload.create({
     collection: 'pages',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       slug: `${fixturePrefix}-parent`,
       title: parentPageTitle,
     },
@@ -65,7 +65,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [
         {
           blockType: 'listing',
@@ -89,8 +89,8 @@ test.beforeAll(async () => {
     collection: 'posts',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
-      category: category.id,
+      author: author.id,
+      topics: [topic.id],
       excerpt: 'Wpis używany do sprawdzenia kolumn relacji.',
       layout: [
         {
@@ -111,7 +111,7 @@ test.beforeAll(async () => {
     collection: 'posts',
     data: {
       _status: 'draft',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       excerpt: 'Wpis używany do sprawdzenia pustych wartości.',
       slug: `${fixturePrefix}-unclassified-post`,
       title: unclassifiedPostTitle,
@@ -129,7 +129,9 @@ test('shows complete search labels and concise missing-value fallbacks', async (
   await login({ page, user: editorTestUser })
   await page.goto('/admin/collections/posts')
 
-  await expect(page.getByPlaceholder('Szukaj według: Tytuł, Streszczenie lub Slug')).toBeVisible()
+  await expect(
+    page.getByPlaceholder('Szukaj według: Tytuł, Streszczenie, Slug, Tematy lub Autor'),
+  ).toBeVisible()
   const row = page.getByRole('row').filter({ hasText: unclassifiedPostTitle })
   await expect(row).toBeVisible()
   await expect(row.getByText('<brak>', { exact: true })).toHaveCount(2)
@@ -173,7 +175,10 @@ test('lays out Listing presentation fields and persists labeled relationship con
     columnsSelect.locator('xpath=ancestor::div[contains(@class, "field-type")][1]'),
   ).toContainText('1')
   await expect(listingRow.locator('select')).toHaveCount(0)
-  await expect(page.getByRole('heading', { name: 'Podgląd wyników' })).toBeVisible()
+  const previewToggle = listingRow.locator('summary').filter({ hasText: 'Podgląd wyników' })
+  await expect(previewToggle).toBeVisible()
+  await expect(listingRow.locator('iframe[title="Podgląd wyników Listingu"]')).toHaveCount(0)
+  await previewToggle.click()
   const listingPreview = listingRow.frameLocator('iframe[title="Podgląd wyników Listingu"]')
   await expect(listingPreview.locator('.listingBlock')).toBeVisible()
   await expect(listingPreview.locator('html')).toHaveCSS('--gold', '#f3a313')
@@ -239,41 +244,43 @@ test('lays out Listing presentation fields and persists labeled relationship con
   await expect(connector).toBeVisible()
 
   await conditionRow.locator('.rs__control').first().click()
-  await page.locator('.rs__menu').getByText('Strona nadrzędna', { exact: true }).click()
-  await expect(conditionRow.getByText('to', { exact: true })).toBeVisible()
+  const fieldOptions = page.locator('.rs__menu')
+  await expect(fieldOptions.getByText(/Strona nadrzędna|dotychczasowy/i)).toHaveCount(0)
+  await fieldOptions.getByText('Element nadrzędny', { exact: true }).click()
+  await expect(conditionRow.getByText('bezpośrednio pod', { exact: true })).toBeVisible()
 
-  await page.keyboard.press('Escape')
   const relationshipInput = conditionRow.getByRole('combobox').nth(2)
   await relationshipInput.fill(parentPageTitle)
-  await expect(page.locator('.rs__menu').getByText('Strony', { exact: true })).not.toBeVisible()
   await page.locator('.rs__menu').getByText(parentPageTitle, { exact: true }).click()
   await expect(conditionRow).toContainText(parentPageTitle)
   await expect(conditionRow).toContainText('Dotyczy wszystkich źródeł: Strony.')
   const conditionLabel = conditionRow.locator('.wkf-listing-condition-row-label')
-  await expect(conditionLabel).toHaveText(`Warunek:Strona nadrzędna to „${parentPageTitle}”`)
+  await expect(conditionLabel).toHaveText(
+    `Warunek:Element nadrzędny bezpośrednio pod „${parentPageTitle}”`,
+  )
   await expect(conditionLabel).toHaveAttribute(
     'title',
-    `Warunek: Strona nadrzędna to „${parentPageTitle}”`,
+    `Warunek: Element nadrzędny bezpośrednio pod „${parentPageTitle}”`,
   )
 
   await conditionsField.getByRole('button', { name: /Dodaj Warunek/i }).click()
-  const categoryConditionRow = conditionsField.locator('.array-field__row').nth(1)
-  await expect(categoryConditionRow).toBeVisible()
+  const topicConditionRow = conditionsField.locator('.array-field__row').nth(1)
+  await expect(topicConditionRow).toBeVisible()
   await expect(conditionsSection).toContainText('2 warunki')
-  await openListingConditionRow(categoryConditionRow)
+  await openListingConditionRow(topicConditionRow)
 
-  await categoryConditionRow.locator('.rs__control').first().click()
-  await page.locator('.rs__menu').getByText('Kategoria', { exact: true }).click()
-  await expect(categoryConditionRow.getByText('to', { exact: true })).toBeVisible()
+  await topicConditionRow.locator('.rs__control').first().click()
+  await page.locator('.rs__menu').getByText('Temat', { exact: true }).click()
+  await expect(topicConditionRow.getByText('to lub ma podtemat', { exact: true })).toBeVisible()
 
   await page.keyboard.press('Escape')
-  const categoryRelationshipInput = categoryConditionRow.getByRole('combobox').nth(2)
-  await categoryRelationshipInput.fill(categoryTitle)
-  await page.locator('.rs__menu').getByText(categoryTitle, { exact: true }).click()
-  const categoryConditionLabel = categoryConditionRow.locator('.wkf-listing-condition-row-label')
-  await expect(categoryConditionLabel).toHaveText(`Warunek:Kategoria to „${categoryTitle}”`)
+  const topicRelationshipInput = topicConditionRow.getByRole('combobox').nth(2)
+  await topicRelationshipInput.fill(topicTitle)
+  await page.locator('.rs__menu').getByText(topicTitle, { exact: true }).click()
+  const topicConditionLabel = topicConditionRow.locator('.wkf-listing-condition-row-label')
+  await expect(topicConditionLabel).toHaveText(`Warunek:Temat to lub ma podtemat „${topicTitle}”`)
   await expect(conditionsSection.locator('.wkf-listing-conditions__summary')).toContainText(
-    `kategoria to „${categoryTitle}”`,
+    `temat to lub ma podtemat „${topicTitle}”`,
   )
 
   const conditionHeaderBox = await conditionRow.locator('.array-field__row-header').boundingBox()
@@ -312,14 +319,15 @@ test('lays out Listing presentation fields and persists labeled relationship con
   const listing = savedPage.layout?.find((block) => block.blockType === 'listing')
   expect(listing?.conditions).toMatchObject([
     {
-      field: 'parentPage',
+      field: 'contentParent',
       operator: 'equals',
-      relationshipValue: { relationTo: 'pages', value: parentPageID },
+      relatedTargetMode: 'selected',
+      relatedTargetValue: { relationTo: 'pages', value: parentPageID },
     },
     {
-      field: 'category',
+      field: 'topic',
       operator: 'inSubtree',
-      relationshipValue: { relationTo: 'categories', value: categoryID },
+      relationshipValue: { relationTo: 'topics', value: topicID },
     },
   ])
 })
@@ -388,9 +396,9 @@ test('loads the Location map preview after an explicit request', async ({ page }
   await expect(frame).toHaveAttribute('src', mapURL)
 })
 
-test('shows related posts on the category form', async ({ page }) => {
+test('shows related posts on the topic form', async ({ page }) => {
   await login({ page, user: editorTestUser })
-  await page.goto(`/admin/collections/categories/${categoryID}`)
+  await page.goto(`/admin/collections/topics/${topicID}`)
   const relatedPosts = page.locator('.wkf-taxonomy-related-content').filter({
     has: page.getByRole('heading', { name: 'Powiązane wpisy' }),
   })
@@ -415,9 +423,9 @@ async function cleanupFixtures(): Promise<void> {
     },
   })
   await payload.delete({
-    collection: 'categories',
+    collection: 'topics',
     overrideAccess: true,
-    where: { slug: { equals: `${fixturePrefix}-category` } },
+    where: { slug: { equals: `${fixturePrefix}-topic` } },
   })
   await payload.delete({
     collection: 'tags',

@@ -4,6 +4,7 @@ import type { NavPreferences, PayloadRequest, ServerProps } from 'payload'
 import { Logout } from '@payloadcms/ui'
 import { RenderServerComponent } from '@payloadcms/ui/elements/RenderServerComponent'
 import { EntityType, groupNavItems } from '@payloadcms/ui/shared'
+import { getPreferences } from '@payloadcms/ui/utilities/upsertPreferences'
 import { PREFERENCE_KEYS } from 'payload/shared'
 
 import { AdminNavClient } from './AdminNavClient'
@@ -46,7 +47,7 @@ export async function AdminNav(properties: AdminNavProperties) {
   const groups = groupNavItems(
     [
       ...collections
-        .filter(({ slug }) => visibleEntities.collections.includes(slug))
+        .filter(({ slug }) => slug !== 'documents' && visibleEntities.collections.includes(slug))
         .map(
           (collection) =>
             ({ type: EntityType.collection, entity: collection }) satisfies EntityToGroup,
@@ -122,20 +123,11 @@ async function getNavPreferences(request: PayloadRequest | undefined): Promise<N
     return { groups: {}, open: true }
   }
 
-  const result = await request.payload.find({
-    collection: 'payload-preferences',
-    depth: 0,
-    limit: 1,
-    pagination: false,
-    req: request,
-    where: {
-      and: [
-        { key: { equals: PREFERENCE_KEYS.NAV } },
-        { 'user.relationTo': { equals: request.user.collection } },
-        { 'user.value': { equals: request.user.id } },
-      ],
-    },
-  })
-
-  return (result.docs[0]?.value as NavPreferences | undefined) ?? { groups: {}, open: true }
+  const result = await getPreferences<NavPreferences>(
+    PREFERENCE_KEYS.NAV,
+    request.payload,
+    request.user.id,
+    request.user.collection,
+  )
+  return result?.value ?? { groups: {}, open: true }
 }

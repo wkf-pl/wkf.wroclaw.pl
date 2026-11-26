@@ -9,7 +9,7 @@ import sharp from 'sharp'
 import { migrations } from '../migrations'
 
 import {
-  Categories,
+  Topics,
   ContentListingItems,
   DocumentFiles,
   Documents,
@@ -25,6 +25,7 @@ import {
   Posts,
   Roles,
   Tags,
+  TagGroups,
   UserGroups,
   Users,
   UrlAliases,
@@ -43,6 +44,7 @@ import {
 } from './lib/env'
 import { createStoragePlugins } from './storage/create-storage-plugins'
 import { contentHierarchyPlugin } from './modules/content/hierarchy-plugin'
+import { adminListSearchPlugin } from './modules/content/admin-list-search'
 import {
   createRichTextLinkFields,
   resolveRichTextInternalLink,
@@ -128,8 +130,9 @@ export default buildConfig({
     Events,
     EventCycles,
     EventTypes,
-    Categories,
+    Topics,
     Tags,
+    TagGroups,
     Media,
     MemberProfiles,
     DocumentFiles,
@@ -179,7 +182,12 @@ export default buildConfig({
     ...(runProductionMigrations ? { prodMigrations: migrations } : {}),
   }),
   sharp,
-  plugins: [contentHierarchyPlugin, ...createStoragePlugins(), contentAuditPlugin],
+  plugins: [
+    contentHierarchyPlugin,
+    ...createStoragePlugins(),
+    adminListSearchPlugin,
+    contentAuditPlugin,
+  ],
 })
 
 function getTrustedOrigins(configuredServerURL: string | undefined): string[] {

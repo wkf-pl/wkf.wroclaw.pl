@@ -1,14 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
-import type { Category, Tag } from '@/payload-types'
-import { findChildCategories } from '@/modules/content/category-hierarchy'
+import type { Topic, Tag } from '@/payload-types'
+import { findChildTopics } from '@/modules/content/topic-hierarchy'
 import { findPublicContent } from '@/modules/content/content-listing'
 import { findRenderablePageTemplateForRequest } from '@/modules/content/preview-content'
-import {
-  createCategoryBreadcrumbs,
-  type PublicBreadcrumb,
-} from '@/modules/content/public-hierarchy'
+import { createTopicBreadcrumbs, type PublicBreadcrumb } from '@/modules/content/public-hierarchy'
 
 import { ContentHero } from './ContentHero'
 import { ContentList } from './ContentList'
@@ -18,9 +15,9 @@ import { ContentPagination } from './ContentPagination'
 import { TaxonomyTemplateDocument } from './TaxonomyTemplateDocument'
 
 type TaxonomyContentPageProperties = {
-  kind: 'category' | 'tag'
+  kind: 'topic' | 'tag'
   searchParams: Record<string, string | string[] | undefined>
-  taxonomy: Category | Tag
+  taxonomy: Topic | Tag
 }
 
 export async function TaxonomyContentPage({
@@ -30,19 +27,19 @@ export async function TaxonomyContentPage({
 }: TaxonomyContentPageProperties) {
   const requestedPage = getRequestedPage(searchParams.page)
   const pathname = `/${kind}/${taxonomy.slug}`
-  const categoryBreadcrumbs = kind === 'category' ? createCategoryBreadcrumbs(taxonomy) : []
+  const topicBreadcrumbs = kind === 'topic' ? createTopicBreadcrumbs(taxonomy) : []
   const title = `${kind === 'tag' ? '#' : ''}${taxonomy.name}`
   const taxonomyBreadcrumbs =
-    categoryBreadcrumbs.at(-1)?.label === taxonomy.name
-      ? categoryBreadcrumbs
-      : [...categoryBreadcrumbs, { label: taxonomy.name, url: null }]
+    topicBreadcrumbs.at(-1)?.label === taxonomy.name
+      ? topicBreadcrumbs
+      : [...topicBreadcrumbs, { label: taxonomy.name, url: null }]
   const heroBreadcrumbs: PublicBreadcrumb[] = [
     { label: 'Strona główna', url: '/' },
-    ...(kind === 'category' ? taxonomyBreadcrumbs : [{ label: title, url: null }]),
+    ...(kind === 'topic' ? taxonomyBreadcrumbs : [{ label: title, url: null }]),
   ]
 
   const { document: template, isDraftPreview } = await findRenderablePageTemplateForRequest(
-    kind === 'category' ? 'category-detail' : 'tag-detail',
+    kind === 'topic' ? 'topic-detail' : 'tag-detail',
     searchParams,
   )
   if (template) {
@@ -60,14 +57,14 @@ export async function TaxonomyContentPage({
     )
   }
 
-  const childCategories = kind === 'category' ? await findChildCategories(taxonomy.id) : []
+  const childTopics = kind === 'topic' ? await findChildTopics(taxonomy.id) : []
   const result = await findPublicContent({
     conditions: [
-      kind === 'category'
+      kind === 'topic'
         ? {
-            field: 'category',
+            field: 'topic',
             operator: 'inSubtree',
-            relationshipValue: { relationTo: 'categories', value: taxonomy.id },
+            relationshipValue: { relationTo: 'topics', value: taxonomy.id },
           }
         : {
             field: 'tag',
@@ -91,14 +88,14 @@ export async function TaxonomyContentPage({
       <ContentHero
         breadcrumbs={heroBreadcrumbs}
         description={taxonomy.description}
-        eyebrow={kind === 'category' ? 'Kategoria' : 'Tag'}
+        eyebrow={kind === 'topic' ? 'Temat' : 'Tag'}
         title={title}
       >
-        {childCategories.length ? (
-          <nav aria-label="Podkategorie" className="childCategories">
-            {childCategories.map((category) => (
-              <Link href={`/category/${category.slug}`} key={category.id}>
-                {category.name}
+        {childTopics.length ? (
+          <nav aria-label="Podtematy" className="childTopics">
+            {childTopics.map((topic) => (
+              <Link href={`/topic/${topic.slug}`} key={topic.id}>
+                {topic.name}
               </Link>
             ))}
           </nav>

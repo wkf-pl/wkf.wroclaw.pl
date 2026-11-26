@@ -103,7 +103,7 @@ describe('public data cache', () => {
 
   it('normalizes every filtered media cache-key dimension', () => {
     const base = {
-      categoryId: 3,
+      topicId: 3,
       kind: 'attachments' as const,
       page: 2.8,
       pageSize: 1000,
@@ -114,7 +114,7 @@ describe('public data cache', () => {
     }
 
     expect(normalizePublicMediaOptions(base)).toEqual({
-      categoryId: 3,
+      topicId: 3,
       kind: 'attachments',
       page: 2,
       pageSize: 100,

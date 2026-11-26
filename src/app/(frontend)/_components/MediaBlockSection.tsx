@@ -35,7 +35,7 @@ export async function resolveMediaBlockSection({
     searchParams,
   })
   const result = await findPublicMedia({
-    categoryId: getRelationshipId(block.category),
+    topicId: getRelationshipId(block.topic),
     kind,
     manualMedia: getManualMedia(block),
     page: requestedPage,

@@ -54,6 +54,7 @@ export const PageTemplates: CollectionConfig = {
     group: 'Administracja',
     hidden: ({ user }) =>
       !clientUserHasUnrestrictedResourcePermission(user, 'page-templates', 'read'),
+    listSearchableFields: ['templateKey'],
     preview: (document) => createPageTemplateDraftPreviewURL(document.templateKey),
     useAsTitle: 'templateKey',
   },
@@ -89,12 +90,13 @@ export const PageTemplates: CollectionConfig = {
         },
         description:
           'Zmiana wpłynie na stronę publiczną dopiero po opublikowaniu tej wersji szablonu.',
+        disableListFilter: true,
         isClearable: false,
       },
       defaultValue: 'legacy',
       label: 'Tryb renderowania',
       options: [
-        { label: 'Dotychczasowy układ (legacy)', value: 'legacy' },
+        { label: 'Układ wbudowany', value: 'legacy' },
         { label: 'Układ z szablonu', value: 'template' },
       ],
       required: true,
@@ -119,7 +121,7 @@ export const PageTemplates: CollectionConfig = {
           : true,
       label: 'Element używany w podglądzie',
       maxDepth: 1,
-      relationTo: ['tags', 'categories', 'events', 'event-cycles', 'partners', 'member-profiles'],
+      relationTo: ['tags', 'topics', 'events', 'event-cycles', 'partners', 'member-profiles'],
     },
     {
       name: 'heroImage',

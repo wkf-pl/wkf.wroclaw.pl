@@ -65,7 +65,9 @@ test('previews the blog template and switches the public blog on publication', a
     const preview = await popup
     await expect(preview).toHaveURL(/\/blog\?pageTemplatePreview=blog-index$/)
     await expect(preview.getByRole('heading', { level: 1, name: templateTitle })).toBeVisible()
-    await expect(preview.getByRole('status')).toContainText('Podglądasz roboczy układ szablonu.')
+    await expect(
+      preview.getByRole('status').filter({ hasText: 'Podglądasz roboczy układ szablonu.' }),
+    ).toBeVisible()
     expect(await postLinks(preview)).toEqual(legacyPosts)
 
     await publicPage.goto('/blog?pageTemplatePreview=blog-index')

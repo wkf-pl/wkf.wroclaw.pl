@@ -56,6 +56,14 @@ describe('Listing view resolution', () => {
 })
 
 describe('Listing decoration', () => {
+  it.each([
+    ['legacyColumns', 'small'],
+    ['legacyTile', 'large'],
+  ])('maps old %s spacing and fill to editable values', (gap, replacement) => {
+    const { view } = resolveListingView({ overrides: { decoration: { gap, fill: 'legacy' } } })
+    expect(view.decoration).toMatchObject({ gap: replacement, fill: 'default' })
+  })
+
   it('merges each local and template setting independently', () => {
     const shared = {
       decoration: {

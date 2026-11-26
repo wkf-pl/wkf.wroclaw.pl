@@ -126,33 +126,13 @@ export function ListingDecorationFields({
   onChange: (settings: ListingDecorationOverrides) => void
   readOnly?: boolean
 }) {
-  function choose(
-    field: ChoiceField,
-    label: string,
-    options: Record<string, string>,
-    legacyLabel?: string,
-  ) {
+  function choose(field: ChoiceField, label: string, options: Record<string, string>) {
     const value = base ? overrides?.[field] : current[field]
     const inherited = base?.[field]
-    const effectiveValue = value ?? inherited
-    const placeholder =
-      field === 'gap' && effectiveValue === 'legacyTile'
-        ? 'Zachowany odstęp · 1,25 rem'
-        : field === 'gap' && effectiveValue === 'legacyColumns'
-          ? 'Zachowany odstęp · 1 rem'
-          : field === 'fill' && effectiveValue === 'legacy'
-            ? 'Zachowane wypełnienie'
-            : undefined
-    const compatibilityOptions = { ...options }
-    for (const choice of [value, inherited]) {
-      if (choice && !Object.hasOwn(options, choice) && legacyLabel)
-        compatibilityOptions[choice] = legacyLabel
-    }
     return (
       <ListingViewSelect
         label={label}
-        options={compatibilityOptions}
-        placeholder={placeholder}
+        options={options}
         value={value}
         inherited={inherited}
         onChange={(next) =>
@@ -198,7 +178,7 @@ export function ListingDecorationFields({
       <div className={styles.detailsRow}>
         {columnsControl}
         {choose('gap', 'Odstępy między elementami', gapOptions)}
-        {choose('padding', 'Odstępy wokół elementów', paddingOptions, 'Dotychczasowy')}
+        {choose('padding', 'Odstępy wokół elementów', paddingOptions)}
       </div>
       <div className={styles.detailsRow}>
         {formatControl}

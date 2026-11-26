@@ -5,7 +5,7 @@ import config from '@payload-config'
 import type { Media } from '@/payload-types'
 import { getRelationshipIds } from '@/lib/relationships'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
-import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
+import { findTopicSubtreeIDs } from '@/modules/content/topic-hierarchy'
 import {
   normalizeListingWindow,
   paginateInMemory,
@@ -30,13 +30,14 @@ export type PublicMediaListItem = {
   height: null | number
   id: number
   isImage: boolean
+  imageVariants?: Media['imageVariants']
   mimeType: null | string
   url: null | string
   width: null | number
 }
 
 export type FindPublicMediaOptions = {
-  categoryId?: number
+  topicId?: number
   kind: MediaListingKind
   manualMedia?: (Media | number)[]
   page: number
@@ -64,13 +65,14 @@ type MediaListDocument = Pick<
   | 'filesize'
   | 'height'
   | 'id'
+  | 'imageVariants'
   | 'mimeType'
   | 'url'
   | 'width'
 >
 
 export type NormalizedPublicMediaOptions = Omit<FindPublicMediaOptions, 'manualMedia'> & {
-  categoryIds?: number[]
+  topicIds?: number[]
 }
 
 const mediaSelect = {
@@ -81,6 +83,7 @@ const mediaSelect = {
   filesize: true,
   height: true,
   id: true,
+  imageVariants: true,
   mimeType: true,
   url: true,
   width: true,
@@ -166,10 +169,10 @@ export async function findPublicMedia(options: FindPublicMediaOptions): Promise<
 
   return findFilteredPublicMediaCached({
     ...normalizedOptions,
-    categoryIds:
-      options.categoryId === undefined
+    topicIds:
+      options.topicId === undefined
         ? undefined
-        : await findCategorySubtreeIDs(options.categoryId),
+        : await findTopicSubtreeIDs(options.topicId),
   })
 }
 
@@ -177,7 +180,7 @@ export function normalizePublicMediaOptions(
   options: FindPublicMediaOptions,
 ): NormalizedPublicMediaOptions {
   return {
-    categoryId: options.categoryId,
+    topicId: options.topicId,
     kind: options.kind,
     ...normalizeListingWindow(options),
     selectionMode: options.selectionMode,
@@ -187,12 +190,12 @@ export function normalizePublicMediaOptions(
 }
 
 function createMediaWhere(
-  options: Pick<NormalizedPublicMediaOptions, 'categoryIds' | 'kind' | 'tagId'>,
+  options: Pick<NormalizedPublicMediaOptions, 'topicIds' | 'kind' | 'tagId'>,
 ): Where {
   const conditions: Where[] = []
 
-  if (options.categoryIds !== undefined) {
-    conditions.push({ category: { in: options.categoryIds } })
+  if (options.topicIds !== undefined) {
+    conditions.push({ topics: { in: options.topicIds } })
   }
 
   if (options.tagId !== undefined) {
@@ -228,6 +231,7 @@ function mapMedia(media: MediaListDocument): PublicMediaListItem {
     filesize: media.filesize ?? null,
     height: media.height ?? null,
     id: media.id,
+    imageVariants: media.imageVariants,
     isImage: isWebRasterImageMimeType(media.mimeType),
     mimeType: media.mimeType ?? null,
     url: media.url ?? null,

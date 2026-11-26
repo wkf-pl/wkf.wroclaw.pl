@@ -73,7 +73,9 @@ export function ContentList({ columns, emptyMessage, items, view }: ContentListP
             >
               {showsPartnerRoles ? null : metadata}
               <h2>
-                <Link href={presentation.url}>{presentation.title}</Link>
+                <Link href={presentation.url} prefetch={false}>
+                  {presentation.title}
+                </Link>
               </h2>
               {showsPartnerRoles ? metadata : null}
             </div>

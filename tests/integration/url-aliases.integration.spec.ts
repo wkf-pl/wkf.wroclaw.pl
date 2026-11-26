@@ -183,7 +183,7 @@ describe('URL aliases integration', () => {
       collection: 'pages',
       data: {
         _status: 'draft',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         slug: 'integration-alias-page-first',
         title: 'Integration page first',
       },
@@ -217,7 +217,7 @@ describe('URL aliases integration', () => {
         collection: 'pages',
         data: {
           _status: 'draft',
-          author: { relationTo: 'users', value: author.id },
+          author: author.id,
           slug: 'integration-alias-first',
           title: 'Integration alias first',
         },
@@ -232,7 +232,7 @@ describe('URL aliases integration', () => {
       collection: 'pages',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         layout: [
           { blockType: 'richText', content: createLexicalDocument('Integration alias target') },
         ],

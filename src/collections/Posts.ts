@@ -1,3 +1,8 @@
+import {
+  lockContentHierarchyForWrite,
+  createContentParentField,
+} from '@/modules/content/content-parent'
+import { createContentOwnersField } from '@/modules/content/content-owners-field'
 import type { CollectionConfig } from 'payload'
 
 import { createEditorialFields, getEditorialField } from '@/modules/content/editorial-fields'
@@ -63,9 +68,9 @@ export const Posts: CollectionConfig = {
         PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
       },
     },
-    defaultColumns: ['title', 'slug', 'category', 'tags', '_status', 'publishedAt', 'updatedAt'],
+    defaultColumns: ['title', 'slug', 'topics', 'tags', '_status', 'publishedAt', 'updatedAt'],
     group: 'Treści',
-    listSearchableFields: ['title', 'slug', 'excerpt'],
+    listSearchableFields: ['title', 'slug', 'excerpt', 'author', 'topics'],
     useAsTitle: 'title',
     pagination: {
       limits: [10, 25, 50],
@@ -103,9 +108,11 @@ export const Posts: CollectionConfig = {
       ],
     },
     getEditorialField(editorialFields, 'slug'),
-    getEditorialField(editorialFields, 'category'),
+    createContentParentField(),
+    getEditorialField(editorialFields, 'topics'),
     getEditorialField(editorialFields, 'tags'),
     getEditorialField(editorialFields, 'author'),
+    createContentOwnersField(),
     getEditorialField(editorialFields, 'publishedAt'),
   ],
   hooks: {
@@ -113,7 +120,7 @@ export const Posts: CollectionConfig = {
     afterDelete: [removeContentListingAfterDelete],
     beforeChange: [setPublishedAt],
     beforeOperation: [markTrashMutation],
-    beforeValidate: [validateMediaBlocks],
+    beforeValidate: [lockContentHierarchyForWrite, validateMediaBlocks],
   },
   labels: {
     plural: 'Wpisy',

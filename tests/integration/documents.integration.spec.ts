@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 
 import config from '@/payload.config'
-import type { Category, Document, Role, Tag, User } from '@/payload-types'
+import type { Topic, Document, Role, Tag, User } from '@/payload-types'
 import { findPublicContent } from '@/modules/content/content-listing'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { readDocumentFiles } from '@/modules/documents/document-access'
@@ -10,7 +10,7 @@ import { readDocumentFiles } from '@/modules/documents/document-access'
 import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/integration-author'
 
 const testSlugs = ['integration-public-document', 'integration-role-document']
-const testCategorySlug = 'integration-documents-category'
+const testTopicSlug = 'integration-documents-topic'
 const testTagSlug = 'integration-documents-tag'
 const testPDF = Buffer.from(
   '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\nxref\n0 1\n0000000000 65535 f\n%%EOF\n',
@@ -22,7 +22,7 @@ let memberRole: Role
 let userRole: Role
 let publicDocument: Document
 let roleDocument: Document
-let documentCategory: Category
+let documentTopic: Topic
 let documentTag: Tag
 
 function createAuthenticatedUser(id: number, role: Role): User {
@@ -74,9 +74,9 @@ beforeAll(async () => {
   await cleanupTestDocuments()
 
   await payload.delete({
-    collection: 'categories',
+    collection: 'topics',
     overrideAccess: true,
-    where: { slug: { equals: testCategorySlug } },
+    where: { slug: { equals: testTopicSlug } },
   })
   await payload.delete({
     collection: 'tags',
@@ -86,10 +86,10 @@ beforeAll(async () => {
 
   author = await createIntegrationAuthor(payload, 'documents')
   ;[memberRole, userRole] = await Promise.all([findRole('member'), findRole('user')])
-  ;[documentCategory, documentTag] = await Promise.all([
+  ;[documentTopic, documentTag] = await Promise.all([
     payload.create({
-      collection: 'categories',
-      data: { name: 'Integration documents category', slug: testCategorySlug },
+      collection: 'topics',
+      data: { name: 'Integration documents topic', slug: testTopicSlug },
       overrideAccess: true,
     }),
     payload.create({
@@ -130,7 +130,7 @@ beforeAll(async () => {
       data: {
         _status: 'published',
         author: author.id,
-        category: documentCategory.id,
+        topics: [documentTopic.id],
         documentDate: '2026-08-14T00:00:00.000Z',
         documentNumber: 'INTEGRATION-PUBLIC/2026',
         documentType: 'resolution',
@@ -162,7 +162,7 @@ beforeAll(async () => {
 afterAll(async () => {
   if (!payload) return
   await cleanupTestDocuments()
-  await payload.delete({ collection: 'categories', id: documentCategory.id, overrideAccess: true })
+  await payload.delete({ collection: 'topics', id: documentTopic.id, overrideAccess: true })
   await payload.delete({ collection: 'tags', id: documentTag.id, overrideAccess: true })
   await deleteIntegrationAuthor(payload, author)
 })
@@ -198,9 +198,9 @@ describe('document website access integration', () => {
     const filteredResult = await findPublicContent({
       conditions: [
         {
-          field: 'category',
+          field: 'topic',
           operator: 'inSubtree',
-          relationshipValue: { relationTo: 'categories', value: documentCategory.id },
+          relationshipValue: { relationTo: 'topics', value: documentTopic.id },
         },
         {
           field: 'tag',

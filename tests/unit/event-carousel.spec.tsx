@@ -7,7 +7,7 @@ import type { Event } from '@/payload-types'
 
 function eventFixture(id: number, overrides: Partial<Event> = {}): Event {
   return {
-    author: { relationTo: 'users', value: 1 },
+    author: 1,
     calendarRevision: 0,
     capacityMode: 'unlimited',
     createdAt: '2026-09-01T10:00:00.000Z',

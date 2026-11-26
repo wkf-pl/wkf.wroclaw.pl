@@ -30,7 +30,7 @@ describe('content calendar', () => {
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         eventDefaults: {
           capacityMode: 'unlimited',
           eventType: 1,
@@ -56,10 +56,10 @@ describe('content calendar', () => {
         collection: 'events',
         data: {
           _status: 'published',
-          author: { relationTo: 'users', value: fixture.author.id },
+          author: fixture.author.id,
           calendarRevision: 0,
           capacityMode: 'unlimited',
-          category: fixture.category.id,
+          topics: [fixture.topic.id],
           cycle: cycleId,
           eventType: 1,
           excerpt: createLexicalDocument(`Excerpt ${slug}`),
@@ -85,11 +85,11 @@ describe('content calendar', () => {
       collection: 'pages',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         layout: [
           {
             blockType: 'contentCalendar',
-            category: fixture.category.id,
+            topic: fixture.topic.id,
             eventCycle: cycle.id,
             sources: ['events', 'posts'],
             tag: fixture.tag.id,
@@ -102,7 +102,7 @@ describe('content calendar', () => {
     })
 
     const result = await findContentCalendarMonth('2026-08', {
-      categoryId: fixture.category.id,
+      topicId: fixture.topic.id,
       eventCycleId: cycle.id,
       sources: ['events', 'posts'],
       tagId: fixture.tag.id,
@@ -129,7 +129,7 @@ describe('content calendar', () => {
       timeMode: 'timed',
     })
     expect(storedBlock).toMatchObject({
-      category: fixture.category.id,
+      topic: fixture.topic.id,
       eventCycle: cycle.id,
       sources: ['events', 'posts'],
       tag: fixture.tag.id,

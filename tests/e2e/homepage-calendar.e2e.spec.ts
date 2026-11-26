@@ -56,7 +56,7 @@ test.beforeAll(async () => {
       collection: 'events',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         calendarRevision: 0,
         capacityMode: 'unlimited',
         eventType: eventType.id,
@@ -206,6 +206,44 @@ test('renders responsive event carousel and calendar content blocks on the homep
   expect(legendBox).not.toBeNull()
   expect(subscriptionBox).not.toBeNull()
   expect(subscriptionBox?.y ?? 0).toBeGreaterThan(legendBox?.y ?? 0)
+})
+
+test('loads a hidden calendar on its first activation and preserves the selected month', async ({
+  page,
+}) => {
+  await updateHomepageLayout([
+    {
+      blockType: 'tabs',
+      tabs: [
+        {
+          blocks: [{ blockType: 'heading', heading: 'Najbliższe wydarzenia', headingLevel: 'h2' }],
+          label: 'Najbliższe',
+        },
+        {
+          blocks: [{ blockType: 'contentCalendar', sources: ['events'] }],
+          label: 'Kalendarz',
+        },
+      ],
+    },
+  ])
+  homepageLayoutChanged = true
+
+  await page.goto('/')
+  const calendar = page.getByRole('region', { includeHidden: true, name: 'Kalendarz treści' })
+  await expect(calendar).toHaveCount(0)
+
+  await page.getByRole('tab', { name: 'Kalendarz' }).click()
+  await expect(calendar).toBeVisible()
+  const monthHeading = calendar.getByRole('heading', { level: 3 })
+  const firstMonth = await monthHeading.textContent()
+  await calendar.getByRole('button', { name: 'Następny miesiąc' }).click()
+  await expect(monthHeading).not.toHaveText(firstMonth ?? '')
+  const selectedMonth = await monthHeading.textContent()
+
+  await page.getByRole('tab', { name: 'Najbliższe' }).click()
+  await expect(calendar).toBeHidden()
+  await page.getByRole('tab', { name: 'Kalendarz' }).click()
+  await expect(monthHeading).toHaveText(selectedMonth ?? '')
 })
 
 function createFixtureHomepageLayout(): HomepageSection['layout'] {

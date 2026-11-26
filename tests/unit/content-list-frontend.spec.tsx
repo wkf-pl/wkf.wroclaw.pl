@@ -22,7 +22,7 @@ import { createLexicalDocument } from '../helpers/lexical-document'
 function createPageItem(): Extract<PublicContentListItem, { kind: 'pages' }> {
   return {
     document: {
-      category: null,
+      topic: null,
       heroImage: null,
       id: 1,
       listingExcerpt: 'Informacje o klubie.',
@@ -40,7 +40,7 @@ function createPostItem(
 ): Extract<PublicContentListItem, { kind: 'posts' }> {
   return {
     document: {
-      category: null,
+      topic: null,
       excerpt: 'Aktualności z życia klubu.',
       heroImage: null,
       id: 2,
@@ -57,7 +57,7 @@ function createPostItem(
 function createEventItem(): Extract<PublicContentListItem, { kind: 'events' }> {
   return {
     document: {
-      category: null,
+      topic: null,
       cycle: {
         id: 7,
         slug: 'erpegowe-wtorki',
@@ -86,7 +86,7 @@ function createEventItem(): Extract<PublicContentListItem, { kind: 'events' }> {
 function createEventCycleItem(): Extract<PublicContentListItem, { kind: 'event-cycles' }> {
   return {
     document: {
-      category: null,
+      topic: null,
       excerpt: createLexicalDocument('Regularny cykl spotkań.'),
       heroImage: null,
       id: 4,
@@ -102,7 +102,7 @@ function createEventCycleItem(): Extract<PublicContentListItem, { kind: 'event-c
 function createDocumentItem(): Extract<PublicContentListItem, { kind: 'documents' }> {
   return {
     document: {
-      category: null,
+      topic: null,
       documentDate: '2026-08-26T00:00:00.000Z',
       documentNumber: '4/2026',
       documentType: 'resolution',

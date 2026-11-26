@@ -1,7 +1,7 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 
 import { findActiveLocationID } from '@/modules/locations/relationship'
-import { getDefaultEventAuthor } from '@/modules/content/content-author'
+import { getContentOwners } from '@/modules/content/content-owners'
 
 import { eventEndpointErrorResponse } from './endpoint-response'
 import { calculateNextEventDates } from './event-cycle-schedule'
@@ -39,12 +39,13 @@ async function handler(req: PayloadRequest): Promise<Response> {
     })
     const dates = calculateNextEventDates(previousEvents.docs[0]?.startAt, cycle.eventDefaults)
     const location = await findActiveLocationID(req, cycle.eventDefaults.location)
+    const owners = getContentOwners(cycle.eventDefaults.owners)
     const doc = await req.payload.create({
       collection: 'events',
       context: { skipSlugGeneration: true },
       data: {
         _status: 'draft',
-        author: getDefaultEventAuthor(cycle.eventDefaults.authorGroup),
+        ...(owners.length ? { owners } : {}),
         cycle: cycle.id,
         location,
         ...dates,

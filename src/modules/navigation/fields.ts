@@ -23,8 +23,8 @@ export function isPageTarget(_data: unknown, siblingData: NavigationSiblingData)
   return isStandardLink(siblingData) && siblingData.targetType === 'page'
 }
 
-export function isCategoryTarget(_data: unknown, siblingData: NavigationSiblingData): boolean {
-  return isStandardLink(siblingData) && siblingData.targetType === 'category'
+export function isTopicTarget(_data: unknown, siblingData: NavigationSiblingData): boolean {
+  return isStandardLink(siblingData) && siblingData.targetType === 'topic'
 }
 
 export function isTagTarget(_data: unknown, siblingData: NavigationSiblingData): boolean {
@@ -58,13 +58,13 @@ export const validatePageTarget: Validate<unknown, unknown, NavigationSiblingDat
     ? true
     : 'Wybierz stronę docelową.'
 
-export const validateCategoryTarget: Validate<unknown, unknown, NavigationSiblingData> = (
+export const validateTopicTarget: Validate<unknown, unknown, NavigationSiblingData> = (
   value,
   { siblingData },
 ) =>
-  !isStandardLink(siblingData) || siblingData.targetType !== 'category' || value
+  !isStandardLink(siblingData) || siblingData.targetType !== 'topic' || value
     ? true
-    : 'Wybierz kategorię docelową.'
+    : 'Wybierz temat docelową.'
 
 export const validateTagTarget: Validate<unknown, unknown, NavigationSiblingData> = (
   value,
@@ -109,7 +109,7 @@ export function createLinkFields({
     { label: 'Własny adres', value: 'custom' },
     { label: 'Cykl wydarzeń', value: 'eventCycle' },
     { label: 'Dokument', value: 'document' },
-    { label: 'Kategoria', value: 'category' },
+    { label: 'Temat', value: 'topic' },
     ...(includePartner ? [{ label: 'Partner', value: 'partner' }] : []),
     ...(includeSiteContactEmail
       ? [{ label: 'Główny adres serwisu', value: 'siteContactEmail' }]
@@ -209,17 +209,17 @@ export function createLinkFields({
           validate: validateTarget('document', 'Wybierz dokument docelowy.'),
         },
         {
-          name: 'category',
+          name: 'topic',
           type: 'relationship',
           ...(compactDatabaseNames ? { dbName: 'cat' } : {}),
           admin: {
-            condition: isCategoryTarget,
+            condition: isTopicTarget,
             placeholder: '<brak>',
             width: '50%',
           },
-          label: 'Kategoria',
-          relationTo: 'categories',
-          validate: validateCategoryTarget,
+          label: 'Temat',
+          relationTo: 'topics',
+          validate: validateTopicTarget,
         },
         ...(includePartner
           ? ([

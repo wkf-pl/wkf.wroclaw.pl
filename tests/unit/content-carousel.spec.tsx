@@ -4,15 +4,15 @@ import { describe, expect, it } from 'vitest'
 
 import { ContentCarousel } from '@/app/(frontend)/_components/ContentCarousel'
 import type { PublicContentListItem } from '@/modules/content/content-listing'
-import type { Category, Document, Event, EventCycle, Page, Post, Tag } from '@/payload-types'
+import type { Topic, Document, Event, EventCycle, Page, Post, Tag } from '@/payload-types'
 
 import { createLexicalDocument } from '../helpers/lexical-document'
 
-const category = {
+const topic = {
   id: 4,
   name: 'Gry fabularne',
   slug: 'gry-fabularne',
-} as Category
+} as Topic
 
 const tag = {
   id: 7,
@@ -26,7 +26,7 @@ function postItemFixture(
 ): Extract<PublicContentListItem, { kind: 'posts' }> {
   return {
     document: {
-      category: null,
+      topics: [],
       excerpt: `Streszczenie ${id}`,
       heroImage: null,
       id,
@@ -43,7 +43,7 @@ function postItemFixture(
 function pageItemFixture(id: number): Extract<PublicContentListItem, { kind: 'pages' }> {
   return {
     document: {
-      category: null,
+      topics: [],
       heroImage: null,
       id,
       listingExcerpt: `Streszczenie ${id}`,
@@ -59,7 +59,7 @@ function pageItemFixture(id: number): Extract<PublicContentListItem, { kind: 'pa
 function eventItemFixture(): Extract<PublicContentListItem, { kind: 'events' }> {
   return {
     document: {
-      category,
+      topics: [topic],
       endAt: '2026-10-07T20:00:00.000Z',
       excerpt: createLexicalDocument('Spotkanie dla osób, które chcą zagrać w RPG.'),
       heroImage: null,
@@ -83,7 +83,7 @@ function eventItemFixture(): Extract<PublicContentListItem, { kind: 'events' }> 
 function eventCycleItemFixture(): Extract<PublicContentListItem, { kind: 'event-cycles' }> {
   return {
     document: {
-      category,
+      topics: [topic],
       excerpt: createLexicalDocument('Regularny cykl otwartych spotkań.'),
       heroImage: null,
       id: 4,
@@ -99,7 +99,7 @@ function eventCycleItemFixture(): Extract<PublicContentListItem, { kind: 'event-
 function documentItemFixture() {
   return {
     document: {
-      category,
+      topics: [topic],
       documentDate: '2026-03-12T00:00:00.000Z',
       documentNumber: '1/2026',
       documentType: 'statute',
@@ -173,7 +173,7 @@ describe('Content carousel', () => {
     expect(markup).toContain('7 października 2026, 18:00 - 22:00')
     expect(markup).toContain('href="https://example.com/wiking"')
     expect(markup).toContain('Wiking Axe Throwing Club Wrocław')
-    expect(markup).toContain('href="/category/gry-fabularne"')
+    expect(markup).toContain('href="/topic/gry-fabularne"')
     expect(markup).toContain('href="/tag/rpg"')
     expect(markup).toContain('href="/events/erpegowy-wtorek-v/calendar.ics"')
     expect(markup.indexOf('Dodaj do kalendarza')).toBeLessThan(

@@ -3,8 +3,39 @@ import { getPayload } from 'payload'
 
 import config from '../../src/payload.config'
 
+import { createLocationFixture, deleteLocationFixture } from '../helpers/location-fixture'
 import { login } from '../helpers/login'
 import { administratorTestUser, editorTestUser } from '../helpers/seedUser'
+
+test('searches the events list while typing and by the linked venue name', async ({ page }) => {
+  const payload = await getPayload({ config })
+  const venue = await createLocationFixture(payload, { venueName: 'Arena Asgard E2E' })
+  const event = await payload.create({
+    collection: 'events',
+    draft: true,
+    data: { title: 'Wikingowie w panelu E2E', slug: 'wikingowie-w-panelu-e2e', location: venue.id },
+  })
+
+  try {
+    await login({ page, user: editorTestUser })
+    const filter = new URLSearchParams({ 'where[id][equals]': String(event.id) })
+    await page.goto(`/admin/collections/events?${filter}`)
+    const input = page.locator('#search-filter-input')
+    await expect(input).toHaveAttribute('aria-label', /Autor/)
+    await expect(input).toHaveAttribute('aria-label', /Tematy/)
+    for (const search of ['W', 'Wikin', 'Asgard']) {
+      await input.fill(search)
+      await expect(page).toHaveURL(new RegExp(`[?&]search=${search}(?:&|$)`))
+      await expect(page.getByRole('link', { name: event.title, exact: true })).toBeVisible()
+    }
+    await input.fill('unmatched-event-title-e2e')
+    await expect(page).toHaveURL(/search=unmatched-event-title-e2e/)
+    await expect(page.getByRole('link', { name: event.title, exact: true })).toHaveCount(0)
+  } finally {
+    await payload.delete({ collection: 'events', id: event.id, trash: true })
+    await deleteLocationFixture(payload, venue.venueName)
+  }
+})
 
 test('groups editor navigation with the intended labels and order', async ({ page }) => {
   await login({ page, user: editorTestUser })
@@ -19,21 +50,93 @@ test('groups editor navigation with the intended labels and order', async ({ pag
     'Wydarzenia',
     'Cykle wydarzeń',
     'Rodzaje wydarzeń',
-    'Kategorie',
+    'Tematy',
     'Tagi',
+    'Grupy tagów',
     'Media',
-    'Aliasy adresów',
   ])
   await expect(
     navigation.getByRole('button', { name: 'Klubowe' }).locator('..').locator('a'),
-  ).toHaveText(['Dokumenty', 'Miejsca', 'Partnerzy'])
+  ).toHaveText(['Miejsca', 'Partnerzy'])
+  await expect(navigation.getByRole('link', { name: 'Dokumenty', exact: true })).toHaveCount(0)
   await expect(
     navigation.getByRole('button', { name: 'Strona główna' }).locator('..').locator('a'),
   ).toHaveText(['Podstawowe', 'Nagłówek', 'Hero', 'Treści', 'Stopka'])
 
+  await expect(
+    navigation.getByRole('button', { name: 'Administracja' }).locator('..').locator('a'),
+  ).toHaveText(['Aliasy adresów'])
+  await expect(
+    navigation.locator('#nav-url-aliases [data-icon-name="external-link"]'),
+  ).toBeVisible()
+  await expect(navigation.locator('#nav-locations [data-icon-name="location"]')).toBeVisible()
+  await expect(
+    navigation.locator('#nav-global-homepage-sections [data-icon-name="document"]'),
+  ).toBeVisible()
   const groupLabels = await navigation.locator('.nav-group__label').allTextContents()
+  expect(groupLabels).toEqual(['Treści', 'Klubowe', 'Strona główna', 'Administracja', 'Użytkownik'])
+})
 
-  expect(groupLabels).toEqual(['Treści', 'Klubowe', 'Strona główna', 'Użytkownik'])
+test('shows the tag group column and aligns it with the name in the tag editor', async ({
+  page,
+}) => {
+  const payload = await getPayload({ config })
+  const group = await payload.create({
+    collection: 'tag-groups',
+    data: { name: 'E2E Grupa tagu', slug: 'e2e-tag-list-group' },
+  })
+  try {
+    const tag = await payload.create({
+      collection: 'tags',
+      data: { name: 'E2E Tag z grupą', slug: 'e2e-tag-list-tag', group: group.id },
+    })
+    try {
+      await login({ page, user: editorTestUser })
+      await page.goto('/admin/collections/tags')
+      await expect(page.getByRole('columnheader', { name: 'Grupa tagów' })).toBeVisible()
+      await expect(page.getByRole('cell', { name: group.name, exact: true })).toBeVisible()
+
+      await page.goto(`/admin/collections/tags/${tag.id}`)
+      const row = page
+        .locator('.row__fields')
+        .filter({ has: page.locator('#field-name') })
+        .filter({ has: page.locator('#field-group') })
+      await expect(row).toHaveCount(1)
+      await expect(page.getByText('Powiązane dokumenty', { exact: true })).toHaveCount(0)
+      const columns = row.locator(':scope > .field-type')
+      const [nameBox, groupBox] = await Promise.all([
+        columns.nth(0).boundingBox(),
+        columns.nth(1).boundingBox(),
+      ])
+      expect(nameBox?.y).toBe(groupBox?.y)
+      expect(nameBox?.width ?? 0).toBeGreaterThan(groupBox?.width ?? 0)
+
+      await page.goto(`/admin/collections/tag-groups/${group.id}`)
+      await expect(page.getByText('Tagi w grupie', { exact: true })).toBeVisible()
+      await expect(page.getByRole('link', { name: tag.name, exact: true })).toBeVisible()
+      const icon = page.locator('#field-iconName')
+      await icon.getByRole('combobox').fill('book')
+      await icon
+        .getByRole('option')
+        .filter({ has: page.locator('[data-icon-name="book"]') })
+        .click()
+      await page.getByRole('button', { name: 'Zapisz', exact: true }).click()
+      await expect
+        .poll(async () => {
+          return (await payload.findByID({ collection: 'tag-groups', id: group.id })).iconName
+        })
+        .toBe('book')
+
+      await page.goto('/admin/collections/tags')
+      await expect(
+        page.getByRole('cell', { name: tag.name, exact: true }).locator('[data-icon-name="book"]'),
+      ).toBeVisible()
+    } finally {
+      await payload.delete({ collection: 'tags', id: tag.id })
+    }
+  } finally {
+    await payload.delete({ collection: 'tag-groups', id: group.id })
+  }
 })
 
 test('groups administrator navigation under Administracja', async ({ page }) => {
@@ -138,15 +241,60 @@ test('shows the fixed page template collection to administrators', async ({ page
   await expect(page.getByRole('button', { name: /Usuń/ })).toHaveCount(0)
 
   await page.locator('#renderingMode').locator('xpath=../../..').click()
+  await expect(page.getByRole('option', { name: 'Układ wbudowany' })).toHaveCount(0)
   await page.getByRole('option', { name: 'Układ z szablonu' }).click()
   const confirmation = page.getByRole('dialog')
   await expect(
     confirmation.getByRole('heading', { name: 'Przełączyć na układ z szablonu?' }),
   ).toBeVisible()
   await confirmation.getByRole('button', { name: 'Anuluj' }).click()
-  await expect(
-    page.getByText('Dotychczasowy układ (legacy)', { exact: true }).first(),
-  ).toBeVisible()
+  await expect(page.getByText('Układ wbudowany', { exact: true }).first()).toBeVisible()
+})
+
+test('searches page templates by display name and key', async ({ page }) => {
+  await login({ page, user: administratorTestUser })
+  await page.goto('/admin/collections/page-templates')
+
+  const search = page.locator('#search-filter-input')
+  const template = page.getByRole('link', { name: /Szczegóły wydarzenia/ })
+  const unrelatedTemplate = page.getByRole('link', { name: /Profil klubowicza/ })
+  await expect(template).toBeVisible()
+  await expect(unrelatedTemplate).toBeVisible()
+
+  for (const term of ['szczegoly wydarzenia', 'event-detail']) {
+    await search.fill(term)
+    await expect(page).toHaveURL((url) => url.searchParams.get('search') === term)
+    await expect(template).toBeVisible()
+    await expect(unrelatedTemplate).toHaveCount(0)
+  }
+
+  await search.fill('missing-template-e2e')
+  await expect(page).toHaveURL((url) => url.searchParams.get('search') === 'missing-template-e2e')
+  await expect(template).toHaveCount(0)
+})
+
+test('restores a navigation group preference after reloading the panel', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  const group = page.locator('aside nav').getByRole('button', { name: 'Treści', exact: true })
+  const savePreference = async (open: boolean) => {
+    const response = await page.request.post('/api/payload-preferences/nav', {
+      data: { value: { open: true, groups: { Treści: { open } } } },
+      headers: { Origin: new URL(page.url()).origin },
+    })
+    expect(response.ok(), await response.text()).toBe(true)
+  }
+
+  try {
+    await savePreference(true)
+    await page.reload()
+    await expect(group).toHaveClass(/nav-group__toggle--open/)
+
+    await savePreference(false)
+    await page.reload()
+    await expect(group).toHaveClass(/nav-group__toggle--collapsed/)
+  } finally {
+    await savePreference(true)
+  }
 })
 
 test('denies non-administrators access to the page template collection', async ({ page }) => {

@@ -1,4 +1,5 @@
 import { getPayload, type Payload } from 'payload'
+import { mergeListSearchAndWhere } from 'payload/shared'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 
 import config from '@/payload.config'
@@ -73,12 +74,35 @@ it('transfers a published post on a draft save and restricts access to current g
     overrideAccess: false,
     user: administrator,
   })
-  const author = { relationTo: 'user-groups' as const, value: group.id }
+  const admin = { ...administrator, collection: 'users' as const }
+  const usersByRole = await payload.find({
+    collection: 'users',
+    depth: 0,
+    overrideAccess: false,
+    user: admin,
+    where: mergeListSearchAndWhere({
+      collectionConfig: payload.collections.users.config,
+      search: authorRole.name,
+    }),
+  })
+  expect(usersByRole.docs.map(({ id }) => id).sort()).toEqual([gabriela.id, bartosz.id].sort())
+  const groupsByMember = await payload.find({
+    collection: 'user-groups',
+    depth: 0,
+    overrideAccess: false,
+    user: admin,
+    where: mergeListSearchAndWhere({
+      collectionConfig: payload.collections['user-groups'].config,
+      search: gabriela.displayName,
+    }),
+  })
+  expect(groupsByMember.docs.map(({ id }) => id)).toEqual([group.id])
+  const groupOwner = { relationTo: 'user-groups' as const, value: group.id }
   post = await payload.create({
     collection: 'posts',
+    depth: 0,
     data: {
-      title: 'Group author fixture',
-      author: { relationTo: 'users', value: gabriela.id },
+      title: 'Group ownership fixture',
       slug,
       excerpt: 'Test excerpt',
       layout: [{ blockType: 'spacer', size: '24' }],
@@ -86,6 +110,10 @@ it('transfers a published post on a draft save and restricts access to current g
     },
     overrideAccess: false,
     user: gabriela,
+  })
+  expect(post).toMatchObject({
+    author: gabriela.id,
+    owners: [{ relationTo: 'users', value: gabriela.id }],
   })
   const {
     docs: [personalVersion],
@@ -95,10 +123,16 @@ it('transfers a published post on a draft save and restricts access to current g
   })
   const document = { collection: 'posts' as const, id: post.id, overrideAccess: false }
   await expect(payload.findByID({ ...document, user: bartosz })).rejects.toThrow()
-  await payload.update({ ...document, draft: true, depth: 0, data: { author }, user: gabriela })
+  await payload.update({
+    ...document,
+    draft: true,
+    depth: 0,
+    data: { owners: [groupOwner] },
+    user: gabriela,
+  })
   await expect(
     payload.findByID({ ...document, draft: true, depth: 0, user: bartosz }),
-  ).resolves.toMatchObject({ author })
+  ).resolves.toMatchObject({ author: gabriela.id, owners: [groupOwner] })
   await expect(
     payload.find({
       collection: 'posts',
@@ -106,7 +140,7 @@ it('transfers a published post on a draft save and restricts access to current g
       depth: 0,
       overrideAccess: false,
       user: bartosz,
-      where: { author: { equals: author } },
+      where: { owners: { equals: groupOwner } },
     }),
   ).resolves.toMatchObject({ totalDocs: 1 })
   await expect(
@@ -122,7 +156,7 @@ it('transfers a published post on a draft save and restricts access to current g
     payload.update({
       ...document,
       draft: true,
-      data: { author: { relationTo: 'users', value: bartosz.id } },
+      data: { owners: [{ relationTo: 'users', value: bartosz.id }] },
       user: bartosz,
     }),
   ).rejects.toMatchObject({ status: 403 })
@@ -135,7 +169,7 @@ it('transfers a published post on a draft save and restricts access to current g
       overrideAccess: false,
       user: bartosz,
     }),
-  ).resolves.toMatchObject({ author })
+  ).resolves.toMatchObject({ author: gabriela.id, owners: [groupOwner] })
   await expect(
     payload.update({
       ...document,
@@ -144,6 +178,18 @@ it('transfers a published post on a draft save and restricts access to current g
       user: bartosz,
     }),
   ).resolves.toMatchObject({ title: 'Edited by Bartosz' })
+  await expect(
+    payload.update({
+      ...document,
+      depth: 0,
+      draft: true,
+      user: bartosz,
+      data: { owners: [groupOwner, { relationTo: 'users', value: bartosz.id }] },
+    }),
+  ).resolves.toMatchObject({
+    author: gabriela.id,
+    owners: [groupOwner, { relationTo: 'users', value: bartosz.id }],
+  })
   await payload.update({
     ...document,
     data: { deletedAt: new Date().toISOString() },
@@ -161,10 +207,13 @@ it('transfers a published post on a draft save and restricts access to current g
   await payload.update({
     collection: 'user-groups',
     id: group.id,
-    data: { members: [bartosz.id] },
+    data: { members: [] },
     overrideAccess: false,
     user: administrator,
   })
+  await expect(
+    payload.findByID({ ...document, draft: true, trash: true, user: bartosz }),
+  ).resolves.toMatchObject({ id: post.id })
   await expect(
     payload.findByID({ ...document, draft: true, trash: true, user: gabriela }),
   ).rejects.toThrow()
@@ -180,7 +229,7 @@ it('transfers a published post on a draft save and restricts access to current g
     payload.create({
       collection: 'posts',
       draft: true,
-      data: { author, title: 'Denied group author' },
+      data: { owners: [groupOwner], title: 'Denied group owner' },
       overrideAccess: false,
       user: gabriela,
     }),

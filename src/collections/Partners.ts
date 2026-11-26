@@ -1,3 +1,4 @@
+import { createContentOwnersField } from '@/modules/content/content-owners-field'
 import type { CollectionConfig } from 'payload'
 
 import { createLocationRelationship } from '@/modules/locations/relationship'
@@ -121,6 +122,7 @@ export const Partners: CollectionConfig = {
       unique: true,
     },
     getEditorialField(editorialFields, 'author'),
+    createContentOwnersField(),
     getEditorialField(editorialFields, 'publishedAt'),
   ],
   hooks: {

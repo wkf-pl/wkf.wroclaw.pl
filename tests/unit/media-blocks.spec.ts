@@ -56,7 +56,7 @@ describe('media blocks', () => {
       'surfacePreview',
       'selectionMode',
       'items',
-      ['category', 'tag'],
+      ['topic', 'tag'],
       ['sort', 'view'],
       ['pageSize', 'pagination'],
       'emptyMessage',
@@ -129,6 +129,10 @@ describe('media blocks', () => {
     )
 
     expect(names).toEqual([
+      'removeImageMetadata',
+      'imageVariants',
+      'legacyImageFiles',
+      'imageConversionSource',
       'filesize',
       'width',
       'height',
@@ -136,9 +140,10 @@ describe('media blocks', () => {
       'thumbnailURL',
       'alt',
       'description',
-      'category',
+      'topics',
       'tags',
       'author',
+      'owners',
       'uploadedBy',
     ])
     expect(Media.admin?.defaultColumns).toEqual([
@@ -148,7 +153,7 @@ describe('media blocks', () => {
       'width',
       'height',
       'url',
-      'category',
+      'topics',
       'tags',
       'author',
       'uploadedBy',

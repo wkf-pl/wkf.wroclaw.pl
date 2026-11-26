@@ -11,6 +11,7 @@ import { editorTestUser } from '../helpers/seedUser'
 const fixtureRunID = Date.now()
 const pageSlug = `e2e-content-composition-${fixtureRunID}`
 const imageFilename = `e2e-content-surface-${fixtureRunID}.png`
+const imageAlt = `Decorative bright test surface ${fixtureRunID}`
 
 let payload: Payload
 let pageDocument: Page
@@ -72,7 +73,7 @@ test.beforeAll(async () => {
     .toBuffer()
   surfaceImage = await payload.create({
     collection: 'media',
-    data: { alt: 'Decorative bright test surface' },
+    data: { alt: imageAlt },
     file: {
       data: imageData,
       mimetype: 'image/png',
@@ -86,7 +87,7 @@ test.beforeAll(async () => {
     collection: 'pages',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: author.id },
+      author: author.id,
       layout: [
         {
           blockType: 'sectionGroup',
@@ -386,7 +387,8 @@ test('shows compact presentation and heading controls with the crop preview in a
   await surfaceField.getByRole('combobox').click()
   await page.getByRole('option', { name: 'Obraz', exact: true }).click()
   await expect(firstSection.locator('.wkf-surface-preview')).toBeVisible()
-  await expect(surfaceImageField).toContainText(imageFilename)
+  expect(surfaceImage.filename).toMatch(/\.webp$/)
+  await expect(surfaceImageField).toContainText(surfaceImage.filename!)
 
   await headingIconField.locator('.clear-indicator').click()
   await expect(headingIconField).toContainText('Wyszukaj ikonę po nazwie…')
@@ -435,7 +437,7 @@ async function cleanup(): Promise<void> {
     await payload.delete({
       collection: 'media',
       overrideAccess: true,
-      where: { filename: { equals: imageFilename } },
+      where: { alt: { equals: imageAlt } },
     })
   }
 }

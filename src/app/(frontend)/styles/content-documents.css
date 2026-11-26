@@ -52,6 +52,18 @@
   margin: 1rem 0;
 }
 
+.wkf-tag-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.wkf-tag-label > .rasterIcon {
+  width: 1em;
+  height: 1em;
+  flex: none;
+}
+
 .taxonomyLinks a {
   display: inline-flex;
   min-height: 2rem;
@@ -121,18 +133,18 @@
 }
 
 .hierarchyBreadcrumbs a,
-.childCategories a {
+.childTopics a {
   color: var(--gold-light);
 }
 
-.childCategories {
+.childTopics {
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
   margin-top: 1.5rem;
 }
 
-.childCategories a {
+.childTopics a {
   padding: 0.45rem 0.75rem;
   border: 1px solid rgb(243 163 19 / 45%);
   border-radius: 0.35rem;

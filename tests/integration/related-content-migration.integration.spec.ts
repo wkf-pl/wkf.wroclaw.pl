@@ -71,7 +71,7 @@ describe('related content migration', () => {
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         eventDefaults: {
           capacityMode: 'unlimited',
           eventType: 1,
@@ -94,7 +94,7 @@ describe('related content migration', () => {
       collection: 'events',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         calendarRevision: 0,
         capacityMode: 'unlimited',
         cycle: cycle.id,

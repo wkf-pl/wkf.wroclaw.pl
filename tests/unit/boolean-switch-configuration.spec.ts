@@ -7,7 +7,7 @@ import {
   defaultBooleanSwitchLabels,
 } from '@/components/admin/boolean-switch-config'
 import {
-  Categories,
+  Topics,
   ContentListingItems,
   DocumentFiles,
   Documents,
@@ -32,7 +32,7 @@ const collections: CollectionConfig[] = [
   Events,
   EventCycles,
   EventTypes,
-  Categories,
+  Topics,
   Tags,
   Media,
   MemberProfiles,
@@ -100,12 +100,18 @@ describe('boolean switch configuration', () => {
       ...globals.flatMap((global) => flattenFields(global.fields)),
     ].filter(isCheckboxField)
 
-    expect(checkboxFields.length).toBeGreaterThan(0)
-    expect(
-      checkboxFields.every(
-        (field) => field.admin?.components?.Field === booleanSwitchFieldComponent,
-      ),
-    ).toBe(true)
+    const uploadMetadataField = Media.fields.find(
+      (field) => isCheckboxField(field) && field.name === 'removeImageMetadata',
+    )
+
+    expect(uploadMetadataField).toMatchObject({ virtual: true })
+    for (const field of checkboxFields) {
+      const component =
+        field === uploadMetadataField
+          ? '/components/admin/RemoveMediaImageMetadataField#RemoveMediaImageMetadataField'
+          : booleanSwitchFieldComponent
+      expect(field.admin?.components?.Field, field.name).toBe(component)
+    }
   })
 
   it('uses explicit enabled and disabled labels for public contact channels', () => {

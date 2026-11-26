@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createLocalReq } from 'payload'
+import { createLocalReq, initTransaction, killTransaction } from 'payload'
 import type { MigrateUpArgs, MigrateDownArgs } from '@payloadcms/db-postgres'
 import { migrateListingViewPresets } from '../../migrations/20261119_160227_listing_view_templates'
 import {
@@ -12,7 +12,11 @@ import { sql } from '@payloadcms/db-postgres'
 import { findPublicContent } from '@/modules/content/content-listing'
 import { resolvePublicListingView } from '@/modules/content/public-listing-view'
 import { getContentListingPresentation } from '@/modules/content/content-listing-presentation'
-import { listingViewUsageEndpoint } from '@/modules/content/listing-view-endpoints'
+import type { ListingViewUsageResult } from '@/modules/content/listing-view-usage'
+import {
+  listingViewReassignmentEndpoint,
+  listingViewUsageEndpoint,
+} from '@/modules/content/listing-view-endpoints'
 import type { ListingBlock, Post } from '@/payload-types'
 
 import {
@@ -33,7 +37,7 @@ afterAll(async () => {
 
 describe('content listing and pagination', () => {
   it(
-    'reports nested shared views in both published layouts and drafts',
+    'reassigns individual nested listings and detaches a draft while keeping its effective settings',
     { timeout: 20_000 },
     async () => {
       const { author, page, payload } = fixture
@@ -44,17 +48,23 @@ describe('content listing and pagination', () => {
         where: { key: { equals: 'administrator' } },
         limit: 1,
       })
+      const sharedView = await payload.create({
+        collection: 'listing-views',
+        data: { _status: 'published', name: 'Bulk source view', settings: { columns: 2 } },
+      })
       const {
-        docs: [sharedView],
+        docs: [replacement],
       } = await payload.find({
         collection: 'listing-views',
         where: { presetKey: { equals: 'grid' } },
         limit: 1,
       })
-      if (!administratorRole || !sharedView) throw new Error('Missing migrated roles or views.')
-
+      if (!administratorRole || !replacement) throw new Error('Missing migrated roles or views.')
       const listing: ListingBlock = {
-        appearance: { preset: `shared:${sharedView.id}` },
+        appearance: {
+          preset: `shared:${sharedView.id}`,
+          overrides: { information: { date: false } },
+        },
         blockType: 'listing',
         pageSize: 4,
         selectionMode: 'filters',
@@ -77,7 +87,7 @@ describe('content listing and pagination', () => {
         collection: 'pages',
         data: {
           _status: 'draft',
-          author: { relationTo: 'users', value: author.id },
+          author: author.id,
           layout: [listing],
           slug: 'integration-listing-usage-draft',
           title: 'Draft shared listing usage',
@@ -88,38 +98,185 @@ describe('content listing and pagination', () => {
       try {
         await payload.update({
           collection: 'pages',
+          id: draft.id,
+          draft: true,
+          data: {
+            layout: [
+              { blockType: 'spacer', size: '32' },
+              {
+                blockType: 'sectionGroup',
+                name: 'Program próbny',
+                sections: [{ blocks: [draft.layout![0] as ListingBlock] }],
+              },
+            ],
+          },
+        })
+        await payload.update({
+          collection: 'pages',
           id: page.id,
           data: {
             layout: [
               {
                 blockType: 'sectionGroup',
-                sections: [{ blocks: [listing] }],
+                name: 'Aktualności',
+                sections: [
+                  {
+                    blocks: [
+                      {
+                        blockType: 'listing',
+                        selectionMode: 'filters',
+                        searchEnabled: true,
+                        appearance: listing.appearance,
+                        pageSize: listing.pageSize,
+                        sources: ['posts'],
+                        view: 'grid',
+                      },
+                    ],
+                  },
+                ],
               },
+              listing,
             ],
           },
           draft: false,
         })
 
+        await expect(
+          payload.delete({ collection: 'listing-views', id: sharedView.id }),
+        ).rejects.toMatchObject({ status: 409 })
+
         const response = await listingViewUsageEndpoint.handler(req)
         expect(response.status).toBe(200)
-        const usages = await response.json()
-        expect(usages).toEqual(
-          expect.arrayContaining([
-            { collection: 'pages', id: page.id, status: 'published', title: page.title },
-            { collection: 'pages', id: draft.id, status: 'draft', title: draft.title },
-          ]),
+        const { uses, templates } = (await response.json()) as ListingViewUsageResult
+        expect(uses).toHaveLength(3)
+        expect(templates.some(({ id }) => id === sharedView.id)).toBe(false)
+        const nested = uses.find(
+          ({ id, path }) => id === page.id && path === 'layout.0.sections.0.blocks.0',
         )
+        const sibling = uses.find(({ id, path }) => id === page.id && path === 'layout.1')
+        const draftUse = uses.find(({ id, status }) => id === draft.id && status === 'draft')
+        if (!nested || !sibling || !draftUse) throw new Error('Missing distinct listing uses.')
+        expect(nested.pathNames).toEqual({ 1: 'Aktualności' })
+        expect(draftUse).toMatchObject({
+          path: 'layout.1.sections.0.blocks.0',
+          pathNames: { 1: 'Program próbny' },
+        })
+
+        req.json = async () => ({ keys: [sibling.key], target: replacement.id })
+        expect((await listingViewReassignmentEndpoint.handler(req)).status).toBe(200)
+        const published = await payload.findByID({ collection: 'pages', id: page.id, draft: false })
+        expect(published.layout).toMatchObject([
+          { sections: [{ blocks: [{ appearance: listing.appearance }] }] },
+          { appearance: { ...(listing.appearance as object), preset: `shared:${replacement.id}` } },
+        ])
+
+        const originalView = (await resolvePublicListingView(listing)).view
+        req.json = async () => ({ keys: [nested.key, draftUse.key], target: null })
+        expect((await listingViewReassignmentEndpoint.handler(req)).status).toBe(200)
+        const updatedDraft = await payload.findByID({
+          collection: 'pages',
+          id: draft.id,
+          draft: true,
+        })
+        const draftGroup = updatedDraft.layout?.find(
+          ({ blockType }) => blockType === 'sectionGroup',
+        )
+        const detached =
+          draftGroup?.blockType === 'sectionGroup' ? draftGroup.sections[0]?.blocks[0] : undefined
+        expect(detached).toMatchObject({
+          appearance: { preset: 'custom', overrides: originalView },
+        })
+        if (!detached || detached.blockType !== 'listing') throw new Error('Missing listing.')
+        expect((await resolvePublicListingView(detached)).view).toEqual(originalView)
+        expect((await (await listingViewUsageEndpoint.handler(req)).json()).uses).toEqual([])
+        await expect(
+          payload.delete({ collection: 'listing-views', id: sharedView.id }),
+        ).resolves.toMatchObject({ id: sharedView.id })
       } finally {
-        await payload.delete({ collection: 'pages', id: draft.id })
+        await payload.delete({ collection: 'pages', id: draft.id, trash: true })
         await payload.update({
           collection: 'pages',
           id: page.id,
           data: { layout: page.layout },
           draft: false,
         })
+        const source = await payload.findByID({
+          collection: 'listing-views',
+          id: sharedView.id,
+          disableErrors: true,
+        })
+        if (source) await payload.delete({ collection: 'listing-views', id: sharedView.id })
       }
     },
   )
+
+  it('finds the name of a block in the homepage sections', async () => {
+    const { author, payload } = fixture
+    const [
+      {
+        docs: [adminRole],
+      },
+      {
+        docs: [template],
+      },
+    ] = await Promise.all([
+      payload.find({ collection: 'roles', where: { key: { equals: 'administrator' } }, limit: 1 }),
+      payload.find({
+        collection: 'listing-views',
+        where: { presetKey: { equals: 'tiles' } },
+        limit: 1,
+      }),
+    ])
+    const req = await createLocalReq(
+      {
+        req: { routeParams: { id: String(template.id) } },
+        user: { ...author, collection: 'users', roles: [adminRole.id] },
+      },
+      payload,
+    )
+    await initTransaction(req)
+    try {
+      await payload.updateGlobal({
+        slug: 'homepage-sections',
+        req,
+        data: {
+          _status: 'published',
+          layout: [
+            {
+              blockType: 'sectionGroup',
+              name: 'Aktualności',
+              sections: [
+                {
+                  blocks: [
+                    {
+                      blockType: 'listing',
+                      appearance: { preset: `shared:${template.id}` },
+                      view: 'tiles',
+                      selectionMode: 'filters',
+                      sources: ['posts'],
+                      pageSize: 4,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      })
+      const response = await listingViewUsageEndpoint.handler(req)
+      expect(response.status).toBe(200)
+      const { uses } = (await response.json()) as ListingViewUsageResult
+      expect(uses).toContainEqual(
+        expect.objectContaining({
+          collection: 'homepage-sections',
+          path: 'layout.0.sections.0.blocks.0',
+          pathNames: { 1: 'Aktualności' },
+        }),
+      )
+    } finally {
+      await killTransaction(req)
+    }
+  })
 
   it('publishes editable templates for every former built-in preset', async () => {
     const { docs } = await fixture.payload.find({
@@ -319,9 +476,9 @@ describe('content listing and pagination', () => {
     const result = await findPublicContent({
       conditions: [
         {
-          field: 'category',
+          field: 'topic',
           operator: 'inSubtree',
-          relationshipValue: { relationTo: 'categories', value: fixture.category.id },
+          relationshipValue: { relationTo: 'topics', value: fixture.topic.id },
         },
         {
           field: 'tag',
@@ -383,8 +540,8 @@ describe('content listing and pagination', () => {
     ])
   })
 
-  it('distinguishes a category subtree from an exact category and combines repeated tags with AND', async () => {
-    const childCategorySlug = 'integration-listing-child-category'
+  it('distinguishes a topic subtree from an exact topic and combines repeated tags with AND', async () => {
+    const childTopicSlug = 'integration-listing-child-topic'
     const secondTagSlug = 'integration-listing-second-tag'
     const doublyTaggedPostSlug = 'integration-listing-doubly-tagged-post'
     await fixture.payload.delete({
@@ -393,9 +550,9 @@ describe('content listing and pagination', () => {
       where: { slug: { equals: doublyTaggedPostSlug } },
     })
     await fixture.payload.delete({
-      collection: 'categories',
+      collection: 'topics',
       overrideAccess: true,
-      where: { slug: { equals: childCategorySlug } },
+      where: { slug: { equals: childTopicSlug } },
     })
     await fixture.payload.delete({
       collection: 'tags',
@@ -403,12 +560,12 @@ describe('content listing and pagination', () => {
       where: { slug: { equals: secondTagSlug } },
     })
 
-    const childCategory = await fixture.payload.create({
-      collection: 'categories',
+    const childTopic = await fixture.payload.create({
+      collection: 'topics',
       data: {
-        name: 'Integration child category',
-        parent: fixture.category.id,
-        slug: childCategorySlug,
+        name: 'Integration child topic',
+        parent: fixture.topic.id,
+        slug: childTopicSlug,
       },
       overrideAccess: true,
     })
@@ -421,8 +578,8 @@ describe('content listing and pagination', () => {
       collection: 'posts',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
-        category: childCategory.id,
+        author: fixture.author.id,
+        topics: [childTopic.id],
         excerpt: 'Doubly tagged excerpt',
         layout: [{ blockType: 'richText', content: createLexicalDocument('Tagged content') }],
         publishedAt: '2026-08-20T12:00:00.000Z',
@@ -437,9 +594,9 @@ describe('content listing and pagination', () => {
       const subtreeResult = await findPublicContent({
         conditions: [
           {
-            field: 'category',
+            field: 'topic',
             operator: 'inSubtree',
-            relationshipValue: { relationTo: 'categories', value: fixture.category.id },
+            relationshipValue: { relationTo: 'topics', value: fixture.topic.id },
           },
         ],
         page: 1,
@@ -451,9 +608,9 @@ describe('content listing and pagination', () => {
       const exactResult = await findPublicContent({
         conditions: [
           {
-            field: 'category',
+            field: 'topic',
             operator: 'equals',
-            relationshipValue: { relationTo: 'categories', value: fixture.category.id },
+            relationshipValue: { relationTo: 'topics', value: fixture.topic.id },
           },
         ],
         page: 1,
@@ -494,8 +651,8 @@ describe('content listing and pagination', () => {
         overrideAccess: true,
       })
       await fixture.payload.delete({
-        collection: 'categories',
-        id: childCategory.id,
+        collection: 'topics',
+        id: childTopic.id,
         overrideAccess: true,
       })
       await fixture.payload.delete({
@@ -511,13 +668,13 @@ describe('content listing and pagination', () => {
       collection: 'pages',
       data: {
         _status: 'draft',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         layout: [
           {
             blockType: 'listing',
             conditions: [
               { field: 'parentPage', operator: 'isEmpty' },
-              { field: 'category', operator: 'isEmpty' },
+              { field: 'topic', operator: 'isEmpty' },
               {
                 field: 'tag',
                 operator: 'isEmpty',
@@ -553,14 +710,14 @@ describe('content listing and pagination', () => {
         })),
       ).toEqual([
         { field: 'parentPage', operator: 'isEmpty', relationshipValue: null },
-        { field: 'category', operator: 'isEmpty', relationshipValue: null },
+        { field: 'topic', operator: 'isEmpty', relationshipValue: null },
         { field: 'tag', operator: 'isEmpty', relationshipValue: null },
         { field: 'eventCycle', operator: 'isEmpty', relationshipValue: null },
       ])
 
       const cases = [
         ['parentPage', fixture.page.id],
-        ['category', fixture.childPage.id],
+        ['topic', fixture.childPage.id],
         ['tag', fixture.childPage.id],
       ] as const
       for (const [field, matchingPageID] of cases) {
@@ -659,7 +816,7 @@ describe('content listing and pagination', () => {
       collection: 'partners',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         excerpt: 'Partner contextual listing excerpt.',
         layout: [
           {
@@ -713,7 +870,7 @@ describe('content listing and pagination', () => {
       collection: 'posts',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         excerpt: 'Recent post excerpt',
         layout: [{ blockType: 'richText', content: createLexicalDocument('Recent content') }],
         publishedAt: new Date(Date.now() - 86_400_000).toISOString(),
@@ -764,7 +921,7 @@ describe('content listing and pagination', () => {
         collection: 'posts',
         data: {
           _status: 'published',
-          author: { relationTo: 'users', value: fixture.author.id },
+          author: fixture.author.id,
           excerpt: `${title} excerpt`,
           layout: [{ blockType: 'richText', content: createLexicalDocument(title) }],
           publishedAt,
@@ -835,7 +992,7 @@ describe('content listing and pagination', () => {
       collection: 'pages',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         layout: [
           {
             blockType: 'listing',
@@ -896,16 +1053,16 @@ describe('content listing and pagination', () => {
   })
 
   it('exposes both collection relations through reverse Join fields', async () => {
-    const populatedCategory = await fixture.payload.findByID({
-      collection: 'categories',
+    const populatedTopic = await fixture.payload.findByID({
+      collection: 'topics',
       depth: 0,
-      id: fixture.category.id,
+      id: fixture.topic.id,
       joins: { relatedPages: { limit: 10 }, relatedPosts: { limit: 10 } },
       overrideAccess: true,
     })
 
-    expect(populatedCategory.relatedPages?.docs).toHaveLength(1)
-    expect(populatedCategory.relatedPosts?.docs).toHaveLength(2)
+    expect(populatedTopic.relatedPages?.docs).toHaveLength(1)
+    expect(populatedTopic.relatedPosts?.docs).toHaveLength(2)
   })
 
   it('uses database pagination for a deep mixed listing page', async () => {
@@ -917,8 +1074,8 @@ describe('content listing and pagination', () => {
             collection: 'posts',
             data: {
               _status: 'published',
-              author: { relationTo: 'users', value: fixture.author.id },
-              category: fixture.category.id,
+              author: fixture.author.id,
+              topics: [fixture.topic.id],
               excerpt: `Pagination excerpt ${i}`,
               layout: [{ blockType: 'richText', content: createLexicalDocument(`Content ${i}`) }],
               publishedAt: new Date(Date.UTC(2026, 7, 15 + Math.min(i, 5))).toISOString(),
@@ -934,9 +1091,9 @@ describe('content listing and pagination', () => {
       const options = {
         conditions: [
           {
-            field: 'category',
+            field: 'topic',
             operator: 'inSubtree',
-            relationshipValue: { relationTo: 'categories', value: fixture.category.id },
+            relationshipValue: { relationTo: 'topics', value: fixture.topic.id },
           },
           {
             field: 'tag',

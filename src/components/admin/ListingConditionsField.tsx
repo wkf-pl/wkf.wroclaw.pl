@@ -42,6 +42,11 @@ import {
   type ContentListingSource,
 } from '@/modules/content/listing-conditions'
 
+import {
+  getPageTemplateDefinition,
+  isPageTemplateID,
+} from '@/modules/page-templates/page-template-registry'
+
 import { ListingConditionsSummary, readListingCondition } from './ListingConditionsSummary'
 
 export { ListingConditionRowLabel } from './ListingConditionsSummary'
@@ -130,22 +135,25 @@ export function ListingConditionFieldSelect(properties: SelectFieldClientProps) 
   const selectedField = isListingConditionField(value) ? value : undefined
   const availableOptions = fieldOptions.filter(
     (option) =>
-      option.value === selectedField ||
-      getApplicableListingSources(option.value, sources, taxonomyContext).length > 0,
+      option.value !== 'parentPage' &&
+      (option.value === selectedField ||
+        getApplicableListingSources(option.value, sources, taxonomyContext).length > 0),
   )
-  const selectedOption = availableOptions.find((option) => option.value === selectedField)
+  const selectedOption = fieldOptions.find((option) => option.value === selectedField)
   const styles = useMemo(() => mergeFieldStyles(properties.field), [properties.field])
 
   function handleChange(option: unknown) {
     if (Array.isArray(option) || !option || typeof option !== 'object' || !('value' in option)) {
       return
     }
-    if (!isListingConditionField(option.value)) return
+    if (!isListingConditionField(option.value) || option.value === 'parentPage') return
 
     setValue(option.value)
     operator.setValue(listingConditionOperatorsByField[option.value][0])
     relationshipValue.setValue(null)
-    relatedTargetMode.setValue(option.value === 'relatedTo' ? 'current' : null)
+    relatedTargetMode.setValue(
+      option.value === 'relatedTo' || option.value === 'contentParent' ? 'current' : null,
+    )
     relatedTargetValue.setValue(null)
     textValue.setValue(null)
     numberValue.setValue(null)
@@ -282,6 +290,25 @@ export function ListingConditionRelatedTargetModeSelect(properties: SelectFieldC
     path: siblingPath(properties.path, 'relatedTargetValue'),
   })
   const styles = useMemo(() => mergeFieldStyles(properties.field), [properties.field])
+  const isParentCondition = useFormFields(
+    ([fields]) => fields[siblingPath(properties.path, 'field')]?.value === 'contentParent',
+  )
+  const allowsCurrentTarget = useFormFields(([fields]) => {
+    const templateKey = fields.templateKey?.value
+    if (isParentCondition) {
+      return (
+        templateKey === 'event-cycle-detail' ||
+        (!isPageTemplateID(templateKey) &&
+          !fields.cycle &&
+          !fields.eventDefaults &&
+          !fields.relatedContent)
+      )
+    }
+    return (
+      !isPageTemplateID(templateKey) ||
+      getPageTemplateDefinition(templateKey)?.routeKind === 'collectionItem'
+    )
+  })
   const selectedTarget =
     value === 'selected' && isRelatedTargetValue(relatedTargetField.value)
       ? relatedTargetField.value
@@ -289,7 +316,7 @@ export function ListingConditionRelatedTargetModeSelect(properties: SelectFieldC
 
   function handleChange(target: ValueWithRelation | null) {
     if (!target || target.value === currentRelatedTargetSentinel) {
-      setValue('current')
+      setValue(allowsCurrentTarget ? 'current' : 'selected')
       relatedTargetField.setValue(null)
       return
     }
@@ -303,15 +330,15 @@ export function ListingConditionRelatedTargetModeSelect(properties: SelectFieldC
       <RelationshipInput
         allowCreate
         allowEdit
-        formatDisplayedOptions={prependCurrentRelatedTargetOption}
+        formatDisplayedOptions={allowsCurrentTarget ? prependCurrentRelatedTargetOption : undefined}
         hasMany={false}
         initialValue={selectedTarget}
         label={properties.field.label}
         onChange={handleChange}
         path={path}
-        placeholder="Bieżący element"
+        placeholder={allowsCurrentTarget ? 'Bieżący element' : 'Wybierz element'}
         readOnly={properties.readOnly}
-        relationTo={[...allListingSources]}
+        relationTo={isParentCondition ? ['pages', 'event-cycles'] : [...allListingSources]}
         required
         showError={showError}
         value={selectedTarget}

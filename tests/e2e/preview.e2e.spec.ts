@@ -105,7 +105,7 @@ test.beforeAll(async () => {
     collection: 'events',
     data: {
       _status: 'published',
-      author: { relationTo: 'users', value: editor.id },
+      author: editor.id,
       calendarRevision: 0,
       capacityMode: 'unlimited',
       eventType: eventType.id,
@@ -197,7 +197,7 @@ test.beforeAll(async () => {
   const draftPage = await payload.create({
     collection: 'pages',
     data: {
-      author: { relationTo: 'users', value: editor.id },
+      author: editor.id,
       layout: [
         {
           blockType: 'heading',
@@ -216,7 +216,7 @@ test.beforeAll(async () => {
   const invalidDraftPage = await payload.create({
     collection: 'pages',
     data: {
-      author: { relationTo: 'users', value: editor.id },
+      author: editor.id,
       layout: [
         {
           blockType: 'listing',
@@ -239,7 +239,7 @@ test.beforeAll(async () => {
   const draftPost = await payload.create({
     collection: 'posts',
     data: {
-      author: { relationTo: 'users', value: editor.id },
+      author: editor.id,
       excerpt: 'Streszczenie testowego szkicu wpisu.',
       layout: [
         {
@@ -440,7 +440,9 @@ test('previews a draft page template before enabling template rendering publicly
     { timeout: navigationTimeout },
   )
   await expect(previewPage.getByRole('heading', { name: pageTemplateDraftHeading })).toBeVisible()
-  await expect(previewPage.getByRole('status')).toContainText('Podglądasz roboczy układ szablonu.')
+  await expect(
+    previewPage.getByRole('status').filter({ hasText: 'Podglądasz roboczy układ szablonu.' }),
+  ).toBeVisible()
 
   const fieldRow = previewPage.locator('.contentHero .pageTemplateFieldRow')
   await expect(fieldRow.locator('.pageTemplateFieldRowText strong')).toHaveText('—')
@@ -546,7 +548,9 @@ test('saves a draft before opening it from the admin preview button and can leav
     timeout: navigationTimeout,
   })
   await expect(previewPage.getByRole('heading', { name: updatedTitle })).toBeVisible()
-  await expect(previewPage.getByRole('status')).toContainText('Wyświetlasz zapisany szkic.')
+  await expect(
+    previewPage.getByRole('status').filter({ hasText: 'Wyświetlasz zapisany szkic.' }),
+  ).toBeVisible()
 
   await previewPage.getByRole('link', { name: 'Wyłącz podgląd' }).click()
   await expect(previewPage).toHaveURL(new RegExp(`/${draftSlug}$`), {
@@ -602,7 +606,9 @@ test('allows a manual Hero checkpoint after saving an autosave for preview', asy
   await previewButton.click()
   const previewPage = await previewPagePromise
   await expect(previewPage).toHaveURL('/', { timeout: navigationTimeout })
-  await expect(previewPage.getByRole('status')).toContainText('Wyświetlasz zapisany szkic.')
+  await expect(
+    previewPage.getByRole('status').filter({ hasText: 'Wyświetlasz zapisany szkic.' }),
+  ).toBeVisible()
   await previewPage.close()
 
   await expect(saveDraftButton).toBeEnabled()

@@ -4,7 +4,7 @@ import type {
   ActionLinksBlock,
   AttachmentsBlock,
   CardBlock,
-  Category,
+  Topic,
   ColumnLayoutBlock,
   ContentCalendarBlock,
   CurrentItemContentBlock,
@@ -39,7 +39,7 @@ import type {
 import type { CurrentListingTarget } from '@/modules/content/listing-conditions'
 
 export type ContentLayoutDocument =
-  | Category
+  | Topic
   | Event
   | EventCycle
   | HomepageSection

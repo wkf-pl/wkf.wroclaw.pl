@@ -49,6 +49,7 @@ export async function findPublishedContentListingDocument(
   req: PayloadRequest,
   source: ContentListingSource,
   documentID: number,
+  includeSearchMetadata = false,
 ): Promise<ContentListingDocument | undefined> {
   const where: Where = {
     and: [{ id: { equals: documentID } }, { _status: { equals: 'published' } }],
@@ -63,6 +64,9 @@ export async function findPublishedContentListingDocument(
     where,
   }
 
+  const authorSelection = includeSearchMetadata ? ({ author: true } as const) : {}
+  const publicationSelection = includeSearchMetadata ? ({ publishedAt: true } as const) : {}
+
   switch (source) {
     case 'locations': {
       const result = await req.payload.find({ ...query, collection: 'locations' })
@@ -73,7 +77,8 @@ export async function findPublishedContentListingDocument(
         ...query,
         collection: 'documents',
         select: {
-          category: true,
+          ...authorSelection,
+          topics: true,
           documentDate: true,
           id: true,
           slug: true,
@@ -90,7 +95,10 @@ export async function findPublishedContentListingDocument(
         ...query,
         collection: 'event-cycles',
         select: {
-          category: true,
+          ...authorSelection,
+          ...publicationSelection,
+          topics: true,
+          parent: true,
           eventDefaults: {
             partners: true,
           },
@@ -110,7 +118,9 @@ export async function findPublishedContentListingDocument(
         ...query,
         collection: 'events',
         select: {
-          category: true,
+          ...authorSelection,
+          topics: true,
+          parent: true,
           cycle: true,
           endAt: true,
           excerpt: true,
@@ -145,7 +155,9 @@ export async function findPublishedContentListingDocument(
         ...query,
         collection: 'pages',
         select: {
-          category: true,
+          ...authorSelection,
+          ...publicationSelection,
+          topics: true,
           heroImage: true,
           id: true,
           listingExcerpt: true,
@@ -163,6 +175,8 @@ export async function findPublishedContentListingDocument(
         ...query,
         collection: 'partners',
         select: {
+          ...authorSelection,
+          ...publicationSelection,
           excerpt: true,
           heroImage: true,
           id: true,
@@ -178,7 +192,9 @@ export async function findPublishedContentListingDocument(
         ...query,
         collection: 'posts',
         select: {
-          category: true,
+          ...authorSelection,
+          topics: true,
+          parent: true,
           excerpt: true,
           heroImage: true,
           id: true,
@@ -305,7 +321,7 @@ async function findPublishedDocuments(
     overrideAccess: false,
     pagination: false,
     select: {
-      category: true,
+      topics: true,
       documentDate: true,
       documentNumber: true,
       documentType: true,
@@ -334,7 +350,7 @@ async function findPublishedEventCycles(
     overrideAccess: false,
     pagination: false,
     select: {
-      category: true,
+      topics: true,
       excerpt: true,
       heroImage: true,
       id: true,
@@ -359,7 +375,7 @@ async function findPublishedEvents(payload: Payload, ids: readonly number[]): Pr
     pagination: false,
     populate: { 'event-cycles': { slug: true, title: true } },
     select: {
-      category: true,
+      topics: true,
       cycle: true,
       endAt: true,
       excerpt: true,
@@ -414,8 +430,9 @@ async function findPublishedPages(payload: Payload, ids: readonly number[]): Pro
     draft: false,
     overrideAccess: false,
     pagination: false,
+    populate: { pages: { title: true } },
     select: {
-      category: true,
+      topics: true,
       heroImage: true,
       id: true,
       listingExcerpt: true,
@@ -462,7 +479,7 @@ async function findPublishedPosts(payload: Payload, ids: readonly number[]): Pro
     overrideAccess: false,
     pagination: false,
     select: {
-      category: true,
+      topics: true,
       excerpt: true,
       heroImage: true,
       id: true,

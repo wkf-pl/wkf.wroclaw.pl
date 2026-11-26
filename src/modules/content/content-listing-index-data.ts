@@ -22,7 +22,8 @@ import {
 import { extractRichTextText } from './rich-text'
 
 type ContentListingIndexData = {
-  category: null | number
+  topics: number[]
+  topicSearchIndex: string
   eventCycle: null | number
   eventEndAt: null | string
   eventStartAt: null | string
@@ -145,7 +146,8 @@ function createBaseIndexData(
 ): ContentListingIndexData {
   const relatedTargets = getContentListingTargets(source, document)
   return {
-    category: null,
+    topics: [],
+    topicSearchIndex: '|',
     eventCycle: null,
     eventEndAt: null,
     eventStartAt: null,
@@ -225,6 +227,7 @@ function createTaxonomizableIndexData(
     url: string
   },
 ): ContentListingIndexData {
+  const topics = document.topics?.flatMap((topic) => getRelationshipId(topic) ?? []) ?? []
   const tagIDs =
     document.tags?.flatMap((tag) => {
       const id = getRelationshipId(tag)
@@ -238,7 +241,8 @@ function createTaxonomizableIndexData(
       title: document.title,
       url: values.url,
     }),
-    category: getRelationshipId(document.category) ?? null,
+    topics,
+    topicSearchIndex: topics.length ? createListingTagSearchIndex(topics) : '|',
     eventCycle: values.eventCycle ?? null,
     eventEndAt: values.eventEndAt ?? null,
     eventStartAt: values.eventStartAt ?? null,
@@ -247,5 +251,22 @@ function createTaxonomizableIndexData(
     significantDate: values.significantDate,
     tagSearchIndex: createListingTagSearchIndex(tagIDs),
     tags: tagIDs,
+  }
+}
+
+export function createContentSearchIndexData(document: ContentListingDocument) {
+  const author = 'author' in document ? getRelationshipId(document.author) : undefined
+  const searchDate =
+    'startAt' in document
+      ? document.startAt
+      : 'documentDate' in document
+        ? document.documentDate
+        : 'publishedAt' in document
+          ? document.publishedAt
+          : null
+
+  return {
+    searchDate: searchDate ?? null,
+    searchAuthor: author ?? null,
   }
 }

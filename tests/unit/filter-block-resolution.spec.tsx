@@ -1,9 +1,16 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const listingMocks = vi.hoisted(() => ({ findPublicContent: vi.fn() }))
+const listingMocks = vi.hoisted(() => ({
+  findPublicContent: vi.fn(),
+  findContentSearchOptions: vi.fn(),
+}))
 const mediaMocks = vi.hoisted(() => ({ findPublicMedia: vi.fn() }))
 
+vi.mock('next/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/navigation')>()),
+  useRouter: () => ({ refresh: vi.fn() }),
+}))
 vi.mock('@/modules/content/content-listing', () => listingMocks)
 vi.mock('@/modules/media/media-listing', () => mediaMocks)
 vi.mock('@/modules/content/public-listing-view', async () => {
@@ -66,7 +73,38 @@ const emptyAwareBlocks = [
 describe('filter-capable block resolution', () => {
   beforeEach(() => {
     listingMocks.findPublicContent.mockReset().mockResolvedValue(emptyResult)
+    listingMocks.findContentSearchOptions.mockReset().mockResolvedValue({ topics: [], tags: [] })
     mediaMocks.findPublicMedia.mockReset().mockResolvedValue(emptyResult)
+  })
+
+  it('keeps the search form available when a filter removes all results', async () => {
+    listingMocks.findPublicContent.mockResolvedValueOnce(emptyResult)
+    listingMocks.findPublicContent.mockResolvedValueOnce({ ...emptyResult, items: [{}] })
+    const resolution = await resolveListingBlockSection({
+      block: {
+        blockType: 'listing',
+        selectionMode: 'filters',
+        searchEnabled: true,
+        legacySearchParameters: true,
+        id: 'catalogue',
+        hideWhenEmpty: true,
+        pageSize: 10,
+        sources: ['pages'],
+        view: 'cards',
+      },
+      blockPath: 'layout.0.sections.0.blocks.0',
+      document: {} as never,
+      pathname: '/catalogue',
+      searchParams: { search_catalogue_q: 'no matches' },
+    })
+
+    expect(resolution.isEmpty).toBe(false)
+    expect(renderToStaticMarkup(resolution.content)).toContain('Wyczyść filtry')
+    expect(listingMocks.findPublicContent).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ searchFilters: { phrase: 'no matches' } }),
+    )
+    expect(listingMocks.findPublicContent).toHaveBeenCalledTimes(1)
   })
 
   it('reports an empty Listing while preserving its standalone empty state', async () => {

@@ -8,7 +8,7 @@ describe('public sitemap', () => {
   it('includes every public CMS route using the published blog template', () => {
     const sitemap = createPublicSitemap({
       blogTemplateUpdatedAt: updatedAt,
-      categories: [{ slug: 'fantastyka', updatedAt }],
+      topics: [{ slug: 'fantastyka', updatedAt }],
       cycles: [{ slug: 'erpegowe-wtorki', updatedAt }],
       events: [{ slug: 'sesja', updatedAt }],
       memberProfiles: [{ slug: 'anna', updatedAt }],
@@ -25,7 +25,7 @@ describe('public sitemap', () => {
       { url: 'https://wkf.wroclaw.pl/members' },
       { lastModified: updatedAt, url: 'https://wkf.wroclaw.pl/o-nas' },
       { lastModified: updatedAt, url: 'https://wkf.wroclaw.pl/blog/nowosci' },
-      { lastModified: updatedAt, url: 'https://wkf.wroclaw.pl/category/fantastyka' },
+      { lastModified: updatedAt, url: 'https://wkf.wroclaw.pl/topic/fantastyka' },
       { lastModified: updatedAt, url: 'https://wkf.wroclaw.pl/tag/rpg' },
       { lastModified: updatedAt, url: 'https://wkf.wroclaw.pl/events/sesja' },
       { lastModified: updatedAt, url: 'https://wkf.wroclaw.pl/events/series/erpegowe-wtorki' },
@@ -36,7 +36,7 @@ describe('public sitemap', () => {
 
   it('does not advertise the blog route without a published template', () => {
     const sitemap = createPublicSitemap({
-      categories: [],
+      topics: [],
       cycles: [],
       events: [],
       memberProfiles: [],

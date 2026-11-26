@@ -126,9 +126,9 @@ test('previews, publishes and reverts the events index template with legacy list
     await expect(
       previewPage.getByRole('heading', { level: 1, name: templateHeading }),
     ).toBeVisible()
-    await expect(previewPage.getByRole('status')).toContainText(
-      'Podglądasz roboczy układ szablonu.',
-    )
+    await expect(
+      previewPage.getByRole('status').filter({ hasText: 'Podglądasz roboczy układ szablonu.' }),
+    ).toBeVisible()
     await expect(previewPage.locator('.contentHero')).toHaveClass(/contentHero--withoutImage/)
     await expect(
       previewPage
@@ -208,7 +208,7 @@ async function createEventFixtures(payload: Payload, eventIDs: number[]): Promis
       collection: 'events',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: author.id },
+        author: author.id,
         calendarRevision: 0,
         capacityMode: 'unlimited',
         endAt: endAt === undefined ? undefined : new Date(endAt).toISOString(),

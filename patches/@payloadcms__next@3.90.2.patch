@@ -1,0 +1,218 @@
+diff --git a/dist/elements/Nav/getNavPrefs.js b/dist/elements/Nav/getNavPrefs.js
+--- a/dist/elements/Nav/getNavPrefs.js
++++ b/dist/elements/Nav/getNavPrefs.js
+@@ -1,27 +1,10 @@
+ import { PREFERENCE_KEYS } from 'payload/shared';
+-import { cache } from 'react';
+-export const getNavPrefs = cache(async req => {
+-  return req?.user?.collection ? await req.payload.find({
+-    collection: 'payload-preferences',
+-    depth: 0,
+-    limit: 1,
+-    pagination: false,
+-    req,
+-    where: {
+-      and: [{
+-        key: {
+-          equals: PREFERENCE_KEYS.NAV
+-        }
+-      }, {
+-        'user.relationTo': {
+-          equals: req.user.collection
+-        }
+-      }, {
+-        'user.value': {
+-          equals: req?.user?.id
+-        }
+-      }]
+-    }
+-  })?.then(res => res?.docs?.[0]?.value) : null;
+-});
+-//# sourceMappingURL=getNavPrefs.js.map
+\ No newline at end of file
++import { getPreferences } from '../../utilities/getPreferences.js';
++export const getNavPrefs = async req => {
++  const user = req?.user;
++  if (!user?.collection) {
++    return null;
++  }
++  const preferences = await getPreferences(PREFERENCE_KEYS.NAV, req.payload, user.id, user.collection);
++  return preferences?.value;
++};
+diff --git a/dist/utilities/getPreferences.js b/dist/utilities/getPreferences.js
+--- a/dist/utilities/getPreferences.js
++++ b/dist/utilities/getPreferences.js
+@@ -1,26 +1 @@
+-import { cache } from 'react';
+-export const getPreferences = cache(async (key, payload, userID, userSlug) => {
+-  const result = await payload.find({
+-    collection: 'payload-preferences',
+-    depth: 0,
+-    limit: 1,
+-    pagination: false,
+-    where: {
+-      and: [{
+-        key: {
+-          equals: key
+-        }
+-      }, {
+-        'user.relationTo': {
+-          equals: userSlug
+-        }
+-      }, {
+-        'user.value': {
+-          equals: userID
+-        }
+-      }]
+-    }
+-  }).then(res => res.docs?.[0]);
+-  return result;
+-});
+-//# sourceMappingURL=getPreferences.js.map
+\ No newline at end of file
++export { getPreferences } from '@payloadcms/ui/utilities/upsertPreferences';
+diff --git a/dist/views/Document/getDocPreferences.js b/dist/views/Document/getDocPreferences.js
+--- a/dist/views/Document/getDocPreferences.js
++++ b/dist/views/Document/getDocPreferences.js
+@@ -1,4 +1,5 @@
+ import { sanitizeID } from '@payloadcms/ui/shared';
++import { getPreferences } from '../../utilities/getPreferences.js';
+ export const getDocPreferences = async ({
+   id,
+   collectionSlug,
+@@ -14,28 +15,9 @@
+     preferencesKey = `global-${globalSlug}`;
+   }
+   if (preferencesKey) {
+-    const preferencesResult = await payload.find({
+-      collection: 'payload-preferences',
+-      depth: 0,
+-      limit: 1,
+-      where: {
+-        and: [{
+-          key: {
+-            equals: preferencesKey
+-          }
+-        }, {
+-          'user.relationTo': {
+-            equals: user.collection
+-          }
+-        }, {
+-          'user.value': {
+-            equals: sanitizeID(user.id)
+-          }
+-        }]
+-      }
+-    });
+-    if (preferencesResult?.docs?.[0]?.value) {
+-      return preferencesResult.docs[0].value;
++    const preferences = await getPreferences(preferencesKey, payload, sanitizeID(user.id), user.collection);
++    if (preferences?.value) {
++      return preferences.value;
+     }
+   }
+   return {
+diff --git a/dist/views/List/handleServerFunction.js b/dist/views/List/handleServerFunction.js
+--- a/dist/views/List/handleServerFunction.js
++++ b/dist/views/List/handleServerFunction.js
+@@ -1,6 +1,7 @@
+ import { getClientConfig } from '@payloadcms/ui/utilities/getClientConfig';
+ import { canAccessAdmin, isEntityHidden, UnauthorizedError } from 'payload';
+ import { applyLocaleFiltering } from 'payload/shared';
++import { getPreferences } from '../../utilities/getPreferences.js';
+ import { renderListView } from './index.js';
+ export const renderListHandler = async args => {
+   const {
+@@ -46,27 +47,7 @@
+     config,
+     req
+   });
+-  const preferencesKey = `collection-${collectionSlug}`;
+-  const preferences = await payload.find({
+-    collection: 'payload-preferences',
+-    depth: 0,
+-    limit: 1,
+-    where: {
+-      and: [{
+-        key: {
+-          equals: preferencesKey
+-        }
+-      }, {
+-        'user.relationTo': {
+-          equals: user.collection
+-        }
+-      }, {
+-        'user.value': {
+-          equals: user.id
+-        }
+-      }]
+-    }
+-  }).then(res => res.docs[0]?.value);
++  const preferences = (await getPreferences(`collection-${collectionSlug}`, payload, user.id, user.collection))?.value;
+   const visibleEntities = {
+     collections: payload.config.collections.map(({
+       slug,
+diff --git a/dist/views/List/index.js b/dist/views/List/index.js
+--- a/dist/views/List/index.js
++++ b/dist/views/List/index.js
+@@ -3,6 +3,7 @@
+ import { RenderServerComponent } from '@payloadcms/ui/elements/RenderServerComponent';
+ import { getColumns, renderFilters, renderTable, upsertPreferences } from '@payloadcms/ui/rsc';
+ import { notFound } from 'next/navigation.js';
++import { getPreferences } from '../../utilities/getPreferences.js';
+ import { appendUploadSelectFields, combineWhereConstraints, formatAdminURL, isNumber, mergeListSearchAndWhere, transformColumnsToPreferences, transformColumnsToSearchParams } from 'payload/shared';
+ import React, { Fragment } from 'react';
+ import { getDocumentPermissions } from '../Document/getDocumentPermissions.js';
+@@ -68,17 +69,17 @@
+   const query = queryFromArgs || queryFromReq;
+   const columnsFromQuery = transformColumnsToPreferences(query?.columns);
+   query.queryByGroup = query?.queryByGroup && typeof query.queryByGroup === 'string' ? JSON.parse(query.queryByGroup) : query?.queryByGroup;
+-  const collectionPreferences = await upsertPreferences({
+-    key: `collection-${collectionSlug}`,
+-    req,
+-    value: {
+-      columns: columnsFromQuery,
+-      groupBy: query?.groupBy,
+-      limit: isNumber(query?.limit) ? Number(query.limit) : undefined,
+-      preset: query?.preset,
+-      sort: query?.sort
+-    }
+-  });
++  const preferencesKey = `collection-${collectionSlug}`;
++  const incomingPreferences = {
++    columns: columnsFromQuery,
++    groupBy: query?.groupBy,
++    limit: isNumber(query?.limit) ? Number(query.limit) : undefined,
++    preset: query?.preset,
++    sort: query?.sort
++  };
++  const collectionPreferences = Object.values(incomingPreferences).some(value => value !== undefined)
++    ? await upsertPreferences({ key: preferencesKey, req, value: incomingPreferences })
++    : (await getPreferences(preferencesKey, payload, user.id, user.collection))?.value;
+   let queryPreset;
+   let queryPresetPermissions;
+   if (collectionPreferences?.preset) {
+@@ -106,6 +107,11 @@
+   if (queryPreset?.where && !query.where) {
+     query.where = queryPreset.where;
+   }
++  // Keep the applied filter in the list query so search and bulk selection share it.
++  const defaultListWhere = collectionConfig.admin.custom?.defaultListWhere;
++  if (!drawerSlug && defaultListWhere && !Object.keys(query.where ?? {}).length) {
++    query.where = structuredClone(defaultListWhere);
++  }
+   query.groupBy = query.groupBy ?? queryPreset?.groupBy ?? collectionPreferences?.groupBy;
+   const columnPreference = query.columns ? transformColumnsToPreferences(query.columns) : queryPreset?.columns ?? collectionPreferences?.columns;
+   query.columns = transformColumnsToSearchParams(columnPreference);
+@@ -157,6 +163,11 @@
+     permissions
+   });
+   const select = collectionConfig.admin.enableListViewSelectAPI ? transformColumnsToSelect(columns) : undefined;
++  if (select) {
++    // Keep state used by draft enrichment and trash handling even when those columns are hidden.
++    if (collectionConfig.versions?.drafts) select._status = true;
++    if (collectionConfig.trash) select.deletedAt = true;
++  }
+   /** Force select image fields for list view thumbnails */
+   appendUploadSelectFields({
+     collectionConfig,

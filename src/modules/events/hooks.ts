@@ -29,7 +29,9 @@ export const applyEventCycleDefaults: CollectionBeforeValidateHook = async ({
 }) => {
   if (!data) return data
 
-  const cycleID = getFormRelationshipId(data.cycle ?? originalDoc?.cycle)
+  const cycleID = getFormRelationshipId(
+    Object.hasOwn(data, 'cycle') ? data.cycle : originalDoc?.cycle,
+  )
   const appliedCycleID = getFormRelationshipId(
     data.defaultsAppliedCycle ?? originalDoc?.defaultsAppliedCycle,
   )

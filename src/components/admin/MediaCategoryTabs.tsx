@@ -1,6 +1,6 @@
 'use client'
 
-import { useListQuery } from '@payloadcms/ui'
+import { useListDrawerContext, useListQuery } from '@payloadcms/ui'
 import { useLayoutEffect } from 'react'
 
 import { getMediaCategoryWhere, type MediaCategory } from '@/modules/media/media-categories'
@@ -17,13 +17,14 @@ function categoryIsSelected(category: MediaCategory, where: unknown): boolean {
 
 export function MediaCategoryTabs() {
   const { handleWhereChange, query } = useListQuery()
+  const { isInDrawer } = useListDrawerContext()
   const where = query?.where
 
   useLayoutEffect(() => {
-    if (handleWhereChange && !where) {
+    if (isInDrawer && handleWhereChange && !where) {
       void handleWhereChange(getMediaCategoryWhere('images'))
     }
-  }, [handleWhereChange, where])
+  }, [handleWhereChange, isInDrawer, where])
 
   if (!handleWhereChange || !query) {
     return null
@@ -39,11 +40,14 @@ export function MediaCategoryTabs() {
 
             return (
               <button
+                aria-pressed={selected}
                 className={['tabs-field__tab-button', selected && 'tabs-field__tab-button--active']
                   .filter(Boolean)
                   .join(' ')}
                 key={category}
-                onClick={() => void handleWhereChange(getMediaCategoryWhere(category))}
+                onClick={() => {
+                  if (!selected) void handleWhereChange(getMediaCategoryWhere(category))
+                }}
                 type="button"
               >
                 {mediaCategoryLabels[category]}

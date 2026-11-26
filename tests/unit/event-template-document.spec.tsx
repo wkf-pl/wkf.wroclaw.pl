@@ -33,7 +33,7 @@ const cycle = {
 } as EventCycle
 
 const event = {
-  author: { relationTo: 'users', value: 1 },
+  author: 1,
   capacity: 24,
   capacityMode: 'approximate',
   calendarRevision: 0,

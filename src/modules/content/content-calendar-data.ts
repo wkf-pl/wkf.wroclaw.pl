@@ -4,7 +4,7 @@ import config from '@payload-config'
 
 import type { Post } from '@/payload-types'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
-import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
+import { findTopicSubtreeIDs } from '@/modules/content/topic-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { getCalendarMonthBounds } from '@/modules/events/calendar-presentation'
 
@@ -24,7 +24,7 @@ const maximumCalendarItems = 1000
 const published: Where = { _status: { equals: 'published' } }
 
 type CachedContentCalendarFilters = ContentCalendarFilters & {
-  categoryIds?: number[]
+  topicIds?: number[]
 }
 
 async function findContentCalendarMonthUncached(
@@ -141,12 +141,12 @@ export async function findContentCalendarMonth(
     return { itemTypes: [], items: [], truncated: false }
   }
 
-  const categoryIds =
-    filters.categoryId === undefined ? undefined : await findCategorySubtreeIDs(filters.categoryId)
+  const topicIds =
+    filters.topicId === undefined ? undefined : await findTopicSubtreeIDs(filters.topicId)
 
   return findContentCalendarMonthCached(month, {
-    ...(filters.categoryId === undefined ? {} : { categoryId: filters.categoryId }),
-    ...(categoryIds === undefined ? {} : { categoryIds }),
+    ...(filters.topicId === undefined ? {} : { topicId: filters.topicId }),
+    ...(topicIds === undefined ? {} : { topicIds }),
     ...(filters.eventCycleId === undefined ? {} : { eventCycleId: filters.eventCycleId }),
     sources,
     ...(filters.tagId === undefined ? {} : { tagId: filters.tagId }),
@@ -155,8 +155,8 @@ export async function findContentCalendarMonth(
 
 function createTaxonomyConditions(filters: CachedContentCalendarFilters): Where[] {
   const conditions: Where[] = []
-  if (filters.categoryIds !== undefined) {
-    conditions.push({ category: { in: filters.categoryIds } })
+  if (filters.topicIds !== undefined) {
+    conditions.push({ topics: { in: filters.topicIds } })
   }
   if (filters.tagId !== undefined) {
     conditions.push({ tags: { equals: filters.tagId } })

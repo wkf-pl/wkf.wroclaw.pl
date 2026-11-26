@@ -7,7 +7,7 @@ import { SiteHeader } from '@/app/(frontend)/_components/SiteHeader'
 import { CardBlock } from '@/blocks/Card'
 import { Footer, HomepageHero, Navigation } from '@/globals'
 import type {
-  Category,
+  Topic,
   Document,
   Footer as FooterData,
   Navigation as NavigationData,
@@ -19,7 +19,7 @@ import type {
 import {
   createLinkFields,
   createPresentedLinkFields,
-  isCategoryTarget,
+  isTopicTarget,
   isCustomTarget,
   isPageTarget,
   isTagTarget,
@@ -68,7 +68,7 @@ function findField(
 function createPage(overrides: Partial<Page> = {}): Page {
   return {
     _status: 'published',
-    author: { relationTo: 'users', value: 1 },
+    author: 1,
     createdAt: new Date(0).toISOString(),
     id: 1,
     layout: [],
@@ -96,10 +96,10 @@ describe('navigation links', () => {
       options: [
         { label: 'Cykl wydarzeń', value: 'eventCycle' },
         { label: 'Dokument', value: 'document' },
-        { label: 'Kategoria', value: 'category' },
         { label: 'Partner', value: 'partner' },
         { label: 'Strona', value: 'page' },
         { label: 'Tag', value: 'tag' },
+        { label: 'Temat', value: 'topic' },
         { label: 'Własny adres', value: 'custom' },
         { label: 'Wpis', value: 'post' },
         { label: 'Wydarzenie', value: 'event' },
@@ -111,7 +111,7 @@ describe('navigation links', () => {
       targetRow.fields
         .filter((field) => 'name' in field && field.name !== 'targetType')
         .map((field) => ('name' in field ? field.name : '')),
-    ).toEqual(['eventCycle', 'document', 'category', 'partner', 'page', 'tag', 'post', 'event'])
+    ).toEqual(['eventCycle', 'document', 'topic', 'partner', 'page', 'tag', 'post', 'event'])
     expect(
       targetRow.fields
         .filter((field) => 'name' in field && field.name !== 'targetType')
@@ -133,10 +133,10 @@ describe('navigation links', () => {
       { label: 'Cykl wydarzeń', value: 'eventCycle' },
       { label: 'Dokument', value: 'document' },
       { label: 'Główny adres serwisu', value: 'siteContactEmail' },
-      { label: 'Kategoria', value: 'category' },
       { label: 'Partner', value: 'partner' },
       { label: 'Strona', value: 'page' },
       { label: 'Tag', value: 'tag' },
+      { label: 'Temat', value: 'topic' },
       { label: 'Własny adres', value: 'custom' },
       { label: 'Wpis', value: 'post' },
       { label: 'Wydarzenie', value: 'event' },
@@ -277,7 +277,7 @@ describe('navigation links', () => {
 
   it('shows fields for the selected target while keeping the optional icon independent', () => {
     expect(isPageTarget(null, { targetType: 'page' })).toBe(true)
-    expect(isCategoryTarget(null, { targetType: 'category' })).toBe(true)
+    expect(isTopicTarget(null, { targetType: 'topic' })).toBe(true)
     expect(isTagTarget(null, { targetType: 'tag' })).toBe(true)
     expect(isCustomTarget(null, { targetType: 'page' })).toBe(false)
     const iconField = createPresentedLinkFields().find(
@@ -493,12 +493,12 @@ describe('navigation links', () => {
     ).toBe('kontakt@example.com')
   })
 
-  it('resolves category and tag targets', () => {
-    const category = { id: 1, name: 'Aktualności', slug: 'aktualnosci' } as Category
+  it('resolves topic and tag targets', () => {
+    const topic = { id: 1, name: 'Aktualności', slug: 'aktualnosci' } as Topic
     const tag = { id: 1, name: 'WKF', slug: 'wkf' } as Tag
 
-    expect(resolveLink({ category, targetType: 'category' })).toEqual({
-      href: '/category/aktualnosci',
+    expect(resolveLink({ topic, targetType: 'topic' })).toEqual({
+      href: '/topic/aktualnosci',
     })
     expect(resolveLink({ tag, targetType: 'tag' })).toEqual({ href: '/tag/wkf' })
   })

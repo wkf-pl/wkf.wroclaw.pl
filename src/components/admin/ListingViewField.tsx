@@ -1,20 +1,18 @@
 'use client'
 
-import { Button, useAllFormFields, useConfig, useField, useForm } from '@payloadcms/ui'
+import { Button, useConfig, useField, useFormFields } from '@payloadcms/ui'
+import dynamic from 'next/dynamic'
 import type { JSONFieldClientProps } from 'payload'
 import { formatAdminURL } from 'payload/shared'
-import { useEffect, useId, useState } from 'react'
+import { useState } from 'react'
 
 import { ListingDecorationFields } from './ListingDecorationFields'
 import { ListingViewSelect } from './ListingViewSelect'
-import { ListingPreviewFrame } from './ListingPreviewFrame'
+import { useListingViewLibrary } from './useListingViewLibrary'
 import {
   getDefaultListingDecoration,
   getLegacyListingDecoration,
-  type ListingDecorationMedia,
 } from '@/modules/content/listing-decoration'
-import type { ResolvedContentPresentation } from '@/modules/content/content-presentation'
-import type { ContentListingPresentation } from '@/modules/content/content-listing-presentation'
 import {
   getListingComponents,
   listingComponentOptions,
@@ -26,7 +24,6 @@ import {
   type ListingView,
   type ListingViewOverrides,
 } from '@/modules/content/listing-view'
-import type { ListingView as SharedView } from '@/payload-types'
 
 import styles from './ListingViewField.module.css'
 
@@ -38,29 +35,10 @@ const componentLabels = {
   venue: 'Miejsce',
   actions: 'Akcje',
 } as const
-const previewFields = [
-  'frame',
-  'surface',
-  'surfaceImage',
-  'surfaceHorizontalPosition',
-  'surfaceVerticalPosition',
-  'selectionMode',
-  'contextRelation',
-  'conditions',
-  'includeInactiveLocations',
-  'items',
-  'pageSize',
-  'sort',
-  'sources',
-]
-
-type PreviewResponse = {
-  items?: ContentListingPresentation[]
-  missingContext?: boolean
-  presentation?: ResolvedContentPresentation
-  view?: ListingView
-  media?: ListingDecorationMedia
-}
+const ListingViewPreview = dynamic(
+  () => import('./ListingViewPreview').then((module) => module.ListingViewPreview),
+  { loading: () => <p role="status">Ładowanie podglądu…</p> },
+)
 
 const columnOptions = { 1: '1', 2: '2', 3: '3', 4: '4' }
 
@@ -227,8 +205,6 @@ export function ListingViewTemplateField({ path, readOnly }: JSONFieldClientProp
 
 export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
   const { value, setValue, showError, errorMessage } = useField<unknown>({ path })
-  const [fields] = useAllFormFields()
-  const { getDataByPath } = useForm()
   const {
     config: {
       routes: { api },
@@ -236,27 +212,31 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
     },
   } = useConfig()
   const parentPath = path.slice(0, path.lastIndexOf('.') + 1)
-  const oldView = fields[parentPath + 'view']?.value
+  const oldView = useFormFields(([fields]) => fields[parentPath + 'view']?.value)
+  const frame = useFormFields(([fields]) => fields[parentPath + 'frame']?.value)
+  const surface = useFormFields(([fields]) => fields[parentPath + 'surface']?.value)
+  const surfaceImage = useFormFields(([fields]) => fields[parentPath + 'surfaceImage']?.value)
+  const surfaceHorizontalPosition = useFormFields(
+    ([fields]) => fields[parentPath + 'surfaceHorizontalPosition']?.value,
+  )
+  const surfaceVerticalPosition = useFormFields(
+    ([fields]) => fields[parentPath + 'surfaceVerticalPosition']?.value,
+  )
+  const legacyPresentation = {
+    frame,
+    surface,
+    surfaceImage,
+    surfaceHorizontalPosition,
+    surfaceVerticalPosition,
+  }
   const fallback =
     typeof oldView === 'string' && Object.hasOwn(listingPresets, oldView) ? oldView : 'cards'
   const { preset: storedPreset = fallback, overrides: storedOverrides = {} } =
     parseListingAppearance(value)
   const libraryURL = formatAdminURL({ apiRoute: api, path: '/listing-views', serverURL })
-  const [library, setLibrary] = useState<SharedView[]>([])
-  const [libraryError, setLibraryError] = useState(false)
-  const [narrow, setNarrow] = useState(false)
-  const previewId = useId()
-  const selection = Object.fromEntries(
-    previewFields.map((name) => [
-      name,
-      getDataByPath(parentPath + name) ?? fields[parentPath + name]?.value,
-    ]),
-  )
-  const previewBody = JSON.stringify({
-    block: { ...selection, appearance: value, view: fallback },
-    previewTarget: fields.previewTarget?.value,
-  })
-  const [preview, setPreview] = useState<PreviewResponse & { body: string; error?: boolean }>()
+  const { library, libraryError } = useListingViewLibrary(libraryURL)
+  const [customizationOpen, setCustomizationOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const selected = library.find(
     ({ id, presetKey }) => storedPreset === `shared:${id}` || storedPreset === presetKey,
   )
@@ -265,9 +245,9 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
     { preset, overrides: storedOverrides },
     fallback,
     selected?.settings,
-    selection,
+    legacyPresentation,
   )
-  const legacyDecoration = getLegacyListingDecoration(view, selection)
+  const legacyDecoration = getLegacyListingDecoration(view, legacyPresentation)
   const overrides =
     storedOverrides.decoration === undefined && Object.keys(legacyDecoration).length
       ? { ...storedOverrides, decoration: legacyDecoration }
@@ -275,17 +255,23 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
   function saveOverrides(settings: ListingViewOverrides, nextPreset = preset) {
     setValue({ preset: nextPreset, overrides: { decoration: {}, ...settings } })
   }
-  const base = resolveListingView({ preset }, fallback, selected?.settings).view
-  const baseDecoration = resolveListingView(
-    { preset, overrides: { ...overrides, decoration: {} } },
-    fallback,
-    selected?.settings,
-  ).view.decoration
+  const detached = preset === 'custom'
+  const base =
+    customizationOpen && !detached
+      ? resolveListingView({ preset }, fallback, selected?.settings).view
+      : undefined
+  const baseDecoration =
+    customizationOpen && !detached
+      ? resolveListingView(
+          { preset, overrides: { ...overrides, decoration: {} } },
+          fallback,
+          selected?.settings,
+        ).view.decoration
+      : undefined
   const editingView =
-    storedOverrides.decoration === undefined && overrides.decoration
+    customizationOpen && storedOverrides.decoration === undefined && overrides.decoration
       ? resolveListingView({ preset, overrides }, fallback, selected?.settings).view
       : view
-  const detached = preset === 'custom'
   const overrideCount =
     Object.keys(overrides).filter(
       (key) => key !== 'information' && key !== 'decoration' && key !== 'components',
@@ -293,45 +279,6 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
     Object.keys(overrides.decoration ?? {}).length +
     Object.keys(overrides.information ?? {}).length +
     Object.keys(overrides.components ?? {}).length
-
-  useEffect(() => {
-    const controller = new AbortController()
-    fetch(`${libraryURL}?depth=0&pagination=false&where[_status][equals]=published`, {
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error('Could not load listing views')
-        const result = (await response.json()) as { docs: SharedView[] }
-        setLibrary(result.docs)
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setLibraryError(true)
-      })
-    return () => controller.abort()
-  }, [libraryURL])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    const timeout = window.setTimeout(async () => {
-      try {
-        const response = await fetch(`${libraryURL}/preview`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: previewBody,
-          signal: controller.signal,
-        })
-        if (!response.ok) throw new Error('Could not load listing preview')
-        const data = (await response.json()) as PreviewResponse
-        if (!controller.signal.aborted) setPreview({ ...data, body: previewBody })
-      } catch {
-        if (!controller.signal.aborted) setPreview({ body: previewBody, error: true })
-      }
-    }, 300)
-    return () => {
-      window.clearTimeout(timeout)
-      controller.abort()
-    }
-  }, [libraryURL, previewBody])
 
   function selectPreset(next: string) {
     const template = library.find(({ id }) => next === `shared:${id}`)
@@ -386,103 +333,76 @@ export function ListingViewField({ path, readOnly }: JSONFieldClientProps) {
             <p role="status">Biblioteka szablonów jest chwilowo niedostępna.</p>
           ) : null}
           {showError ? <p role="alert">{errorMessage}</p> : null}
-          <details>
+          <details onToggle={(event) => setCustomizationOpen(event.currentTarget.open)}>
             <summary>
               Dostosuj wygląd{!detached && overrideCount > 0 ? ` · ${overrideCount}` : ''}
             </summary>
-            <ViewDetails
-              readOnly={readOnly}
-              base={detached ? undefined : base}
-              baseDecoration={detached ? undefined : baseDecoration}
-              currentView={editingView}
-              overrides={overrides}
-              onChange={(settings) => saveOverrides(settings)}
-            />
-            <div className={styles.actions}>
-              {!detached && overrideCount > 0 ? (
-                <Button
-                  buttonStyle="primary"
-                  disabled={readOnly}
-                  margin={false}
-                  size="medium"
-                  type="button"
-                  onClick={() => saveOverrides({})}
-                >
-                  Przywróć ustawienia szablonu
-                </Button>
-              ) : null}
-              {!detached ? (
-                <Button
-                  buttonStyle="primary"
-                  disabled={readOnly}
-                  margin={false}
-                  size="medium"
-                  type="button"
-                  onClick={() =>
-                    saveOverrides(
-                      {
-                        ...view,
-                        decoration: view.decoration ?? {
-                          ...getDefaultListingDecoration(view),
-                          ...legacyDecoration,
-                        },
-                      },
-                      'custom',
-                    )
-                  }
-                >
-                  Odłącz od szablonu
-                </Button>
-              ) : null}
-            </div>
+            {customizationOpen ? (
+              <>
+                <ViewDetails
+                  readOnly={readOnly}
+                  base={detached ? undefined : base}
+                  baseDecoration={detached ? undefined : baseDecoration}
+                  currentView={editingView}
+                  overrides={overrides}
+                  onChange={(settings) => saveOverrides(settings)}
+                />
+                <div className={styles.actions}>
+                  {!detached && overrideCount > 0 ? (
+                    <Button
+                      buttonStyle="primary"
+                      disabled={readOnly}
+                      margin={false}
+                      size="medium"
+                      type="button"
+                      onClick={() => saveOverrides({})}
+                    >
+                      Przywróć ustawienia szablonu
+                    </Button>
+                  ) : null}
+                  {!detached ? (
+                    <Button
+                      buttonStyle="primary"
+                      disabled={readOnly}
+                      margin={false}
+                      size="medium"
+                      type="button"
+                      onClick={() =>
+                        saveOverrides(
+                          {
+                            ...view,
+                            decoration: view.decoration ?? {
+                              ...getDefaultListingDecoration(view),
+                              ...legacyDecoration,
+                            },
+                          },
+                          'custom',
+                        )
+                      }
+                    >
+                      Odłącz od szablonu
+                    </Button>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
           </details>
         </fieldset>
-        <section className={styles.preview} aria-labelledby={previewId}>
-          <div className={styles.previewHeader}>
-            <h4 id={previewId}>Podgląd wyników</h4>
-            <div className={styles.previewModes} aria-label="Szerokość podglądu">
-              <Button
-                buttonStyle={!narrow ? 'primary' : 'secondary'}
-                extraButtonProps={{ 'aria-pressed': !narrow }}
-                margin={false}
-                size="medium"
-                type="button"
-                onClick={() => setNarrow(false)}
-              >
-                Szeroki
-              </Button>
-              <Button
-                buttonStyle={narrow ? 'primary' : 'secondary'}
-                extraButtonProps={{ 'aria-pressed': narrow }}
-                margin={false}
-                size="medium"
-                type="button"
-                onClick={() => setNarrow(true)}
-              >
-                Wąski
-              </Button>
-            </div>
-          </div>
-          <div
-            className={`${styles.previewCanvas} ${narrow ? styles.narrow : ''}`}
-            aria-busy={preview?.body !== previewBody}
-          >
-            {preview?.body !== previewBody ? (
-              <p role="status">Ładowanie podglądu…</p>
-            ) : preview.error ? (
-              <p role="alert">Nie udało się pobrać podglądu. Sprawdź ustawienia treści.</p>
-            ) : preview.missingContext ? (
-              <p>Wybierz w szablonie strony element do podglądu relacji.</p>
-            ) : (
-              <ListingPreviewFrame
-                items={preview.items ?? []}
-                view={preview.view ?? view}
-                media={preview.media}
-                presentation={preview.presentation}
-              />
-            )}
-          </div>
-        </section>
+        <details
+          className={styles.preview}
+          onToggle={(event) => setPreviewOpen(event.currentTarget.open)}
+        >
+          <summary className={styles.previewSummary}>Podgląd wyników</summary>
+          {previewOpen ? (
+            <ListingViewPreview
+              appearance={value}
+              blockPath={parentPath.slice(0, -1)}
+              fallback={fallback}
+              libraryURL={libraryURL}
+              view={view}
+            />
+          ) : null}
+        </details>
       </div>
     </section>
   )

@@ -20,15 +20,15 @@ export function createListingTaxonomyRow({
     type: 'row',
     fields: [
       {
-        name: 'category',
+        name: 'topic',
         type: 'relationship',
         admin: {
           condition: conditional ? filtersCondition : undefined,
           placeholder: '<brak>',
           width: taxonomyFieldWidth,
         },
-        label: 'Kategoria',
-        relationTo: 'categories',
+        label: 'Temat',
+        relationTo: 'topics',
       },
       {
         name: 'tag',

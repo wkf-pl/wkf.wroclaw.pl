@@ -75,7 +75,7 @@ test('shows CMS resources but no administration collections to an editor', async
   await expect(page.locator(collectionNavigationLink('posts'))).toBeVisible()
   await expect(page.locator(collectionNavigationLink('pages'))).toBeVisible()
   await expect(page.locator(collectionNavigationLink('media'))).toBeVisible()
-  await expect(page.locator(collectionNavigationLink('documents'))).toBeVisible()
+  await expect(page.locator(collectionNavigationLink('documents'))).toHaveCount(0)
   await expect(page.locator(collectionNavigationLink('url-aliases'))).toBeVisible()
   await expect(page.locator(globalNavigationLink('navigation'))).toBeVisible()
   await expect(page.locator(globalNavigationLink('site-settings'))).toBeVisible()
@@ -86,7 +86,7 @@ test('shows CMS resources but no administration collections to an editor', async
   await expect(page.locator(collectionNavigationLink('users'))).toHaveCount(0)
 })
 
-test('opens a media document without rendering the category tabs outside the list', async ({
+test('opens a media document without rendering the topic tabs outside the list', async ({
   page,
 }) => {
   const pageErrors: Error[] = []

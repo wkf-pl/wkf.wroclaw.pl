@@ -181,7 +181,7 @@ export function RichTextBlockLabelClient({ initialContent }: { initialContent?: 
 }
 
 export function ListingBlockLabelClient() {
-  const { data } = useRowLabel<PresentedBlockData & { appearance?: unknown }>()
+  const { data } = useRowLabel<PresentedBlockData & { appearance?: unknown; blockType?: string }>()
   const appearance = parseListingAppearance(data.appearance)
   const decoration = appearance.overrides?.decoration
   const description =

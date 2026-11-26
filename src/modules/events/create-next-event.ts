@@ -1,6 +1,6 @@
 import type { Endpoint, PayloadRequest } from 'payload'
 
-import { getContentAuthorReference, getDefaultEventAuthor } from '@/modules/content/content-author'
+import { getContentOwners } from '@/modules/content/content-owners'
 import { findActiveLocationID } from '@/modules/locations/relationship'
 import { getRelationshipId } from '@/lib/relationships'
 
@@ -58,10 +58,11 @@ async function handler(req: PayloadRequest): Promise<Response> {
 
     const previousLocation = source.location
     const location = await findActiveLocationID(req, previousLocation)
+    const owners = getContentOwners(cycle?.eventDefaults.owners)
     const data = cycleID
       ? {
           _status: 'draft' as const,
-          author: getDefaultEventAuthor(cycle?.eventDefaults.authorGroup),
+          ...(owners.length ? { owners } : {}),
           cycle: cycleID,
           location,
           endAt,
@@ -70,13 +71,10 @@ async function handler(req: PayloadRequest): Promise<Response> {
         }
       : {
           _status: 'draft' as const,
-          author: getContentAuthorReference(source.author),
           capacity: source.capacity,
           capacityMode: source.capacityMode,
-          category:
-            source.category && typeof source.category === 'object'
-              ? source.category.id
-              : source.category,
+          topics: source.topics?.map((topic) => getRelationshipId(topic) ?? topic),
+          parent: getRelationshipId(source.parent),
           endAt,
           eventType:
             source.eventType && typeof source.eventType === 'object'

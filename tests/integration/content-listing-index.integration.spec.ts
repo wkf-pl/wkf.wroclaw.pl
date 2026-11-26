@@ -81,7 +81,7 @@ describe('content listing index synchronization', () => {
       collection: 'pages',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         layout: [{ blockType: 'richText', content: createLexicalDocument('Lifecycle excerpt') }],
         slug: fixture.slugs.lifecyclePage,
         title: 'Published lifecycle page',
@@ -142,7 +142,7 @@ describe('content listing index synchronization', () => {
       collection: 'partners',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         excerpt: 'Publiczne streszczenie partnera.',
         layout: [
           { blockType: 'richText', content: createLexicalDocument('Treść partnera indeksu') },
@@ -171,7 +171,7 @@ describe('content listing index synchronization', () => {
 
     try {
       expect(await findListingIndex('partners', partner.id)).toMatchObject({
-        category: null,
+        topics: [],
         excerpt: 'Publiczne streszczenie partnera.',
         hasSignificantDate: false,
         heroImage: null,
@@ -180,7 +180,7 @@ describe('content listing index synchronization', () => {
         url: `/partners/${listingPartnerSlug}`,
       })
       expect(await findListingIndex('member-profiles', profile.id)).toMatchObject({
-        category: null,
+        topics: [],
         excerpt: 'Publiczny opis wizytówki.',
         hasSignificantDate: false,
         heroImage: null,
@@ -287,7 +287,7 @@ describe('content listing index synchronization', () => {
     }
   })
 
-  it('clears optional image, category and parent relationships from the index', async () => {
+  it('clears optional image, topic and parent relationships from the index', async () => {
     const imageData = await sharp({
       create: { background: '#d69524', channels: 4, height: 24, width: 32 },
     })
@@ -310,7 +310,7 @@ describe('content listing index synchronization', () => {
         collection: 'pages',
         data: {
           _status: 'published',
-          category: fixture.category.id,
+          topics: [fixture.topic.id],
           heroImage: image.id,
           parent: fixture.page.id,
         },
@@ -319,7 +319,7 @@ describe('content listing index synchronization', () => {
         overrideAccess: true,
       })
       expect(await findListingIndex('pages', fixture.childPage.id)).toMatchObject({
-        category: fixture.category.id,
+        topics: [fixture.topic.id],
         heroImage: image.id,
         parentPage: fixture.page.id,
       })
@@ -328,7 +328,7 @@ describe('content listing index synchronization', () => {
         collection: 'pages',
         data: {
           _status: 'published',
-          category: null,
+          topics: [],
           heroImage: null,
           parent: null,
         },
@@ -337,7 +337,7 @@ describe('content listing index synchronization', () => {
         overrideAccess: true,
       })
       expect(await findListingIndex('pages', fixture.childPage.id)).toMatchObject({
-        category: null,
+        topics: [],
         heroImage: null,
         parentPage: null,
       })
@@ -365,7 +365,7 @@ describe('content listing index synchronization', () => {
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         eventDefaults: {
           capacityMode: 'unlimited',
           eventType: 1,
@@ -398,7 +398,7 @@ describe('content listing index synchronization', () => {
         collection: 'events',
         data: {
           _status: 'published',
-          author: { relationTo: 'users', value: fixture.author.id },
+          author: fixture.author.id,
           calendarRevision: 0,
           capacityMode: 'unlimited',
           cycle: cycle.id,
@@ -452,7 +452,7 @@ describe('content listing index synchronization', () => {
       collection: 'partners',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         excerpt: 'Partner related listing excerpt',
         layout: [
           { blockType: 'richText', content: createLexicalDocument('Partner related content') },
@@ -467,7 +467,7 @@ describe('content listing index synchronization', () => {
       collection: 'event-cycles',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         eventDefaults: {
           capacityMode: 'unlimited',
           eventType: 1,
@@ -492,7 +492,7 @@ describe('content listing index synchronization', () => {
       collection: 'events',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         calendarRevision: 0,
         capacityMode: 'unlimited',
         cycle: cycle.id,
@@ -516,7 +516,7 @@ describe('content listing index synchronization', () => {
       collection: 'posts',
       data: {
         _status: 'published',
-        author: { relationTo: 'users', value: fixture.author.id },
+        author: fixture.author.id,
         excerpt: 'Related listing post excerpt',
         layout: [{ blockType: 'richText', content: createLexicalDocument('Post related content') }],
         publishedAt: '2031-09-11T16:00:00.000Z',

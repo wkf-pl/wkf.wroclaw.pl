@@ -29,6 +29,8 @@ import {
   up as upLocationIndex,
 } from '../../migrations/20261115_212155_index_locations'
 
+import { restoreLegacyTopicPermissionName } from '../helpers/historical-topic-schema'
+
 const pageID = 9_400_001
 const pageVersionID = 9_400_002
 const memberProfileID = 9_400_003
@@ -97,7 +99,10 @@ async function tableExists(table: string): Promise<boolean> {
 async function moveToLegacySchema(): Promise<void> {
   if (await tableExists('locations')) {
     await runMigrationInTransaction(downLocationIndex)
-    await runMigrationInTransaction(downLocations)
+    await runMigrationInTransaction(async (args) => {
+      await restoreLegacyTopicPermissionName(args.db)
+      await downLocations(args)
+    })
   }
   if (!(await tableExists('pages_blocks_carousel'))) await downRemoval(migrationArguments())
   if (await tableExists('_listing_block_migration_provenance')) {
@@ -228,7 +233,14 @@ afterAll(async () => {
   await moveToCurrentSchema()
   await removeFixtures()
   if (!(await tableExists('locations'))) {
-    await runMigrationInTransaction(upLocations)
+    await runMigrationInTransaction(async (args) => {
+      await upLocations(args)
+      await args.db.execute(sql`
+        ALTER TYPE enum_roles_permissions_resource RENAME VALUE 'categories' TO 'topics';
+        ALTER INDEX "_event_cycles_v_version_event_defaults_version_event_d_4_idx"
+          RENAME TO "_event_cycles_v_version_event_defaults_version_event_d_2_idx";
+      `)
+    })
     await runMigrationInTransaction(upLocationIndex)
   }
 })

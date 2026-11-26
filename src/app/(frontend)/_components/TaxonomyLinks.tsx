@@ -1,37 +1,39 @@
 import Link from 'next/link'
 
-import type { Category, Tag } from '@/payload-types'
+import { TagLabel } from '@/components/TagLabel'
+import type { Topic, Tag } from '@/payload-types'
 
 type TaxonomyLinksProperties = {
-  category?: Category | number | null
+  topics?: (Topic | number)[] | null
   tags?: (number | Tag)[] | null
 }
 
-export function TaxonomyLinks({ category, tags }: TaxonomyLinksProperties) {
-  const populatedCategory = typeof category === 'object' ? category : null
+export function TaxonomyLinks({ topics, tags }: TaxonomyLinksProperties) {
+  const populatedTopics = topics?.filter((topic): topic is Topic => typeof topic === 'object')
   const populatedTags = tags?.filter((tag): tag is Tag => typeof tag === 'object')
 
-  if (!populatedCategory && !populatedTags?.length) {
+  if (!populatedTopics?.length && !populatedTags?.length) {
     return null
   }
 
   return (
     <div className="taxonomyLinks">
-      {populatedCategory ? (
+      {populatedTopics?.map((topic) => (
         <Link
           className="taxonomyLink taxonomyLink--category"
-          href={`/category/${populatedCategory.slug}`}
+          key={`topic-${topic.id}`}
+          href={`/topic/${topic.slug}`}
         >
-          {populatedCategory.name}
+          {topic.name}
         </Link>
-      ) : null}
+      ))}
       {populatedTags?.map((tag) => (
         <Link
           className="taxonomyLink taxonomyLink--tag"
           href={`/tag/${tag.slug}`}
           key={`tag-${tag.id}`}
         >
-          {tag.name}
+          <TagLabel name={tag.name} groupIcon={tag.groupIcon} />
         </Link>
       ))}
     </div>

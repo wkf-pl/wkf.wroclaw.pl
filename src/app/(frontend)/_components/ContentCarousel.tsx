@@ -204,6 +204,7 @@ export function PresentedContentCarousel({
                         aria-label={`Zobacz: ${presentation.title}`}
                         className="contentCarouselVisualLink"
                         href={presentation.url}
+                        prefetch={false}
                         tabIndex={isActive ? undefined : -1}
                       >
                         {presentation.image?.kind === 'media' ? (
@@ -233,7 +234,9 @@ export function PresentedContentCarousel({
                   <div className="contentCarouselContent">
                     {!showImage ? (
                       <h2 className={presentation.hideTitle ? 'srOnly' : undefined}>
-                        <Link href={presentation.url}>{presentation.title}</Link>
+                        <Link href={presentation.url} prefetch={false}>
+                          {presentation.title}
+                        </Link>
                       </h2>
                     ) : null}
                     <PresentedContentMeta
@@ -268,13 +271,14 @@ export function PresentedContentCarousel({
                     {presentation.interests ? (
                       <p className="contentCardInterests">{presentation.interests}</p>
                     ) : null}
-                    <TaxonomyLinks category={presentation.category} tags={presentation.tags} />
+                    <TaxonomyLinks topics={presentation.topics} tags={presentation.tags} />
                     {presentation.actionStyle !== 'none' ? (
                       <div className="contentCarouselActions">
                         {presentation.secondaryAction ? (
                           <Link
                             className="contentCarouselSecondaryAction"
                             href={presentation.secondaryAction.href}
+                            prefetch={false}
                             tabIndex={isActive ? undefined : -1}
                           >
                             <ListingActionContent
@@ -287,6 +291,7 @@ export function PresentedContentCarousel({
                         <Link
                           className="contentCarouselAction"
                           href={presentation.url}
+                          prefetch={false}
                           tabIndex={isActive ? undefined : -1}
                         >
                           <ListingActionContent

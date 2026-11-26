@@ -1,10 +1,19 @@
+import { contentParentKey } from './content-parent'
+import { collectPayloadPages } from '@/lib/payload-pagination'
+import type { ContentSearchFilters } from './content-search-filters'
+import { createContentSearchPredicates } from './content-search-query'
+
 import { getPayload, type Payload, type Where } from 'payload'
 
 import config from '@payload-config'
 
 import { getFormRelationshipId, getRelationshipId, type RelationshipID } from '@/lib/relationships'
-import { normalizeListingWindow, paginateInMemory } from '@/modules/content/listing-window'
-import { findCategorySubtreeIDs } from '@/modules/content/category-hierarchy'
+import {
+  normalizeListingWindow,
+  paginateInMemory,
+  type ListingWindow,
+} from '@/modules/content/listing-window'
+import { findTopicSubtreeIDs } from '@/modules/content/topic-hierarchy'
 import { publicRequestContext } from '@/modules/content/public-access'
 import { cachePublicData, publicCacheTags } from '@/modules/cache/public-data-cache'
 import type { PartnerRole } from '@/modules/events/constants'
@@ -50,6 +59,7 @@ export type FindPublicContentOptions = {
   includeInactiveLocations?: boolean
   pageSize: number
   pagination: boolean
+  searchFilters?: ContentSearchFilters
   selectionMode?: 'filters' | 'manual'
   sort: ContentListingSort
   sources: ContentListingSource[]
@@ -60,6 +70,13 @@ export type ManualContentReference = {
   partnerRoles?: readonly PartnerRole[]
   relationTo: ContentListingSource
   value: ContentListingDocument | RelationshipID
+}
+
+type ManualListingReference = {
+  contextLabel?: null | string
+  id: RelationshipID
+  partnerRoles?: readonly PartnerRole[]
+  source: ContentListingSource
 }
 
 export type PublicContentResult = {
@@ -79,6 +96,7 @@ export type PreparedListingCondition = {
   operator: ListingConditionOperator
   relationshipId?: number
   relationshipIds?: number[]
+  parentKey?: string
   relatedTarget?: {
     relationTo: ContentListingSource
     value: number
@@ -98,7 +116,7 @@ async function findPublicContentUncached(
   const result = await payload.find({
     collection: 'content-listing-items',
     context: publicRequestContext,
-    depth: 1,
+    depth: 0,
     limit: pageSize,
     overrideAccess: false,
     page,
@@ -135,14 +153,17 @@ export async function findPublicContent(
   options: FindPublicContentOptions,
 ): Promise<PublicContentResult> {
   if (options.selectionMode === 'manual') {
-    return findManualPublicContent(options)
+    const references = getManualContentReferences(options.manualItems)
+    const window = normalizeListingWindow(options)
+    return references.length
+      ? findManualPublicContentCached(references, window)
+      : paginateInMemory([], window)
   }
 
   const conditions = await prepareListingConditions(options.conditions ?? [], options.currentTarget)
   const { page, pageSize } = normalizeListingWindow(options)
-  return findPublicContentCached({
+  const query = {
     conditions,
-    manualItems: options.manualItems,
     includeInactiveLocations: options.includeInactiveLocations,
     page,
     pageSize,
@@ -150,15 +171,16 @@ export async function findPublicContent(
     selectionMode: options.selectionMode,
     sort: options.sort,
     sources: [...new Set(options.sources)].sort(),
-  })
+  }
+  return options.searchFilters
+    ? findPublicContentUncached({ ...query, searchFilters: options.searchFilters })
+    : findPublicContentCached(query)
 }
 
 async function findManualPublicContent(
-  options: FindPublicContentOptions,
+  references: ManualListingReference[],
+  window: ListingWindow,
 ): Promise<PublicContentResult> {
-  const references = getManualContentReferences(options.manualItems)
-  if (!references.length) return paginateInMemory([], options)
-
   const idsBySource = new Map<ContentListingSource, Set<RelationshipID>>()
   for (const { id, source } of references) {
     const ids = idsBySource.get(source) ?? new Set<RelationshipID>()
@@ -196,7 +218,7 @@ async function findManualPublicContent(
       return item ? [{ ...item, contextLabel, partnerRoles }] : []
     },
   )
-  const paginatedItems = paginateInMemory(selectedItems, options)
+  const paginatedItems = paginateInMemory(selectedItems, window)
 
   return {
     ...paginatedItems,
@@ -204,12 +226,15 @@ async function findManualPublicContent(
   }
 }
 
-function getManualContentReferences(values: readonly ManualContentReference[] | null | undefined): {
-  contextLabel?: null | string
-  id: RelationshipID
-  partnerRoles?: readonly PartnerRole[]
-  source: ContentListingSource
-}[] {
+const findManualPublicContentCached = cachePublicData(
+  'public-manual-content-listing',
+  findManualPublicContent,
+  { revalidate: 300, tags: [publicCacheTags.contentListings] },
+)
+
+function getManualContentReferences(
+  values: readonly ManualContentReference[] | null | undefined,
+): ManualListingReference[] {
   return (
     values?.flatMap((value) => {
       const id = getFormRelationshipId(value.value)
@@ -229,7 +254,10 @@ function getManualContentReferences(values: readonly ManualContentReference[] | 
 
 async function createListingWhere(
   payload: Payload,
-  options: CachedFindPublicContentOptions,
+  options: Pick<
+    CachedFindPublicContentOptions,
+    'conditions' | 'includeInactiveLocations' | 'searchFilters' | 'sources'
+  >,
 ): Promise<Where> {
   const now = new Date()
   const predicates = await Promise.all(
@@ -267,6 +295,9 @@ async function createListingWhere(
     and: [
       { source: { in: [...new Set(options.sources)].sort() } },
       ...predicates,
+      ...(options.searchFilters
+        ? await createContentSearchPredicates(payload, options.searchFilters)
+        : []),
       ...(options.includeInactiveLocations ? [] : [{ isInactiveLocation: { not_equals: true } }]),
     ],
   }
@@ -288,16 +319,31 @@ function createConditionPredicate(condition: PreparedListingCondition, now: Date
       return condition.operator === 'equals'
         ? { normalizedTitle: { equals: condition.textValue } }
         : { normalizedTitle: { contains: condition.textValue } }
-    case 'category':
-      if (condition.operator === 'isEmpty') return { category: { exists: false } }
+    case 'topic':
+      if (condition.operator === 'isEmpty') return { topicSearchIndex: { equals: '|' } }
       return condition.operator === 'inSubtree'
-        ? { category: { in: condition.relationshipIds ?? [] } }
-        : { category: { equals: condition.relationshipId } }
+        ? { topics: { in: condition.relationshipIds ?? [] } }
+        : { topics: { equals: condition.relationshipId } }
     case 'tag':
       return condition.operator === 'isEmpty'
         ? { tagSearchIndex: { equals: createListingTagSearchIndex([]) } }
         : { tagSearchIndex: { contains: `|${condition.relationshipId}|` } }
+    case 'tagGroup':
+      return condition.relationshipIds?.length
+        ? {
+            or: condition.relationshipIds.map((id) => ({
+              tagSearchIndex: { contains: `|${id}|` },
+            })),
+          }
+        : { id: { equals: 0 } }
+    case 'contentParent':
+      if (condition.operator === 'isEmpty') return { contentParent: { exists: false } }
+      if (!condition.parentKey) return { id: { equals: 0 } }
+      return condition.operator === 'inSubtree'
+        ? { ancestorSearchIndex: { contains: `|${condition.parentKey}|` } }
+        : { contentParent: { equals: condition.parentKey } }
     case 'parentPage':
+      // Existing conditions only inspect the immediate parent of Pages.
       return condition.operator === 'isEmpty'
         ? { parentPage: { exists: false } }
         : { parentPage: { equals: condition.relationshipId } }
@@ -384,7 +430,10 @@ async function prepareListingCondition(
   }
   if (value.operator === 'isEmpty') return { field: value.field, operator: value.operator }
 
-  if (value.field === 'relatedTo' && !isListingRelatedTargetMode(value.relatedTargetMode)) {
+  if (
+    (value.field === 'relatedTo' || value.field === 'contentParent') &&
+    !isListingRelatedTargetMode(value.relatedTargetMode)
+  ) {
     throw new Error('Invalid content listing related-target mode.')
   }
 
@@ -428,9 +477,9 @@ async function prepareListingCondition(
   }
 
   if (value.field === 'relatedTo' && value.relatedTargetMode === 'current' && currentTarget) {
-    if (currentTarget.relationTo === 'categories') {
+    if (currentTarget.relationTo === 'topics') {
       return prepareListingCondition({
-        field: 'category',
+        field: 'topic',
         operator: 'inSubtree',
         relationshipValue: currentTarget,
       })
@@ -449,12 +498,39 @@ async function prepareListingCondition(
     case 'title':
       condition.textValue = normalizeListingTitle(value.textValue!)
       break
-    case 'category':
+    case 'topic':
       condition.relationshipId = relationshipId
       if (value.operator === 'inSubtree') {
-        condition.relationshipIds = await findCategorySubtreeIDs(relationshipId!)
+        condition.relationshipIds = await findTopicSubtreeIDs(relationshipId!)
       }
       break
+    case 'tagGroup': {
+      const payload = await getPayload({ config })
+      const tags = await collectPayloadPages((page) =>
+        payload.find({
+          collection: 'tags',
+          depth: 0,
+          limit: 100,
+          page,
+          overrideAccess: false,
+          context: publicRequestContext,
+          select: { name: true },
+          where: { group: { equals: relationshipId } },
+        }),
+      )
+      condition.relationshipIds = tags.map(({ id }) => id)
+      break
+    }
+    case 'contentParent': {
+      const parent =
+        value.relatedTargetMode === 'current' ? currentTarget : value.relatedTargetValue
+      if (parent?.relationTo === 'pages' || parent?.relationTo === 'event-cycles') {
+        const id = getFormRelationshipId(parent.value)
+        if (id !== undefined)
+          condition.parentKey = contentParentKey({ relationTo: parent.relationTo, value: id })
+      }
+      break
+    }
     case 'tag':
     case 'parentPage':
     case 'eventCycle':
@@ -507,4 +583,273 @@ function getPayloadSort(sort: ContentListingSort): string[] {
     default:
       return ['-hasSignificantDate', '-significantDate', 'title', 'source', 'sourceDocumentId']
   }
+}
+
+export type ContentSearchOption = { id: number; label: string; groupIcon?: string }
+
+export type ContentSearchOptions = {
+  topics: ContentSearchOption[]
+  tags: ContentSearchOption[]
+  authors?: ContentSearchOption[]
+  tagGroups?: { id: number; label: string; tags: ContentSearchOption[] }[]
+  branches?: { value: string; label: string }[]
+  sources?: ContentListingSource[]
+}
+
+type SearchOptionsEnabled = {
+  topics: boolean
+  tags: boolean
+  author?: boolean
+  branches?: boolean
+  contentType?: boolean
+  groups?: number[]
+}
+
+type ContentSearchOptionsScope = Pick<
+  FindPublicContentOptions,
+  'conditions' | 'currentTarget' | 'includeInactiveLocations' | 'sources'
+>
+
+const loadContentSearchOptions = cachePublicData(
+  'public-content-search-options-v2',
+  async (
+    scope: Pick<
+      CachedFindPublicContentOptions,
+      'conditions' | 'includeInactiveLocations' | 'sources'
+    >,
+    enabled: SearchOptionsEnabled,
+  ): Promise<ContentSearchOptions> => {
+    const payload = await getPayload({ config })
+    const where = await createListingWhere(payload, scope)
+    const distinctQuery = {
+      collection: 'content-listing-items' as const,
+      context: publicRequestContext,
+      depth: 0,
+      overrideAccess: false,
+      where,
+    }
+    const [topicMatches, tagMatches, branchMatches, sourceMatches, authorMatches] =
+      await Promise.all([
+        enabled.topics
+          ? payload.findDistinct({ ...distinctQuery, field: 'topicSearchIndex' })
+          : null,
+        enabled.tags || enabled.groups?.length
+          ? payload.findDistinct({ ...distinctQuery, field: 'tagSearchIndex' })
+          : null,
+        enabled.branches
+          ? payload.findDistinct({ ...distinctQuery, field: 'ancestorSearchIndex' })
+          : null,
+        enabled.contentType ? payload.findDistinct({ ...distinctQuery, field: 'source' }) : null,
+        enabled.author ? payload.findDistinct({ ...distinctQuery, field: 'searchAuthor' }) : null,
+      ])
+
+    const topicIds = [
+      ...new Set(
+        (topicMatches?.values ?? []).flatMap(
+          ({ topicSearchIndex }) => topicSearchIndex?.split('|').filter(Boolean).map(Number) ?? [],
+        ),
+      ),
+    ]
+    const tagIds = [
+      ...new Set(
+        (tagMatches?.values ?? []).flatMap(({ tagSearchIndex }) =>
+          tagSearchIndex.split('|').filter(Boolean).map(Number),
+        ),
+      ),
+    ]
+    const authorIds = (authorMatches?.values ?? []).flatMap(({ searchAuthor }) => {
+      const id = getRelationshipId(searchAuthor)
+      return typeof id === 'number' ? [id] : []
+    })
+    const [topics, tags, groups, branches, authors] = await Promise.all([
+      loadSearchTopics(payload, topicIds),
+      tagIds.length
+        ? collectPayloadPages((page) =>
+            payload.find({
+              collection: 'tags',
+              context: publicRequestContext,
+              depth: 0,
+              joins: false,
+              limit: 100,
+              overrideAccess: false,
+              page,
+              select: { name: true, group: true, groupIcon: true },
+              sort: 'id',
+              where: { id: { in: tagIds } },
+            }),
+          )
+        : [],
+      enabled.groups?.length
+        ? payload.find({
+            collection: 'tag-groups',
+            depth: 0,
+            pagination: false,
+            overrideAccess: false,
+            select: { name: true },
+            where: { id: { in: enabled.groups } },
+          })
+        : undefined,
+      branchMatches
+        ? loadSearchBranches(
+            payload,
+            branchMatches.values.flatMap(
+              ({ ancestorSearchIndex }) => ancestorSearchIndex?.split('|').filter(Boolean) ?? [],
+            ),
+          )
+        : undefined,
+      authorIds.length
+        ? payload.find({
+            collection: 'users',
+            depth: 0,
+            limit: 0,
+            pagination: false,
+            overrideAccess: true,
+            select: { displayName: true },
+            where: { id: { in: authorIds } },
+          })
+        : undefined,
+    ])
+    const sortedTags = tags
+      .map(({ id, name, group, groupIcon }) => ({
+        id,
+        label: name,
+        group: getRelationshipId(group),
+        ...(groupIcon ? { groupIcon } : {}),
+      }))
+      .sort(compareSearchOptions)
+    return {
+      topics,
+      authors: authors?.docs
+        .map(({ id, displayName }) => ({ id, label: displayName }))
+        .sort(compareSearchOptions),
+      tags: enabled.tags ? sortedTags.map(({ group: _group, ...tag }) => tag) : [],
+      tagGroups: groups?.docs.flatMap(({ id, name }) => {
+        const choices = sortedTags.filter(({ group }) => group === id)
+        return choices.length ? [{ id, label: name, tags: choices }] : []
+      }),
+      branches,
+      sources: sourceMatches?.values.map(({ source }) => source).filter(isListingSource),
+    }
+  },
+  { revalidate: 300, tags: [publicCacheTags.contentListings] },
+)
+
+export async function findContentSearchOptions(
+  scope: ContentSearchOptionsScope,
+  enabled: SearchOptionsEnabled,
+): Promise<ContentSearchOptions> {
+  if (
+    !enabled.topics &&
+    !enabled.tags &&
+    !enabled.author &&
+    !enabled.branches &&
+    !enabled.groups?.length &&
+    !enabled.contentType
+  )
+    return { topics: [], tags: [] }
+  return loadContentSearchOptions(
+    {
+      conditions: await prepareListingConditions(scope.conditions ?? [], scope.currentTarget),
+      includeInactiveLocations: scope.includeInactiveLocations,
+      sources: [...new Set(scope.sources)].sort(),
+    },
+    enabled,
+  )
+}
+
+async function loadSearchBranches(payload: Payload, keys: string[]) {
+  const references = new Set(keys)
+  const pageIDs = [...references]
+    .filter((key) => key.startsWith('pages:'))
+    .map((key) => Number(key.slice(6)))
+  const cycleIDs = [...references]
+    .filter((key) => key.startsWith('event-cycles:'))
+    .map((key) => Number(key.slice(13)))
+  const [pages, cycles] = await Promise.all([
+    pageIDs.length
+      ? payload.find({
+          collection: 'pages',
+          depth: 0,
+          pagination: false,
+          overrideAccess: false,
+          context: publicRequestContext,
+          where: { id: { in: pageIDs } },
+          select: { title: true, fullTitle: true },
+        })
+      : undefined,
+    cycleIDs.length
+      ? payload.find({
+          collection: 'event-cycles',
+          depth: 1,
+          pagination: false,
+          overrideAccess: false,
+          context: publicRequestContext,
+          where: { id: { in: cycleIDs } },
+          select: { title: true, parent: true },
+        })
+      : undefined,
+  ])
+  return [
+    ...(pages?.docs.map(({ id, title, fullTitle }) => ({
+      value: `pages:${id}`,
+      label: fullTitle || title,
+    })) ?? []),
+    ...(cycles?.docs.map(({ id, title, parent }) => ({
+      value: `event-cycles:${id}`,
+      label:
+        parent && typeof parent === 'object'
+          ? `${parent.fullTitle || parent.title} › ${title}`
+          : title,
+    })) ?? []),
+  ].sort((left, right) => left.label.localeCompare(right.label, 'pl'))
+}
+
+async function loadSearchTopics(
+  payload: Payload,
+  topicIds: number[],
+): Promise<ContentSearchOption[]> {
+  if (!topicIds.length) return []
+
+  const findTopics = (ids: number[]) =>
+    collectPayloadPages((page) =>
+      payload.find({
+        collection: 'topics',
+        context: publicRequestContext,
+        depth: 0,
+        joins: false,
+        limit: 100,
+        overrideAccess: false,
+        page,
+        select: { name: true, breadcrumbs: true },
+        sort: 'id',
+        where: { id: { in: ids } },
+      }),
+    )
+  const matching = await findTopics(topicIds)
+  const matchedIds = new Set(matching.map(({ id }) => id))
+  const ancestorIds = new Set<number>()
+  for (const topic of matching) {
+    for (const breadcrumb of topic.breadcrumbs ?? []) {
+      const id = getRelationshipId(breadcrumb.doc)
+      if (typeof id === 'number' && !matchedIds.has(id)) ancestorIds.add(id)
+    }
+  }
+  const ancestors = ancestorIds.size ? await findTopics([...ancestorIds]) : []
+  const topics = [...matching, ...ancestors]
+  const names = new Map(topics.map(({ id, name }) => [id, name]))
+  return topics
+    .map(({ id, name, breadcrumbs }) => {
+      const path = (breadcrumbs ?? []).flatMap(({ doc }) => {
+        const ancestorId = getRelationshipId(doc)
+        const ancestorName =
+          typeof ancestorId === 'number' && ancestorId !== id ? names.get(ancestorId) : undefined
+        return ancestorName ? [ancestorName] : []
+      })
+      return { id, label: [...path, name].join(' / ') }
+    })
+    .sort(compareSearchOptions)
+}
+
+function compareSearchOptions(left: ContentSearchOption, right: ContentSearchOption): number {
+  return left.label.localeCompare(right.label, 'pl') || left.id - right.id
 }

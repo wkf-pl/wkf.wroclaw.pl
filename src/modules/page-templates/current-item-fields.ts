@@ -21,7 +21,8 @@ export type CurrentItemValueKind =
   | 'richText'
   | 'name'
   | 'author'
-  | 'category'
+  | 'topic'
+  | 'topics'
   | 'tags'
   | 'cycle'
   | 'breadcrumbs'
@@ -56,7 +57,7 @@ const editorial = [
   field('publishedAt', 'Data publikacji', 'date'),
   modified,
 ]
-const taxonomy = [field('category', 'Kategoria', 'category'), field('tags', 'Tagi', 'tags')]
+const taxonomy = [field('topics', 'Tematy', 'topics'), field('tags', 'Tagi', 'tags')]
 const location = [
   field('location.venueName', 'Nazwa miejsca'),
   field('location.venueWebsite', 'Strona WWW miejsca'),
@@ -95,8 +96,8 @@ export const currentItemFieldSources: Record<
   PageTemplatePreviewCollection,
   readonly CurrentItemFieldEntry[]
 > = {
-  categories: [
-    field('parent', 'Kategoria nadrzędna', 'category'),
+  topics: [
+    field('parent', 'Temat nadrzędny', 'topic'),
     field('fullTitle', 'Pełna ścieżka'),
     field('breadcrumbs', 'Ścieżka nawigacji', 'breadcrumbs'),
     ...relatedContent,
