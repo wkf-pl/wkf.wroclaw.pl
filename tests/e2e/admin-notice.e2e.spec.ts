@@ -78,7 +78,7 @@ test('shows the notice across admin screens and keeps it off public and login pa
     '/admin/account',
   ]) {
     await page.goto(path)
-    await expect(page).toHaveURL(path)
+    await expect(page).toHaveURL((url) => url.pathname === path)
     await expect(banner).toBeVisible()
   }
 
