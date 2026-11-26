@@ -152,7 +152,7 @@
 }
 
 .listingPresentation .contentCarouselSlide:not(.contentCarouselSlide--collection) {
-  display: block;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .listingPresentation

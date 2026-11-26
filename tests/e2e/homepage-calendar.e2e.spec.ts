@@ -60,7 +60,9 @@ test.beforeAll(async () => {
         calendarRevision: 0,
         capacityMode: 'unlimited',
         eventType: eventType.id,
-        excerpt: createLexicalDocument(`Streszczenie wydarzenia karuzeli E2E ${index + 1}.`),
+        excerpt: createLexicalDocument(
+          index === 0 ? 'Krótki opis.' : 'Streszczenie wydarzenia karuzeli E2E. '.repeat(18).trim(),
+        ),
 
         participation: 'public',
         layout: [
@@ -152,6 +154,7 @@ test('renders responsive event carousel and calendar content blocks on the homep
   await updateHomepageLayout(createFixtureHomepageLayout())
   homepageLayoutChanged = true
 
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
 
   const carousel = page.getByRole('region', { name: 'Karuzela treści' })
@@ -192,7 +195,25 @@ test('renders responsive event carousel and calendar content blocks on the homep
   await calendar.getByRole('button', { name: 'Poprzedni miesiąc' }).click()
   await expect(monthHeading).toHaveText(initialHeading ?? '')
 
-  await page.setViewportSize({ height: 844, width: 390 })
+  const slides = carousel.locator('.contentCarouselSlides')
+  const activeSlide = slides.locator('.contentCarouselSlide--active')
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ height: 844, width })
+    const initialHeight = await slides.evaluate((element) => element.getBoundingClientRect().height)
+
+    for (const slideNumber of [1, 2]) {
+      await activeSlide
+        .getByRole('button', { name: `Pokaż: Wydarzenie karuzeli E2E ${slideNumber}` })
+        .click()
+      await expect(activeSlide).toHaveAttribute('aria-label', `${slideNumber} z 2`)
+      const surface = activeSlide.locator('.listingItemSurface')
+      const surfaceHeight = await surface.evaluate(
+        (element) => element.getBoundingClientRect().height,
+      )
+      expect(surfaceHeight, `Slide ${slideNumber} at ${width}px`).toBeCloseTo(initialHeight, 0)
+    }
+  }
+
   const calendarGrid = calendar.locator('.calendarGrid')
   await expect(calendarGrid).toBeVisible()
   expect(await calendarGrid.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
@@ -250,6 +271,7 @@ function createFixtureHomepageLayout(): HomepageSection['layout'] {
   return [
     { blockType: 'heading', heading: 'Wydarzenia', headingLevel: 'h2' },
     {
+      appearance: { overrides: { decoration: { fallback: 'default' } } },
       blockType: 'listing',
       conditions: [
         {

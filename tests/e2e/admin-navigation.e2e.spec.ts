@@ -66,9 +66,17 @@ test('groups editor navigation with the intended labels and order', async ({ pag
   await expect(
     navigation.getByRole('button', { name: 'Administracja' }).locator('..').locator('a'),
   ).toHaveText(['Aliasy adresów'])
-  await expect(
-    navigation.locator('#nav-url-aliases [data-icon-name="external-link"]'),
-  ).toBeVisible()
+  for (const [link, icon] of Object.entries({
+    'global-footer': 'footer',
+    'global-homepage-hero': 'title',
+    'global-navigation': 'header',
+    partners: 'partner',
+    posts: 'blog-post',
+    'tag-groups': 'tags',
+    'url-aliases': 'alias',
+  })) {
+    await expect(navigation.locator(`#nav-${link} [data-icon-name="${icon}"]`)).toBeVisible()
+  }
   await expect(navigation.locator('#nav-locations [data-icon-name="location"]')).toBeVisible()
   await expect(
     navigation.locator('#nav-global-homepage-sections [data-icon-name="document"]'),
@@ -115,21 +123,21 @@ test('shows the tag group column and aligns it with the name in the tag editor',
       await expect(page.getByText('Tagi w grupie', { exact: true })).toBeVisible()
       await expect(page.getByRole('link', { name: tag.name, exact: true })).toBeVisible()
       const icon = page.locator('#field-iconName')
-      await icon.getByRole('combobox').fill('book')
+      await icon.getByRole('combobox').fill('tags')
       await icon
         .getByRole('option')
-        .filter({ has: page.locator('[data-icon-name="book"]') })
+        .filter({ has: page.locator('[data-icon-name="tags"]') })
         .click()
       await page.getByRole('button', { name: 'Zapisz', exact: true }).click()
       await expect
         .poll(async () => {
           return (await payload.findByID({ collection: 'tag-groups', id: group.id })).iconName
         })
-        .toBe('book')
+        .toBe('tags')
 
       await page.goto('/admin/collections/tags')
       await expect(
-        page.getByRole('cell', { name: tag.name, exact: true }).locator('[data-icon-name="book"]'),
+        page.getByRole('cell', { name: tag.name, exact: true }).locator('[data-icon-name="tags"]'),
       ).toBeVisible()
     } finally {
       await payload.delete({ collection: 'tags', id: tag.id })
@@ -152,10 +160,21 @@ test('groups administrator navigation under Administracja', async ({ page }) => 
     'Użytkownicy',
     'Grupy użytkowników',
     'Role',
+    'Powiadomienie administracyjne',
   ])
   await expect(navigation.getByRole('button', { name: 'Klubowe' }).locator('..')).toContainText(
     'Wizytówki klubowiczów',
   )
+  for (const [link, icon] of Object.entries({
+    account: 'profile',
+    'listing-views': 'listing-template',
+    'member-profiles': 'profile-card',
+    'page-templates': 'template',
+    'user-groups': 'user-group',
+    users: 'user',
+  })) {
+    await expect(navigation.locator(`#nav-${link} [data-icon-name="${icon}"]`)).toBeVisible()
+  }
   const groupLabels = await navigation.locator('.nav-group__label').allTextContents()
 
   expect(groupLabels).toEqual(['Klubowe', 'Administracja', 'Użytkownik'])
@@ -406,7 +425,21 @@ test('presents raster icon choices as a grouped grid', async ({ page }) => {
       'Kontakt',
     ])
     await expect(iconGroups.first().locator(':scope > div:last-child')).toHaveCSS('display', 'grid')
-    await expect(page.locator('.raster-icon-picker [role="option"]')).toHaveCount(89)
+    await expect(page.locator('.raster-icon-picker [role="option"]')).toHaveCount(113)
+    const contentGroup = iconGroups.filter({
+      has: page.locator('.rs__group-heading', { hasText: /^Treści$/ }),
+    })
+    await expect(contentGroup.locator('[data-icon-name="blog-post"]')).toBeVisible()
+
+    await iconField.getByRole('combobox').fill('blog-post')
+    const matchingOption = iconField.getByRole('option')
+    await expect(matchingOption).toHaveCount(1)
+    await expect(matchingOption.getByText('Wpis na blogu', { exact: true })).toBeVisible()
+    const icon = matchingOption.locator('[data-icon-name="blog-post"]')
+    await expect(icon).toHaveCSS('mask-image', /\/assets\/icons\/medium\/blog-post\.png/)
+    const response = await page.request.get('/assets/icons/medium/blog-post.png')
+    expect(response.ok()).toBe(true)
+    expect(response.headers()['content-type']).toBe('image/png')
     await page.keyboard.press('Escape')
 
     const clearIconButton = iconField.locator('.clear-indicator')

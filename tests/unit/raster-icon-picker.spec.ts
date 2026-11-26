@@ -18,7 +18,7 @@ describe('RasterIconPickerField', () => {
   })
 
   it('keeps all picker options selectable and assigned to an editorial category', () => {
-    expect(rasterIconPickerOptions).toHaveLength(89)
+    expect(rasterIconPickerOptions).toHaveLength(113)
     expect(rasterIconPickerOptions.every(({ category, value }) => category && value)).toBe(true)
   })
 
@@ -48,5 +48,22 @@ describe('RasterIconPickerField', () => {
     )
     expect(rasterIconPickerOptions.find(({ name }) => name === 'ticket')?.category).toBe('action')
     expect(rasterIconPickerOptions.map(({ name }) => name)).not.toContain('larp-mask')
+  })
+
+  it.each([
+    ['search', 'action', 'lupa'],
+    ['listing-template', 'content', 'układ'],
+    ['crown', 'fantasy', 'królowa'],
+    ['profile-card', 'community', 'klubowicz'],
+    ['rss', 'contact', 'subskrypcja'],
+  ])('offers %s in %s and matches its Polish keyword', (name, category, keyword) => {
+    const option = rasterIconPickerOptions.find((option) => option.name === name)
+    expect(option?.category).toBe(category)
+    expect(option && matchesRasterIconSearch(option, keyword)).toBe(true)
+  })
+
+  it('keeps the internal footer and profile icons out of the picker', () => {
+    expect(rasterIconPickerOptions.map(({ name }) => name)).not.toContain('footer')
+    expect(rasterIconPickerOptions.map(({ name }) => name)).not.toContain('profile')
   })
 })

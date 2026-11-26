@@ -131,6 +131,7 @@ export const MemberProfiles: CollectionConfig = {
     update: updateProfiles,
   },
   admin: {
+    defaultColumns: ['publicName', 'about', 'clubFunction', 'photoChange'],
     group: 'Klubowe',
     hidden: ({ user }) =>
       !clientUserHasUnrestrictedResourcePermission(user, 'member-profiles', 'read'),
@@ -190,6 +191,7 @@ export const MemberProfiles: CollectionConfig = {
               virtual: true,
               admin: {
                 components: {
+                  Cell: '/components/admin/MemberProfilePhotoCell#MemberProfilePhotoCell',
                   Field: '/components/admin/MemberProfilePhotoField#MemberProfilePhotoField',
                 },
               },
