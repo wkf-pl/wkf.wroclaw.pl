@@ -1,9 +1,8 @@
 import { sql, type MigrateUpArgs } from '@payloadcms/db-postgres'
 
 import { moveAuthorsToOwners } from './lib/separate-content-ownership'
-import { rebuildTopicListingIndex } from './lib/topic-listing-data'
 
-export async function up({ db, req }: MigrateUpArgs): Promise<void> {
+export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
     ALTER TABLE "content_listing_items" ADD COLUMN "search_author_id" integer;
     ALTER TABLE "pages" ADD COLUMN "author_id" integer;
@@ -79,8 +78,6 @@ export async function up({ db, req }: MigrateUpArgs): Promise<void> {
     ALTER INDEX "_event_cycles_v_version_event_defaults_version_event_d_3_idx"
       RENAME TO "_event_cycles_v_version_event_defaults_version_event_d_2_idx";
   `)
-
-  await rebuildTopicListingIndex({ db, req })
 }
 
 export async function down(): Promise<void> {

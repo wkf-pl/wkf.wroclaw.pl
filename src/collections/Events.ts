@@ -1,3 +1,4 @@
+import { createDraftPreviewURL } from '@/modules/content/draft-preview'
 import {
   lockContentHierarchyForWrite,
   createContentParentField,
@@ -32,7 +33,6 @@ import {
   createScheduleFields,
 } from '@/modules/events/fields'
 import { applyEventCycleDefaults, updateEventCalendarMetadata } from '@/modules/events/hooks'
-import { createNextEventEndpoint } from '@/modules/events/create-next-event'
 import { validateMediaBlocks } from '@/modules/media/validate-media-blocks'
 import { publishedPublicAccess } from '@/modules/content/public-access'
 import {
@@ -77,26 +77,27 @@ export const Events: CollectionConfig = {
     update: updateEvents,
   },
   admin: {
+    custom: { wkfPreviewAutosaveOnly: true },
     components: {
       edit: {
         beforeDocumentControls: [
           '/components/admin/CollectionLabels#EventCreateLabel',
           '/components/admin/EventCycleDefaultsApplier#EventCycleDefaultsApplier',
-          '/components/admin/EventActions#EventActions',
         ],
+        PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
       },
     },
     defaultColumns: ['title', 'cycle', 'eventType', 'topics', 'tags', 'startAt', '_status'],
     enableListViewSelectAPI: true,
     group: 'Treści',
     listSearchableFields: ['title', 'cycle', 'slug', 'eventType', 'author', 'topics', 'location'],
+    preview: (document) => createDraftPreviewURL('events', document),
     useAsTitle: 'title',
     pagination: {
       limits: [10, 25, 50],
     },
   },
   defaultSort: 'startAt',
-  endpoints: [createNextEventEndpoint],
   fields: [
     {
       type: 'tabs',
@@ -193,5 +194,5 @@ export const Events: CollectionConfig = {
     ],
   },
   labels: { plural: 'Wydarzenia', singular: 'Wydarzenie' },
-  versions: { drafts: true, maxPerDoc: 50 },
+  versions: { drafts: { autosave: { showSaveDraftButton: true } }, maxPerDoc: 50 },
 }

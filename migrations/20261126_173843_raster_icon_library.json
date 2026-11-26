@@ -56186,6 +56186,12 @@
           "type": "boolean",
           "primaryKey": false,
           "notNull": false
+        },
+        "autosave": {
+          "name": "autosave",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -56494,6 +56500,21 @@
           "columns": [
             {
               "expression": "latest",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "_events_v_autosave_idx": {
+          "name": "_events_v_autosave_idx",
+          "columns": [
+            {
+              "expression": "autosave",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -71049,6 +71070,12 @@
           "type": "boolean",
           "primaryKey": false,
           "notNull": false
+        },
+        "autosave": {
+          "name": "autosave",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -71312,6 +71339,21 @@
           "columns": [
             {
               "expression": "latest",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "_event_cycles_v_autosave_idx": {
+          "name": "_event_cycles_v_autosave_idx",
+          "columns": [
+            {
+              "expression": "autosave",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

@@ -5,11 +5,14 @@ import { notFound } from 'next/navigation'
 
 import { RasterIcon } from '@/components/RasterIcon'
 import { createContentMetadata } from '@/modules/content/content-metadata'
-import { findPageTemplateForRequest } from '@/modules/content/preview-content'
-import { shouldRenderPageTemplate } from '@/modules/content/draft-preview'
+import {
+  findEventForRequest,
+  findRenderablePageTemplateForRequest,
+} from '@/modules/content/preview-content'
+import { pageTemplatePreviewParameter } from '@/modules/content/draft-preview'
 import { extractRichTextText } from '@/modules/content/rich-text'
 import { buildGoogleMapsURL } from '@/modules/events/map-embed'
-import { findPostsRelatedToEvent, findPublishedEventBySlug } from '@/modules/events/public-events'
+import { findPostsRelatedToEvent } from '@/modules/events/public-events'
 import { createEventStructuredData } from '@/modules/events/structured-data'
 import { resolveLink } from '@/modules/navigation/links'
 
@@ -24,42 +27,43 @@ type Properties = {
   params: Promise<{ slug: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
-export async function generateMetadata({ params }: Properties): Promise<Metadata> {
-  const event = await findPublishedEventBySlug((await params).slug)
+export async function generateMetadata({ params, searchParams }: Properties): Promise<Metadata> {
+  const { slug } = await params
+  const parameters = await searchParams
+  const { document: event } = await findEventForRequest(
+    slug,
+    parameters[pageTemplatePreviewParameter] === 'event-detail',
+  )
   return event ? createContentMetadata(event) : {}
 }
 
 export default async function EventPage({ params, searchParams }: Properties) {
-  const event = await findPublishedEventBySlug((await params).slug)
+  const { slug } = await params
+  const resolvedSearchParams = await searchParams
+  const { document: event, isDraftPreview } = await findEventForRequest(
+    slug,
+    resolvedSearchParams[pageTemplatePreviewParameter] === 'event-detail',
+  )
   if (!event) notFound()
-  const [pageTemplate, resolvedSearchParams] = await Promise.all([
-    findPageTemplateForRequest('event-detail'),
-    searchParams,
-  ])
+  const pathname = `/events/${slug}`
+  const { document: template, isDraftPreview: isTemplateDraftPreview } =
+    await findRenderablePageTemplateForRequest('event-detail', resolvedSearchParams, isDraftPreview)
 
-  const renderTemplate =
-    pageTemplate.document &&
-    shouldRenderPageTemplate({
-      isDraftPreview: pageTemplate.isDraftPreview,
-      renderingMode: pageTemplate.document.renderingMode,
-      searchParams: resolvedSearchParams,
-      templateKey: 'event-detail',
-    })
-
-  if (renderTemplate && pageTemplate.document) {
+  if (template) {
     return (
       <>
-        {pageTemplate.isDraftPreview ? (
+        {isDraftPreview ? <DraftPreviewBanner pathname={pathname} /> : null}
+        {isTemplateDraftPreview ? (
           <DraftPreviewBanner
             message="Podglądasz roboczy układ szablonu. Opublikowana strona nadal używa ostatnio opublikowanego trybu renderowania."
-            pathname={`/events/${event.slug}`}
+            pathname={pathname}
           />
         ) : null}
         <StructuredData value={createEventStructuredData(event)} />
         <EventTemplateDocument
           event={event}
           searchParams={resolvedSearchParams}
-          template={pageTemplate.document}
+          template={template}
         />
       </>
     )
@@ -110,6 +114,7 @@ export default async function EventPage({ params, searchParams }: Properties) {
     ) : null
   return (
     <>
+      {isDraftPreview ? <DraftPreviewBanner pathname={pathname} /> : null}
       <StructuredData value={createEventStructuredData(event)} />
       <CmsPageDocument
         afterBlocks={supplementaryContent}
@@ -137,7 +142,7 @@ export default async function EventPage({ params, searchParams }: Properties) {
             </nav>
           ) : null
         }
-        pathname={`/events/${event.slug}`}
+        pathname={pathname}
         searchParams={resolvedSearchParams}
         showHeroMeta={false}
       />
