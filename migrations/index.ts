@@ -87,6 +87,7 @@ import * as migration_20261123_204500_content_attribution_and_owners from './202
 import * as migration_20261123_230710_tag_group_icons from './20261123_230710_tag_group_icons'
 import * as migration_20261125_130227_optimized_media_images from './20261125_130227_optimized_media_images'
 import * as migration_20261126_160000_rebuild_attributed_listing_index from './20261126_160000_rebuild_attributed_listing_index'
+import * as migration_20261126_170412_event_preview_autosave from './20261126_170412_event_preview_autosave'
 
 export const migrations = [
   {
@@ -533,5 +534,10 @@ export const migrations = [
     up: migration_20261126_160000_rebuild_attributed_listing_index.up,
     down: migration_20261126_160000_rebuild_attributed_listing_index.down,
     name: '20261126_160000_rebuild_attributed_listing_index',
+  },
+  {
+    up: migration_20261126_170412_event_preview_autosave.up,
+    down: migration_20261126_170412_event_preview_autosave.down,
+    name: '20261126_170412_event_preview_autosave',
   },
 ]
