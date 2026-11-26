@@ -736,7 +736,7 @@ export async function up({ db, req, payload }: MigrateUpArgs): Promise<void> {
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'content_listing_items' AND column_name = 'search_author_id'
   `)
-  // The ownership migration rebuilds the projection once the current schema is available.
+  // A later data migration rebuilds the projection once the current schema is available.
   if (compatibleProjection.rows.length) await rebuildTopicListingIndex({ db, req })
 }
 
