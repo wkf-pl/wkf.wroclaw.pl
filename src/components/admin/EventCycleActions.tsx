@@ -47,7 +47,7 @@ export function EventCycleActions() {
       onClick={createEvent}
       size="medium"
     >
-      {isCreating ? 'Tworzenie…' : 'Dodaj kolejne Wydarzenie'}
+      {isCreating ? 'Tworzenie…' : 'Dodaj wydarzenie'}
     </Button>
   )
 }

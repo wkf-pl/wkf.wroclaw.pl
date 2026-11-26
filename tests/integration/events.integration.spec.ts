@@ -8,7 +8,6 @@ import type { Event, Partner, Role, User } from '@/payload-types'
 import { findPublicContent } from '@/modules/content/content-listing'
 import { createEventFromCycleEndpoint } from '@/modules/events/create-event-from-cycle'
 import { createEventsCalendar } from '@/modules/events/ics'
-import { createNextEventEndpoint } from '@/modules/events/create-next-event'
 import {
   findCurrentAndUpcomingEvents,
   findEventsForPartner,
@@ -43,18 +42,15 @@ let userRole: Role
 let scheduleGroupId: number | undefined
 
 function createEndpointRequest({
-  body,
   id,
   user,
 }: {
-  body?: Record<string, unknown>
   id: number | string
   user: null | User
 }): PayloadRequest {
   return {
     context: {},
     headers: new Headers(),
-    json: async () => body ?? {},
     payload,
     routeParams: { id },
     user,
@@ -281,15 +277,11 @@ describe('events integration', () => {
     expect(calendarData.events.map(({ slug }) => slug)).toContain(slugs.completed)
   })
 
-  it('enforces collection access in Event creation endpoints', async () => {
+  it('enforces collection access when creating an Event from a Cycle', async () => {
     const anonymousCycleResponse = await createEventFromCycleEndpoint.handler(
       createEndpointRequest({ id: -1, user: null }),
     )
-    const anonymousNextResponse = await createNextEventEndpoint.handler(
-      createEndpointRequest({ body: { startAt: '2030-09-11T16:00:00.000Z' }, id: -1, user: null }),
-    )
     expect(anonymousCycleResponse.status).toBe(401)
-    expect(anonymousNextResponse.status).toBe(401)
 
     const cycle = await payload.create({
       collection: 'event-cycles',
@@ -319,20 +311,18 @@ describe('events integration', () => {
       id: -100,
       roles: [userRole.id],
     }
-    const createdEventIds: number[] = []
+    const deniedCycleResponse = await createEventFromCycleEndpoint.handler(
+      createEndpointRequest({ id: cycle.id, user: restrictedUser }),
+    )
+    expect(deniedCycleResponse.status).toBe(403)
+
+    const allowedCycleResponse = await createEventFromCycleEndpoint.handler(
+      createEndpointRequest({ id: cycle.id, user: author }),
+    )
+    expect(allowedCycleResponse.status).toBe(201)
+    const allowedCycleBody = (await allowedCycleResponse.json()) as { doc: { id: number } }
 
     try {
-      const deniedCycleResponse = await createEventFromCycleEndpoint.handler(
-        createEndpointRequest({ id: cycle.id, user: restrictedUser }),
-      )
-      expect(deniedCycleResponse.status).toBe(403)
-
-      const allowedCycleResponse = await createEventFromCycleEndpoint.handler(
-        createEndpointRequest({ id: cycle.id, user: author }),
-      )
-      expect(allowedCycleResponse.status).toBe(201)
-      const allowedCycleBody = (await allowedCycleResponse.json()) as { doc: { id: number } }
-      createdEventIds.push(allowedCycleBody.doc.id)
       const createdCycleEvent = await payload.findByID({
         collection: 'events',
         depth: 0,
@@ -344,44 +334,12 @@ describe('events integration', () => {
       expect(JSON.stringify(createdCycleEvent.layout)).toContain('Integration event content')
       expect(createdCycleEvent.startAt).toBeNull()
       expect(createdCycleEvent.endAt).toBeNull()
-
-      const deniedNextResponse = await createNextEventEndpoint.handler(
-        createEndpointRequest({
-          body: { startAt: '2030-09-11T16:00:00.000Z' },
-          id: allowedCycleBody.doc.id,
-          user: restrictedUser,
-        }),
-      )
-      expect(deniedNextResponse.status).toBe(403)
-
-      const allowedNextResponse = await createNextEventEndpoint.handler(
-        createEndpointRequest({
-          body: { startAt: '2030-09-11T16:00:00.000Z' },
-          id: allowedCycleBody.doc.id,
-          user: author,
-        }),
-      )
-      expect(allowedNextResponse.status).toBe(201)
-      const allowedNextBody = (await allowedNextResponse.json()) as { doc: { id: number } }
-      createdEventIds.push(allowedNextBody.doc.id)
-
-      const missingSourceResponse = await createNextEventEndpoint.handler(
-        createEndpointRequest({
-          body: { startAt: '2030-09-11T16:00:00.000Z' },
-          id: 2_147_483_647,
-          user: author,
-        }),
-      )
-      expect(missingSourceResponse.status).toBe(404)
-
-      const invalidInputResponse = await createNextEventEndpoint.handler(
-        createEndpointRequest({ body: { startAt: 'not-a-date' }, id: cycle.id, user: author }),
-      )
-      expect(invalidInputResponse.status).toBe(400)
     } finally {
-      for (const eventId of createdEventIds) {
-        await payload.delete({ collection: 'events', id: eventId, overrideAccess: true })
-      }
+      await payload.delete({
+        collection: 'events',
+        id: allowedCycleBody.doc.id,
+        overrideAccess: true,
+      })
     }
   })
 

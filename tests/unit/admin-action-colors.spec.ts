@@ -64,10 +64,7 @@ describe('admin action colors', () => {
   })
 
   it('marks project-owned create buttons as add actions', () => {
-    for (const componentPath of [
-      'src/components/admin/EventActions.tsx',
-      'src/components/admin/EventCycleActions.tsx',
-    ]) {
+    for (const componentPath of ['src/components/admin/EventCycleActions.tsx']) {
       const component = readFileSync(componentPath, 'utf8')
 
       expect(component).toContain('className="wkf-action-add"')
