@@ -86,6 +86,8 @@ import * as migration_20261122_163000_topics_and_listing from './20261122_163000
 import * as migration_20261123_204500_content_attribution_and_owners from './20261123_204500_content_attribution_and_owners'
 import * as migration_20261123_230710_tag_group_icons from './20261123_230710_tag_group_icons'
 import * as migration_20261125_130227_optimized_media_images from './20261125_130227_optimized_media_images'
+import * as migration_20261126_133004_admin_notice from './20261126_133004_admin_notice'
+import * as migration_20261126_173843_raster_icon_library from './20261126_173843_raster_icon_library'
 
 export const migrations = [
   {
@@ -527,5 +529,15 @@ export const migrations = [
     up: migration_20261125_130227_optimized_media_images.up,
     down: migration_20261125_130227_optimized_media_images.down,
     name: '20261125_130227_optimized_media_images',
+  },
+  {
+    up: migration_20261126_133004_admin_notice.up,
+    down: migration_20261126_133004_admin_notice.down,
+    name: '20261126_133004_admin_notice',
+  },
+  {
+    up: migration_20261126_173843_raster_icon_library.up,
+    down: migration_20261126_173843_raster_icon_library.down,
+    name: '20261126_173843_raster_icon_library',
   },
 ]

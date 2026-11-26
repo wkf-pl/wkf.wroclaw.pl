@@ -38,6 +38,18 @@
   margin-right: 0;
 }
 
+.wkf-admin-notice {
+  margin: 0;
+  padding: 0.625rem var(--gutter-h);
+  border-bottom: 1px solid var(--theme-warning-500);
+  background: var(--theme-warning-100);
+  color: var(--theme-text);
+  font-weight: 600;
+  text-align: center;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .nav__link-icon {
   width: 18px;
   height: 18px;

@@ -172,6 +172,21 @@ test.afterAll(async () => {
   await cleanupMemberProfileFixtures()
 })
 
+test('renders the saved photo and the empty state in the admin profile list', async ({ page }) => {
+  await login({ page, user: administratorTestUser })
+  await page.goto('/admin/collections/member-profiles')
+
+  const rowWithPhoto = page.getByRole('row').filter({ hasText: 'Borys AVIF' })
+  const image = rowWithPhoto.getByRole('img', { name: 'Zdjęcie wizytówki' })
+  await expect(image).toHaveAttribute('src', /\/photo\/.*-card\.webp$/)
+  await expect
+    .poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth))
+    .toBeGreaterThan(0)
+
+  const rowWithoutPhoto = page.getByRole('row').filter({ hasText: ownerPublicName })
+  await expect(rowWithoutPhoto.getByText('<brak>', { exact: true })).toBeVisible()
+})
+
 test('renders the catalogue, rich profile, default avatar, AVIF derivative, and contacts', async ({
   page,
 }) => {
@@ -289,6 +304,7 @@ test('opens a member profile from account and publishes the automatically create
   await login({ page, user: profileCreatorUser })
   await page.goto('/admin/account')
 
+  await expect(page.locator('aside nav #nav-profile [data-icon-name="profile-card"]')).toBeVisible()
   await expect(page.getByRole('link', { name: 'Wizytówka publiczna' })).toBeVisible()
   await page.locator('.wkf-user-menu__trigger').click()
   const menuItems = page.locator('.wkf-user-menu__popup').locator('a, button')

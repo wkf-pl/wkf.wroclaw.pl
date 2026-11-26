@@ -117,12 +117,12 @@ function listFilesRecursively(directory: string): string[] {
 }
 
 describe('raster icon library', () => {
-  it('exposes exactly 89 selectable, uniquely named and labelled icons', () => {
+  it('exposes exactly 113 selectable, uniquely named and labelled icons', () => {
     const selectableDefinitions = rasterIconDefinitions.filter(({ selectable }) => selectable)
 
-    expect(selectableRasterIconNames).toHaveLength(89)
-    expect(new Set(selectableRasterIconNames)).toHaveLength(89)
-    expect(new Set(selectableDefinitions.map(({ label }) => label))).toHaveLength(89)
+    expect(selectableRasterIconNames).toHaveLength(113)
+    expect(new Set(selectableRasterIconNames)).toHaveLength(113)
+    expect(new Set(selectableDefinitions.map(({ label }) => label))).toHaveLength(113)
     expect(selectableRasterIconNames).toEqual(
       expect.arrayContaining([
         'board-game',

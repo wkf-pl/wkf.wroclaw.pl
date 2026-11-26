@@ -1,3 +1,4 @@
+export { AdminNotice } from './AdminNotice'
 export { Footer } from './Footer'
 export { HomepageHero } from './HomepageHero'
 export { HomepageSections } from './HomepageSections'

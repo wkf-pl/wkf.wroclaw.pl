@@ -116,6 +116,7 @@ environment simultaneously. The detailed procedure and failure behavior are docu
 
 ## Documentation
 
+- [Administration panel user guide (Polish)](docs/Instrukcja-panelu.md)
 - [Architecture and dated Azure cost snapshot](docs/Architecture.md)
 - [Architecture decision record index](docs/ADR.md)
 - [Production operations and disaster recovery](docs/Operations.md)
