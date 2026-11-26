@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { EventCycles } from '@/collections/EventCycles'
+import { Events } from '@/collections/Events'
 import { Pages } from '@/collections/Pages'
 import { Posts } from '@/collections/Posts'
 import { PageTemplates } from '@/collections/PageTemplates'
@@ -26,12 +28,14 @@ async function generatePreviewURL(
 }
 
 describe('draft preview', () => {
-  it('uses the save-before-preview button for page templates, pages, and posts', () => {
+  it('uses the standard save-before-preview button for supported collections', () => {
     const previewButton = '/components/admin/DraftPreviewButton#DraftPreviewButton'
 
     expect(Pages.admin?.components?.edit?.PreviewButton).toBe(previewButton)
     expect(Posts.admin?.components?.edit?.PreviewButton).toBe(previewButton)
     expect(PageTemplates.admin?.components?.edit?.PreviewButton).toBe(previewButton)
+    expect(Events.admin?.components?.edit?.PreviewButton).toBe(previewButton)
+    expect(EventCycles.admin?.components?.edit?.PreviewButton).toBe(previewButton)
   })
 
   it('configures internal preview URLs for saved pages and posts', async () => {
@@ -42,6 +46,22 @@ describe('draft preview', () => {
       '/preview?collection=posts&slug=nowy-wpis',
     )
   })
+
+  it.each([
+    { collection: Events, slug: 'spotkanie', path: '/events/spotkanie' },
+    { collection: EventCycles, slug: 'spotkania', path: '/events/series/spotkania' },
+  ])(
+    'previews $collection.slug drafts on their public detail routes',
+    async ({ collection, path, slug }) => {
+      const previewURL = await generatePreviewURL(collection, { id: 1, slug })
+      expect(previewURL).toBe(`/preview?collection=${collection.slug}&slug=${slug}`)
+      expect(parseDraftPreviewTarget(new URLSearchParams(previewURL?.split('?')[1]))).toEqual({
+        collection: collection.slug,
+        path,
+        slug,
+      })
+    },
+  )
 
   it('does not offer preview without a saved document and a valid slug', async () => {
     await expect(generatePreviewURL(Pages, { slug: 'o-nas' })).resolves.toBeNull()

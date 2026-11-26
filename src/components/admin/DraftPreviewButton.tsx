@@ -21,6 +21,7 @@ import {
   createDraftPreviewURL,
   createGlobalDraftPreviewURL,
   createPageTemplateDraftPreviewURL,
+  isDraftPreviewCollection,
   isDraftPreviewGlobal,
 } from '@/modules/content/draft-preview'
 
@@ -52,14 +53,13 @@ export function DraftPreviewButton() {
   const { t } = useTranslation()
   const previousFormState = useRef(getFields())
   const [isSaving, setIsSaving] = useState(false)
-  const previewURL =
-    collectionSlug === 'pages' || collectionSlug === 'posts'
-      ? createDraftPreviewURL(collectionSlug, { id, slug })
-      : collectionSlug === 'page-templates'
-        ? createPageTemplateDraftPreviewURL(templateKey)
-        : isDraftPreviewGlobal(globalSlug)
-          ? createGlobalDraftPreviewURL(globalSlug)
-          : null
+  const previewURL = isDraftPreviewCollection(collectionSlug)
+    ? createDraftPreviewURL(collectionSlug, { id, slug })
+    : collectionSlug === 'page-templates'
+      ? createPageTemplateDraftPreviewURL(templateKey)
+      : isDraftPreviewGlobal(globalSlug)
+        ? createGlobalDraftPreviewURL(globalSlug)
+        : null
   const entitySlug = collectionSlug ?? globalSlug
 
   const saveDraftAndOpenPreview = useCallback(async () => {

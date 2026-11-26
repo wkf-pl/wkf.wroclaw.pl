@@ -231,6 +231,64 @@ test('applies selected Cycle defaults to an Event form without overwriting value
   expect(pageErrors).toEqual([])
 })
 
+test('previews the current Cycle draft between the add and save actions', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto(`/admin/collections/event-cycles/${cycleID}`)
+
+  const previewButton = page.getByRole('button', { name: 'Podgląd' })
+  const cycleActions = page.locator('button.wkf-action-add, #preview-button, #action-save-draft')
+  await expect(cycleActions).toHaveText(['Dodaj wydarzenie', 'Podgląd', 'Zapisz szkic'])
+  const draftTitle = 'Podgląd szkicu Cyklu E2E'
+  await page.locator('#field-title').fill(draftTitle)
+  const previewPromise = page.waitForEvent('popup')
+  await previewButton.click()
+  const preview = await previewPromise
+  await expect(preview).toHaveURL(`/events/series/${cycleSlug}`)
+  await expect(preview.getByRole('heading', { name: draftTitle, level: 1 })).toBeVisible()
+  await expect(preview.getByRole('status')).toContainText('Wyświetlasz zapisany szkic.')
+  await preview.getByRole('link', { name: 'Wyłącz podgląd' }).click()
+  await expect(preview.getByRole('heading', { name: cycleTitle, level: 1 })).toBeVisible()
+})
+
+test('opens a saved Event draft with the standard preview button', async ({ page, request }) => {
+  const slug = 'e2e-event-draft-preview'
+  const title = 'Szkic Wydarzenia E2E'
+  const event = await payload.create({
+    collection: 'events',
+    data: {
+      _status: 'draft',
+      author: author.id,
+      eventType: 1,
+      layout: layout(),
+      participation: 'public',
+      capacityMode: 'unlimited',
+      slug,
+      startAt: '2030-09-11T16:00:00.000Z',
+      timeMode: 'timed',
+      title,
+    },
+    draft: true,
+    overrideAccess: true,
+  })
+
+  try {
+    const anonymousPreview = await request.get(`/preview?collection=events&slug=${slug}`)
+    expect(anonymousPreview.status()).toBe(403)
+    await login({ page, user: editorTestUser })
+    await page.goto(`/admin/collections/events/${event.id}`)
+    await expect(page.getByRole('button', { name: 'Dodaj następne' })).toHaveCount(0)
+    const previewPromise = page.waitForEvent('popup')
+    await page.getByRole('button', { name: 'Podgląd' }).click()
+    const preview = await previewPromise
+    await expect(preview).toHaveURL(`/events/${slug}`)
+    await expect(preview.getByRole('heading', { name: title, level: 1 })).toBeVisible()
+    await expect(preview.getByRole('status')).toContainText('Wyświetlasz zapisany szkic.')
+    expect((await request.get(`/events/${slug}`)).status()).toBe(404)
+  } finally {
+    await payload.delete({ collection: 'events', id: event.id, overrideAccess: true })
+  }
+})
+
 test('creates a Cycle Event draft without asking for a date or generating a slug', async ({
   page,
 }) => {
@@ -243,13 +301,13 @@ test('creates a Cycle Event draft without asking for a date or generating a slug
       response.request().method() === 'POST' &&
       response.url().includes(`/api/event-cycles/${cycleID}/create-event`),
   )
-  await page.getByRole('button', { name: 'Dodaj kolejne Wydarzenie' }).click()
+  await page.getByRole('button', { name: 'Dodaj wydarzenie' }).click()
   expect((await createResponse).status()).toBe(201)
   await expect(page).toHaveURL(eventEditorURL, { timeout: navigationTimeout })
 
   await expect(page.locator('#field-startAt input')).toHaveValue('')
   await expect(page.locator('#field-slug')).toHaveValue('')
-  await expect(page.getByRole('button', { name: 'Dodaj następne' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Dodaj następne' })).toHaveCount(0)
   await expect(
     page.locator('[contenteditable="true"]').filter({ hasText: 'E2E content' }),
   ).toBeVisible()

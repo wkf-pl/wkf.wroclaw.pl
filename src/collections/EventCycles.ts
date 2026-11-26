@@ -1,3 +1,4 @@
+import { createDraftPreviewURL } from '@/modules/content/draft-preview'
 import {
   lockContentHierarchyForWrite,
   createContentParentField,
@@ -94,6 +95,7 @@ export const EventCycles: CollectionConfig = {
     update: updateCycles,
   },
   admin: {
+    custom: { wkfPreviewAutosaveOnly: true },
     components: {
       edit: {
         beforeDocumentControls: [
@@ -101,11 +103,13 @@ export const EventCycles: CollectionConfig = {
           '/components/admin/EventCycleDefaultsMirror#EventCycleDefaultsMirror',
           '/components/admin/EventCycleActions#EventCycleActions',
         ],
+        PreviewButton: '/components/admin/DraftPreviewButton#DraftPreviewButton',
       },
     },
     defaultColumns: ['title', 'slug', 'topics', 'tags', '_status', 'publishedAt'],
     group: 'Treści',
     listSearchableFields: ['title', 'slug', 'topics'],
+    preview: (document) => createDraftPreviewURL('event-cycles', document),
     useAsTitle: 'title',
     pagination: {
       limits: [10, 25, 50],
@@ -315,5 +319,5 @@ export const EventCycles: CollectionConfig = {
     ],
   },
   labels: { plural: 'Cykle wydarzeń', singular: 'Cykl wydarzeń' },
-  versions: { drafts: true, maxPerDoc: 50 },
+  versions: { drafts: { autosave: { showSaveDraftButton: true } }, maxPerDoc: 50 },
 }

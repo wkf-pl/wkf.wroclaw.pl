@@ -4,7 +4,12 @@ import {
   type PageTemplateID,
 } from '@/modules/page-templates/page-template-registry'
 
-export const draftPreviewCollections = ['pages', 'posts'] as const
+const draftPreviewCollectionPaths = {
+  pages: '',
+  posts: '/blog',
+  events: '/events',
+  'event-cycles': '/events/series',
+} as const
 export const draftPreviewGlobals = [
   'footer',
   'homepage-hero',
@@ -12,7 +17,7 @@ export const draftPreviewGlobals = [
   'navigation',
 ] as const
 
-export type DraftPreviewCollection = (typeof draftPreviewCollections)[number]
+export type DraftPreviewCollection = keyof typeof draftPreviewCollectionPaths
 export type DraftPreviewGlobal = (typeof draftPreviewGlobals)[number]
 
 export const pageTemplatePreviewParameter = 'pageTemplatePreview'
@@ -104,7 +109,7 @@ export function parseDraftPreviewTarget(parameters: URLSearchParams): DraftPrevi
 
     return {
       collection,
-      path: collection === 'posts' ? `/blog/${slug}` : `/${slug}`,
+      path: `${draftPreviewCollectionPaths[collection]}/${slug}`,
       slug,
     }
   }
@@ -123,8 +128,10 @@ function isDocumentID(value: unknown): value is number | string {
   )
 }
 
-function isDraftPreviewCollection(value: null | string): value is DraftPreviewCollection {
-  return draftPreviewCollections.some((collection) => collection === value)
+export function isDraftPreviewCollection(
+  value: null | string | undefined,
+): value is DraftPreviewCollection {
+  return typeof value === 'string' && Object.hasOwn(draftPreviewCollectionPaths, value)
 }
 
 export function isDraftPreviewGlobal(

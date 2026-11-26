@@ -3,13 +3,13 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { createContentMetadata } from '@/modules/content/content-metadata'
-import { findRenderablePageTemplateForRequest } from '@/modules/content/preview-content'
-import { extractRichTextText } from '@/modules/content/rich-text'
 import {
-  findEventsForCycle,
-  findPostsRelatedToCycle,
-  findPublishedEventCycleBySlug,
-} from '@/modules/events/public-events'
+  findEventCycleForRequest,
+  findRenderablePageTemplateForRequest,
+} from '@/modules/content/preview-content'
+import { pageTemplatePreviewParameter } from '@/modules/content/draft-preview'
+import { extractRichTextText } from '@/modules/content/rich-text'
+import { findEventsForCycle, findPostsRelatedToCycle } from '@/modules/events/public-events'
 import { createEventCycleStructuredData } from '@/modules/events/structured-data'
 import { getPartnerRoleLabel } from '@/modules/events/presentation'
 import { resolveLink } from '@/modules/navigation/links'
@@ -22,6 +22,7 @@ import {
   CurrentItemList,
   CurrentItemText,
 } from '../../../_components/CurrentItemPresentation'
+import { DraftPreviewBanner } from '../../../_components/DraftPreviewBanner'
 import { EventList } from '../../../_components/EventList'
 import { PageTemplateDocument } from '../../../_components/PageTemplateDocument'
 import { SmallPostList } from '../../../_components/SmallPostList'
@@ -31,28 +32,36 @@ type Properties = {
   params: Promise<{ slug: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
-export async function generateMetadata({ params }: Properties): Promise<Metadata> {
-  const cycle = await findPublishedEventCycleBySlug((await params).slug)
+export async function generateMetadata({ params, searchParams }: Properties): Promise<Metadata> {
+  const { slug } = await params
+  const parameters = await searchParams
+  const { document: cycle } = await findEventCycleForRequest(
+    slug,
+    parameters[pageTemplatePreviewParameter] === 'event-cycle-detail',
+  )
   return cycle ? createContentMetadata(cycle) : {}
 }
 
 export default async function EventCyclePage({ params, searchParams }: Properties) {
-  const cycle = await findPublishedEventCycleBySlug((await params).slug)
+  const { slug } = await params
+  const parameters = await searchParams
+  const { document: cycle, isDraftPreview } = await findEventCycleForRequest(
+    slug,
+    parameters[pageTemplatePreviewParameter] === 'event-cycle-detail',
+  )
   if (!cycle) notFound()
-  const pathname = `/events/series/${cycle.slug}`
+  const pathname = `/events/series/${slug}`
   const breadcrumbs = [
     { label: 'Strona główna', url: '/' },
     { label: 'Wydarzenia', url: '/events' },
     { label: cycle.title, url: null },
   ]
-  const parameters = await searchParams
-  const { document: template, isDraftPreview } = await findRenderablePageTemplateForRequest(
-    'event-cycle-detail',
-    parameters,
-  )
+  const { document: template, isDraftPreview: isTemplateDraftPreview } =
+    await findRenderablePageTemplateForRequest('event-cycle-detail', parameters, isDraftPreview)
   if (template) {
     return (
       <>
+        {isDraftPreview ? <DraftPreviewBanner pathname={pathname} /> : null}
         <StructuredData value={createEventCycleStructuredData(cycle)} />
         <PageTemplateDocument
           breadcrumbs={breadcrumbs}
@@ -79,7 +88,7 @@ export default async function EventCyclePage({ params, searchParams }: Propertie
           }}
           image={getContentHeroImage(cycle.heroImage)}
           fallbackTitle={cycle.title}
-          isDraftPreview={isDraftPreview}
+          isDraftPreview={isTemplateDraftPreview}
           pathname={pathname}
           searchParams={parameters}
           template={template}
@@ -116,6 +125,7 @@ export default async function EventCyclePage({ params, searchParams }: Propertie
   )
   return (
     <>
+      {isDraftPreview ? <DraftPreviewBanner pathname={pathname} /> : null}
       <StructuredData value={createEventCycleStructuredData(cycle)} />
       <CmsPageDocument
         afterBlocks={related}
