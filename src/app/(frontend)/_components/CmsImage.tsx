@@ -1,26 +1,37 @@
 import type { Media } from '@/payload-types'
-import { getMediaURL } from '@/modules/media/media-url'
+import { getResponsiveMedia } from '@/modules/media/media-url'
 
 type CmsImageProperties = {
   className?: string
   media: Media | number | null | undefined
+  sizes?: string
+  alt?: string
+  priority?: boolean
 }
 
-export function CmsImage({ className, media }: CmsImageProperties) {
-  const url = getMediaURL(media)
-  if (!url || !media || typeof media !== 'object') {
-    return null
-  }
+export function CmsImage({
+  alt,
+  className,
+  media,
+  priority = false,
+  sizes = '(max-width: 720px) 100vw, (max-width: 1040px) 50vw, 480px',
+}: CmsImageProperties) {
+  if (!media || typeof media !== 'object') return null
+  const { src, srcSet, height, width } = getResponsiveMedia(media)
+  if (!src) return null
 
   return (
     // eslint-disable-next-line @next/next/no-img-element -- CMS media can use a runtime-configured Azure host.
     <img
-      alt={media.alt}
+      alt={alt ?? media.alt}
       className={className}
-      height={media.height || undefined}
-      loading="lazy"
-      src={url}
-      width={media.width || undefined}
+      fetchPriority={priority ? 'high' : undefined}
+      height={height}
+      loading={priority ? undefined : 'lazy'}
+      sizes={srcSet ? sizes : undefined}
+      src={src}
+      srcSet={srcSet}
+      width={width}
     />
   )
 }

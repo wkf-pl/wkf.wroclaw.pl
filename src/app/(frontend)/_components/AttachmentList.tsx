@@ -1,4 +1,5 @@
 import type { MediaListingView, PublicMediaListItem } from '@/modules/media/media-listing'
+import { getResponsiveMedia } from '@/modules/media/media-url'
 
 type AttachmentListProperties = {
   items: PublicMediaListItem[]
@@ -9,6 +10,7 @@ export function AttachmentList({ items, view }: AttachmentListProperties) {
   return (
     <div className={`mediaList mediaList-${view} attachmentList`}>
       {items.map((item) => {
+        const { src, srcSet } = getResponsiveMedia(item)
         const content = (
           <>
             <span className="attachmentPreview">
@@ -18,7 +20,9 @@ export function AttachmentList({ items, view }: AttachmentListProperties) {
                   alt=""
                   height={item.height ?? undefined}
                   loading="lazy"
-                  src={item.url}
+                  sizes={srcSet ? '96px' : undefined}
+                  src={src}
+                  srcSet={srcSet}
                   width={item.width ?? undefined}
                 />
               ) : (

@@ -433,6 +433,42 @@ export interface Page {
 export interface Media {
   id: number;
   /**
+   * Dotyczy zdjęć statycznych.
+   */
+  removeImageMetadata?: boolean | null;
+  imageVariants?:
+    | {
+        filename: string;
+        width: number;
+        height: number;
+        filesize: number;
+        [k: string]: unknown;
+      }[]
+    | null;
+  legacyImageFiles?:
+    | {
+        filename: string;
+        id?: string | null;
+      }[]
+    | null;
+  imageConversionSource?: {
+    key: string;
+    filename: string;
+    etag: string;
+    filesize: number;
+    finalized?: boolean;
+    originalDocument: {
+      mimeType?: string | null;
+      width?: number | null;
+      height?: number | null;
+      url?: string | null;
+      thumbnailURL?: string | null;
+      _objectKey?: string | null;
+      [k: string]: unknown;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
    * Krótki opis obrazu dla czytników ekranu i sytuacji, gdy plik nie może się wyświetlić.
    */
   alt: string;
@@ -2012,6 +2048,7 @@ export interface MemberProfile {
     data?: string;
     mimeType?: string;
     remove?: boolean;
+    removeImageMetadata?: boolean;
     [k: string]: unknown;
   };
   photo?: {
@@ -5598,6 +5635,15 @@ export interface TagGroupsSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  removeImageMetadata?: T;
+  imageVariants?: T;
+  legacyImageFiles?:
+    | T
+    | {
+        filename?: T;
+        id?: T;
+      };
+  imageConversionSource?: T;
   alt?: T;
   description?: T;
   topics?: T;

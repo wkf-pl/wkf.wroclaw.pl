@@ -4,7 +4,7 @@ import { Fragment } from 'react'
 
 import type { PublicBreadcrumb } from '@/modules/content/public-hierarchy'
 import type { Topic, Media } from '@/payload-types'
-import { getMediaURL } from '@/modules/media/media-url'
+import { getResponsiveMedia } from '@/modules/media/media-url'
 
 import { HierarchyBreadcrumbs } from './HierarchyBreadcrumbs'
 import { RasterIcon } from '@/components/RasterIcon'
@@ -13,21 +13,29 @@ export type ContentHeroImage = {
   alt: string
   height?: number
   src: string
+  srcSet?: string
   variant?: 'landscape' | 'portrait'
   width?: number
 }
 
 export function getContentHeroImage(
-  media: Pick<Media, 'alt' | 'height' | 'url' | 'width'> | number | null | undefined,
+  media:
+    | (Pick<Media, 'alt' | 'height' | 'url' | 'width'> &
+        Partial<Pick<Media, 'id' | 'imageVariants'>>)
+    | number
+    | null
+    | undefined,
 ): ContentHeroImage | undefined {
-  const src = getMediaURL(media)
-  if (!src || !media || typeof media !== 'object') return undefined
+  if (!media || typeof media !== 'object') return undefined
+  const { src, srcSet, height, width } = getResponsiveMedia(media)
+  if (!src) return undefined
 
   return {
     alt: media.alt,
-    height: media.height || undefined,
+    height,
     src,
-    width: media.width || undefined,
+    srcSet,
+    width,
   }
 }
 
@@ -100,7 +108,13 @@ export function ContentHero({
               decoding="async"
               fetchPriority="high"
               height={image.height}
+              sizes={
+                image.srcSet
+                  ? '(max-width: 760px) 100vw, (max-width: 1200px) 50vw, 680px'
+                  : undefined
+              }
               src={image.src}
+              srcSet={image.srcSet}
               width={image.width}
             />
           </div>

@@ -85,6 +85,7 @@ import * as migration_20261121_193551_content_search from './20261121_193551_con
 import * as migration_20261122_163000_topics_and_listing from './20261122_163000_topics_and_listing'
 import * as migration_20261123_204500_content_attribution_and_owners from './20261123_204500_content_attribution_and_owners'
 import * as migration_20261123_230710_tag_group_icons from './20261123_230710_tag_group_icons'
+import * as migration_20261125_130227_optimized_media_images from './20261125_130227_optimized_media_images'
 
 export const migrations = [
   {
@@ -521,5 +522,10 @@ export const migrations = [
     up: migration_20261123_230710_tag_group_icons.up,
     down: migration_20261123_230710_tag_group_icons.down,
     name: '20261123_230710_tag_group_icons',
+  },
+  {
+    up: migration_20261125_130227_optimized_media_images.up,
+    down: migration_20261125_130227_optimized_media_images.down,
+    name: '20261125_130227_optimized_media_images',
   },
 ]

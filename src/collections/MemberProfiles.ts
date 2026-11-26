@@ -205,6 +205,7 @@ export const MemberProfiles: CollectionConfig = {
                     },
                     mimeType: { type: 'string' },
                     remove: { type: 'boolean' },
+                    removeImageMetadata: { type: 'boolean' },
                   },
                 }),
               ],

@@ -274,19 +274,22 @@ test('searches page templates by display name and key', async ({ page }) => {
 })
 
 test('restores a navigation group preference after reloading the panel', async ({ page }) => {
-  await login({ page, user: administratorTestUser })
+  await login({ page, user: editorTestUser })
   const group = page.locator('aside nav').getByRole('button', { name: 'Treści', exact: true })
   const savePreference = async (open: boolean) => {
     const response = await page.request.post('/api/payload-preferences/nav', {
       data: { value: { open: true, groups: { Treści: { open } } } },
       headers: { Origin: new URL(page.url()).origin },
     })
-    expect(response.ok()).toBe(true)
+    expect(response.ok(), await response.text()).toBe(true)
   }
 
-  await expect(group).toHaveClass(/nav-group__toggle--open/)
-  await savePreference(false)
   try {
+    await savePreference(true)
+    await page.reload()
+    await expect(group).toHaveClass(/nav-group__toggle--open/)
+
+    await savePreference(false)
     await page.reload()
     await expect(group).toHaveClass(/nav-group__toggle--collapsed/)
   } finally {

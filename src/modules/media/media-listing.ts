@@ -30,6 +30,7 @@ export type PublicMediaListItem = {
   height: null | number
   id: number
   isImage: boolean
+  imageVariants?: Media['imageVariants']
   mimeType: null | string
   url: null | string
   width: null | number
@@ -64,6 +65,7 @@ type MediaListDocument = Pick<
   | 'filesize'
   | 'height'
   | 'id'
+  | 'imageVariants'
   | 'mimeType'
   | 'url'
   | 'width'
@@ -81,6 +83,7 @@ const mediaSelect = {
   filesize: true,
   height: true,
   id: true,
+  imageVariants: true,
   mimeType: true,
   url: true,
   width: true,
@@ -228,6 +231,7 @@ function mapMedia(media: MediaListDocument): PublicMediaListItem {
     filesize: media.filesize ?? null,
     height: media.height ?? null,
     id: media.id,
+    imageVariants: media.imageVariants,
     isImage: isWebRasterImageMimeType(media.mimeType),
     mimeType: media.mimeType ?? null,
     url: media.url ?? null,

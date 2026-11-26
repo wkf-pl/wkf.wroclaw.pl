@@ -769,7 +769,9 @@ for (const scenario of templateRoutes) {
       const response = await page.goto(`/preview?pageTemplate=${scenario.key}`)
       expect(response?.status()).toBe(200)
       expect(new URL(page.url()).pathname).toBe(pathname)
-      await expect(page.getByRole('status')).toContainText('Podglądasz roboczy układ szablonu.')
+      await expect(
+        page.getByRole('status').filter({ hasText: 'Podglądasz roboczy układ szablonu.' }),
+      ).toBeVisible()
       await expectTemplate(page)
       await expectLegacy()
 

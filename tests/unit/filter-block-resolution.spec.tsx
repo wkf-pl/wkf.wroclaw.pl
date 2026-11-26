@@ -7,6 +7,10 @@ const listingMocks = vi.hoisted(() => ({
 }))
 const mediaMocks = vi.hoisted(() => ({ findPublicMedia: vi.fn() }))
 
+vi.mock('next/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/navigation')>()),
+  useRouter: () => ({ refresh: vi.fn() }),
+}))
 vi.mock('@/modules/content/content-listing', () => listingMocks)
 vi.mock('@/modules/media/media-listing', () => mediaMocks)
 vi.mock('@/modules/content/public-listing-view', async () => {

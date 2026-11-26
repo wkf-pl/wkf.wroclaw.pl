@@ -74,7 +74,15 @@ export function CurrentItemValue({
             : undefined
       return image ? (
         // eslint-disable-next-line @next/next/no-img-element -- CMS media can use a runtime-configured Azure host.
-        <img alt={image.alt} height={image.height} src={image.src} width={image.width} />
+        <img
+          alt={image.alt}
+          height={image.height}
+          loading="lazy"
+          sizes={image.srcSet ? '(max-width: 760px) 100vw, 576px' : undefined}
+          src={image.src}
+          srcSet={image.srcSet}
+          width={image.width}
+        />
       ) : null
     }
     case 'layout':

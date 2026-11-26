@@ -11,6 +11,8 @@ import { createIntegrationAuthor, deleteIntegrationAuthor } from '../helpers/int
 const pageSlug = 'integration-content-composition'
 const invalidPageSlug = 'integration-content-composition-pdf'
 const imageFilename = 'integration-content-surface.png'
+const imageAlt = 'Decorative integration surface'
+const pdfAlt = 'Integration PDF'
 const pdfFilename = 'integration-content-surface.pdf'
 const testPDF = Buffer.from(
   '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\nxref\n0 1\n0000000000 65535 f\n%%EOF\n',
@@ -70,7 +72,7 @@ async function cleanup(): Promise<void> {
   await payload.delete({
     collection: 'media',
     overrideAccess: true,
-    where: { filename: { in: [imageFilename, pdfFilename] } },
+    where: { alt: { in: [imageAlt, pdfAlt] } },
   })
 }
 
@@ -87,7 +89,7 @@ beforeAll(async () => {
 
   image = await payload.create({
     collection: 'media',
-    data: { alt: 'Decorative integration surface' },
+    data: { alt: imageAlt },
     file: {
       data: imageData,
       mimetype: 'image/png',
@@ -98,7 +100,7 @@ beforeAll(async () => {
   })
   pdf = await payload.create({
     collection: 'media',
-    data: { alt: 'Integration PDF' },
+    data: { alt: pdfAlt },
     file: {
       data: testPDF,
       mimetype: 'application/pdf',
@@ -270,7 +272,7 @@ describe('content composition integration', () => {
       surface: 'image',
       surfaceHorizontalPosition: 'right',
       surfaceVerticalPosition: 'bottom',
-      surfaceImage: { id: image.id, mimeType: 'image/png' },
+      surfaceImage: { id: image.id, mimeType: 'image/webp' },
     })
     expect(sectionGroup.sections[0]?.blocks[0]).toMatchObject({
       blockType: 'heading',

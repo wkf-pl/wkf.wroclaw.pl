@@ -36,7 +36,7 @@ export const MemberProfilePhotoField: JSONFieldClientComponent = ({ path, readOn
       if (typeof reader.result === 'string') {
         const encoded = reader.result.split(',', 2)[1]
         setPendingFile(undefined)
-        setValue({ data: encoded, mimeType: pendingFile.type })
+        setValue({ data: encoded, mimeType: pendingFile.type, removeImageMetadata: true })
       }
     }
     reader.onerror = () => setError('Nie udało się odczytać pliku.')
@@ -68,6 +68,19 @@ export const MemberProfilePhotoField: JSONFieldClientComponent = ({ path, readOn
           }}
           type="file"
         />
+        {value?.data && !value.remove && (
+          <label>
+            <input
+              checked={value.removeImageMetadata !== false}
+              disabled={Boolean(readOnly || disabled || pendingFile)}
+              onChange={(event) =>
+                setValue({ ...value, removeImageMetadata: event.currentTarget.checked })
+              }
+              type="checkbox"
+            />
+            Usuń dodatkowe metadane zdjęcia
+          </label>
+        )}
         {src && !readOnly && !disabled && (
           <button
             type="button"

@@ -30,7 +30,7 @@ beforeAll(async () => {
   await payload.delete({
     collection: 'media',
     overrideAccess: true,
-    where: { filename: { in: filenames } },
+    where: { alt: { in: [...filenames, 'Outside image'] } },
   })
   await Promise.all([
     payload.delete({
@@ -109,7 +109,7 @@ afterAll(async () => {
   await payload.delete({
     collection: 'media',
     overrideAccess: true,
-    where: { filename: { in: filenames } },
+    where: { alt: { in: [...filenames, 'Outside image'] } },
   })
   await Promise.all([
     payload.delete({ collection: 'topics', id: topic.id, overrideAccess: true }),
@@ -140,8 +140,15 @@ describe('public media listing', () => {
       tagId: tag.id,
     })
 
-    expect(gallery.items.map((item) => item.filename)).toEqual(filenames.slice(0, 2))
-    expect(attachments.items.map((item) => item.filename)).toEqual(filenames.slice(0, 3))
+    expect(gallery.items.map((item) => item.filename)).toEqual([
+      firstImage.filename,
+      secondImage.filename,
+    ])
+    expect(attachments.items.map((item) => item.filename)).toEqual([
+      firstImage.filename,
+      secondImage.filename,
+      documentFile.filename,
+    ])
   })
 
   it('supports all filtered sort modes', async () => {
@@ -160,8 +167,14 @@ describe('public media listing', () => {
       ),
     )
 
-    expect(results[0].items.map((item) => item.filename)).toEqual(filenames.slice(0, 3))
-    expect(results[1].items.map((item) => item.filename)).toEqual(filenames.slice(0, 3).reverse())
+    expect(results[0].items.map((item) => item.filename)).toEqual([
+      firstImage.filename,
+      secondImage.filename,
+      documentFile.filename,
+    ])
+    expect(results[1].items.map((item) => item.filename)).toEqual(
+      [firstImage.filename, secondImage.filename, documentFile.filename].reverse(),
+    )
     expect(results[2].items.map((item) => Date.parse(item.createdAt))).toEqual(
       [...results[2].items]
         .map((item) => Date.parse(item.createdAt))
@@ -190,7 +203,7 @@ describe('public media listing', () => {
 
       expect(result.totalDocs).toBe(3)
       expect(result.totalPages).toBe(2)
-      expect(result.items.map((item) => item.filename)).toEqual([filenames[0]])
+      expect(result.items.map((item) => item.filename)).toEqual([firstImage.filename])
       expect(
         findSpy.mock.calls.filter(([arguments_]) => arguments_.collection === 'media'),
       ).toHaveLength(1)
@@ -214,7 +227,10 @@ describe('public media listing', () => {
     })
 
     expect(result.totalPages).toBe(1)
-    expect(result.items.map((item) => item.filename)).toEqual(filenames.slice(1, 3).reverse())
+    expect(result.items.map((item) => item.filename)).toEqual([
+      documentFile.filename,
+      secondImage.filename,
+    ])
   })
 
   it('includes media assigned to a descendant topic', async () => {
@@ -223,7 +239,7 @@ describe('public media listing', () => {
     await payload.delete({
       collection: 'media',
       overrideAccess: true,
-      where: { filename: { equals: childFilename } },
+      where: { alt: { equals: childFilename } },
     })
     const existingChildTopics = await payload.find({
       collection: 'topics',
@@ -256,7 +272,7 @@ describe('public media listing', () => {
       })
         .png()
         .toBuffer()
-      await payload.create({
+      const childImage = await payload.create({
         collection: 'media',
         data: { alt: childFilename, topics: [childTopic.id], tags: [tag.id] },
         file: {
@@ -279,12 +295,12 @@ describe('public media listing', () => {
         tagId: tag.id,
       })
 
-      expect(result.items.map((item) => item.filename)).toContain(childFilename)
+      expect(result.items.map((item) => item.id)).toContain(childImage.id)
     } finally {
       await payload.delete({
         collection: 'media',
         overrideAccess: true,
-        where: { filename: { equals: childFilename } },
+        where: { alt: { equals: childFilename } },
       })
       await payload.delete({
         collection: 'topics',

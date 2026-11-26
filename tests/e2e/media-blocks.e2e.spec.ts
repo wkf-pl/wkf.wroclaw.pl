@@ -4,6 +4,7 @@ import sharp from 'sharp'
 
 import config from '@/payload.config'
 import type { Media, User } from '@/payload-types'
+import { getStorageContainerClient } from '@/storage/get-storage-container-client'
 
 import { login } from '../helpers/login'
 import { editorTestUser } from '../helpers/seedUser'
@@ -11,6 +12,7 @@ import { editorTestUser } from '../helpers/seedUser'
 const fixtureRunID = Date.now()
 const pageSlug = `e2e-media-blocks-page-${fixtureRunID}`
 const postSlug = `e2e-media-blocks-post-${fixtureRunID}`
+const metadataTestAlt = `E2E metadata test ${fixtureRunID}`
 const filenames = ['e2e-gallery-first.png', 'e2e-gallery-second.png', 'e2e-attachment.pdf']
 const testPDF = Buffer.from(
   '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\nxref\n0 1\n0000000000 65535 f\n%%EOF\n',
@@ -164,16 +166,93 @@ test('opens the media index with the image filter and searches within the select
   await expect(table.getByText(attachment.filename!, { exact: true })).toBeVisible()
 })
 
+test('enables metadata cleaning again for each selected image', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto('/admin/collections/media/create')
+  const file = page.locator('input[type="file"]')
+  const jpeg = await sharp({
+    create: { background: '#193f5c', channels: 3, height: 64, width: 96 },
+  })
+    .jpeg()
+    .withExif({ IFD0: { Artist: 'Example Artist' } })
+    .toBuffer()
+  const metadata = page.getByRole('switch', { name: /Usuń dodatkowe metadane zdjęcia/ })
+
+  await file.setInputFiles({ name: 'metadata-first.jpg', mimeType: 'image/jpeg', buffer: jpeg })
+  await expect(metadata).toBeChecked()
+  await metadata.uncheck()
+  await expect(metadata).not.toBeChecked()
+  await page.locator('.file-field__remove').click()
+  await file.setInputFiles({ name: 'metadata-second.jpg', mimeType: 'image/jpeg', buffer: jpeg })
+  await expect(metadata).toBeChecked()
+
+  await metadata.uncheck()
+  await page.getByRole('textbox', { name: /Tekst alternatywny/ }).fill(metadataTestAlt)
+  const [save] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/media' && response.request().method() === 'POST',
+    ),
+    page.getByRole('button', { name: 'Zapisz', exact: true }).click(),
+  ])
+  expect(save.ok()).toBe(true)
+  const { doc } = (await save.json()) as { doc: Media }
+  expect(doc.mimeType).toBe('image/webp')
+  const output = await page.request.get(doc.url!)
+  expect(output.ok()).toBe(true)
+  expect((await sharp(await output.body()).metadata()).exif?.includes('Example Artist')).toBe(true)
+  const container = getStorageContainerClient()
+  expect(await container.getBlobClient('metadata-second.jpg').exists()).toBe(false)
+
+  const filename = `metadata-api-${fixtureRunID}.jpg`
+  const apiSave = await page.request.post('/api/media', {
+    headers: { origin: new URL(page.url()).origin },
+    multipart: {
+      _payload: JSON.stringify({ alt: metadataTestAlt }),
+      file: { name: filename, mimeType: 'image/jpeg', buffer: jpeg },
+    },
+  })
+  expect(apiSave.ok(), await apiSave.text()).toBe(true)
+  const { doc: apiImage } = (await apiSave.json()) as { doc: Media }
+  const apiOutput = await page.request.get(apiImage.url!)
+  expect(apiOutput.ok()).toBe(true)
+  expect((await sharp(await apiOutput.body()).metadata()).exif).toBeUndefined()
+  expect(await container.getBlobClient(filename).exists()).toBe(false)
+
+  const edited = await page.request.patch(`/api/media/${apiImage.id}`, {
+    data: { description: 'Opis po edycji metadanych rekordu' },
+    headers: { origin: new URL(page.url()).origin },
+  })
+  expect(edited.ok(), await edited.text()).toBe(true)
+  const { doc: editedImage } = (await edited.json()) as { doc: Media }
+  expect(editedImage.filename).toBe(apiImage.filename)
+  expect(editedImage.imageVariants).toEqual(apiImage.imageVariants)
+})
+
 test('opens gallery images in a captioned and zoomable lightbox', async ({ page }) => {
   await page.goto(`/${pageSlug}`)
 
   await expect(page.getByRole('heading', { name: 'Galeria testowa' })).toBeVisible()
+  const image = page.getByRole('img', { name: filenames[0], exact: true })
+  await expect(image).toHaveAttribute('srcset', /480w/)
+  const variantURL = await image.getAttribute('src')
+  const variant = await page.request.get(variantURL!)
+  expect(variant.ok()).toBe(true)
+  expect(variant.headers()['content-type']).toBe('image/webp')
+  const etag = variant.headers().etag
+  expect(
+    (await page.request.get(variantURL!, { headers: { 'If-None-Match': etag } })).status(),
+  ).toBe(304)
+  const download = await page.request.get(firstImage.url!)
+  expect(download.ok()).toBe(true)
+  expect((await sharp(await download.body()).metadata()).width).toBe(1200)
   await page.getByRole('button', { name: `Otwórz obraz: ${filenames[0]}` }).click()
 
   const lightbox = page.locator('.yarl__root')
   await expect(lightbox).toBeVisible()
   await expect(lightbox).toContainText('Pierwszy podpis galerii')
   await expect(lightbox.getByRole('button', { name: 'Powiększ' })).toBeVisible()
+  await expect(lightbox.getByRole('button', { name: 'Pobierz' })).toBeVisible()
   await lightbox.getByRole('button', { name: 'Następny obraz' }).click()
   await expect(lightbox).toContainText('Drugi podpis galerii')
   await page.keyboard.press('Escape')
@@ -285,6 +364,6 @@ async function cleanupContent(): Promise<void> {
   await payload.delete({
     collection: 'media',
     overrideAccess: true,
-    where: { filename: { in: filenames } },
+    where: { alt: { in: [...filenames, metadataTestAlt] } },
   })
 }
