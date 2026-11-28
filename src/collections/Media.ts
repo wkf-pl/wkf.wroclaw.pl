@@ -11,6 +11,7 @@ import {
   getMediaCategoryWhere,
   mediaDocumentMimeTypes,
   webRasterImageMimeTypes,
+  zipMimeTypes,
 } from '@/modules/media/media-categories'
 
 import {
@@ -22,6 +23,7 @@ import {
   cleanupDeletedMediaImage,
   cleanupReplacedMediaImage,
   storeUploadedMediaImage,
+  validateMediaUpload,
 } from '@/modules/media/media-image-upload'
 
 const mediaImageVariantsSchema = {
@@ -81,6 +83,13 @@ export const Media: CollectionConfig = {
   },
   endpoints: [mediaImageVariantEndpoint, { ...mediaImageVariantEndpoint, method: 'head' }],
   fields: [
+    {
+      name: 'mediaUploadHelp',
+      type: 'ui',
+      admin: {
+        components: { Field: '/components/admin/MediaUploadHelp#MediaUploadHelp' },
+      },
+    },
     {
       name: 'removeImageMetadata',
       type: 'checkbox',
@@ -250,6 +259,7 @@ export const Media: CollectionConfig = {
     afterChange: [invalidateAllPublicDataAfterChange, cleanupReplacedMediaImage],
     afterDelete: [invalidateAllPublicDataAfterDelete, cleanupDeletedMediaImage],
     beforeChange: [storeUploadedMediaImage],
+    beforeOperation: [validateMediaUpload],
     beforeValidate: [
       ({ data, operation, req }) => {
         if (operation === 'create' && req.user) {
@@ -269,6 +279,6 @@ export const Media: CollectionConfig = {
   },
   upload: {
     handlers: [serveOptimizedMediaFile],
-    mimeTypes: [...webRasterImageMimeTypes, ...mediaDocumentMimeTypes],
+    mimeTypes: [...webRasterImageMimeTypes, ...mediaDocumentMimeTypes, ...zipMimeTypes],
   },
 }

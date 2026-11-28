@@ -12,13 +12,17 @@ export const RemoveMediaImageMetadataField: CheckboxFieldClientComponent = (prop
   const { path } = properties
   const file = useFormFields(([fields]) => fields.file?.value)
   const { value, setValue } = useField<boolean>({ path })
-  const isImage = file instanceof File && isWebRasterImageMimeType(file.type)
+  const canRemoveMetadata =
+    file instanceof File &&
+    file.type !== 'image/avif' &&
+    !/\.avif$/i.test(file.name) &&
+    isWebRasterImageMimeType(file.type)
 
   useEffect(() => {
     if (file instanceof File) setValue(true, true)
   }, [file, setValue])
 
-  if (!isImage) return null
+  if (!canRemoveMetadata) return null
 
   return <BooleanSwitchField {...properties} checked={value !== false} />
 }

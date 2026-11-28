@@ -1,3 +1,5 @@
+import { crc32 } from 'node:zlib'
+
 import { expect, test } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 import sharp from 'sharp'
@@ -229,6 +231,111 @@ test('enables metadata cleaning again for each selected image', async ({ page })
   expect(editedImage.imageVariants).toEqual(apiImage.imageVariants)
 })
 
+test('offers upload guidance and saves AVIF files byte for byte', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto('/admin/collections/media/create')
+  await expect(page.getByText(/Preferowane formaty to WebP i AVIF/)).toBeVisible()
+  await expect(page.getByText(/Obrazy mogą mieć do 10 MB/)).toBeVisible()
+  const file = page.locator('input[type="file"]')
+  await expect(file).toHaveAttribute('accept', /application\/zip/)
+  const buffer = await sharp({
+    create: { background: '#193f5c', channels: 3, height: 320, width: 600 },
+  })
+    .avif()
+    .withExif({ IFD0: { Artist: 'Example Artist' } })
+    .toBuffer()
+  await file.setInputFiles({
+    name: `original-${fixtureRunID}.avif`,
+    mimeType: 'image/avif',
+    buffer,
+  })
+  await expect(page.getByRole('switch', { name: /Usuń dodatkowe metadane zdjęcia/ })).toHaveCount(0)
+  await page.getByRole('textbox', { name: /Tekst alternatywny/ }).fill(metadataTestAlt)
+  const [save] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/media' && response.request().method() === 'POST',
+    ),
+    page.getByRole('button', { name: 'Zapisz', exact: true }).click(),
+  ])
+  expect(save.ok(), await save.text()).toBe(true)
+  const { doc } = (await save.json()) as { doc: Media }
+  expect(doc).toMatchObject({ height: 320, mimeType: 'image/avif', width: 600 })
+  expect(doc.imageVariants).toBeFalsy()
+  const download = await page.request.get(doc.url!)
+  expect(download.ok()).toBe(true)
+  expect(download.headers()['content-type']).toBe('image/avif')
+  expect((await download.body()).equals(buffer)).toBe(true)
+})
+
+test('explains why an oversized image cannot be processed', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  await page.goto('/admin/collections/media/create')
+  const buffer = await sharp({
+    create: { background: '#193f5c', channels: 3, height: 3500, width: 4000 },
+  })
+    .jpeg()
+    .toBuffer()
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'too-many-pixels.jpg',
+    mimeType: 'image/jpeg',
+    buffer,
+  })
+  await page.getByRole('textbox', { name: /Tekst alternatywny/ }).fill(metadataTestAlt)
+  await page.getByRole('button', { name: 'Zapisz', exact: true }).click()
+  await expect(
+    page.getByText(/Obraz ma zbyt dużo pikseli.*Zmniejsz.*archiwum ZIP do 20 MB/),
+  ).toBeVisible()
+
+  const rejected = await page.request.post('/api/media', {
+    headers: { origin: new URL(page.url()).origin },
+    multipart: {
+      _payload: JSON.stringify({ alt: metadataTestAlt }),
+      file: { name: 'too-large.jpg', mimeType: 'image/jpeg', buffer: Buffer.alloc(10_000_001) },
+    },
+  })
+  expect(rejected.status()).toBe(413)
+  expect(await rejected.text()).toContain('Plik obrazu jest za duży (limit 10 MB)')
+})
+
+test('saves and serves ZIP attachments and rejects archives over 20 MB', async ({ page }) => {
+  await login({ page, user: editorTestUser })
+  const headers = { origin: new URL(page.url()).origin }
+  const buffer = createStoredZip(20_000_000)
+  const save = await page.request.post('/api/media', {
+    headers,
+    multipart: {
+      _payload: JSON.stringify({ alt: metadataTestAlt }),
+      file: {
+        name: `attachment-${fixtureRunID}.zip`,
+        mimeType: 'application/x-zip-compressed',
+        buffer,
+      },
+    },
+  })
+  expect(save.ok(), await save.text()).toBe(true)
+  const { doc } = (await save.json()) as { doc: Media }
+  expect(doc.mimeType).toBe('application/zip')
+  const download = await page.request.get(doc.url!)
+  expect(download.ok()).toBe(true)
+  expect(download.headers()['content-type']).toBe('application/zip')
+  expect((await download.body()).equals(buffer)).toBe(true)
+
+  const rejected = await page.request.post('/api/media', {
+    headers,
+    multipart: {
+      _payload: JSON.stringify({ alt: metadataTestAlt }),
+      file: {
+        name: 'too-large.zip',
+        mimeType: 'application/zip',
+        buffer: Buffer.alloc(20_000_001),
+      },
+    },
+  })
+  expect(rejected.status()).toBe(413)
+  expect(await rejected.text()).toContain('Maksymalny rozmiar to 20 MB')
+})
+
 test('opens gallery images in a captioned and zoomable lightbox', async ({ page }) => {
   await page.goto(`/${pageSlug}`)
 
@@ -346,6 +453,42 @@ async function updateMediaDescription(
     },
     { description, mediaID },
   )
+}
+
+function createStoredZip(sizeInBytes: number): Buffer {
+  const name = Buffer.from('file.bin')
+  const localHeader = Buffer.alloc(30 + name.length)
+  const directoryHeader = Buffer.alloc(46 + name.length)
+  const directoryEnd = Buffer.alloc(22)
+  const contents = Buffer.alloc(
+    sizeInBytes - localHeader.length - directoryHeader.length - directoryEnd.length,
+  )
+  const checksum = crc32(contents)
+
+  localHeader.writeUInt32LE(0x04034b50, 0)
+  localHeader.writeUInt16LE(20, 4)
+  localHeader.writeUInt32LE(checksum, 14)
+  localHeader.writeUInt32LE(contents.length, 18)
+  localHeader.writeUInt32LE(contents.length, 22)
+  localHeader.writeUInt16LE(name.length, 26)
+  name.copy(localHeader, 30)
+
+  directoryHeader.writeUInt32LE(0x02014b50, 0)
+  directoryHeader.writeUInt16LE(20, 4)
+  directoryHeader.writeUInt16LE(20, 6)
+  directoryHeader.writeUInt32LE(checksum, 16)
+  directoryHeader.writeUInt32LE(contents.length, 20)
+  directoryHeader.writeUInt32LE(contents.length, 24)
+  directoryHeader.writeUInt16LE(name.length, 28)
+  name.copy(directoryHeader, 46)
+
+  directoryEnd.writeUInt32LE(0x06054b50, 0)
+  directoryEnd.writeUInt16LE(1, 8)
+  directoryEnd.writeUInt16LE(1, 10)
+  directoryEnd.writeUInt32LE(directoryHeader.length, 12)
+  directoryEnd.writeUInt32LE(localHeader.length + contents.length, 16)
+
+  return Buffer.concat([localHeader, contents, directoryHeader, directoryEnd])
 }
 
 async function cleanupContent(): Promise<void> {

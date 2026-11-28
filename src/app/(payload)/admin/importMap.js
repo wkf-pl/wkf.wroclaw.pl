@@ -88,6 +88,7 @@ import { EventCycleDefaultsMirror as EventCycleDefaultsMirror_1c13d5af302bc10d1a
 import { EventCycleActions as EventCycleActions_ff9850e5079c1719ce3b6d7bca67e68d } from '../../../components/admin/EventCycleActions'
 import { TaxonomyRelatedContentJoin as TaxonomyRelatedContentJoin_ad60bb5c4bf3dd1eafbb015124f8d349 } from '../../../components/admin/TaxonomyRelatedContentJoin'
 import { TagNameCell as TagNameCell_48828480de0ae7f1bffeffd06e21e329 } from '../../../components/admin/TagNameCell'
+import { MediaUploadHelp as MediaUploadHelp_e3397fea8931ff657681c66940162a57 } from '../../../components/admin/MediaUploadHelp'
 import { RemoveMediaImageMetadataField as RemoveMediaImageMetadataField_d567b35b6c759feca8e1b4089a5662f8 } from '../../../components/admin/RemoveMediaImageMetadataField'
 import { TaxonomyCell as TaxonomyCell_fd0f0ca32d7a45be5929fc2ef04497f8 } from '../../../components/admin/MediaTableCells'
 import { UserRelationshipCell as UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53 } from '../../../components/admin/UserIdentity'
@@ -219,6 +220,7 @@ export const importMap = {
   "/components/admin/EventCycleActions#EventCycleActions": EventCycleActions_ff9850e5079c1719ce3b6d7bca67e68d,
   "/components/admin/TaxonomyRelatedContentJoin#TaxonomyRelatedContentJoin": TaxonomyRelatedContentJoin_ad60bb5c4bf3dd1eafbb015124f8d349,
   "/components/admin/TagNameCell#TagNameCell": TagNameCell_48828480de0ae7f1bffeffd06e21e329,
+  "/components/admin/MediaUploadHelp#MediaUploadHelp": MediaUploadHelp_e3397fea8931ff657681c66940162a57,
   "/components/admin/RemoveMediaImageMetadataField#RemoveMediaImageMetadataField": RemoveMediaImageMetadataField_d567b35b6c759feca8e1b4089a5662f8,
   "/components/admin/MediaTableCells#TaxonomyCell": TaxonomyCell_fd0f0ca32d7a45be5929fc2ef04497f8,
   "/components/admin/UserIdentity#UserRelationshipCell": UserRelationshipCell_0af2ec3c6a63521c7b2eedb66024da53,

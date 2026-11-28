@@ -62,15 +62,24 @@ describe('image sets', () => {
     )
   })
 
-  it.each(['webp', 'avif'] as const)('accepts static %s inputs', async (format) => {
+  it('accepts static WebP inputs', async () => {
     const source = await sharp({
       create: { width: 600, height: 320, channels: 3, background: '#ae8282' },
     })
-      .toFormat(format)
+      .webp()
       .toBuffer()
     const image = await createMediaImageSet(source)
     expect(image?.main).toMatchObject({ width: 600, height: 320 })
     expect((await sharp(image!.main.buffer).metadata()).format).toBe('webp')
+  })
+
+  it('keeps AVIF files on the native upload path without WebP variants', async () => {
+    const source = await sharp({
+      create: { width: 600, height: 320, channels: 3, background: '#ae8282' },
+    })
+      .avif()
+      .toBuffer()
+    expect(await createMediaImageSet(source)).toBeNull()
   })
 
   it('keeps GIF files on the established media path and rejects invalid profile input', async () => {
