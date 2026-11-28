@@ -7,6 +7,7 @@ import {
   type CollectionAfterChangeHook,
   type CollectionAfterDeleteHook,
   type CollectionBeforeChangeHook,
+  type CollectionBeforeOperationHook,
   type PayloadRequest,
 } from 'payload'
 
@@ -14,9 +15,53 @@ import type { Media } from '@/payload-types'
 import { getStorageContainerClient } from '@/storage/get-storage-container-client'
 import { storeImageSet } from '@/storage/store-image-set'
 
-import { createMediaImageSet, ImageInputError } from './image-set'
+import { createMediaImageSet, ImageInputError, validateMediaImageDimensions } from './image-set'
+import { isWebRasterImageMimeType, zipMimeTypes } from './media-categories'
 import { getMediaFileURL, getOptimizedImageKey, optimizedImagePrefix, type MediaImageVariant } from './media-image-data'
-import { isWebRasterImageMimeType } from './media-categories'
+import { mediaImageMegabyteLimit, mediaZipMegabyteLimit } from './media-upload-limits'
+
+export const validateMediaUpload: CollectionBeforeOperationHook<'media'> = async ({
+  operation,
+  req,
+}) => {
+  const file = req.file
+  if (!file || (operation !== 'create' && operation !== 'update')) return
+  const filesize = file.tempFilePath ? file.size : file.data.length
+  const [zipMimeType, alternateZipMimeType] = zipMimeTypes
+  const hasGenericMimeType = !file.mimetype || file.mimetype === 'application/octet-stream'
+  const isZip =
+    file.mimetype === zipMimeType ||
+    file.mimetype === alternateZipMimeType ||
+    (hasGenericMimeType && /\.zip$/i.test(file.name))
+
+  if (isZip) {
+    if (filesize > mediaZipMegabyteLimit * 1_000_000) {
+      throw new APIError(
+        `Archiwum ZIP jest za duże. Maksymalny rozmiar to ${mediaZipMegabyteLimit} MB.`,
+        413,
+      )
+    }
+    file.mimetype = zipMimeType
+    return
+  }
+
+  const isImage =
+    isWebRasterImageMimeType(file.mimetype) ||
+    (hasGenericMimeType && /\.(avif|gif|jpe?g|png|webp)$/i.test(file.name))
+  if (!isImage) return
+  if (filesize > mediaImageMegabyteLimit * 1_000_000) {
+    throw new APIError(
+      `Plik obrazu jest za duży (limit ${mediaImageMegabyteLimit} MB). Zmniejsz obraz lub udostępnij go w archiwum ZIP do ${mediaZipMegabyteLimit} MB.`,
+      413,
+    )
+  }
+  try {
+    await validateMediaImageDimensions(file.tempFilePath || file.data)
+  } catch (error) {
+    if (error instanceof ImageInputError) throw new APIError(error.message, 400)
+    throw error
+  }
+}
 
 export function prepareMediaImageFiles(
   image: NonNullable<Awaited<ReturnType<typeof createMediaImageSet>>>,
@@ -218,8 +263,7 @@ export const storeUploadedMediaImage: CollectionBeforeChangeHook<Media> = async 
     throw error
   } finally {
     if (!delegateToNativeUpload) {
-      // The optimized files go to Blob Storage through the shared writer. Only animations
-      // within this branch pass their original file on to Payload's native adapter.
+      // AVIF files and animations pass their original file on to Payload's native adapter.
       delete req.file
       delete req.payloadUploadSizes
       delete req.context._payloadCloudStorage

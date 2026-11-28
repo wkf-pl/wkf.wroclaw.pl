@@ -129,6 +129,7 @@ describe('media blocks', () => {
     )
 
     expect(names).toEqual([
+      'mediaUploadHelp',
       'removeImageMetadata',
       'imageVariants',
       'legacyImageFiles',

@@ -21,6 +21,8 @@ export const mediaDocumentMimeTypes = [
   'text/xml',
 ] as const
 
+export const zipMimeTypes = ['application/zip', 'application/x-zip-compressed'] as const
+
 export const webRasterImageMimeTypes = [
   'image/avif',
   'image/gif',

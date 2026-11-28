@@ -1,4 +1,6 @@
-import sharp, { type Metadata, type ResizeOptions } from 'sharp'
+import sharp, { type Metadata, type ResizeOptions, type SharpOptions } from 'sharp'
+
+import { mediaImageMegapixelLimit, mediaZipMegabyteLimit } from './media-upload-limits'
 
 export type EncodedImage = {
   buffer: Buffer
@@ -24,9 +26,9 @@ function isAnimated(source: Buffer, metadata: Metadata): boolean {
   return false
 }
 
-async function inspectImage(source: Buffer): Promise<Metadata> {
+async function inspectImage(source: Buffer | string, options?: SharpOptions): Promise<Metadata> {
   try {
-    const metadata = await sharp(source).metadata()
+    const metadata = await sharp(source, options).metadata()
     if (
       !metadata.width ||
       !metadata.height ||
@@ -43,6 +45,22 @@ async function inspectImage(source: Buffer): Promise<Metadata> {
     return metadata
   } catch {
     throw new ImageInputError('Wybierz prawidłowy plik JPEG, PNG, WebP, AVIF lub GIF.')
+  }
+}
+
+export async function validateMediaImageDimensions(source: Buffer | string): Promise<void> {
+  // Inspect headers before Payload or Sharp decodes the pixels.
+  const { format, width, height, pageHeight, pages } = await inspectImage(source, {
+    animated: true,
+    limitInputPixels: false,
+  })
+  if (format === 'heif') return
+
+  const totalHeight = pageHeight ? pageHeight * (pages ?? 1) : height
+  if (width * totalHeight > mediaImageMegapixelLimit * 1_000_000) {
+    throw new ImageInputError(
+      `Obraz ma zbyt dużo pikseli do przetworzenia (limit ${mediaImageMegapixelLimit} megapikseli). Zmniejsz jego wymiary lub udostępnij go w archiwum ZIP do ${mediaZipMegabyteLimit} MB.`,
+    )
   }
 }
 
@@ -79,7 +97,7 @@ export async function createMediaImageSet(
   removeImageMetadata = true,
 ): Promise<{ main: EncodedImage; variants: EncodedImage[] } | null> {
   const metadata = await inspectImage(source)
-  if (isAnimated(source, metadata)) return null
+  if (metadata.format === 'heif' || isAnimated(source, metadata)) return null
 
   const lossless = metadata.format === 'png'
   const main = await encodeWebP(source, {

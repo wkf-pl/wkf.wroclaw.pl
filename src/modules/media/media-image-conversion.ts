@@ -168,7 +168,7 @@ export async function runMediaImageConversion(
       report.skipped += 1
       continue
     }
-    if (media.mimeType === 'image/gif') {
+    if (media.mimeType === 'image/avif' || media.mimeType === 'image/gif') {
       report.skipped += 1
       continue
     }

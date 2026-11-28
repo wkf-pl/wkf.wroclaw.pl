@@ -32,6 +32,7 @@ import {
 } from './collections'
 import { ListingViews } from './collections/ListingViews'
 import { ContentAuditLog } from './collections/ContentAuditLog'
+import { mediaZipMegabyteLimit } from '@/modules/media/media-upload-limits'
 import { memberProfilePhotoSizeLimit } from '@/modules/members/member-profile-photo-options'
 import { contentAuditPlugin } from './modules/content-audit/plugin'
 import { createEmailAdapter } from './email/create-email-adapter'
@@ -176,6 +177,9 @@ export default buildConfig({
   },
   secret: getRequiredEnvironmentVariable('PAYLOAD_SECRET'),
   serverURL,
+  upload: {
+    responseOnLimit: `Plik jest za duży. Jeśli przesyłasz obraz, zmniejsz go lub udostępnij w archiwum ZIP do ${mediaZipMegabyteLimit} MB.`,
+  },
   typescript: {
     outputFile: path.resolve(directoryName, 'payload-types.ts'),
   },
